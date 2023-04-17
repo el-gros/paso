@@ -1,0 +1,7 @@
+{
+  "name": "paso",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
