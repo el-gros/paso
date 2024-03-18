@@ -1,0 +1,37 @@
+ion-title{
+  font-size: 30px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold
+}
+
+ion-toolbar{
+  --background: yellow !important;
+}
+
+#canvasContainer {
+  text-align: center;
+}
+
+.title {
+  font-size: 20px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold
+}
+
+.yellow-card {
+  background-color: yellow;
+}
+
+.disabled {
+  --background: gray;
+}
+    
+.enabled {
+  --background: yellow;
+}
+  
+ion-icon {
+  color: black
+}  
+
+

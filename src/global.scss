@@ -24,3 +24,69 @@
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
+
+
+.alert {
+    --backdrop-opacity: 0.6;
+//    --background: #ffffbb;
+    --min-width: 400px !important;
+    .alert-title {
+      font-size: 20;
+      color: black;
+    }   
+    .alert-button{  
+      width: 200px;
+      border-radius: 2px;
+      color: green;
+      font-size: 20px;
+    }
+    .alert-message {
+      color: black;
+      font-size: 16px;
+    }
+    .alert-input-group {
+      color: black;
+    }
+    .alert-input{
+      color: black;
+      font-size: 16px;
+      border-bottom-color: black !important;
+      &::placeholder {
+        color: #555;
+        font-size: 16px;
+      }
+    }
+    .alert-radio-label {
+      color: black;
+    }
+    .alert-radio-icon {
+      border-color: black;
+    }
+    .alert-radio-inner {
+      background-color: white;
+    }
+    [aria-checked=true] .alert-radio-label {
+      color: white;
+    }     
+    [aria-checked=true] .alert-radio-icon {
+      border-color: white !important;
+    }
+    .alert-cancel-button{  
+        width: 200px;
+        border-radius: 2px;
+        color: red;
+        font-size: 20px;
+      }
+  }
+
+  .yellowAlert{
+    --background: #ffffbb !important;
+  }
+
+  .greenAlert{
+    --background: #ddffdd !important;
+  }
+
+  .blueAlert{
+    --background: #bbffff !important;
+  }

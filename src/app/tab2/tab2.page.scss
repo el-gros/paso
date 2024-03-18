@@ -1,0 +1,48 @@
+ion-title{
+    font-size: 30px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold
+  }
+
+  ion-toolbar{
+    --background: rgb(0, 255, 0) !important;
+  }
+  
+.title {
+    font-size: 20px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold
+}  
+
+ion-checkbox {
+    --checkbox-background-checked: rgb(0, 255, 0);
+    --border-color-checked: rgb(0, 255, 0);
+    --checkmark-color: rgb(0, 0, 0);
+    zoom: 1.5;
+}
+
+.redEnabled{
+    --background: red;
+    --color: white;
+}
+
+.redDisabled{
+    --background: gray;
+}
+
+.greenEnabled{
+    --background: rgb(0, 255, 0);
+    --color: black;
+}
+
+.greenDisabled{
+    --background: gray;
+}
+
+.checked {
+    background-color: #ddffdd !important;
+}
+
+.unchecked{
+    background-color: white !important;
+}

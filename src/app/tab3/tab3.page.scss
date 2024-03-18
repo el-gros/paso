@@ -1,0 +1,32 @@
+ion-title{
+    font-size: 30px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold
+  }
+
+  ion-toolbar{
+    --background: rgb(0, 255, 255) !important;
+  }
+
+  #canvasContainer {
+    text-align: center;
+  }
+  
+  .title {
+    font-size: 20px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold
+  }
+  
+  .blue-card {
+    background-color: rgb(0, 255, 255);
+  }
+
+  ion-card-subtitle {
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        font-weight: bold;
+        padding-bottom: 10px;
+        padding-left: 15px;
+        padding-right: 15px;
+      }

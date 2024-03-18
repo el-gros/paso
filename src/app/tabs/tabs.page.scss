@@ -1,1 +1,25 @@
+ 
+  ion-button.save-button {
+    --background: #007bff; /* Change this to your desired save button background color */
+    --color: #ffffff; /* Change this to your desired save button text color */
+  }
+  
+  ion-button.cancel-button {
+    --background: #dc3545; /* Change this to your desired cancel button background color */
+    --color: #ffffff; /* Change this to your desired cancel button text color */
+  }
+  
+  .triangle.tab-selected {
+    background-color: #ffffbb;
+    color: black;
+  }
 
+  .ellipse.tab-selected {
+    background-color: #ddffdd;
+    color: black;
+  }
+
+  .square.tab-selected {
+    background-color: #bbffff;
+    color: black;
+  }

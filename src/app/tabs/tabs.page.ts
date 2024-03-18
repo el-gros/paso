@@ -1,5 +1,6 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { global } from '../../environments/environment';
 
 @Component({
   selector: 'app-tabs',
