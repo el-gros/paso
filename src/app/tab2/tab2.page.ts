@@ -14,7 +14,7 @@ import { runInThisContext } from 'vm';
   templateUrl: 'tab2.page.html',
   styleUrls: ['tab2.page.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule, ExploreContainerComponent, FormsModule]
+  imports: [CommonModule, FormsModule,  IonicModule, ExploreContainerComponent],
 })
 export class Tab2Page {
 
@@ -43,7 +43,7 @@ export class Tab2Page {
   ////// ON CHANGE, COUNT CHECKED ITEMS
   async onChange() {
     this.numChecked = 0;
-    for (const item of this.collection) {
+    for (var item of this.collection) {
       if (item.isChecked) this.numChecked = this.numChecked + 1
     }   
     await this.storage.set('collection', this.collection) 
@@ -93,7 +93,7 @@ export class Tab2Page {
         {
           text: 'OK',
           cssClass: 'alert-button',
-          handler: (data) => {
+          handler: (data: any) => {
             this.saveFile(index, data.name, data.place, data.description);
           }
         }

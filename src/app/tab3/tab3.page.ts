@@ -293,7 +293,7 @@ async createCanvas(canvas: any) {
         handler: () => { this.router.navigate(['./tabs/tab2']); }
       }]
     });
-    alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
+    alert.onDidDismiss().then((data: any) => { this.router.navigate(['./tabs/tab2']); });
     await alert.present();  
   }
 

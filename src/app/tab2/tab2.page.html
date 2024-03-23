@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Available tracks
+      Available tracks {{output}}
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -16,11 +16,11 @@
       <div  [ngClass]="(item.isChecked) ? 'checked' : 'unchecked'">
         <ion-label>
           {{item.name}}<br>
-          {{item.date | date: 'dd-MM-yyyy HH:mm' }}<br>
+          {{item.date | date: 'ty-MM-yyyy HH:mm' }}<br>
           {{item.place}}
         </ion-label>
-      </div>
-      <ion-checkbox medium slot ="end" [(ngModel)] ="item.isChecked" (ionChange)="onChange()"></ion-checkbox>
+      </div>  
+      <ion-checkbox medium slot ="end" [(ngModel)]="item.isChecked" checked={{item.isChecked}} (ionChange)="onChange()"></ion-checkbox>
     </ion-item>
   </ion-list>
   </div>

@@ -575,7 +575,7 @@ export class Tab1Page   {
         {
           text: 'Ok',
           cssClass: 'alert-button',
-          handler: (data) => {
+          handler: (data: any) => {
             this.saveFile(data.name, data.place, data.description);
           }
         }
