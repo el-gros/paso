@@ -38,6 +38,7 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
+import tt from '@tomtom-international/web-sdk-maps';
 
 // 2. @COMPONENT
 
@@ -81,6 +82,7 @@ export class Tab1Page   {
   start: boolean = true;
   time0: Date = new Date(); 
   collection: TrackDefinition[] = [];
+  map: any;
 
   // 3.2. CONSTRUCTOR  
 
@@ -155,26 +157,11 @@ export class Tab1Page   {
     var dx = this.track.results.xMax - this.track.results.xMin;
     var dy = this.track.results.yMax - this.track.results.yMin;
     // define parameters for transform
-    var a: number;
-    var d: number;
-    var e: number;
-    var f: number;
-    // case dx > dy
-    if (dx >= dy) {a = (
-      this.canvasNum - 2 * this.margin) / dx; 
-      d = -a;
-      e = -this.track.results.xMin * a + this.margin;
-      f = this.track.results.yMax * a + this.margin;
-      f = f + a * (dx - dy) / 2;
-    }
-    // case dy > dx
-    else {
-      a = (this.canvasNum - 2 * this.margin) / dy;
-      d = -a;
-      e = -this.track.results.xMin * a + this.margin;
-      f = this.track.results.yMax * a + this.margin;
-      e = e + a * (dy - dx) / 2;  
-    }
+    var a: number = (this.canvasNum - 2 * this.margin) / Math.max(dx, dy); 
+    var d = -a;
+    var e = -this.track.results.xMin * a + this.margin;
+    var f = this.track.results.yMax * a + this.margin;
+    f = f + a * Math.abs(dx - dy) / 2;
     // green circle
     await this.circle(0, 0, a, d, e, f, 'green');
     // draw lines
@@ -374,7 +361,6 @@ export class Tab1Page   {
     this.track.results.elevationGain = lastEl.elevationGain;
     this.track.results.elevationLoss = lastEl.elevationLoss;
     this.track.results.time = lastEl.time;
-//    this.time = this.datePipe.transform(this.track.results.time, 'HH:mm:ss');
     this.time = this.fs.formatMillisecondsToUTC(this.track.results.time);
     this.track.results.x = lastEl.x;
     this.track.results.y = lastEl.y;
@@ -668,9 +654,15 @@ async gridMap(xMin: number, xMax: number, yMin: number, yMax: number, a: number,
 }
 
 async ngOnInit() {
-  // If using a custom driver:
-  // await this.storage.defineDriver(MyCustomDriver)
   await this.storage.create();
+
+  this.map = tt.map({
+    key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
+    container: "map",
+    center: [40, 0],
+    zoom: 12,
+  });
+
 }
 
 
