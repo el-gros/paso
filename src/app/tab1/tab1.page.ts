@@ -75,6 +75,7 @@ export class Tab1Page   {
   threshold: number = 20;
   lag = 12;
   output: any; 
+  output2: any; 
   properties: (keyof Location)[] = ['altitude', 'speed'];
   gridsize: string = '-';
   currentAltitude: number | undefined;
@@ -108,6 +109,7 @@ export class Tab1Page   {
     await this.createAllCanvas();
     // update canvas
     await this.updateAllCanvas(false);
+    await this.trackOnMap(false);
     // detect changes 
     this.cd.detectChanges();
   }
@@ -285,6 +287,7 @@ export class Tab1Page   {
     }, async (location: Location, error: Error) => {
       if (location) {
         await this.process(location);
+        await this.trackOnMap(false)
         await this.updateAllCanvas(false);
         this.cd.detectChanges();
       }
@@ -475,6 +478,7 @@ export class Tab1Page   {
     } 
     // update canvas    
     await this.updateAllCanvas(true);
+    this.trackOnMap(true);
   }
 
   // 3.22. PAUSE TRACKING
@@ -487,39 +491,6 @@ export class Tab1Page   {
     await this.processRemaining();
   }
 
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 
   async setTrackDetails() {
     var trackName: string = '';
@@ -654,16 +625,89 @@ async gridMap(xMin: number, xMax: number, yMin: number, yMax: number, a: number,
 }
 
 async ngOnInit() {
+  // create storage 
   await this.storage.create();
-
+  // plot map
   this.map = tt.map({
     key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
     container: "map",
-    center: [40, 0],
-    zoom: 12,
+    center: [2, 41.5],
+    zoom: 5,
   });
+}  
 
+async plotLocationOnMap(location: Location) {
+//  let marker = new tt.Marker().setLngLat([location.longitude, location.latitude]).addTo(this.map);
+  this.map.setCenter({ lng: location.longitude, lat: location.latitude });
+  this.map.setZoom(15);
 }
 
+async trackOnMap(end: boolean) {
+  // no map
+  if (!this.map) return;
+  // no points enough
+  if (this.totalNum < 2) return;
+  // update layer 123
+  var id: string = '123'
+  await this.removeLayer(id)
+  await this.addLayer(id)
+}
+
+
+async addLayer(id: string) {
+  // Create coordinates list
+  var coordinates: number[][]
+  coordinates = await this.coordinatesSet();
+  // add layer
+  await this.map.addLayer({
+    'id': id,
+    'type': 'line',
+    'source': {
+      'type': 'geojson',
+      'data': {
+        'type': 'FeatureCollection',
+        'features': [
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'LineString',
+              'properties': {},
+              'coordinates': coordinates
+             }
+          }
+        ]
+      }
+    },
+    'layout': {
+      'line-cap': 'round',
+      'line-join': 'round'
+    },
+    'paint': {
+      'line-color': '#ff0000',
+      'line-width': 4
+    }
+
+  }); 
+}
+
+
+  async removeLayer(id: string) {
+    var layers = this.map.getStyle().layers;
+    for (var layer of layers) {
+      if (layer.id === id) {
+        await this.map.removeLayer('123')
+        await this.map.removeSource('123')
+        return
+      }
+    } 
+  }  
+
+  async coordinatesSet() {
+    var coordinates: number[][] = []
+    for (var p of this.track.locations ) {
+      await coordinates.push([p.longitude, p.latitude])
+    }  
+    return coordinates;
+  } 
 
 }
