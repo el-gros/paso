@@ -8,22 +8,6 @@ export class FunctionsService {
 
   constructor() { }
 
-  /*
-  async computeDistance(lat1: number, lon1: number, lat2:number, lon2:number) {     
-    const earthRadiusInKm = 6371; // Radius of the earth in km
-    var distanceInKm = 0;
-    const dLat = this.deg2rad(lat2 - lat1); // deg2rad below
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    distanceInKm = earthRadiusInKm * c; // Distance in km
-    return distanceInKm;
-  }
-  */
-
   async computeDistances(lat1: number, lon1: number, lat2:number, lon2:number) {     
     const earthRadiusInKm = 6371; // Radius of the earth in km
     var xInKm = 0;
@@ -55,7 +39,6 @@ export class FunctionsService {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-  
     return `${this.padZero(hours)}:${this.padZero(minutes)}:${this.padZero(remainingSeconds)}`;
   }
   

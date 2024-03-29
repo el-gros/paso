@@ -58,16 +58,18 @@
       </ion-card-title>
     </ion-card-header>
   </ion-card>
+
+  <div #map id="map"></div>
   <div id="canvasContainer" class="canvases" >
+<!--
     <h1 class = 'title'>MAP. Grid size: {{gridsize}} km</h1>   
     <canvas id="ncanvasMap" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+-->
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
     <canvas id="ncanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
     <canvas id="ncanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </div>  
 
-  <div #map id="map"></div>
-
-</ion-content>
+  </ion-content>
 

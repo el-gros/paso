@@ -9,6 +9,7 @@ import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
+import tt from '@tomtom-international/web-sdk-maps';
 
 @Component({
   selector: 'app-tab3',
@@ -34,6 +35,7 @@ export class Tab3Page {
   output: any; 
   properties: (keyof Location)[] = ['altitude', 'speed'];
   gridsize: string = '-';
+  map: any;
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -71,6 +73,8 @@ export class Tab3Page {
     this.time = this.fs.formatMillisecondsToUTC(this.track.results.time);
     // create canvas
     await this.createAllCanvas();
+    // display track on map
+    await this.displayTrackOnMap();
     // update canvas
     await this.updateAllCanvas(true);
     // detect changes 
@@ -81,8 +85,9 @@ export class Tab3Page {
 // 3.4. CREATE ALL CANVAS
 
 async createAllCanvas() {
-  var canvas = document.getElementById('canvasMap') as HTMLCanvasElement;
-  this.ctxMap = await this.createCanvas(canvas)
+//  var canvas = document.getElementById('canvasMap') as HTMLCanvasElement;
+//  this.ctxMap = await this.createCanvas(canvas)
+  var canvas: any
   for (var i in this.properties) {
     canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
     this.ctx[i] = await this.createCanvas(canvas)
@@ -101,7 +106,7 @@ async createCanvas(canvas: any) {
   // 3.6. UPDATE ALL CANVAS
 
   async updateAllCanvas(end: boolean) {
-    await this.updateMapCanvas(end);
+  //  await this.updateMapCanvas(end);
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(this.ctx[i], this.properties[i], 'x');
       else await this.updateCanvas(this.ctx[i], this.properties[i], 't');
@@ -109,6 +114,7 @@ async createCanvas(canvas: any) {
     this.cd.detectChanges();
   } 
 
+  /*
   async updateMapCanvas(end: boolean) {
     // no track
     if (!this.track) return;
@@ -173,6 +179,7 @@ async createCanvas(canvas: any) {
       this.ctxMap.fillStyle = 'rgb(0, 255, 255)';
     } 
   
+    */
 
   // 3.9. UPDATE CANVAS
 
@@ -296,5 +303,82 @@ async createCanvas(canvas: any) {
     alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
     await alert.present();  
   }
+
+  async ngOnInit() {
+    // plot map
+    this.map = tt.map({
+      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
+      container: "map2",
+      center: [2, 41.5],
+      zoom: 5,
+    });
+  }  
+
+  async displayTrackOnMap() {
+    // no map
+    if (!this.map) return;
+    // no points enough
+    if (this.totalNum < 2) return;
+    // create layer 124
+    await this.removeLayer('124')
+    await this.addLayer('124')
+    }
+
+  async addLayer(id: string) {
+    // Create coordinates list
+    var coordinates: number[][]
+    coordinates = await this.coordinatesSet();
+    // add layer
+    await this.map.addLayer({
+      'id': id,
+      'type': 'line',
+      'source': {
+        'type': 'geojson',
+        'data': {
+          'type': 'FeatureCollection',
+          'features': [
+            {
+              'type': 'Feature',
+              'geometry': {
+                'type': 'LineString',
+                'properties': {},
+                'coordinates': coordinates
+               }
+            }
+          ]
+        }
+      },
+      'layout': {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      'paint': {
+        'line-color': '#00aa00',
+        'line-width': 4
+      }
+    }); 
+    var greenMarker = new tt.Marker().setLngLat([coordinates[0][0], coordinates[0][1]]).addTo(this.map);
+    this.map.setCenter({ lng: coordinates[-1][0], lat: coordinates[-1][1] });
+  }
+  
+  async coordinatesSet() {
+    var coordinates: number[][] = []
+    for (var p of this.track.locations ) {
+      await coordinates.push([p.longitude, p.latitude])
+    }  
+    return coordinates;
+  } 
+
+  async removeLayer(id: string) {
+    var layers = this.map.getStyle().layers;
+    for (var layer of layers) {
+      if (layer.id === id) {
+        await this.map.removeLayer(id)
+        await this.map.removeSource(id)
+        return
+      }
+    } 
+  }  
+
 
 }

@@ -117,9 +117,10 @@ export class Tab1Page   {
   // 3.4. CREATE ALL CANVAS
 
   async createAllCanvas() {
-    var canvas = document.getElementById('ncanvasMap') as HTMLCanvasElement;
-    this.ctxMap = await this.createCanvas(canvas)
-    for (var i in this.properties) {
+//    var canvas = document.getElementById('ncanvasMap') as HTMLCanvasElement;
+//    this.ctxMap = await this.createCanvas(canvas)
+    var canvas: any
+    for (var i=0; i<this.properties.length; i++) {
       canvas = document.getElementById('ncanvas' + i) as HTMLCanvasElement;
       this.ctx[i] = await this.createCanvas(canvas)
     }
@@ -137,7 +138,7 @@ export class Tab1Page   {
   // 3.6. UPDATE ALL CANVAS
 
   async updateAllCanvas(end: boolean) {
-    await this.updateMapCanvas(end);
+//    await this.updateMapCanvas(end);
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(this.ctx[i], this.properties[i], 'x');
       else await this.updateCanvas(this.ctx[i], this.properties[i], 't');
@@ -146,7 +147,7 @@ export class Tab1Page   {
   } 
 
   // 3.7. UPDATE MAP CANVAS
-  
+/*  
   async updateMapCanvas(end: boolean) {
     // no map canvas
     if (!this.ctxMap) return;
@@ -194,6 +195,7 @@ export class Tab1Page   {
     this.ctxMap.stroke();
     this.ctxMap.fillStyle = 'yellow';
   } 
+*/
 
   // 3.9. UPDATE CANVAS
 
@@ -288,6 +290,7 @@ export class Tab1Page   {
       if (location) {
         await this.process(location);
         await this.trackOnMap(false)
+        console.log('goto updateallcanvas')
         await this.updateAllCanvas(false);
         this.cd.detectChanges();
       }
@@ -636,11 +639,6 @@ async ngOnInit() {
   });
 }  
 
-async plotLocationOnMap(location: Location) {
-//  let marker = new tt.Marker().setLngLat([location.longitude, location.latitude]).addTo(this.map);
-  this.map.setCenter({ lng: location.longitude, lat: location.latitude });
-  this.map.setZoom(15);
-}
 
 async trackOnMap(end: boolean) {
   // no map
@@ -648,9 +646,8 @@ async trackOnMap(end: boolean) {
   // no points enough
   if (this.totalNum < 2) return;
   // update layer 123
-  var id: string = '123'
-  await this.removeLayer(id)
-  await this.addLayer(id)
+  await this.removeLayer('123')
+  await this.addLayer('123')
 }
 
 
@@ -683,11 +680,12 @@ async addLayer(id: string) {
       'line-join': 'round'
     },
     'paint': {
-      'line-color': '#ff0000',
+      'line-color': '#00aa00',
       'line-width': 4
     }
-
   }); 
+  var greenMarker = new tt.Marker().setLngLat([coordinates[0][0], coordinates[0][1]]).addTo(this.map);
+  this.map.setCenter({ lng: coordinates[-1][0], lat: coordinates[-1][1] });
 }
 
 
@@ -695,8 +693,8 @@ async addLayer(id: string) {
     var layers = this.map.getStyle().layers;
     for (var layer of layers) {
       if (layer.id === id) {
-        await this.map.removeLayer('123')
-        await this.map.removeSource('123')
+        await this.map.removeLayer(id)
+        await this.map.removeSource(id)
         return
       }
     } 

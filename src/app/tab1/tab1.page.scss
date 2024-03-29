@@ -36,6 +36,12 @@ ion-icon {
 
 
 #map {
-  height: calc(100% - 0px);
-  width: 100vw;
+  height: 380px;
+  width: 380px;
   }
+
+#marker {
+  width: 20px;
+  height: 30px;
+  color: green
+}  
