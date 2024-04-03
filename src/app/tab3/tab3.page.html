@@ -22,15 +22,15 @@
   <ion-card class="blue-card">
     <ion-card-header>
       <ion-card-title>
-        Distance: {{track.results.distance | number:'1.3' }} km
+        Distance: {{currentDistance | number:'1.3' }} km
         <br>
-        Elevation gain: {{track.results.elevationGain | number:'1.0-0' }} m
+        Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
         <br>
-        Elevation loss: {{track.results.elevationLoss | number:'1.0-0' }} m
+        Elevation loss: {{currentElevationLoss | number:'1.0-0' }} m
         <br>
-        Time: {{ time }}
+        Time: {{ currentTime }}
         <br>
-        {{totalNum}} points recorded
+        {{currentNumber}} points recorded
       </ion-card-title>
     </ion-card-header>
   </ion-card>

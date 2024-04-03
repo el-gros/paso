@@ -1,4 +1,4 @@
-import { Location, Element, Result, Block, Point, Track, TrackDefinition } from 'src/globald';
+import { Location, Data, Bounds, Track, TrackDefinition } from 'src/globald';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -8,30 +8,17 @@ export class FunctionsService {
 
   constructor() { }
 
-  async computeDistances(lat1: number, lon1: number, lat2:number, lon2:number) {     
-    const earthRadiusInKm = 6371; // Radius of the earth in km
-    var xInKm = 0;
-    var yInKm = 0;
-    const dLat = this.deg2rad(lat2 - lat1); // deg2rad below
-    const dLon = this.deg2rad(lon2 - lon1);
-    yInKm = earthRadiusInKm * dLat;
-    xInKm = earthRadiusInKm * dLon * Math.cos(this.deg2rad(0.5 * lat2 + 0.5 * lat1)) ;
-    var distances: Point = {x: xInKm, y: yInKm};
-    return distances;
-  }
-
-
-
-  deg2rad(deg: number): number {
-    return deg * (Math.PI/180)
-  }
-
-  async computeSlopes(h1: number, h2: number) {
-    var elevationGain = 0;
-    var elevationLoss = 0; 
-    if (h2 > h1) elevationGain = h2 - h1;
-    else elevationLoss = h1 - h2;
-    return {gain: elevationGain, loss: elevationLoss};
+  async computeDistance(lon1: number, lat1: number, lon2:number, lat2:number) {
+    const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const earthRadiusKm = 6371;
+    return earthRadiusKm * c; 
   }
 
   formatMillisecondsToUTC(milliseconds: number): string {
@@ -54,17 +41,16 @@ export class FunctionsService {
     else return 2 * (10 ** nx);
   }
 
-  async computeMinMaxProperty(locations: Location[], propertyName: keyof Location) {
-    var bounds: Block 
-    bounds = {
+  async computeMinMaxProperty(data: Data[], propertyName: keyof Data) {
+    var bounds: Bounds = {
       min: Number.POSITIVE_INFINITY,
       max: Number.NEGATIVE_INFINITY
     }  
     if (propertyName == 'simulated') return bounds;
-    for (const location of locations) {
-      const propertyValue = location[propertyName];
-      if (propertyValue < bounds.min) bounds.min = propertyValue; 
-      if (propertyValue > bounds.max) bounds.max = propertyValue; 
+    for (const datum of data) {
+      const value = datum[propertyName];
+      if (value < bounds.min) bounds.min = value; 
+      if (value > bounds.max) bounds.max = value; 
     }  
     return bounds ;
   }

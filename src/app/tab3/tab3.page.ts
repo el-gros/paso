@@ -1,4 +1,4 @@
-import { Location, Block, Track, TrackDefinition } from '../../globald';
+import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
@@ -20,12 +20,9 @@ import tt from '@tomtom-international/web-sdk-maps';
   providers: [DecimalPipe, DatePipe]
 })
 export class Tab3Page {
-
   track = global.track;
-  totalNum = global.totalNum;
   collection: TrackDefinition[] = [];
   // local variables
-  time: any = '00:00:00';
   ctxMap: CanvasRenderingContext2D | undefined;
   ctx: (CanvasRenderingContext2D | undefined)[] = [undefined, undefined, undefined]; 
   canvasNum: number = 400; // canvas size
@@ -33,14 +30,22 @@ export class Tab3Page {
   threshold: number = 20;
   lag = 12;
   output: any; 
-  properties: (keyof Location)[] = ['altitude', 'speed'];
+  properties: (keyof Data)[] = ['altitude', 'speed'];
   gridsize: string = '-';
+  currentAltitude: number | undefined;
+  currentSpeed: number | undefined;
+  currentDistance: number = 0;
+  currentElevationGain: number = 0;
+  currentElevationLoss: number = 0;
+  currentTime: any = '00:00:00';
+  currentNumber: number = 0;
   map: any;
+  greenMarker: any = undefined;
+  redMarker: any = undefined;
+
 
   constructor(
     private cd: ChangeDetectorRef,
-    private decimalPipe: DecimalPipe,
-    private datePipe: DatePipe,
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
@@ -69,10 +74,15 @@ export class Tab3Page {
     // retrieve track
     this.track = await this.storage.get(JSON.stringify(key));
     // global variables
-    this.totalNum = this.track.locations.length;
-    this.time = this.fs.formatMillisecondsToUTC(this.track.results.time);
+    this.htmlVariables();
     // create canvas
     await this.createAllCanvas();
+    try {
+      this.removeLayer('124');
+      if (this.greenMarker) this.greenMarker.remove();
+      if (this.redMarker) this.redMarker.remove();    
+    }
+    catch {}
     // display track on map
     await this.displayTrackOnMap();
     // update canvas
@@ -85,8 +95,6 @@ export class Tab3Page {
 // 3.4. CREATE ALL CANVAS
 
 async createAllCanvas() {
-//  var canvas = document.getElementById('canvasMap') as HTMLCanvasElement;
-//  this.ctxMap = await this.createCanvas(canvas)
   var canvas: any
   for (var i in this.properties) {
     canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
@@ -114,85 +122,19 @@ async createCanvas(canvas: any) {
     this.cd.detectChanges();
   } 
 
-  /*
-  async updateMapCanvas(end: boolean) {
-    // no track
-    if (!this.track) return;
-    // no map canvas
-    if (!this.ctxMap) return;
-    // fill in bluish
-    this.ctxMap.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctxMap.fillRect(0, 0, this.canvasNum, this.canvasNum);
-    // no points enough
-    if (this.totalNum < 2) return;
-    // scales
-    var dx = this.track.results.xMax - this.track.results.xMin;
-    var dy = this.track.results.yMax - this.track.results.yMin;
-    // define parameters for transform
-    var a: number;
-    var d: number;
-    var e: number;
-    var f: number;
-    // case dx > dy
-     if (dx >= dy) {a = (this.canvasNum - 2 * this.margin) / dx; 
-      d = -a;
-      e = -this.track.results.xMin * a + this.margin;
-      f = this.track.results.yMax * a + this.margin;
-      f = f + a * (dx - dy) / 2;
-    }
-    // case dy > dx
-    else {
-      a = (this.canvasNum - 2 * this.margin) / dy;
-      d = -a;
-      e = -this.track.results.xMin * a + this.margin;
-      f = this.track.results.yMax * a + this.margin;
-      e = e + a * (dy - dx) / 2;  
-    }
-    // green circle
-    await this.circle(0, 0, a, d, e, f, 'green');
-    // draw lines
-    for (var block of this.track.blocks) {
-      this.ctxMap.setTransform(a, 0, 0, d, e, f);
-      this.ctxMap.beginPath();
-      this.ctxMap.moveTo(this.track.elements[block.min].x, this.track.elements[block.min].y);
-      for (var i = block.min + 1; i < block.max; i++) {
-        this.ctxMap.lineTo(this.track.elements[i].x, this.track.elements[i].y)
-      } 
-      this.ctxMap.setTransform(1, 0, 0, 1, 0, 0);
-      this.ctxMap.strokeStyle = 'black';
-      this.ctxMap.stroke();
-    }
-    await this.gridMap(this.track.results.xMin, this.track.results.xMax, this.track.results.yMin, this.track.results.yMax, a, d, e, f) 
-    if (end) await this.circle(this.track.results.x, this.track.results.y, a, d, e, f, 'red');
-  }
-
-    // 3.8. CIRCLE
-
-    async circle(x1: number, y1: number, a: number, d: number, e: number, f: number, color: string) {
-      if (!this.ctxMap) return;
-      this.ctxMap.beginPath();
-      this.ctxMap.arc(x1*a+e, y1*d+f, 10, 0, 2 * Math.PI); 
-      this.ctxMap.fillStyle = color;
-      this.ctxMap.fill(); 
-      this.ctxMap.strokeStyle = color;
-      this.ctxMap.stroke();
-      this.ctxMap.fillStyle = 'rgb(0, 255, 255)';
-    } 
-  
-    */
-
   // 3.9. UPDATE CANVAS
 
-  async updateCanvas (ctx: CanvasRenderingContext2D | undefined, propertyName: keyof Location, xParam: string) {
+  async updateCanvas (ctx: CanvasRenderingContext2D | undefined, propertyName: keyof Data, xParam: string) {
+    var num = this.track.data.length;
     if (!this.track) return;
     if (!ctx) return;
-    if (xParam == 'x') var xTot = this.track.results.distance
-    else xTot = this.track.results.time
+    if (xParam == 'x') var xTot = this.track.data[num - 1].distance
+    else xTot = this.track.data[num - 1].accTime
     if (propertyName == 'simulated') return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillRect(0, 0, this.canvasNum, this.canvasNum);
     // compute bounds
-    const bounds: Block = await this.fs.computeMinMaxProperty(this.track.locations, propertyName);
+    const bounds: Bounds = await this.fs.computeMinMaxProperty(this.track.data, propertyName);
     if (bounds.max == bounds.min) {
       bounds.max = bounds.max + 2;
       bounds.min = bounds.min - 2;
@@ -204,18 +146,16 @@ async createCanvas(canvas: any) {
     const f = this.margin - bounds.max * d;
     // draw lines
     ctx.strokeStyle = 'black';
-    for (var block of this.track.blocks) {
-      ctx.setTransform(a, 0, 0, d, e, f)
-      ctx.beginPath();
-      ctx.moveTo(0, this.track.locations[block.min][propertyName]);
-      for (var i = block.min + 1; i < block.max; i++) {
-        if (xParam == 'x') ctx.lineTo(this.track.elements[i].distance, this.track.locations[i][propertyName])
-        else ctx.lineTo(this.track.elements[i].time, this.track.locations[i][propertyName])
-      }  
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.stroke();
-      await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
-    }
+    ctx.setTransform(a, 0, 0, d, e, f)
+    ctx.beginPath();
+    ctx.moveTo(0, this.track.data[0][propertyName]);
+    for (var i in this.track.data) {
+      if (xParam == 'x') ctx.lineTo(this.track.data[i].distance, this.track.data[i][propertyName])
+      else ctx.lineTo(this.track.data[i].accTime, this.track.data[i][propertyName])
+    }  
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.stroke();
+    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
   }
 
 
@@ -250,6 +190,7 @@ async createCanvas(canvas: any) {
     ctx.setLineDash([]);
   }
   
+  /*
   async gridMap(xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number) {
     if (!this.ctxMap) return;
     const dx = xMax - xMin;
@@ -284,6 +225,7 @@ async createCanvas(canvas: any) {
     this.ctxMap.strokeStyle = 'black';
     this.ctxMap.setLineDash([]);
   }
+  */
   
   async selectTrack() {
     // create alert control
@@ -318,16 +260,13 @@ async createCanvas(canvas: any) {
     // no map
     if (!this.map) return;
     // no points enough
-    if (this.totalNum < 2) return;
+    if (this.track.data.length < 2) return;
     // create layer 124
     await this.removeLayer('124')
     await this.addLayer('124')
     }
 
   async addLayer(id: string) {
-    // Create coordinates list
-    var coordinates: number[][]
-    coordinates = await this.coordinatesSet();
     // add layer
     await this.map.addLayer({
       'id': id,
@@ -342,7 +281,7 @@ async createCanvas(canvas: any) {
               'geometry': {
                 'type': 'LineString',
                 'properties': {},
-                'coordinates': coordinates
+                'coordinates': this.track.map
                }
             }
           ]
@@ -357,17 +296,12 @@ async createCanvas(canvas: any) {
         'line-width': 4
       }
     }); 
-    var greenMarker = new tt.Marker().setLngLat([coordinates[0][0], coordinates[0][1]]).addTo(this.map);
-    this.map.setCenter({ lng: coordinates[-1][0], lat: coordinates[-1][1] });
+    var num: number = this.track.data.length;
+    this.greenMarker = new tt.Marker().setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+    this.redMarker = new tt.Marker().setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
   }
   
-  async coordinatesSet() {
-    var coordinates: number[][] = []
-    for (var p of this.track.locations ) {
-      await coordinates.push([p.longitude, p.latitude])
-    }  
-    return coordinates;
-  } 
 
   async removeLayer(id: string) {
     var layers = this.map.getStyle().layers;
@@ -379,6 +313,28 @@ async createCanvas(canvas: any) {
       }
     } 
   }  
+
+  htmlVariables() {
+    const num: number = this.track.data.length;
+    if (num > 0) {
+      this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);
+      this.currentDistance = this.track.data[num - 1].distance;
+      this.currentElevationGain = this.track.data[num - 1].elevationGain;
+      this.currentElevationLoss = this.track.data[num - 1].elevationLoss;
+      this.currentNumber = num;
+      this.currentAltitude = this.track.data[num - 1].altitude;
+      this.currentSpeed = this.track.data[num - 1].speed;     
+    }
+    else {
+      this.currentTime = "00:00:00";
+      this.currentDistance = 0;
+      this.currentElevationGain = 0;
+      this.currentElevationLoss = 0;
+      this.currentNumber = 0;
+      this.currentAltitude = 0;
+      this.currentSpeed = 0;
+    }
+  }
 
 
 }
