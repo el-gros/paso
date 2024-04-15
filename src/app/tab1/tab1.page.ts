@@ -11,6 +11,7 @@ import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
+//import { Marker } from '@tomtom-international/web-sdk-maps';
 
 // 2. @COMPONENT
 
@@ -51,8 +52,9 @@ export class Tab1Page   {
   currentNumber: number = 0;
   collection: TrackDefinition[] = [];
   map: any;
-  greenMarker: any = undefined;
-  redMarker: any = undefined;
+  initialMarker: any | undefined = undefined;
+  finalMarker: any | undefined = undefined;
+  currentMarker: any | undefined = undefined;
   lag = 8;
   filtering: boolean = false;
 
@@ -156,13 +158,11 @@ export class Tab1Page   {
     // start tracking
     this.tracking = true;
     await this.trackPosition();
-    // remove track layer if exists
-    try {
-      this.removeLayer('123');
-      if (this.greenMarker) this.greenMarker.remove();
-      if (this.redMarker) this.redMarker.remove();    
-    }
-    catch {}
+    // remove track layers if exist
+    if (this.initialMarker) this.initialMarker.remove();
+    if (this.finalMarker) this.finalMarker.remove();
+    if (this.currentMarker) this.currentMarker.remove();        
+    for (var i = 124; i < 999; i++) this.removeLayer(i.toString());
   }
 
   // 3.12. INITIALIZE VARIABLES FOR A NEW TRACK
@@ -178,7 +178,7 @@ export class Tab1Page   {
   // 3.13. TRACK POSITION
 
   async trackPosition() {
-      BackgroundGeolocation.addWatcher({
+    BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
       backgroundTitle: "Tracking You.",
       requestPermissions: true,
@@ -291,7 +291,7 @@ export class Tab1Page   {
   async stopTracking() {
     // red marker
     const num: number = this.track.data.length
-    if (num > 1) this.redMarker = new tt.Marker().setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000'}).setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
     // remove watcher
     try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
     catch {}
@@ -408,18 +408,29 @@ async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: numbe
 
 
 async trackOnMap() {
+  const l = this.track.map.length
   // no map
   if (!this.map) return;
   // no points enough
-  if (this.track.map.length < 2) return;
-  // update layer 123
-  await this.removeLayer('123')
-  await this.addLayer('123')
+  if (l < 2) return;
+  // compute layer number
+  var layer = 124 + Math.floor((l - 1) / 50)
+  // update layer
+  const layerString = layer.toString() 
+  try {await this.removeLayer(layerString)}
+  catch {}
+  await this.addLayer(layerString)
+  if (this.currentMarker) this.currentMarker.remove();        
+  this.currentMarker = new tt.Marker({color:'#0000ff'}).setLngLat([this.track.map[l - 1][0], this.track.map[l - 1][1]]).addTo(this.map);
 }
 
 
 async addLayer(id: string) {
   var num = this.track.data.length;
+  // build slice
+  var idNum: number = +id - 124;
+  var start = Math.max(0, idNum * 50 - 1);
+  const slice = this.track.map.slice(start, num)
   // add layer
   await this.map.addLayer({
     'id': id,
@@ -434,7 +445,7 @@ async addLayer(id: string) {
             'geometry': {
               'type': 'LineString',
               'properties': {},
-              'coordinates': this.track.map
+              'coordinates': slice
              }
           }
         ]
@@ -449,9 +460,11 @@ async addLayer(id: string) {
       'line-width': 4
     }
   }); 
-  if (num == 2) this.greenMarker = new tt.Marker().setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-  const p: number[] = this.track.map[num -1];
-  this.map.setCenter({ lng: p[0], lat: p[1]});
+  if (num == 2) this.initialMarker = new tt.Marker({color:'#00aa00'}).setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+  if (num % 50 === 0) {
+    const p: number[] = this.track.map[num -1];
+    this.map.setCenter({ lng: p[0], lat: p[1]});
+  }
 }
 
 

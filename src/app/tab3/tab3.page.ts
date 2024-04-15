@@ -40,8 +40,8 @@ export class Tab3Page {
   currentTime: any = '00:00:00';
   currentNumber: number = 0;
   map: any;
-  greenMarker: any = undefined;
-  redMarker: any = undefined;
+  initialMarker: any = undefined;
+  finalMarker: any = undefined;
 
 
   constructor(
@@ -78,9 +78,9 @@ export class Tab3Page {
     // create canvas
     await this.createAllCanvas();
     try {
-      this.removeLayer('124');
-      if (this.greenMarker) this.greenMarker.remove();
-      if (this.redMarker) this.redMarker.remove();    
+      this.removeLayer('123');
+      if (this.initialMarker) this.initialMarker.remove();
+      if (this.finalMarker) this.finalMarker.remove();    
     }
     catch {}
     // display track on map
@@ -190,42 +190,6 @@ async createCanvas(canvas: any) {
     ctx.setLineDash([]);
   }
   
-  /*
-  async gridMap(xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number) {
-    if (!this.ctxMap) return;
-    const dx = xMax - xMin;
-    const dy = yMax - yMin;
-    const dxy = Math.max(dx, dy); 
-    const grid = this.fs.gridValue(dxy);
-    if (dx >= dy) {
-      yMin = yMin - (dx-dy)/2;
-      yMax = yMax + (dx-dy)/2;
-    }
-    else {
-      xMin = xMin - (dy-dx)/2;
-      xMax = xMax + (dy-dx)/2;
-    }
-    const fx = Math.ceil(xMin / grid);
-    const fy = Math.ceil(yMin / grid);
-    this.ctxMap.setLineDash([5, 15]);
-    this.ctxMap.strokeStyle = 'green';  
-    this.gridsize = grid.toLocaleString();
-    for (var xi = fx * grid; xi <= xMax; xi = xi + grid) {
-      this.ctxMap.beginPath();
-      this.ctxMap.moveTo(xi*a+e, yMin*d+f);
-      this.ctxMap.lineTo(xi*a+e, yMax*d+f);
-      this.ctxMap.stroke();
-    }
-    for (var yi = fy * grid; yi <= yMax; yi = yi + grid) {
-      this.ctxMap.beginPath();
-      this.ctxMap.moveTo(xMin*a+e, yi*d+f);
-      this.ctxMap.lineTo(xMax*a+e, yi*d+f);
-      this.ctxMap.stroke();
-    }
-    this.ctxMap.strokeStyle = 'black';
-    this.ctxMap.setLineDash([]);
-  }
-  */
   
   async selectTrack() {
     // create alert control
@@ -261,9 +225,9 @@ async createCanvas(canvas: any) {
     if (!this.map) return;
     // no points enough
     if (this.track.data.length < 2) return;
-    // create layer 124
-    await this.removeLayer('124')
-    await this.addLayer('124')
+    // create layer 123
+    await this.removeLayer('123')
+    await this.addLayer('123')
     }
 
   async addLayer(id: string) {
@@ -297,8 +261,8 @@ async createCanvas(canvas: any) {
       }
     }); 
     var num: number = this.track.data.length;
-    this.greenMarker = new tt.Marker().setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-    this.redMarker = new tt.Marker().setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    this.initialMarker = new tt.Marker({color: '#00aa00'}).setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+    this.finalMarker = new tt.Marker({color: '#ff0000'}).setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
     this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
   }
   

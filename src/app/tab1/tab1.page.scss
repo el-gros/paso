@@ -40,7 +40,11 @@ ion-icon {
   width: 380px;
   }
 
-#marker {
-  width: 20px;
+
+  .initialMarker {
+  width: 70px;
   height: 30px;
+  color: #00cc00;
+  background-color: #00cc00;
 }  
+
