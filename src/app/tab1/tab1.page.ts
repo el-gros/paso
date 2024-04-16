@@ -77,7 +77,12 @@ export class Tab1Page   {
       center: [2, 41.5],
       zoom: 5,
     });
+    this.map.addControl(new tt.NavigationControl({
+      showZoom: true, // Show zoom buttons
+      showCompass: true, // Hide compass
+    }));
   }  
+
 
   // 3.3. IONVIEWDIDENTER
   
@@ -291,7 +296,8 @@ export class Tab1Page   {
   async stopTracking() {
     // red marker
     const num: number = this.track.data.length
-    if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000'}).setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
+      setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
     // remove watcher
     try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
     catch {}
@@ -421,7 +427,8 @@ async trackOnMap() {
   catch {}
   await this.addLayer(layerString)
   if (this.currentMarker) this.currentMarker.remove();        
-  this.currentMarker = new tt.Marker({color:'#0000ff'}).setLngLat([this.track.map[l - 1][0], this.track.map[l - 1][1]]).addTo(this.map);
+  this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
+    setLngLat([this.track.map[l - 1][0], this.track.map[l - 1][1]]).addTo(this.map);
 }
 
 
@@ -460,7 +467,8 @@ async addLayer(id: string) {
       'line-width': 4
     }
   }); 
-  if (num == 2) this.initialMarker = new tt.Marker({color:'#00aa00'}).setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+  if (num == 2) this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
+    setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
   if (num % 50 === 0) {
     const p: number[] = this.track.map[num -1];
     this.map.setCenter({ lng: p[0], lat: p[1]});

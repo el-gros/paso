@@ -218,6 +218,10 @@ async createCanvas(canvas: any) {
       center: [2, 41.5],
       zoom: 5,
     });
+    this.map.addControl(new tt.NavigationControl({
+      showZoom: true, // Show zoom buttons
+      showCompass: true, // Hide compass
+    }));
   }  
 
   async displayTrackOnMap() {
@@ -261,8 +265,10 @@ async createCanvas(canvas: any) {
       }
     }); 
     var num: number = this.track.data.length;
-    this.initialMarker = new tt.Marker({color: '#00aa00'}).setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-    this.finalMarker = new tt.Marker({color: '#ff0000'}).setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    this.initialMarker = new tt.Marker({color: '#00aa00', width: '25px', height: '25px'}).
+      setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+    this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
+      setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
     this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
   }
   

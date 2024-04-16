@@ -36,15 +36,28 @@ ion-icon {
 
 
 #map {
-  height: 380px;
-  width: 380px;
-  }
+  height: 500px;
+  width: 350px;
+}
 
+/* Custom styles for the zoom control 
+div.tt-zoom-control {
+  background-color: transparent;
+}
 
-  .initialMarker {
-  width: 70px;
-  height: 30px;
-  color: #00cc00;
-  background-color: #00cc00;
-}  
+button.tt-zoom-in {
+  background-color: #fff;
+  border-radius: 5px;
+}
 
+button.tt-zoom-out {
+  background-color: #fff;
+  border-radius: 5px;
+}
+
+button.tt-zoom-in:hover,
+button.tt-zoom-out:hover {
+  background-color: #f0f0f0;
+}
+
+*/
