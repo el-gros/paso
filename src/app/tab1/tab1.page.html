@@ -28,9 +28,7 @@
     </ion-row>  
   </ion-grid>  
 
-  <ion-card class="yellow-card">
-    <ion-card-header>
-      <ion-card-title>
+      <div class ="card">
         Distance: {{currentDistance | number:'1.3' }} km
         <br>
         Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
@@ -40,26 +38,16 @@
         Time: {{ currentTime }}
         <br>
         {{currentNumber}} points recorded
-      </ion-card-title>
-    </ion-card-header>
-  </ion-card>
-
-  <ion-card class="yellow-card">
-    <ion-card-header>
-      <ion-card-title>
+        <br>
+        <br>
         Current elevation: <ng-container *ngIf="currentAltitude !== undefined">{{currentAltitude | number:'1.0-0' }} m</ng-container>
         <br>
         Current speed: <ng-container *ngIf="currentSpeed !== undefined">{{currentSpeed | number:'1.1-1' }} km/h</ng-container>
-      </ion-card-title>
-    </ion-card-header>
-  </ion-card>
+        <br>
+      </div>
 
   <div #map id="map"></div>
   <div id="canvasContainer" class="canvases" >
-<!--
-    <h1 class = 'title'>MAP. Grid size: {{gridsize}} km</h1>   
-    <canvas id="ncanvasMap" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
--->
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
     <canvas id="ncanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>

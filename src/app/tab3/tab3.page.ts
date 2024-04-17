@@ -218,10 +218,8 @@ async createCanvas(canvas: any) {
       center: [2, 41.5],
       zoom: 5,
     });
-    this.map.addControl(new tt.NavigationControl({
-      showZoom: true, // Show zoom buttons
-      showCompass: true, // Hide compass
-    }));
+    this.map.addControl(new tt.NavigationControl()); 
+    this.map.addControl(new tt.FullscreenControl());  
   }  
 
   async displayTrackOnMap() {

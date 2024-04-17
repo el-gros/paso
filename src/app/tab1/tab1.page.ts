@@ -11,7 +11,6 @@ import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
-//import { Marker } from '@tomtom-international/web-sdk-maps';
 
 // 2. @COMPONENT
 
@@ -77,11 +76,9 @@ export class Tab1Page   {
       center: [2, 41.5],
       zoom: 5,
     });
-    this.map.addControl(new tt.NavigationControl({
-      showZoom: true, // Show zoom buttons
-      showCompass: true, // Hide compass
-    }));
-  }  
+    this.map.addControl(new tt.NavigationControl()); 
+    this.map.addControl(new tt.FullscreenControl());  
+   }  
 
 
   // 3.3. IONVIEWDIDENTER
