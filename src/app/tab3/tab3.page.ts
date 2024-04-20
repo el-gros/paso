@@ -52,7 +52,6 @@ export class Tab3Page {
     private storage: Storage
   ) {}
 
-
   async ionViewDidEnter() {
     // retrieve tracks definition
     this.collection = await this.storage.get('collection'); 
@@ -75,8 +74,6 @@ export class Tab3Page {
     this.track = await this.storage.get(JSON.stringify(key));
     // global variables
     this.htmlVariables();
-    // create canvas
-    await this.createAllCanvas();
     try {
       this.removeLayer('123');
       if (this.initialMarker) this.initialMarker.remove();
@@ -106,7 +103,7 @@ async createAllCanvas() {
 
 async createCanvas(canvas: any) {
   var ctx = await canvas.getContext("2d");
-  ctx.fillStyle = "rgb(0, 255, 255)";
+  ctx.fillStyle = "#ddffff";
   ctx.fillRect(0, 0, this.canvasNum , this.canvasNum);
   return ctx;
 } 
@@ -186,7 +183,7 @@ async createCanvas(canvas: any) {
       ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
     }
     ctx.strokeStyle = 'black';
-    ctx.fillStyle = 'yellow'; 
+    //ctx.fillStyle = 'yellow'; 
     ctx.setLineDash([]);
   }
   
@@ -218,8 +215,11 @@ async createCanvas(canvas: any) {
       center: [2, 41.5],
       zoom: 5,
     });
+    // add controls 
     this.map.addControl(new tt.NavigationControl()); 
     this.map.addControl(new tt.FullscreenControl());  
+    // create canvas
+    await this.createAllCanvas();
   }  
 
   async displayTrackOnMap() {

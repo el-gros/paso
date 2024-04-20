@@ -2,7 +2,7 @@
  
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -10,7 +10,7 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
-import tt from '@tomtom-international/web-sdk-maps';
+import tt, { Style } from '@tomtom-international/web-sdk-maps';
 
 // 2. @COMPONENT
 
@@ -26,6 +26,9 @@ import tt from '@tomtom-international/web-sdk-maps';
 // 3. EXPORT PAGE 
 
 export class Tab1Page   {
+
+  @ViewChild('map', { static: true, read: ElementRef })
+  mapContainer!: ElementRef;
   
   // 3.1. VARIABLES  
   
@@ -76,32 +79,22 @@ export class Tab1Page   {
       center: [2, 41.5],
       zoom: 5,
     });
+    // add controls  
     this.map.addControl(new tt.NavigationControl()); 
     this.map.addControl(new tt.FullscreenControl());  
-   }  
-
-
-  // 3.3. IONVIEWDIDENTER
-  
-  async ionViewDidEnter() {
     // create canvas
     await this.createCanvas();
-    // update canvas
-    //await this.updateAllCanvas();
-    // display track on map
-    //await this.trackOnMap();
-    // detect changes 
-    this.cd.detectChanges();
-  }
+  }  
 
-  // 3.4. CREATE ALL CANVAS
+
+ // 3.4. CREATE ALL CANVAS
 
   async createCanvas() {
     var canvas: any
     for (var i in this.properties) {
       canvas = document.getElementById('ncanvas' + i) as HTMLCanvasElement;
       this.ctx[i] = await canvas.getContext("2d");
-      this.ctx[i].fillStyle = 'yellow' 
+      this.ctx[i].fillStyle = '#ffffdd' 
       this.ctx[i].fillRect(0, 0, this.canvasNum , this.canvasNum);
     }
   }  
@@ -212,6 +205,7 @@ export class Tab1Page   {
       if (previous.time > location.time) { await this.removePrevious(); }
       else break;
     }
+    num = this.track.data.length; 
     // if the new location is the first one in the trail 
     if (num == 0) {
       await this.firstLocation(location);
@@ -403,7 +397,7 @@ async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: numbe
     ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
   }
   ctx.strokeStyle = 'black';
-  ctx.fillStyle = 'yellow'; 
+  ctx.fillStyle = '#ffffdd'; 
   ctx.setLineDash([]);
 }
 
@@ -464,12 +458,17 @@ async addLayer(id: string) {
       'line-width': 4
     }
   }); 
-  if (num == 2) this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
-    setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-  if (num % 50 === 0) {
-    const p: number[] = this.track.map[num -1];
+  // initial marker and map center
+  if (num == 2) {
+    this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
+      setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
+    const p: number[] = this.track.map[1];
     this.map.setCenter({ lng: p[0], lat: p[1]});
   }
+  // map center and zoom
+  if (num === 10 || num === 50 || num % 100 === 0) {
+    this.setZoomLevel();
+  }  
 }
 
 
@@ -530,4 +529,32 @@ async addLayer(id: string) {
 
   } 
 
+  setZoomLevel() {
+    // Calculate bounding box
+    let minLat = Number.POSITIVE_INFINITY;
+    let maxLat = Number.NEGATIVE_INFINITY;
+    let minLng = Number.POSITIVE_INFINITY;
+    let maxLng = Number.NEGATIVE_INFINITY;
+    this.track.map.forEach(point => {
+      minLat = Math.min(minLat, point[1]);
+      maxLat = Math.max(maxLat, point[1]);
+      minLng = Math.min(minLng, point[0]);
+      maxLng = Math.max(maxLng, point[0]);
+    });
+    console.log('maxLng', maxLng)
+    // Calculate map viewport dimensions
+    const mapWidth = this.mapContainer.nativeElement.offsetWidth;
+    const mapHeight = this.mapContainer.nativeElement.offsetHeight;
+    // Calculate zoom level
+    const latDiff = (maxLat - minLat + 0.004) * 1.2;
+    const lngDiff = (maxLng - minLng + 0.004) * 1.2;
+    const latZoom = Math.floor(Math.log2(360 * (mapHeight / 256) / latDiff));
+    const lngZoom = Math.floor(Math.log2(360 * (mapWidth / 256) / lngDiff));
+    const zoom = Math.abs(Math.min(latZoom, lngZoom));
+    // Set the zoom level
+    this.map.setZoom(zoom);
+    // Set the center
+    this.map.setCenter({ lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+  }
+  
 }
