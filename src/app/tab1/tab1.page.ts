@@ -1,6 +1,6 @@
      // 1. IMPORTS
  
-import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
+import { Location, Bounds, Track, Corr, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
@@ -27,15 +27,13 @@ import tt, { Style } from '@tomtom-international/web-sdk-maps';
 
 export class Tab1Page   {
 
-  @ViewChild('map', { static: true, read: ElementRef })
-  mapContainer!: ElementRef;
-  
   // 3.1. VARIABLES  
   
   // global variables
   track: Track = global.track;
   tracking = global.tracking;
   watcherId = global.watcherId;
+  corr: Corr[] = global.corr;
 
   // local variables
   vMax: number = 400; 
@@ -58,7 +56,6 @@ export class Tab1Page   {
   finalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag = 8;
-  filtering: boolean = false;
 
   // 3.2. CONSTRUCTOR  
 
@@ -166,6 +163,7 @@ export class Tab1Page   {
     // in case of a new track, initialize variables
     this.track.data = []; 
     this.track.map = [];
+    this.corr = [];
     this.watcherId = 0;
     this.htmlVariables();
   } 
@@ -182,7 +180,7 @@ export class Tab1Page   {
     }, async (location: Location, error: Error) => {
       if (location) {
         await this.process(location);
-        await this.trackOnMap()
+        await this.trackOnMap();
         await this.updateAllCanvas();
         this.cd.detectChanges();
       }
@@ -245,7 +243,7 @@ export class Tab1Page   {
     this.track.map.push(
       [location.longitude, location.latitude]
     )
-    if (this.filtering && num > this.lag) await this.filter(num - this.lag -1)
+    if (num > this.lag) await this.filter(num - this.lag -1)
     // current values
     this.htmlVariables();
   }
@@ -270,6 +268,10 @@ export class Tab1Page   {
     this.track.map.push(
       [location.longitude, location.latitude]
     )
+    this.corr.push({
+      altitude: location.altitude,
+      speed: location.speed 
+    })
     this.htmlVariables();
   }
 
@@ -279,6 +281,7 @@ export class Tab1Page   {
   // we suppose the previous location is in the same subtrail
     this.track.data.pop();
     this.track.map.pop();
+    this.corr.pop();
     this.htmlVariables();
   }
 
@@ -296,8 +299,13 @@ export class Tab1Page   {
     this.tracking = false;
     this.watcherId = 0;
     // filter remaining values
-    if (!this.filtering) return;
-    for (var i = Math.max(num - this.lag, 0); i <= num - 1; i++) await this.filter(i);
+    for (var i = Math.max(num - this.lag, 0); i <= num - 1; i++) {
+      await this.filter(i)
+      console.log(i)
+    };
+    // update map and canvas
+    await this.setMapView();
+    await this.updateAllCanvas();
   }
 
 
@@ -462,13 +470,10 @@ async addLayer(id: string) {
   if (num == 2) {
     this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
       setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-    const p: number[] = this.track.map[1];
-    this.map.setCenter({ lng: p[0], lat: p[1]});
+    await this.setMapView();
   }
   // map center and zoom
-  if (num === 10 || num === 50 || num % 100 === 0) {
-    this.setZoomLevel();
-  }  
+  if (num === 10 || num === 50 || num % 100 === 0) await this.setMapView()
 }
 
 
@@ -485,11 +490,10 @@ async addLayer(id: string) {
 
   htmlVariables() {
     const num: number = this.track.data.length;
+    var k: number = Math.max(num - this.lag - 1, 0);
     if (num > 0) {
       this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);
       this.currentDistance = this.track.data[num - 1].distance;
-      this.currentElevationGain = this.track.data[num - 1].elevationGain;
-      this.currentElevationLoss = this.track.data[num - 1].elevationLoss;
       this.currentNumber = num;
       this.currentAltitude = this.track.data[num - 1].altitude;
       this.currentSpeed = this.track.data[num - 1].speed;     
@@ -507,29 +511,35 @@ async addLayer(id: string) {
 
   async filter(i: number) {
     var num: number = this.track.data.length;
-    if (num == 1) return;
-    const start = Math.max(0, i-5);
-    const end = Math.min(i+5, num - 1);
+    const start = Math.max(0, i-this.lag);
+    const end = Math.min(i+this.lag, num - 1);
+    // average altitude
     var sum: number = 0
     for (var j= start; j<=end;j++) sum = sum + this.track.data[j].altitude;
-    this.track.data[j].altitude = sum/(end - start +1);  
-    var slope = this.track.data[j].altitude - this.track.data[j-1].altitude;
+    //CCthis.track.data[i].altitude = sum/(end - start +1);  
+    this.corr.push({
+      altitude: sum/(end - start +1),
+      speed: 0  
+    });
+    console.log(sum/(end - start +1))
+    // re-calculate elevation gains / losses
+    if (i==0) return;
+    //CCvar slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
+    var slope = this.corr[i].altitude - this.corr[i-1].altitude;
     if (slope > 0) {
-      this.track.data[j].elevationGain = this.track.data[j-1].elevationGain + slope; 
-      this.track.data[j].elevationLoss = this.track.data[j-1].elevationLoss
+      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain + slope; 
+      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss
     }
     else {
-      this.track.data[j].elevationGain = this.track.data[j-1].elevationGain; 
-      this.track.data[j].elevationLoss = this.track.data[j-1].elevationLoss - slope
+      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain; 
+      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss - slope
     }
-    for (var k=j+1; k<num; k++) {
-      this.track.data[k].elevationGain = this.track.data[k-1].elevationGain; 
-      this.track.data[k].elevationLoss = this.track.data[k-1].elevationLoss;
-    }
-
+    this.currentElevationGain = this.track.data[i].elevationGain;
+    this.currentElevationLoss = this.track.data[i].elevationLoss;
+    console.log(i, this.currentElevationGain, this.currentElevationLoss)
   } 
 
-  setZoomLevel() {
+  async setMapView() {
     // Calculate bounding box
     let minLat = Number.POSITIVE_INFINITY;
     let maxLat = Number.NEGATIVE_INFINITY;
@@ -541,20 +551,12 @@ async addLayer(id: string) {
       minLng = Math.min(minLng, point[0]);
       maxLng = Math.max(maxLng, point[0]);
     });
-    console.log('maxLng', maxLng)
-    // Calculate map viewport dimensions
-    const mapWidth = this.mapContainer.nativeElement.offsetWidth;
-    const mapHeight = this.mapContainer.nativeElement.offsetHeight;
-    // Calculate zoom level
-    const latDiff = (maxLat - minLat + 0.004) * 1.2;
-    const lngDiff = (maxLng - minLng + 0.004) * 1.2;
-    const latZoom = Math.floor(Math.log2(360 * (mapHeight / 256) / latDiff));
-    const lngZoom = Math.floor(Math.log2(360 * (mapWidth / 256) / lngDiff));
-    const zoom = Math.abs(Math.min(latZoom, lngZoom));
-    // Set the zoom level
-    this.map.setZoom(zoom);
-    // Set the center
-    this.map.setCenter({ lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+    // map view
+    await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
+
   
 }
+
+

@@ -1,6 +1,6 @@
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -10,6 +10,7 @@ const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
+import { Style } from '@capacitor/status-bar';
 
 @Component({
   selector: 'app-tab3',
@@ -20,11 +21,12 @@ import tt from '@tomtom-international/web-sdk-maps';
   providers: [DecimalPipe, DatePipe]
 })
 export class Tab3Page {
+
   track = global.track;
   collection: TrackDefinition[] = [];
   // local variables
   ctxMap: CanvasRenderingContext2D | undefined;
-  ctx: (CanvasRenderingContext2D | undefined)[] = [undefined, undefined, undefined]; 
+  ctx: CanvasRenderingContext2D[] = [];
   canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
@@ -80,8 +82,12 @@ export class Tab3Page {
       if (this.finalMarker) this.finalMarker.remove();    
     }
     catch {}
+    // create canvas
+    await this.createCanvas();
     // display track on map
     await this.displayTrackOnMap();
+    // adapt view
+    await this.setMapView();
     // update canvas
     await this.updateAllCanvas(true);
     // detect changes 
@@ -89,24 +95,20 @@ export class Tab3Page {
   }
 
 
-// 3.4. CREATE ALL CANVAS
 
-async createAllCanvas() {
+ // 3.4. CREATE ALL CANVAS
+
+ async createCanvas() {
   var canvas: any
   for (var i in this.properties) {
     canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
-    this.ctx[i] = await this.createCanvas(canvas)
+    this.ctx[i] = await canvas.getContext("2d");
+    this.ctx[i].fillStyle = '#ddffff' 
+    this.ctx[i].fillRect(0, 0, this.canvasNum , this.canvasNum);
   }
 }  
 
-// 3.5. CREATE CANVAS
 
-async createCanvas(canvas: any) {
-  var ctx = await canvas.getContext("2d");
-  ctx.fillStyle = "#ddffff";
-  ctx.fillRect(0, 0, this.canvasNum , this.canvasNum);
-  return ctx;
-} 
 
   // 3.6. UPDATE ALL CANVAS
 
@@ -183,7 +185,6 @@ async createCanvas(canvas: any) {
       ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
     }
     ctx.strokeStyle = 'black';
-    //ctx.fillStyle = 'yellow'; 
     ctx.setLineDash([]);
   }
   
@@ -215,11 +216,12 @@ async createCanvas(canvas: any) {
       center: [2, 41.5],
       zoom: 5,
     });
+    console.log(this.map)
     // add controls 
     this.map.addControl(new tt.NavigationControl()); 
     this.map.addControl(new tt.FullscreenControl());  
     // create canvas
-    await this.createAllCanvas();
+    await this.createCanvas();
   }  
 
   async displayTrackOnMap() {
@@ -267,7 +269,7 @@ async createCanvas(canvas: any) {
       setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
     this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
       setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
-    this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
+    //this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
   }
   
 
@@ -302,6 +304,23 @@ async createCanvas(canvas: any) {
       this.currentAltitude = 0;
       this.currentSpeed = 0;
     }
+  }
+
+  async setMapView() {
+    // Calculate bounding box
+    let minLat = Number.POSITIVE_INFINITY;
+    let maxLat = Number.NEGATIVE_INFINITY;
+    let minLng = Number.POSITIVE_INFINITY;
+    let maxLng = Number.NEGATIVE_INFINITY;
+    this.track.map.forEach(point => {
+      minLat = Math.min(minLat, point[1]);
+      maxLat = Math.max(maxLat, point[1]);
+      minLng = Math.min(minLng, point[0]);
+      maxLng = Math.max(maxLng, point[0]);
+    });
+    // map view
+    await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
 

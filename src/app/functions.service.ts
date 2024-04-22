@@ -1,4 +1,4 @@
-import { Location, Data, Bounds, Track, TrackDefinition } from 'src/globald';
+import { Data, Bounds } from 'src/globald';
 import { Injectable } from '@angular/core';
 
 @Injectable({

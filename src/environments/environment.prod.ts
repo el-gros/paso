@@ -1,4 +1,4 @@
-import { Location, Track, TrackDefinition } from '../globald';
+import { Location, Track, TrackDefinition, Corr } from '../globald';
 
 export var global = {
   
@@ -10,6 +10,8 @@ export var global = {
     date: new Date(),
     description: '', 
   } as Track,
+
+  corr: [] as Corr[],
 
   tracking: false as boolean,
   watcherId: 0 as number,

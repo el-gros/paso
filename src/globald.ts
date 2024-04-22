@@ -40,6 +40,11 @@ export interface Location {
     map: number[][],
   }
 
+  export interface Corr {
+    altitude: number,
+    speed: number
+  }
+
   export interface TrackDefinition {
     name: string,
     date: Date,
