@@ -268,10 +268,6 @@ export class Tab1Page   {
     this.track.map.push(
       [location.longitude, location.latitude]
     )
-    this.corr.push({
-      altitude: location.altitude,
-      speed: location.speed 
-    })
     this.htmlVariables();
   }
 
@@ -301,7 +297,6 @@ export class Tab1Page   {
     // filter remaining values
     for (var i = Math.max(num - this.lag, 0); i <= num - 1; i++) {
       await this.filter(i)
-      console.log(i)
     };
     // update map and canvas
     await this.setMapView();
@@ -521,7 +516,6 @@ async addLayer(id: string) {
       altitude: sum/(end - start +1),
       speed: 0  
     });
-    console.log(sum/(end - start +1))
     // re-calculate elevation gains / losses
     if (i==0) return;
     //CCvar slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
