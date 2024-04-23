@@ -10,7 +10,6 @@ const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
-import { Style } from '@capacitor/status-bar';
 
 @Component({
   selector: 'app-tab3',
@@ -32,7 +31,7 @@ export class Tab3Page {
   threshold: number = 20;
   lag = 12;
   output: any; 
-  properties: (keyof Data)[] = ['altitude', 'speed'];
+  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   gridsize: string = '-';
   currentAltitude: number | undefined;
   currentSpeed: number | undefined;
@@ -75,16 +74,15 @@ export class Tab3Page {
     // retrieve track
     this.track = await this.storage.get(JSON.stringify(key));
     // global variables
-    this.htmlVariables();
+    await this.htmlVariables();
     try {
       this.removeLayer('123');
       if (this.initialMarker) this.initialMarker.remove();
       if (this.finalMarker) this.finalMarker.remove();    
     }
     catch {}
-    // create canvas
-    await this.createCanvas();
     // display track on map
+    console.log(this.track);
     await this.displayTrackOnMap();
     // adapt view
     await this.setMapView();
@@ -131,6 +129,7 @@ export class Tab3Page {
     else xTot = this.track.data[num - 1].accTime
     if (propertyName == 'simulated') return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#ddffff' 
     ctx.fillRect(0, 0, this.canvasNum, this.canvasNum);
     // compute bounds
     const bounds: Bounds = await this.fs.computeMinMaxProperty(this.track.data, propertyName);
@@ -215,6 +214,12 @@ export class Tab3Page {
       container: "map2",
       center: [2, 41.5],
       zoom: 5,
+      style: {
+        map: '2/basic_street-light', // '2/basic_street-satellite'
+        poi: '2/poi_light',
+        trafficIncidents: '2/incidents_light',
+        trafficFlow: '2/flow_relative-light'
+      }
     });
     console.log(this.map)
     // add controls 
@@ -284,7 +289,7 @@ export class Tab3Page {
     } 
   }  
 
-  htmlVariables() {
+  async htmlVariables() {
     const num: number = this.track.data.length;
     if (num > 0) {
       this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);

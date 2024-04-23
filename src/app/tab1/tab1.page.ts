@@ -41,7 +41,7 @@ export class Tab1Page   {
   canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
-  properties: (keyof Data)[] = ['altitude', 'speed'];
+  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   gridsize: string = '-';
   currentAltitude: number = 0;
   currentSpeed: number = 0;
@@ -55,7 +55,8 @@ export class Tab1Page   {
   initialMarker: any | undefined = undefined;
   finalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
-  lag = 8;
+  lag: number = 8;
+  filtered: number = -1;
 
   // 3.2. CONSTRUCTOR  
 
@@ -217,15 +218,7 @@ export class Tab1Page   {
     if (compSpeed > this.vMax) return;
     distance = lastData.distance + distance;
     time = lastData.accTime + time;
-    var slope = location.altitude - lastData.altitude;
-    if (slope > 0) {
-      var elevationGain = lastData.elevationGain + slope; 
-      var elevationLoss = lastData.elevationLoss;   
-    }
-    else {
-      var elevationLoss = lastData.elevationLoss - slope; 
-      var elevationGain = lastData.elevationGain; 
-    }
+    // add location  
     this.track.data.push({
       accuracy: location.accuracy,
       altitude: location.altitude,
@@ -236,14 +229,17 @@ export class Tab1Page   {
       time: location.time,
       compSpeed: compSpeed,
       distance: distance,
-      elevationGain: elevationGain,
-      elevationLoss: elevationLoss,
+      elevationGain: lastData.elevationGain,
+      elevationLoss: lastData.elevationLoss,
       accTime: time,
     })
-    this.track.map.push(
-      [location.longitude, location.latitude]
-    )
-    if (num > this.lag) await this.filter(num - this.lag -1)
+    this.track.map.push([location.longitude, location.latitude]);
+    // filter
+    num = this.track.data.length; 
+    if (num > this.lag) await this.filter(num - this.lag -1);
+    this.filtered = num - this.lag -1;
+    // filter speed
+    this.filterSpeed()
     // current values
     this.htmlVariables();
   }
@@ -277,7 +273,7 @@ export class Tab1Page   {
   // we suppose the previous location is in the same subtrail
     this.track.data.pop();
     this.track.map.pop();
-    this.corr.pop();
+    //this.corr.pop();
     this.htmlVariables();
   }
 
@@ -295,7 +291,7 @@ export class Tab1Page   {
     this.tracking = false;
     this.watcherId = 0;
     // filter remaining values
-    for (var i = Math.max(num - this.lag, 0); i <= num - 1; i++) {
+    for (var i = this.filtered + 1; i < num; i++) {
       await this.filter(i)
     };
     // update map and canvas
@@ -367,11 +363,6 @@ async saveFile(name: string, place: string, description: string) {
   this.collection.push(trackDef);
   await this.storage.set('collection', this.collection)
 }
-
-
-
-
-
 
 async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number, xParam: string) {
   if (!ctx) return;
@@ -491,7 +482,7 @@ async addLayer(id: string) {
       this.currentDistance = this.track.data[num - 1].distance;
       this.currentNumber = num;
       this.currentAltitude = this.track.data[num - 1].altitude;
-      this.currentSpeed = this.track.data[num - 1].speed;     
+      this.currentSpeed = this.track.data[num - 1].compSpeed;     
     }
     else {
       this.currentTime = "00:00:00";
@@ -511,26 +502,20 @@ async addLayer(id: string) {
     // average altitude
     var sum: number = 0
     for (var j= start; j<=end;j++) sum = sum + this.track.data[j].altitude;
-    //CCthis.track.data[i].altitude = sum/(end - start +1);  
-    this.corr.push({
-      altitude: sum/(end - start +1),
-      speed: 0  
-    });
+    this.track.data[i].altitude = sum/(end - start +1);
     // re-calculate elevation gains / losses
     if (i==0) return;
-    //CCvar slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
-    var slope = this.corr[i].altitude - this.corr[i-1].altitude;
+    var slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
     if (slope > 0) {
-      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain + slope; 
-      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss
+      this.track.data[i].elevationGain = this.currentElevationGain + slope; 
+      this.currentElevationGain = this.track.data[i].elevationGain;
+      this.track.data[i].elevationLoss = this.currentElevationLoss
     }
     else {
-      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain; 
-      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss - slope
+      this.track.data[i].elevationGain = this.currentElevationGain; 
+      this.track.data[i].elevationLoss = this.currentElevationLoss - slope
+      this.currentElevationLoss = this.track.data[i].elevationLoss;
     }
-    this.currentElevationGain = this.track.data[i].elevationGain;
-    this.currentElevationLoss = this.track.data[i].elevationLoss;
-    console.log(i, this.currentElevationGain, this.currentElevationLoss)
   } 
 
   async setMapView() {
@@ -550,6 +535,13 @@ async addLayer(id: string) {
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
+  async filterSpeed() {
+    var num: number = this.track.data.length;
+    var start: number = Math.max(num - this.lag - 1, 0);
+    var distance: number = this.track.data[num-1].distance - this.track.data[start].distance;
+    var time: number = this.track.data[num-1].time - this.track.data[start].time;
+    this.track.data[num-1].compSpeed = 3600000 * distance / time;
+  }
   
 }
 
