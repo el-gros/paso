@@ -13,6 +13,7 @@
       <ion-label class = 'title'>Name, date and place</ion-label>
     </ion-list-header>
     <ion-item *ngFor ="let item of collection">
+      <!--
       <div  [ngClass]="(item.isChecked) ? 'checked' : 'unchecked'">
         <ion-label>
           {{item.name}}<br>
@@ -20,7 +21,14 @@
           {{item.place}}
         </ion-label>
       </div>
-      <ion-checkbox medium slot ="end" [(ngModel)] ="item.isChecked" (ionChange)="onChange()"></ion-checkbox>
+      -->
+      <ion-checkbox justify="space-between" [(ngModel)] ="item.isChecked" (ionChange)="onChange()">
+        <div  [ngClass]="(item.isChecked) ? 'checked' : 'unchecked'">
+        {{item.name}}<br>
+        {{item.date | date: 'dd-MM-yyyy HH:mm' }}<br>
+        {{item.place}}
+        </div>
+      </ion-checkbox>
     </ion-item>
   </ion-list>
   </div>
@@ -31,17 +39,17 @@
     <ion-row>
       <ion-col size ="4">
         <ion-button [ngClass]="(numChecked == 0) ? 'redDisabled' : 'redEnabled'" (click)="deleteTracks()" expand ="block" [disabled] = '(numChecked == 0)'>
-          <div><small>REMOVE<br>TRACKS</small></div>
+          <div>REMOVE<br>TRACKS</div>
         </ion-button>
       </ion-col>
       <ion-col size ="4">
         <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="editTrack()" expand ="block" [disabled] = '(numChecked != 1)'>
-          <div><small>EDIT<br>TRACK</small></div>
+          <div>EDIT<br>TRACK</div>
          </ion-button>
       </ion-col>
       <ion-col size ="4">
         <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="displayTrack()" expand ="block" [disabled] = '(numChecked != 1)'>
-          <div><small>DISPLAY<br>TRACK</small></div>
+          <div>DISPLAY<br>TRACK</div>
          </ion-button>
       </ion-col>
     </ion-row>

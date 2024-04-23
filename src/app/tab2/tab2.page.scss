@@ -20,8 +20,15 @@ ion-checkbox {
     --checkmark-color: rgb(0, 0, 0);
     zoom: 1.5;
 }
+div{
+    font-size: 10px !important;
+    font-family: 'Arial, sans-serif';
+}
 
-.redEnabled{
+
+
+
+  .redEnabled{
     --background: red;
     --color: white;
 }
