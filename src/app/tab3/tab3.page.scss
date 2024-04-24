@@ -25,6 +25,19 @@ ion-title{
     font-family: 'Arial, sans-serif';
     font-weight: bold
   }
+
+  ion-radio-group {
+    display: flex;
+    flex-direction: row;
+  }
+  
+ion-radio {
+  --color-checked: rgb(0, 255, 255) !important;
+}
+
+  ion-item {
+    flex: 1; /* Equal width for both items */
+  }
     
       #map2 {
         height: 500px;

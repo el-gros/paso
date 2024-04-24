@@ -7,7 +7,7 @@ export var global = {
     map: [],
     name: '',
     place: '',
-    date: new Date(),
+    date: new Date()  ,
     description: '', 
   } as Track,
 

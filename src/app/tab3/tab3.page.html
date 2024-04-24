@@ -26,6 +26,17 @@
     {{currentNumber}} points recorded
     <br>
   </div>
+
+  <ion-radio-group [(ngModel)]="mapStyle" (ionChange)="mapChange()" [allowEmptySelection]="false">
+    <ion-item>
+      <ion-radio  value="basic">Basic view</ion-radio><br />
+    </ion-item>
+    <ion-item>
+      <ion-radio  value="satellite">Satellite</ion-radio><br />
+    </ion-item>
+  </ion-radio-group>
+  
+
   <div #map2 id="map2"></div>
   <div id="canvasContainer" class="canvases" >
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>

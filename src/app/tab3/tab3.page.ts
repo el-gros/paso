@@ -5,23 +5,24 @@ import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import {registerPlugin} from "@capacitor/core";
-const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
+//import {registerPlugin} from "@capacitor/core";
+//const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
+import { FormsModule } from '@angular/forms'; // Import FormsModule
 
-@Component({
+@Component({      
   selector: 'app-tab3',
   templateUrl: 'tab3.page.html',
   styleUrls: ['tab3.page.scss'],
   standalone: true,
-  imports: [IonicModule, ExploreContainerComponent, CommonModule],
+  imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule], 
   providers: [DecimalPipe, DatePipe]
 })
 export class Tab3Page {
 
-  track = global.track;
+  track: Track = global.track;
   collection: TrackDefinition[] = [];
   // local variables
   ctxMap: CanvasRenderingContext2D | undefined;
@@ -43,7 +44,7 @@ export class Tab3Page {
   map: any;
   initialMarker: any = undefined;
   finalMarker: any = undefined;
-
+  mapStyle: string = 'basic' 
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -52,6 +53,10 @@ export class Tab3Page {
     private router: Router,
     private storage: Storage
   ) {}
+
+  async ionViewWillEnter() {
+    this.track = global.track;
+  }
 
   async ionViewDidEnter() {
     // retrieve tracks definition
@@ -69,7 +74,10 @@ export class Tab3Page {
     for (var i = 0; i < this.collection.length; i++) {
       if (this.collection[i].isChecked) {index = i; break;}
     }    
-    if (index == -1) await this.selectTrack();
+    if (index == -1) {
+      await this.selectTrack();
+      return;
+    }  
     const key = this.collection[index].date;
     // retrieve track
     this.track = await this.storage.get(JSON.stringify(key));
@@ -328,5 +336,15 @@ export class Tab3Page {
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
+  mapChange() {
+    var style: any = {
+      map: '2/basic_street-light',
+      poi: '2/poi_light',
+      trafficIncidents: '2/incidents_light',
+      trafficFlow: '2/flow_relative-light'
+    }
+    if (this.mapStyle == 'satellite') style.map = '2/basic_street-satellite'; 
+    this.map.setStyle(style);
+  }
 
 }
