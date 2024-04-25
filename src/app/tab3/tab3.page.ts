@@ -10,7 +10,8 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
-import { FormsModule } from '@angular/forms'; // Import FormsModule
+import { FormsModule } from '@angular/forms'
+import { geoJSON, geoJson } from 'leaflet';
 
 @Component({      
   selector: 'app-tab3',
@@ -81,14 +82,11 @@ export class Tab3Page {
     const key = this.collection[index].date;
     // retrieve track
     this.track = await this.storage.get(JSON.stringify(key));
-    // global variables
+    // write variables
     await this.htmlVariables();
-    try {
-      this.removeLayer('123');
-      if (this.initialMarker) this.initialMarker.remove();
-      if (this.finalMarker) this.finalMarker.remove();    
-    }
-    catch {}
+    // remove markers
+    if (this.initialMarker) this.initialMarker.remove();
+    if (this.finalMarker) this.finalMarker.remove();    
     // display track on map
     console.log(this.track);
     await this.displayTrackOnMap();
@@ -336,15 +334,18 @@ export class Tab3Page {
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
-  mapChange() {
+  async mapChange() {
     var style: any = {
       map: '2/basic_street-light',
       poi: '2/poi_light',
       trafficIncidents: '2/incidents_light',
-      trafficFlow: '2/flow_relative-light'
+      trafficFlow: '2/flow_relative-light',
     }
     if (this.mapStyle == 'satellite') style.map = '2/basic_street-satellite'; 
-    this.map.setStyle(style);
+    await this.map.setStyle(style)
+    await new Promise(f => setTimeout(f, 1000));
+    await this.removeLayer('123')
+    await this.addLayer('123')
   }
 
 }
