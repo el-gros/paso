@@ -242,10 +242,10 @@ export class Tab3Page {
     if (this.track.data.length < 2) return;
     // create layer 123
     await this.removeLayer('123')
-    await this.addLayer('123')
+    await this.addLayer('123', '#00aa00')
     }
 
-  async addLayer(id: string) {
+  async addLayer(id: string, color: string) {
     // add layer
     await this.map.addLayer({
       'id': id,
@@ -271,7 +271,7 @@ export class Tab3Page {
         'line-join': 'round'
       },
       'paint': {
-        'line-color': '#00aa00',
+        'line-color': color,
         'line-width': 4
       }
     }); 
@@ -335,17 +335,21 @@ export class Tab3Page {
   }
 
   async mapChange() {
+    await this.removeLayer('123')
     var style: any = {
       map: '2/basic_street-light',
       poi: '2/poi_light',
       trafficIncidents: '2/incidents_light',
       trafficFlow: '2/flow_relative-light',
     }
-    if (this.mapStyle == 'satellite') style.map = '2/basic_street-satellite'; 
+    var color = '#00aa00'
+    if (this.mapStyle == 'satellite') {
+      style.map = '2/basic_street-satellite'; 
+      color = '#ff0000'
+    }  
     await this.map.setStyle(style)
-    await new Promise(f => setTimeout(f, 1000));
-    await this.removeLayer('123')
-    await this.addLayer('123')
+    await new Promise(f => setTimeout(f, 500));
+    await this.addLayer('123', color)
   }
 
 }
