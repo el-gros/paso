@@ -504,7 +504,7 @@ async addFullLayer() {
 
 
   async removeLayer(id: string) {
-    id = 'enric' + id
+    id = 'elGros' + id
     var layers = this.map.getStyle().layers;
     for (var layer of layers) {
       if (layer.id === id) {
@@ -518,7 +518,7 @@ async addFullLayer() {
   async removeCustomLayers() {
     var layers = this.map.getStyle().layers;
     for (var layer of layers) {
-      if (layer.id.slice(0, 5) === 'emric') {
+      if (layer.id.slice(0, 6) === 'elGros') {
         await this.map.removeLayer(layer.id)
         await this.map.removeSource(layer.id)
       }

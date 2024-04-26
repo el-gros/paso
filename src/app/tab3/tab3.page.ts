@@ -83,9 +83,6 @@ export class Tab3Page {
     this.track = await this.storage.get(JSON.stringify(key));
     // write variables
     await this.htmlVariables();
-    // remove markers
-    if (this.initialMarker) await this.initialMarker.remove();
-    if (this.finalMarker) await this.finalMarker.remove();    
     // update canvas
     await this.updateAllCanvas(true);
     // display track on map
@@ -241,10 +238,13 @@ export class Tab3Page {
     if (this.track.data.length < 2) return;
     // create layer 123
     await this.removeLayer('123')
-    await this.addLayer('123', '#00aa00')
+    await this.addLayer('123')
     }
 
-  async addLayer(id: string, color: string) {
+  async addLayer(id: string) {
+    var color: string;
+    if (this.mapStyle == 'basic') color = '#00aa00'
+    else color = '#ff0000'
     // add layer
     await this.map.addLayer({
       'id': id,
@@ -279,11 +279,14 @@ export class Tab3Page {
       setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
     this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
       setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
-    //this.map.setCenter({ lng: this.track.map[num - 1][0], lat: this.track.map[num - 1][1] });
   }
   
 
   async removeLayer(id: string) {
+    // remove markers
+    if (this.initialMarker) await this.initialMarker.remove();
+    if (this.finalMarker) await this.finalMarker.remove();    
+    // remove layer and source
     var layers = this.map.getStyle().layers;
     for (var layer of layers) {
       if (layer.id === id) {
@@ -348,7 +351,7 @@ export class Tab3Page {
     }  
     await this.map.setStyle(style);
     await new Promise(f => setTimeout(f, 500));
-    await this.addLayer('123', color);
+    await this.addLayer('123');
   }
 
 }
