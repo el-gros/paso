@@ -37,6 +37,18 @@ ion-icon {
   color: black
 }  
 
+ion-radio-group {
+  display: flex;
+  flex-direction: row;
+}
+
+ion-radio {
+--color-checked: yellow !important;
+}
+
+ion-item {
+  flex: 1; /* Equal width for both items */
+}
 
 #map {
   height: 500px;

@@ -11,7 +11,6 @@ import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms'
-import { geoJSON, geoJson } from 'leaflet';
 
 @Component({      
   selector: 'app-tab3',
@@ -85,15 +84,15 @@ export class Tab3Page {
     // write variables
     await this.htmlVariables();
     // remove markers
-    if (this.initialMarker) this.initialMarker.remove();
-    if (this.finalMarker) this.finalMarker.remove();    
+    if (this.initialMarker) await this.initialMarker.remove();
+    if (this.finalMarker) await this.finalMarker.remove();    
+    // update canvas
+    await this.updateAllCanvas(true);
     // display track on map
-    console.log(this.track);
+    await new Promise(f => setTimeout(f, 500));
     await this.displayTrackOnMap();
     // adapt view
     await this.setMapView();
-    // update canvas
-    await this.updateAllCanvas(true);
     // detect changes 
     this.cd.detectChanges();
   }
@@ -347,9 +346,9 @@ export class Tab3Page {
       style.map = '2/basic_street-satellite'; 
       color = '#ff0000'
     }  
-    await this.map.setStyle(style)
+    await this.map.setStyle(style);
     await new Promise(f => setTimeout(f, 500));
-    await this.addLayer('123', color)
+    await this.addLayer('123', color);
   }
 
 }

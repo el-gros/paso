@@ -10,7 +10,8 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
-import tt, { Style } from '@tomtom-international/web-sdk-maps';
+import tt from '@tomtom-international/web-sdk-maps';
+import { FormsModule } from '@angular/forms'
 
 // 2. @COMPONENT
 
@@ -19,7 +20,7 @@ import tt, { Style } from '@tomtom-international/web-sdk-maps';
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss'],
   standalone: true,
-  imports: [IonicModule, ExploreContainerComponent, CommonModule],
+  imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule],
   providers: [DecimalPipe, DatePipe]
 })
 
@@ -57,6 +58,7 @@ export class Tab1Page   {
   currentMarker: any | undefined = undefined;
   lag: number = 8;
   filtered: number = -1;
+  mapStyle: string = 'basic' 
 
   // 3.2. CONSTRUCTOR  
 
@@ -148,14 +150,14 @@ export class Tab1Page   {
     // new track: initialize all variables and plots
     this.initialize();
     await this.createCanvas();
-    // start tracking
-    this.tracking = true;
-    await this.trackPosition();
-    // remove track layers if exist
+    // remove markers and track layers if exist
     if (this.initialMarker) this.initialMarker.remove();
     if (this.finalMarker) this.finalMarker.remove();
     if (this.currentMarker) this.currentMarker.remove();        
-    for (var i = 124; i < 999; i++) this.removeLayer(i.toString());
+    await this.removeCustomLayers();
+    // start tracking
+    this.tracking = true;
+    await this.trackPosition();
   }
 
   // 3.12. INITIALIZE VARIABLES FOR A NEW TRACK
@@ -408,8 +410,7 @@ async trackOnMap() {
   var layer = 124 + Math.floor((l - 1) / 50)
   // update layer
   const layerString = layer.toString() 
-  try {await this.removeLayer(layerString)}
-  catch {}
+  await this.removeLayer(layerString)
   await this.addLayer(layerString)
   if (this.currentMarker) this.currentMarker.remove();        
   this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
@@ -419,13 +420,16 @@ async trackOnMap() {
 
 async addLayer(id: string) {
   var num = this.track.data.length;
+  var color: string;
+  if (this.mapStyle == 'basic') color = '#00aa00'
+  else color = '#ff0000'
   // build slice
   var idNum: number = +id - 124;
   var start = Math.max(0, idNum * 50 - 1);
   const slice = this.track.map.slice(start, num)
   // add layer
   await this.map.addLayer({
-    'id': id,
+    'id': 'elGros' + id,
     'type': 'line',
     'source': {
       'type': 'geojson',
@@ -448,7 +452,7 @@ async addLayer(id: string) {
       'line-join': 'round'
     },
     'paint': {
-      'line-color': '#00aa00',
+      'line-color': color,
       'line-width': 4
     }
   }); 
@@ -462,8 +466,45 @@ async addLayer(id: string) {
   if (num === 10 || num === 50 || num % 100 === 0) await this.setMapView()
 }
 
+async addFullLayer() {
+  var color: string;
+  if (this.mapStyle == 'basic') color = '#00aa00'
+  else color = '#ff0000'
+  // add layer
+  await this.map.addLayer({
+    'id': 'elGros122',
+    'type': 'line',
+    'source': {
+      'type': 'geojson',
+      'data': {
+        'type': 'FeatureCollection',
+        'features': [
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'LineString',
+              'properties': {},
+              'coordinates': this.track.map
+             }
+          }
+        ]
+      }
+    },
+    'layout': {
+      'line-cap': 'round',
+      'line-join': 'round'
+    },
+    'paint': {
+      'line-color': color,
+      'line-width': 4
+    }
+  }); 
+}
+
+
 
   async removeLayer(id: string) {
+    id = 'enric' + id
     var layers = this.map.getStyle().layers;
     for (var layer of layers) {
       if (layer.id === id) {
@@ -473,6 +514,17 @@ async addLayer(id: string) {
       }
     } 
   }  
+
+  async removeCustomLayers() {
+    var layers = this.map.getStyle().layers;
+    for (var layer of layers) {
+      if (layer.id.slice(0, 5) === 'emric') {
+        await this.map.removeLayer(layer.id)
+        await this.map.removeSource(layer.id)
+      }
+    } 
+  }  
+
 
   htmlVariables() {
     const num: number = this.track.data.length;
@@ -542,7 +594,25 @@ async addLayer(id: string) {
     var time: number = this.track.data[num-1].time - this.track.data[start].time;
     this.track.data[num-1].compSpeed = 3600000 * distance / time;
   }
-  
+
+  async mapChange() {
+    await this.removeCustomLayers();
+    var style: any = {
+      map: '2/basic_street-light',
+      poi: '2/poi_light',
+      trafficIncidents: '2/incidents_light',
+      trafficFlow: '2/flow_relative-light',
+    }
+    var color = '#00aa00'
+    if (this.mapStyle == 'satellite') {
+      style.map = '2/basic_street-satellite'; 
+      color = '#ff0000'
+    }  
+    await this.map.setStyle(style)
+    await new Promise(f => setTimeout(f, 500));
+    await this.addFullLayer()
+  }
+
 }
 
 
