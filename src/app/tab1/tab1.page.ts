@@ -11,7 +11,11 @@ import {registerPlugin} from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
-import { FormsModule } from '@angular/forms'
+import { FormsModule } from '@angular/forms';
+import $ from "jquery";
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { register } from 'swiper/element/bundle';
+register();
 
 // 2. @COMPONENT
 
@@ -21,7 +25,8 @@ import { FormsModule } from '@angular/forms'
   styleUrls: ['tab1.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule],
-  providers: [DecimalPipe, DatePipe]
+  providers: [DecimalPipe, DatePipe],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 // 3. EXPORT PAGE 
@@ -58,7 +63,8 @@ export class Tab1Page   {
   currentMarker: any | undefined = undefined;
   lag: number = 8;
   filtered: number = -1;
-  mapStyle: string = 'basic' 
+  mapStyle: string = 'basic'; 
+  display: string = 'map'; 
 
   // 3.2. CONSTRUCTOR  
 
@@ -72,18 +78,32 @@ export class Tab1Page   {
   async ngOnInit() {
     // create storage 
     await this.storage.create();
+    // create canvas
+    await this.createCanvas();
     // plot map
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map",
       center: [2, 41.5],
-      zoom: 5,
+      zoom: 6,
     });
-    // add controls  
-    this.map.addControl(new tt.NavigationControl()); 
-    this.map.addControl(new tt.FullscreenControl());  
-    // create canvas
-    await this.createCanvas();
+    // add controls 
+    this.map.on('load',() =>{
+      this.map.addControl(new tt.NavigationControl()); 
+      this.map.addControl(new tt.FullscreenControl());  
+      this.map.addControl(new tt.ScaleControl());
+      this.map.addControl(new tt.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+        showUserLocation: false,
+      }));  
+    });
+    $('#card').hide();
+    $('#plots').hide();
+    $('#map').show();
+    $('#radioMap').show();
   }  
 
 
@@ -147,6 +167,10 @@ export class Tab1Page   {
   // 3.11 START TRACKING
   
   async startTracking() {
+    var element: HTMLElement | null = document.getElementById('map');
+    if (element) console.log('c',element.style.height)
+    else console.log('noelement')
+    console.log('m', this.map.height)
     // new track: initialize all variables and plots
     this.initialize();
     await this.createCanvas();
@@ -612,6 +636,20 @@ async addFullLayer() {
     await new Promise(f => setTimeout(f, 500));
     await this.addFullLayer()
   }
+
+  async displayChange() {
+    $('#card').hide();
+    $('#plots').hide();
+    $('#map').hide();    
+    $('#radioMap').hide();    
+    if (this.display == 'card') $('#card').show();
+    else if (this.display == 'map') {
+      $('#map').show(); 
+      $('#radioMap').show(); 
+    }        
+    else if (this.display == 'plots') $('#plots').show();
+  }
+
 
 }
 

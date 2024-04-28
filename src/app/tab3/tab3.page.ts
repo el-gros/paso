@@ -5,12 +5,14 @@ import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-//import {registerPlugin} from "@capacitor/core";
-//const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms'
+import $ from "jquery";
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { register } from 'swiper/element/bundle';
+register();
 
 @Component({      
   selector: 'app-tab3',
@@ -18,9 +20,11 @@ import { FormsModule } from '@angular/forms'
   styleUrls: ['tab3.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule], 
-  providers: [DecimalPipe, DatePipe]
+  providers: [DecimalPipe, DatePipe],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class Tab3Page {
+  [x: string]: any;
 
   track: Track = global.track;
   collection: TrackDefinition[] = [];
@@ -45,6 +49,8 @@ export class Tab3Page {
   initialMarker: any = undefined;
   finalMarker: any = undefined;
   mapStyle: string = 'basic' 
+  display2: string = 'map2'; 
+
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -210,25 +216,41 @@ export class Tab3Page {
   }
 
   async ngOnInit() {
+    // create canvas
+    await this.createCanvas();
     // plot map
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map2",
       center: [2, 41.5],
-      zoom: 5,
+      zoom: 6,
       style: {
         map: '2/basic_street-light', // '2/basic_street-satellite'
         poi: '2/poi_light',
         trafficIncidents: '2/incidents_light',
         trafficFlow: '2/flow_relative-light'
-      }
+      }      
     });
-    console.log(this.map)
+    // complete map
+    //var bounds: any = this.map.getBounds()  
+    //bounds._sw.lat = bounds._sw.lat - 5;
+    //this.map.fitBounds(bounds);
     // add controls 
-    this.map.addControl(new tt.NavigationControl()); 
-    this.map.addControl(new tt.FullscreenControl());  
-    // create canvas
-    await this.createCanvas();
+    this.map.on('load',() =>{
+      this.map.addControl(new tt.NavigationControl()); 
+      this.map.addControl(new tt.FullscreenControl());  
+      this.map.addControl(new tt.ScaleControl());
+      this.map.addControl(new tt.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,		
+      }));  
+    });
+    $('#card2').hide();
+    $('#plots2').hide();
+    $('#map2').show();
+    $('#radioMap2').show();
   }  
 
   async displayTrackOnMap() {
@@ -352,6 +374,19 @@ export class Tab3Page {
     await this.map.setStyle(style);
     await new Promise(f => setTimeout(f, 500));
     await this.addLayer('123');
+  }
+
+  async displayChange2() {
+    $('#card2').hide();
+    $('#plots2').hide();
+    $('#map2').hide();    
+    $('#radioMap2').hide();    
+    if (this.display2 == 'card2') $('#card2').show();
+    else if (this.display2 == 'map2') {
+      $('#map2').show(); 
+      $('#radioMap2').show(); 
+    }        
+    else if (this.display2 == 'plots2') $('#plots2').show();
   }
 
 }

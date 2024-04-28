@@ -8,21 +8,21 @@ ion-toolbar{
   --background: yellow !important;
 }
 
-.card {
-  margin-left: 20px;
-  font-size: 15px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold
+
+ion-row{
+  margin: 0px;
+  padding: 0px;
+}
+
+ion-grid{
+  margin: 0px;
+  padding: 0px;
 }
 
 .title {
   font-size: 15px;
   font-family: 'Arial, sans-serif';
   font-weight: bold
-}
-
-#canvasContainer {
-  text-align: center;
 }
 
 .disabled {
@@ -50,8 +50,18 @@ ion-item {
   flex: 1; /* Equal width for both items */
 }
 
-#map {
-  height: 500px;
-  width: 100%;
+#card {
+  margin-left: 20px;
+  font-size: 15px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold
 }
+  #map {
+    height: 75%;
+    width: 100%;
+  }
 
+  #plots {
+    text-align: center;
+  }
+  
