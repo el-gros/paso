@@ -1,12 +1,4 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Display a track
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content padding>
+<ion-content>
 
   <ion-radio-group [(ngModel)]="display2" (ionChange)="displayChange2()" [allowEmptySelection]="false">
     <ion-item>
@@ -41,27 +33,32 @@
     <br>
   </div>
 
-  <ion-radio-group id = "radioMap2" [(ngModel)]="mapStyle" (ionChange)="mapChange()" [allowEmptySelection]="false">
-    <ion-item>
-      <ion-radio  value="basic">Basic view</ion-radio><br />
-    </ion-item>
-    <ion-item>
-      <ion-radio  value="satellite">Satellite</ion-radio><br />
-    </ion-item>
-  </ion-radio-group>
-  
+    <!-- map -->
+    
+<ion-radio-group id = "radioMap2" [(ngModel)]="mapStyle" (ionChange)="mapChange()" [allowEmptySelection]="false">
+  <ion-item>
+    <ion-radio  value="basic">Basic view</ion-radio><br />
+  </ion-item>
+  <ion-item>
+    <ion-radio  value="satellite">Satellite</ion-radio><br />
+  </ion-item>
+</ion-radio-group>
+<div id="map2"></div>
 
-  <div id="map2"></div>
+<swiper-container id="plots2">
 
-  <swiper-container id="plots2">
-    <swiper-slide>
-      <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-      <canvas id="canvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </swiper-slide>  
-    <swiper-slide>
-      <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-      <canvas id="canvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </swiper-slide>  
-  </swiper-container>    
+  <!-- plots -->
+ 
+  <swiper-slide>
+    <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+    <canvas id="canvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+  </swiper-slide>  
+  <swiper-slide>
+    <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
+    <canvas id="canvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+  </swiper-slide>  
+</swiper-container>    
 
 </ion-content>
+
+

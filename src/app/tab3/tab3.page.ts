@@ -231,12 +231,8 @@ export class Tab3Page {
         trafficFlow: '2/flow_relative-light'
       }      
     });
-    // complete map
-    //var bounds: any = this.map.getBounds()  
-    //bounds._sw.lat = bounds._sw.lat - 5;
-    //this.map.fitBounds(bounds);
-    // add controls 
     this.map.on('load',() =>{
+      this.map.resize();
       this.map.addControl(new tt.NavigationControl()); 
       this.map.addControl(new tt.FullscreenControl());  
       this.map.addControl(new tt.ScaleControl());

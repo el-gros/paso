@@ -1,14 +1,13 @@
-ion-title{
-  font-size: 30px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold
+// header buttons
+.disabled {
+  --background: gray;
+}
+    
+.enabled {
+  --background: yellow;
 }
 
-ion-toolbar{
-  --background: yellow !important;
-}
-
-
+//header margins and padding
 ion-row{
   margin: 0px;
   padding: 0px;
@@ -25,18 +24,12 @@ ion-grid{
   font-weight: bold
 }
 
-.disabled {
-  --background: gray;
-}
-    
-.enabled {
-  --background: yellow;
-}
   
 ion-icon {
   color: black
 }  
 
+// ion-radio-group
 ion-radio-group {
   display: flex;
   flex-direction: row;
@@ -50,17 +43,21 @@ ion-item {
   flex: 1; /* Equal width for both items */
 }
 
+// data
 #card {
   margin-left: 20px;
   font-size: 15px;
   font-family: 'Arial, sans-serif';
   font-weight: bold
 }
-  #map {
-    height: 75%;
-    width: 100%;
+
+// map
+  #map{
+    width:100%;
+    height: 80%
   }
 
+// plots  
   #plots {
     text-align: center;
   }

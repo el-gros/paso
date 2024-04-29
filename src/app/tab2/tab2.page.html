@@ -1,17 +1,13 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Available tracks
-    </ion-title>
+    <ion-label id = "title" >Name, date and place</ion-label>
   </ion-toolbar>
 </ion-header>
 
-<ion-content padding>  
+  <ion-content padding>  
+
   <div class="ion-content-scroll-host">
   <ion-list>
-    <ion-list-header>
-      <ion-label class = 'title'>Name, date and place</ion-label>
-    </ion-list-header>
     <ion-item *ngFor ="let item of collection">
       <!--
       <div  [ngClass]="(item.isChecked) ? 'checked' : 'unchecked'">

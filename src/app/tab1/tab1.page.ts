@@ -81,6 +81,10 @@ export class Tab1Page   {
     // create canvas
     await this.createCanvas();
     // plot map
+    var bounds = [
+      [30, -2], // Southwest corner of the bounding box
+      [42, 3]  // Northeast corner of the bounding box
+    ];
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map",
@@ -89,6 +93,7 @@ export class Tab1Page   {
     });
     // add controls 
     this.map.on('load',() =>{
+      this.map.resize();
       this.map.addControl(new tt.NavigationControl()); 
       this.map.addControl(new tt.FullscreenControl());  
       this.map.addControl(new tt.ScaleControl());
@@ -105,7 +110,6 @@ export class Tab1Page   {
     $('#map').show();
     $('#radioMap').show();
   }  
-
 
  // 3.4. CREATE ALL CANVAS
 
