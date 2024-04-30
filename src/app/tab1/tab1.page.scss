@@ -7,7 +7,6 @@
   --background: yellow;
 }
 
-//header margins and padding
 ion-row{
   margin: 0px;
   padding: 0px;
@@ -18,13 +17,6 @@ ion-grid{
   padding: 0px;
 }
 
-.title {
-  font-size: 15px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold
-}
-
-  
 ion-icon {
   color: black
 }  
@@ -43,22 +35,28 @@ ion-item {
   flex: 1; /* Equal width for both items */
 }
 
-// data
-#card {
-  margin-left: 20px;
-  font-size: 15px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold
-}
-
 // map
   #map{
     width:100%;
-    height: 80%
+    height: 100%
   }
 
-// plots  
-  #plots {
+// data & plots  
+  #canvas {
     text-align: center;
+  }
+  
+  .title {
+    font-size: 15px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold;
+    text-align: center;
+  }
+
+  #card {
+    margin-left: 20px;
+    font-size: 15px;
+    font-family: 'Arial, sans-serif';
+    font-weight: bold
   }
   

@@ -49,7 +49,20 @@ export class Tab3Page {
   initialMarker: any = undefined;
   finalMarker: any = undefined;
   mapStyle: string = 'basic' 
-  display2: string = 'map2'; 
+  display: string = 'map'; 
+  styleBasic: any = {
+    map: '2/basic_street-light',
+    poi: '2/poi_light',
+    trafficIncidents: '2/incidents_light',
+    trafficFlow: '2/flow_relative-light',
+  }
+  styleSatellite: any = {
+    map: '2/basic_street-satellite', 
+    poi: '2/poi_light',
+    trafficIncidents: '2/incidents_light',
+    trafficFlow: '2/flow_relative-light',
+  }
+  style: any;
 
 
   constructor(
@@ -219,17 +232,13 @@ export class Tab3Page {
     // create canvas
     await this.createCanvas();
     // plot map
+    this.style = this.styleBasic;
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map2",
       center: [2, 41.5],
       zoom: 6,
-      style: {
-        map: '2/basic_street-light', // '2/basic_street-satellite'
-        poi: '2/poi_light',
-        trafficIncidents: '2/incidents_light',
-        trafficFlow: '2/flow_relative-light'
-      }      
+      style: this.style
     });
     this.map.on('load',() =>{
       this.map.resize();
@@ -243,10 +252,8 @@ export class Tab3Page {
         trackUserLocation: true,		
       }));  
     });
-    $('#card2').hide();
-    $('#plots2').hide();
+    $('#plots').hide();
     $('#map2').show();
-    $('#radioMap2').show();
   }  
 
   async displayTrackOnMap() {
@@ -261,7 +268,7 @@ export class Tab3Page {
 
   async addLayer(id: string) {
     var color: string;
-    if (this.mapStyle == 'basic') color = '#00aa00'
+    if (this.style == this.styleBasic) color = '#00aa00'
     else color = '#ff0000'
     // add layer
     await this.map.addLayer({
@@ -352,37 +359,28 @@ export class Tab3Page {
     // map view
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
+    await this.map.resize();
   }
 
   async mapChange() {
+    if (this.display == 'map' && this.style == this.styleBasic) return;
+    if (this.display == 'satellite' && this.style == this.styleSatellite) return;
     await this.removeLayer('123')
-    var style: any = {
-      map: '2/basic_street-light',
-      poi: '2/poi_light',
-      trafficIncidents: '2/incidents_light',
-      trafficFlow: '2/flow_relative-light',
-    }
-    var color = '#00aa00'
-    if (this.mapStyle == 'satellite') {
-      style.map = '2/basic_street-satellite'; 
-      color = '#ff0000'
-    }  
-    await this.map.setStyle(style);
+    if (this.display == 'map') this.style = this.styleBasic;
+    if (this.display == 'satellite') this.style = this.styleSatellite;
+    await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
-    await this.addLayer('123');
+    await this.addLayer('123')
   }
 
-  async displayChange2() {
-    $('#card2').hide();
-    $('#plots2').hide();
+  async displayChange() {
+    $('#plots').hide();
     $('#map2').hide();    
-    $('#radioMap2').hide();    
-    if (this.display2 == 'card2') $('#card2').show();
-    else if (this.display2 == 'map2') {
+    if (this.display == 'map' || this.display == 'satellite') {
       $('#map2').show(); 
-      $('#radioMap2').show(); 
+      this.mapChange()
     }        
-    else if (this.display2 == 'plots2') $('#plots2').show();
+    else if (this.display == 'plots') {$('#plots').show(); }  
   }
 
 }

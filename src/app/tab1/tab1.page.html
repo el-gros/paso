@@ -1,11 +1,4 @@
 <ion-header [translucent]="true">
-<!--
-  <ion-toolbar>
-    <ion-title>
-      Record a track 
-    </ion-title>
-  </ion-toolbar>
--->  
   <ion-grid>
     <ion-row>
       <ion-col size="2" offset="1">
@@ -26,60 +19,52 @@
     </ion-row>  
   </ion-grid>  
 
-</ion-header>
-
-<ion-content>
-
 <ion-radio-group [(ngModel)]="display" (ionChange)="displayChange()" [allowEmptySelection]="false">
-  <ion-item>
-    <ion-radio  value="card">Data</ion-radio><br />
-  </ion-item>
   <ion-item>
     <ion-radio  value="map">Map</ion-radio><br />
   </ion-item>
   <ion-item>
-    <ion-radio  value="plots">Plots</ion-radio><br />
+    <ion-radio  value="satellite">Sat</ion-radio><br />
+  </ion-item>
+  <ion-item>
+    <ion-radio  value="plots">Data</ion-radio><br />
   </ion-item>
 </ion-radio-group>
 
-<div id = "card">
-  <br>
-  Distance: {{currentDistance | number:'1.3' }} km
-  <br>
-  Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
-  <br>
-  Elevation loss: {{currentElevationLoss | number:'1.0-0' }} m
-  <br>
-  Time: {{ currentTime }}
-  <br>
-  {{currentNumber}} points recorded
-  <br>
-  <br>
-  Current elevation: <ng-container *ngIf="currentAltitude !== undefined">{{currentAltitude | number:'1.0-0' }} m</ng-container>
-  <br>
-  Current speed: <ng-container *ngIf="currentSpeed !== undefined">{{currentSpeed | number:'1.1-1' }} km/h</ng-container>
-  <br>
-</div>
-    
-<ion-radio-group id = "radioMap" [(ngModel)]="mapStyle" (ionChange)="mapChange()" [allowEmptySelection]="false">
-  <ion-item>
-    <ion-radio  value="basic">Basic view</ion-radio><br />
-  </ion-item>
-  <ion-item>
-    <ion-radio  value="satellite">Satellite</ion-radio><br />
-  </ion-item>
-</ion-radio-group>
+</ion-header>
+
+<ion-content>
 
 <div id="map"></div>
 
 <swiper-container id="plots">
   <swiper-slide>
+    <div id = "card">
+      <br>
+      Distance: {{currentDistance | number:'1.3' }} km
+      <br>
+      Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
+      <br>
+      Elevation loss: {{currentElevationLoss | number:'1.0-0' }} m
+      <br>
+      Time: {{ currentTime }}
+      <br>
+      {{currentNumber}} points recorded
+      <br>
+      <br>
+      Current elevation: <ng-container *ngIf="currentAltitude !== undefined">{{currentAltitude | number:'1.0-0' }} m</ng-container>
+      <br>
+      Current speed: <ng-container *ngIf="currentSpeed !== undefined">{{currentSpeed | number:'1.1-1' }} km/h</ng-container>
+      <br>
+    </div>
+  </swiper-slide>
+  <swiper-slide>
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-    <canvas id="ncanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="ncanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
   <swiper-slide>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <canvas id="ncanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="ncanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide> 
 </swiper-container>    
         

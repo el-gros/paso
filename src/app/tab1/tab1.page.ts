@@ -65,6 +65,19 @@ export class Tab1Page   {
   filtered: number = -1;
   mapStyle: string = 'basic'; 
   display: string = 'map'; 
+  styleBasic: any = {
+    map: '2/basic_street-light',
+    poi: '2/poi_light',
+    trafficIncidents: '2/incidents_light',
+    trafficFlow: '2/flow_relative-light',
+  }
+  styleSatellite: any = {
+    map: '2/basic_street-satellite', 
+    poi: '2/poi_light',
+    trafficIncidents: '2/incidents_light',
+    trafficFlow: '2/flow_relative-light',
+  }
+  style: any;
 
   // 3.2. CONSTRUCTOR  
 
@@ -85,11 +98,13 @@ export class Tab1Page   {
       [30, -2], // Southwest corner of the bounding box
       [42, 3]  // Northeast corner of the bounding box
     ];
+    this.style = this.styleBasic;
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map",
       center: [2, 41.5],
       zoom: 6,
+      style: this.style,
     });
     // add controls 
     this.map.on('load',() =>{
@@ -105,10 +120,8 @@ export class Tab1Page   {
         showUserLocation: false,
       }));  
     });
-    $('#card').hide();
     $('#plots').hide();
     $('#map').show();
-    $('#radioMap').show();
   }  
 
  // 3.4. CREATE ALL CANVAS
@@ -171,10 +184,6 @@ export class Tab1Page   {
   // 3.11 START TRACKING
   
   async startTracking() {
-    var element: HTMLElement | null = document.getElementById('map');
-    if (element) console.log('c',element.style.height)
-    else console.log('noelement')
-    console.log('m', this.map.height)
     // new track: initialize all variables and plots
     this.initialize();
     await this.createCanvas();
@@ -449,7 +458,7 @@ async trackOnMap() {
 async addLayer(id: string) {
   var num = this.track.data.length;
   var color: string;
-  if (this.mapStyle == 'basic') color = '#00aa00'
+  if (this.style == this.styleBasic) color = '#00aa00'
   else color = '#ff0000'
   // build slice
   var idNum: number = +id - 124;
@@ -613,6 +622,7 @@ async addFullLayer() {
     // map view
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
+    await this.map.resize();
   }
 
   async filterSpeed() {
@@ -624,34 +634,28 @@ async addFullLayer() {
   }
 
   async mapChange() {
+    if (this.display == 'map' && this.style == this.styleBasic) return;
+    if (this.display == 'satellite' && this.style == this.styleSatellite) return;
     await this.removeCustomLayers();
-    var style: any = {
-      map: '2/basic_street-light',
-      poi: '2/poi_light',
-      trafficIncidents: '2/incidents_light',
-      trafficFlow: '2/flow_relative-light',
-    }
-    var color = '#00aa00'
-    if (this.mapStyle == 'satellite') {
-      style.map = '2/basic_street-satellite'; 
+    var color = '#00aa00';
+    if (this.display == 'map') this.style = this.styleBasic;
+    if (this.display == 'satellite') {
+      this.style = this.styleSatellite;
       color = '#ff0000'
     }  
-    await this.map.setStyle(style)
+    await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
     await this.addFullLayer()
   }
 
   async displayChange() {
-    $('#card').hide();
     $('#plots').hide();
     $('#map').hide();    
-    $('#radioMap').hide();    
-    if (this.display == 'card') $('#card').show();
-    else if (this.display == 'map') {
+    if (this.display == 'map' || this.display == 'satellite') {
       $('#map').show(); 
-      $('#radioMap').show(); 
+      this.mapChange()
     }        
-    else if (this.display == 'plots') $('#plots').show();
+    else if (this.display == 'plots') {$('#plots').show(); }  
   }
 
 

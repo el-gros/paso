@@ -1,61 +1,62 @@
+<ion-header>
+
+<ion-radio-group [(ngModel)]="display" (ionChange)="displayChange()" [allowEmptySelection]="false">
+  <ion-item>
+    <ion-radio  value="map">Map</ion-radio><br />
+  </ion-item>
+  <ion-item>
+    <ion-radio  value="satellite">Sat</ion-radio><br />
+  </ion-item>
+  <ion-item>
+    <ion-radio  value="plots">Data</ion-radio><br />
+  </ion-item>
+</ion-radio-group>
+
+</ion-header>
+
 <ion-content>
 
-  <ion-radio-group [(ngModel)]="display2" (ionChange)="displayChange2()" [allowEmptySelection]="false">
-    <ion-item>
-      <ion-radio  value="card2">Data</ion-radio><br />
-    </ion-item>
-    <ion-item>
-      <ion-radio  value="map2">Map</ion-radio><br />
-    </ion-item>
-    <ion-item>
-      <ion-radio  value="plots2">Plots</ion-radio><br />
-    </ion-item>
-  </ion-radio-group>
-
-  <div id="card2">
-    <br>
-    {{track.name}}
-    <br>
-    {{track.date | date: 'dd-MM-yyyy HH:mm' }}
-    <br>
-    {{track.place}}
-    <br>
-    <br>
-    Distance: {{currentDistance | number:'1.3' }} km
-    <br>
-    Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
-    <br>
-    Elevation loss: {{currentElevationLoss | number:'1.0-0' }} m
-    <br>
-    Time: {{ currentTime }}
-    <br>
-    {{currentNumber}} points recorded
-    <br>
-  </div>
 
     <!-- map -->
     
-<ion-radio-group id = "radioMap2" [(ngModel)]="mapStyle" (ionChange)="mapChange()" [allowEmptySelection]="false">
-  <ion-item>
-    <ion-radio  value="basic">Basic view</ion-radio><br />
-  </ion-item>
-  <ion-item>
-    <ion-radio  value="satellite">Satellite</ion-radio><br />
-  </ion-item>
-</ion-radio-group>
 <div id="map2"></div>
 
-<swiper-container id="plots2">
+<swiper-container id="plots">
+
+  <swiper-slide>
+
+    <div id="card">
+      <br>
+      {{track.name}}
+      <br>
+      {{track.date | date: 'dd-MM-yyyy HH:mm' }}
+      <br>
+      {{track.place}}
+      <br>
+      <br>
+      Distance: {{currentDistance | number:'1.3' }} km
+      <br>
+      Elevation gain: {{currentElevationGain | number:'1.0-0' }} m
+      <br>
+      Elevation loss: {{currentElevationLoss | number:'1.0-0' }} m
+      <br>
+      Time: {{ currentTime }}
+      <br>
+      {{currentNumber}} points recorded
+      <br>
+    </div>
+  
+  </swiper-slide>
 
   <!-- plots -->
  
   <swiper-slide>
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-    <canvas id="canvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="canvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
   <swiper-slide>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <canvas id="canvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="canvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
 </swiper-container>    
 
