@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms'
-import $ from "jquery";
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
@@ -252,8 +251,8 @@ export class Tab3Page {
         trackUserLocation: true,		
       }));  
     });
-    $('#plots').hide();
-    $('#map2').show();
+    this.show('plots2', 'none');
+    this.show('map2', 'block')
   }  
 
   async displayTrackOnMap() {
@@ -374,13 +373,21 @@ export class Tab3Page {
   }
 
   async displayChange() {
-    $('#plots').hide();
-    $('#map2').hide();    
+    this.show('plots2', 'none');
+    this.show('map2', 'none');
     if (this.display == 'map' || this.display == 'satellite') {
-      $('#map2').show(); 
+      this.show('map2', 'block');
       this.mapChange()
     }        
-    else if (this.display == 'plots') {$('#plots').show(); }  
+    else if (this.display == 'plots') {
+      this.show('plots2', 'block');
+    }  
+  }
+
+  show (id: string, action: string) {
+    var obj: HTMLElement | null = document.getElementById(id);
+    if (!obj) return;
+    obj.style.display = action
   }
 
 }

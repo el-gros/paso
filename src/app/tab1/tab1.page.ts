@@ -12,7 +12,6 @@ const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms';
-import $ from "jquery";
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
@@ -120,8 +119,8 @@ export class Tab1Page   {
         showUserLocation: false,
       }));  
     });
-    $('#plots').hide();
-    $('#map').show();
+    this.show('plots', 'none');
+    this.show('map', 'block')
   }  
 
  // 3.4. CREATE ALL CANVAS
@@ -649,15 +648,22 @@ async addFullLayer() {
   }
 
   async displayChange() {
-    $('#plots').hide();
-    $('#map').hide();    
+    this.show('plots', 'none');
+    this.show('map', 'none')
     if (this.display == 'map' || this.display == 'satellite') {
-      $('#map').show(); 
+      this.show('map', 'block')
       this.mapChange()
     }        
-    else if (this.display == 'plots') {$('#plots').show(); }  
+    else if (this.display == 'plots') {
+      this.show('plots', 'block');  
+    }
   }
 
+  show (id: string, action: string) {
+    var obj: HTMLElement | null = document.getElementById(id);
+    if (!obj) return;
+    obj.style.display = action
+  }
 
 }
 
