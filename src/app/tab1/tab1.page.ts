@@ -85,7 +85,7 @@ export class Tab1Page   {
     public fs: FunctionsService,
     private alertController: AlertController,
     private storage: Storage,
-  ) { }
+  ) { }          
 
   async ngOnInit() {
     // create storage 
@@ -93,10 +93,6 @@ export class Tab1Page   {
     // create canvas
     await this.createCanvas();
     // plot map
-    var bounds = [
-      [30, -2], // Southwest corner of the bounding box
-      [42, 3]  // Northeast corner of the bounding box
-    ];
     this.style = this.styleBasic;
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
@@ -130,8 +126,9 @@ export class Tab1Page   {
     for (var i in this.properties) {
       canvas = document.getElementById('ncanvas' + i) as HTMLCanvasElement;
       this.ctx[i] = await canvas.getContext("2d");
-      this.ctx[i].fillStyle = '#ffffdd' 
-      this.ctx[i].fillRect(0, 0, this.canvasNum , this.canvasNum);
+      canvas.width = window.innerWidth;
+      canvas.height = canvas.width;
+      this.canvasNum = canvas.width;
     }
   }  
 
@@ -152,7 +149,7 @@ export class Tab1Page   {
     if (xParam == 'x') var xTot = this.track.data[num - 1].distance
     else xTot = this.track.data[num - 1].accTime
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillRect(0, 0, this.canvasNum, this.canvasNum);
+    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     // compute bounds
     const bounds: Bounds = await this.fs.computeMinMaxProperty(this.track.data, propertyName);
     if (bounds.max == bounds.min) {
@@ -165,17 +162,20 @@ export class Tab1Page   {
     const e = this.margin;
     const f = this.margin - bounds.max * d;
     // define lines
-    ctx.strokeStyle = 'black';
     ctx.setTransform(a, 0, 0, d, e, f)
+    //ctx.strokeStyle = 'yellow';
     ctx.beginPath();
-    ctx.moveTo(this.track.data[0].accTime, this.track.data[0][propertyName]);
+    ctx.moveTo(0, bounds.min);
     for (var i in this.track.data) {
       if (xParam == 'x') ctx.lineTo(this.track.data[i].distance, this.track.data[i][propertyName])
       else ctx.lineTo(this.track.data[i].accTime, this.track.data[i][propertyName])
-    }       
-    // stroke
+    }     
+    ctx.lineTo(xTot,bounds.min);
+    ctx.closePath();
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.stroke();
+    //ctx.stroke();
     // grid
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
   }
@@ -185,7 +185,6 @@ export class Tab1Page   {
   async startTracking() {
     // new track: initialize all variables and plots
     this.initialize();
-    await this.createCanvas();
     // remove markers and track layers if exist
     if (this.initialMarker) this.initialMarker.remove();
     if (this.finalMarker) this.finalMarker.remove();
@@ -410,8 +409,8 @@ async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: numbe
   const fx = Math.ceil(xMin / gridx);
   const fy = Math.ceil(yMin / gridy);
   ctx.setLineDash([5, 15]);
-  ctx.strokeStyle = 'green';
-  ctx.fillStyle = 'green'  
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black'  
   // vertical lines
   for (var xi = fx * gridx; xi <= xMax; xi = xi + gridx) {
     ctx.beginPath();
@@ -428,8 +427,6 @@ async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: numbe
     ctx.stroke();
     ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
   }
-  ctx.strokeStyle = 'black';
-  ctx.fillStyle = '#ffffdd'; 
   ctx.setLineDash([]);
 }
 
@@ -503,9 +500,10 @@ async addLayer(id: string) {
 }
 
 async addFullLayer() {
+  // define color
   var color: string;
-  if (this.mapStyle == 'basic') color = '#00aa00'
-  else color = '#ff0000'
+  if (this.display == 'map') color = '#00aa00';
+  else color = '#ff0000';
   // add layer
   await this.map.addLayer({
     'id': 'elGros122',
@@ -636,12 +634,8 @@ async addFullLayer() {
     if (this.display == 'map' && this.style == this.styleBasic) return;
     if (this.display == 'satellite' && this.style == this.styleSatellite) return;
     await this.removeCustomLayers();
-    var color = '#00aa00';
     if (this.display == 'map') this.style = this.styleBasic;
-    if (this.display == 'satellite') {
-      this.style = this.styleSatellite;
-      color = '#ff0000'
-    }  
+    if (this.display == 'satellite') this.style = this.styleSatellite;
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
     await this.addFullLayer()

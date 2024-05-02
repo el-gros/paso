@@ -99,17 +99,18 @@ export class Tab3Page {
     const key = this.collection[index].date;
     // retrieve track
     this.track = await this.storage.get(JSON.stringify(key));
+    console.log(this.track)
     // write variables
     await this.htmlVariables();
     // update canvas
-    await this.updateAllCanvas(true);
+    await this.updateAllCanvas();
     // display track on map
     await new Promise(f => setTimeout(f, 500));
     await this.displayTrackOnMap();
     // adapt view
     await this.setMapView();
     // detect changes 
-    this.cd.detectChanges();
+    this.cd.detectChanges();   
   }
 
 
@@ -121,16 +122,15 @@ export class Tab3Page {
   for (var i in this.properties) {
     canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
     this.ctx[i] = await canvas.getContext("2d");
-    this.ctx[i].fillStyle = '#ddffff' 
-    this.ctx[i].fillRect(0, 0, this.canvasNum , this.canvasNum);
+    canvas.width = window.innerWidth;
+    canvas.height = canvas.width;
+    this.canvasNum = canvas.width;
   }
 }  
 
-
-
   // 3.6. UPDATE ALL CANVAS
 
-  async updateAllCanvas(end: boolean) {
+  async updateAllCanvas() {
   //  await this.updateMapCanvas(end);
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(this.ctx[i], this.properties[i], 'x');
@@ -145,12 +145,11 @@ export class Tab3Page {
     var num = this.track.data.length;
     if (!this.track) return;
     if (!ctx) return;
+    if (propertyName == 'simulated') return;
     if (xParam == 'x') var xTot = this.track.data[num - 1].distance
     else xTot = this.track.data[num - 1].accTime
-    if (propertyName == 'simulated') return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#ddffff' 
-    ctx.fillRect(0, 0, this.canvasNum, this.canvasNum);
+    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     // compute bounds
     const bounds: Bounds = await this.fs.computeMinMaxProperty(this.track.data, propertyName);
     if (bounds.max == bounds.min) {
@@ -163,16 +162,20 @@ export class Tab3Page {
     const e = this.margin;
     const f = this.margin - bounds.max * d;
     // draw lines
-    ctx.strokeStyle = 'black';
     ctx.setTransform(a, 0, 0, d, e, f)
+    //ctx.strokeStyle = '#8bf2f2';
     ctx.beginPath();
-    ctx.moveTo(0, this.track.data[0][propertyName]);
+    ctx.moveTo(0,bounds.min);
     for (var i in this.track.data) {
       if (xParam == 'x') ctx.lineTo(this.track.data[i].distance, this.track.data[i][propertyName])
       else ctx.lineTo(this.track.data[i].accTime, this.track.data[i][propertyName])
-    }  
+    } 
+    ctx.lineTo(xTot,bounds.min);
+    ctx.closePath();
+    ctx.fillStyle = 'red';
+    ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.stroke();
+    //ctx.stroke();
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
   }
 
@@ -185,8 +188,8 @@ export class Tab3Page {
     const fx = Math.ceil(xMin / gridx);
     const fy = Math.ceil(yMin / gridy);
     ctx.setLineDash([5, 15]);
-    ctx.strokeStyle = 'green';
-    ctx.fillStyle = 'green'  
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black'  
     // vertical lines
     for (var xi = fx * gridx; xi <= xMax; xi = xi + gridx) {
       ctx.beginPath();
