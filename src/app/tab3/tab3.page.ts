@@ -12,6 +12,8 @@ import { FormsModule } from '@angular/forms'
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
+import mapboxgl from 'mapbox-gl';
+
 
 @Component({      
   selector: 'app-tab3',
@@ -62,7 +64,8 @@ export class Tab3Page {
     trafficFlow: '2/flow_relative-light',
   }
   style: any;
-
+  //fullScreen: any;
+  provider: string = 'Tomtom' // or 'Mapbox' 
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -77,29 +80,8 @@ export class Tab3Page {
   }
 
   async ionViewDidEnter() {
-    // retrieve tracks definition
-    this.collection = await this.storage.get('collection'); 
-    if (!this.collection) this.collection = [];
-    var numChecked = 0;
-    for (var item of this.collection) {
-      if (item.isChecked) numChecked = numChecked + 1;
-      if (numChecked > 1) break;
-    }
-    if (numChecked > 1)  {
-      for (var item of this.collection) { item.isChecked = false; }      
-    } 
-    var index: number = -1;
-    for (var i = 0; i < this.collection.length; i++) {
-      if (this.collection[i].isChecked) {index = i; break;}
-    }    
-    if (index == -1) {
-      await this.selectTrack();
-      return;
-    }  
-    const key = this.collection[index].date;
     // retrieve track
-    this.track = await this.storage.get(JSON.stringify(key));
-    console.log(this.track)
+    await this.retrieveTrack();
     // write variables
     await this.htmlVariables();
     // update canvas
@@ -108,12 +90,8 @@ export class Tab3Page {
     await new Promise(f => setTimeout(f, 500));
     await this.displayTrackOnMap();
     // adapt view
-    await this.setMapView();
-    // detect changes 
-    this.cd.detectChanges();   
+    await this.setMapView(); 
   }
-
-
 
  // 3.4. CREATE ALL CANVAS
 
@@ -172,7 +150,7 @@ export class Tab3Page {
     } 
     ctx.lineTo(xTot,bounds.min);
     ctx.closePath();
-    ctx.fillStyle = 'red';
+    ctx.fillStyle = '#00ff00';
     ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     //ctx.stroke();
@@ -234,26 +212,9 @@ export class Tab3Page {
     // create canvas
     await this.createCanvas();
     // plot map
-    this.style = this.styleBasic;
-    this.map = tt.map({
-      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
-      container: "map2",
-      center: [2, 41.5],
-      zoom: 6,
-      style: this.style
-    });
-    this.map.on('load',() =>{
-      this.map.resize();
-      this.map.addControl(new tt.NavigationControl()); 
-      this.map.addControl(new tt.FullscreenControl());  
-      this.map.addControl(new tt.ScaleControl());
-      this.map.addControl(new tt.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,		
-      }));  
-    });
+    if (this.provider == 'Tomtom') this.createTomtomMap();
+    else this.createMapboxMap();
+    // show map instead of data 
     this.show('plots2', 'none');
     this.show('map2', 'block')
   }  
@@ -359,9 +320,9 @@ export class Tab3Page {
       maxLng = Math.max(maxLng, point[0]);
     });
     // map view
+    await this.map.resize();
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
-    await this.map.resize();
   }
 
   async mapChange() {
@@ -392,5 +353,75 @@ export class Tab3Page {
     if (!obj) return;
     obj.style.display = action
   }
+
+async createMapboxMap() {
+  const map = new mapboxgl.Map({
+    container: 'map2',
+    accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
+    style: 'mapbox://styles/mapbox/streets-v9',
+    // projection: 'globe', // Display the map as a globe, since satellite-v9 defaults to Mercator
+    zoom: 1,
+    center: [30, 15]
+  });
+
+  map.addControl(new mapboxgl.NavigationControl());
+  map.scrollZoom.disable();
+}
+
+async createTomtomMap() {
+  this.style = this.styleBasic;
+  this.map = tt.map({
+    key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
+    container: "map2",
+    center: [2, 41.5],
+    zoom: 6,
+    style: this.style
+  });
+  this.map.on('load',() =>{
+    this.map.resize();
+    this.map.addControl(new tt.NavigationControl()); 
+    //this.map.addControl(new tt.FullscreenControl());  
+    this.map.addControl(new tt.ScaleControl());
+    this.map.addControl(new tt.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,		
+    }));  
+  });
+}
+
+async retrieveTrack() {
+  // get collection
+  this.collection = await this.storage.get('collection'); 
+  if (!this.collection) this.collection = [];
+  // compute number of checked tracks
+  var numChecked = 0;
+  for (var item of this.collection) {
+    if (item.isChecked) numChecked = numChecked + 1;
+    if (numChecked > 1) break;
+  }
+  // if more than one track is checked, uncheck all
+  if (numChecked > 1)  {
+    for (var item of this.collection) { item.isChecked = false; }      
+    numChecked = 0; 
+  } 
+  // if no checked items
+  if (numChecked == 0) {
+    await this.selectTrack();
+    return;
+  }  
+  // find key
+  var key: any;
+  for (var i in this.collection) {  
+    if (this.collection[i].isChecked) {
+      key = this.collection[i].date;
+      break;
+    }
+  }    
+  // retrieve track
+  this.track = await this.storage.get(JSON.stringify(key));
+  console.log(this.track)
+}
 
 }

@@ -8,21 +8,17 @@
     font-weight: bold;
 }  
 
-ion-toolbar{
-  background-color: #ddffdd !important;  
-}
 
 // ion-checkbox
 
 ion-checkbox {
-    --checkbox-background-checked: rgb(0, 255, 0);
-    --border-color-checked: rgb(0, 255, 0);
+    --checkbox-background-checked: rgb(255, 221, 221);
+    --border-color-checked: rgb(255, 221, 221);
     --checkmark-color: rgb(0, 0, 0);
-    zoom: 1.5;
 }
 
 .checked {
-    background-color: #ddffdd !important;
+    background-color: #ffdddd !important;
 }
 
 .unchecked{
@@ -30,7 +26,7 @@ ion-checkbox {
 }
 
 div{
-    font-size: 10px !important;
+    font-size: 15px !important;
     font-family: 'Arial, sans-serif';
 }
 

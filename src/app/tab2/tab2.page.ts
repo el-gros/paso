@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import { global } from '../../environments/environment';
-import { runInThisContext } from 'vm';
 
 @Component({
   selector: 'app-tab2',

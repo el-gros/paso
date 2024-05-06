@@ -105,7 +105,7 @@ export class Tab1Page   {
     this.map.on('load',() =>{
       this.map.resize();
       this.map.addControl(new tt.NavigationControl()); 
-      this.map.addControl(new tt.FullscreenControl());  
+      //this.map.addControl(new tt.FullscreenControl());  
       this.map.addControl(new tt.ScaleControl());
       this.map.addControl(new tt.GeolocateControl({
         positionOptions: {
