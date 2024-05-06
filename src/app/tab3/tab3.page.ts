@@ -65,7 +65,7 @@ export class Tab3Page {
   }
   style: any;
   //fullScreen: any;
-  provider: string = 'Tomtom' // or 'Mapbox' 
+  provider: string = 'Tomtom' // 'Tomtom' or 'Mapbox' 
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -214,20 +214,22 @@ export class Tab3Page {
     // plot map
     if (this.provider == 'Tomtom') this.createTomtomMap();
     else this.createMapboxMap();
-    // show map instead of data 
+    // show map
     this.show('plots2', 'none');
     this.show('map2', 'block')
   }  
 
   async displayTrackOnMap() {
+    console.log('m', this.map)
     // no map
     if (!this.map) return;
     // no points enough
-    if (this.track.data.length < 2) return;
+    console.log(this.track.map.length)
+    if (this.track.map.length < 2) return;
     // create layer 123
     await this.removeLayer('123')
     await this.addLayer('123')
-    }
+  }
 
   async addLayer(id: string) {
     var color: string;
@@ -237,6 +239,7 @@ export class Tab3Page {
     await this.map.addLayer({
       'id': id,
       'type': 'line',
+      'slot': 'top',
       'source': {
         'type': 'geojson',
         'data': {
@@ -250,7 +253,7 @@ export class Tab3Page {
                 'coordinates': this.track.map
                }
             }
-          ]
+          ] 
         }
       },
       'layout': {
@@ -267,6 +270,9 @@ export class Tab3Page {
       setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
     this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
       setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    // show map
+    this.show('plots2', 'none');
+    this.show('map2', 'block')
   }
   
 
@@ -275,14 +281,10 @@ export class Tab3Page {
     if (this.initialMarker) await this.initialMarker.remove();
     if (this.finalMarker) await this.finalMarker.remove();    
     // remove layer and source
-    var layers = this.map.getStyle().layers;
-    for (var layer of layers) {
-      if (layer.id === id) {
-        await this.map.removeLayer(id)
-        await this.map.removeSource(id)
-        return
-      }
-    } 
+    if (this.map.getLayer(id)) {
+      await this.map.removeLayer(id)
+      await this.map.removeSource(id)
+    }
   }  
 
   async htmlVariables() {
@@ -320,9 +322,13 @@ export class Tab3Page {
       maxLng = Math.max(maxLng, point[0]);
     });
     // map view
-    await this.map.resize();
-    await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
-    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
+    if (this.provider == 'Tomtom') {
+      await this.map.resize();
+      await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+      await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
+    }  
+    //await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]]);
+    //await this.map.flyTo({"center": [0.5*(maxLng + minLng), 0.5*(maxLat + minLat)]}); 
   }
 
   async mapChange() {
@@ -355,17 +361,18 @@ export class Tab3Page {
   }
 
 async createMapboxMap() {
-  const map = new mapboxgl.Map({
+  this.map = new mapboxgl.Map({
     container: 'map2',
     accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
     style: 'mapbox://styles/mapbox/streets-v9',
     // projection: 'globe', // Display the map as a globe, since satellite-v9 defaults to Mercator
     zoom: 1,
-    center: [30, 15]
+    center: [30, 15],
+    trackResize: true,
   });
 
-  map.addControl(new mapboxgl.NavigationControl());
-  map.scrollZoom.disable();
+  this.map.addControl(new mapboxgl.NavigationControl());
+  this.map.scrollZoom.disable();
 }
 
 async createTomtomMap() {
@@ -380,7 +387,7 @@ async createTomtomMap() {
   this.map.on('load',() =>{
     this.map.resize();
     this.map.addControl(new tt.NavigationControl()); 
-    //this.map.addControl(new tt.FullscreenControl());  
+    // this.map.addControl(new tt.FullscreenControl());  
     this.map.addControl(new tt.ScaleControl());
     this.map.addControl(new tt.GeolocateControl({
       positionOptions: {
@@ -421,7 +428,6 @@ async retrieveTrack() {
   }    
   // retrieve track
   this.track = await this.storage.get(JSON.stringify(key));
-  console.log(this.track)
 }
 
 }

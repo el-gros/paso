@@ -430,9 +430,6 @@ async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: numbe
   ctx.setLineDash([]);
 }
 
-
-
-
 async trackOnMap() {
   const l = this.track.map.length
   // no map
