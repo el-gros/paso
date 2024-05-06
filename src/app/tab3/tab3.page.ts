@@ -65,7 +65,7 @@ export class Tab3Page {
   }
   style: any;
   //fullScreen: any;
-  provider: string = 'Tomtom' // 'Tomtom' or 'Mapbox' 
+  provider: string = 'Mapbox' // 'Tomtom' or 'Mapbox' 
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -220,7 +220,6 @@ export class Tab3Page {
   }  
 
   async displayTrackOnMap() {
-    console.log('m', this.map)
     // no map
     if (!this.map) return;
     // no points enough
@@ -233,7 +232,7 @@ export class Tab3Page {
 
   async addLayer(id: string) {
     var color: string;
-    if (this.style == this.styleBasic) color = '#00aa00'
+    if (this.display == 'map') color = '#00aa00'
     else color = '#ff0000'
     // add layer
     await this.map.addLayer({
@@ -322,16 +321,30 @@ export class Tab3Page {
       maxLng = Math.max(maxLng, point[0]);
     });
     // map view
-    if (this.provider == 'Tomtom') {
-      await this.map.resize();
-      await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
-      await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
-    }  
-    //await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]]);
-    //await this.map.flyTo({"center": [0.5*(maxLng + minLng), 0.5*(maxLat + minLat)]}); 
+    await this.map.resize();
+    await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
   async mapChange() {
+    if (this.provider == 'Tomtom') {
+      this.styleBasic = 'mapbox://styles/mapbox/outdoors-v12'
+      this.styleSatellite = 'mapbox://styles/mapbox/satellite-v9'
+    }
+    else {
+      this.styleBasic = {
+        map: '2/basic_street-light',
+        poi: '2/poi_light',
+        trafficIncidents: '2/incidents_light',
+        trafficFlow: '2/flow_relative-light',
+      }
+      this.styleSatellite = {
+        map: '2/basic_street-satellite', 
+        poi: '2/poi_light',
+        trafficIncidents: '2/incidents_light',
+        trafficFlow: '2/flow_relative-light',
+      }
+    }  
     if (this.display == 'map' && this.style == this.styleBasic) return;
     if (this.display == 'satellite' && this.style == this.styleSatellite) return;
     await this.removeLayer('123')
