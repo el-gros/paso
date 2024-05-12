@@ -1,21 +1,37 @@
-<ion-header>
-
-<ion-radio-group [(ngModel)]="display" (ionChange)="displayChange()" [allowEmptySelection]="false">
-  <ion-item>
-    <ion-radio  value="map">Map</ion-radio><br />
-  </ion-item>
-  <ion-item>
-    <ion-radio  value="satellite">Sat</ion-radio><br />
-  </ion-item>
-  <ion-item>
-    <ion-radio  value="plots">Data</ion-radio><br />
-  </ion-item>
-</ion-radio-group>
-
-</ion-header>
-
 <ion-content>
 
+  <ion-fab id='onMap' slot="fixed" horizontal="left" vertical="top">
+    <ion-row>
+    <ion-fab-button (click)="displayChange2('data')">
+      <ion-icon name="analytics-outline"></ion-icon>
+    </ion-fab-button>  
+    <ion-fab-button (click)="displayChange2('satellite')">
+      <ion-icon name="planet-outline"></ion-icon>
+    </ion-fab-button>  
+    </ion-row>
+  </ion-fab>
+
+  <ion-fab id='onSatellite' slot="fixed" horizontal="left" vertical="top">
+    <ion-row>
+    <ion-fab-button (click)="displayChange2('data')">
+      <ion-icon name="analytics-outline"></ion-icon>
+    </ion-fab-button>  
+    <ion-fab-button (click)="displayChange2('map')">
+      <ion-icon name="navigate-outline"></ion-icon>
+    </ion-fab-button>  
+    </ion-row>
+  </ion-fab>
+
+  <ion-fab id='onData' slot="fixed" horizontal="left" vertical="top">
+    <ion-row>
+    <ion-fab-button (click)="displayChange2('map')">
+      <ion-icon name="navigate-outline"></ion-icon>
+    </ion-fab-button>  
+    <ion-fab-button (click)="displayChange2('satellite')">
+      <ion-icon name="planet-outline"></ion-icon>
+    </ion-fab-button>  
+    </ion-row>
+  </ion-fab>
 
     <!-- map -->
     
@@ -26,7 +42,6 @@
   <swiper-slide>
 
     <div id="card">
-      <br>
       {{track.name}}
       <br>
       {{track.date | date: 'dd-MM-yyyy HH:mm' }}

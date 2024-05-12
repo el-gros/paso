@@ -51,21 +51,9 @@ export class Tab3Page {
   finalMarker: any = undefined;
   mapStyle: string = 'basic' 
   display: string = 'map'; 
-  styleBasic: any = {
-    map: '2/basic_street-light',
-    poi: '2/poi_light',
-    trafficIncidents: '2/incidents_light',
-    trafficFlow: '2/flow_relative-light',
-  }
-  styleSatellite: any = {
-    map: '2/basic_street-satellite', 
-    poi: '2/poi_light',
-    trafficIncidents: '2/incidents_light',
-    trafficFlow: '2/flow_relative-light',
-  }
   style: any;
-  //fullScreen: any;
-  provider: string = 'Mapbox' // 'Tomtom' or 'Mapbox' 
+  provider: string = 'Tomtom' // 'Tomtom' or 'Mapbox';
+  loaded: boolean = false
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -87,13 +75,25 @@ export class Tab3Page {
     // update canvas
     await this.updateAllCanvas();
     // display track on map
-    await new Promise(f => setTimeout(f, 500));
-    await this.displayTrackOnMap();
+    await this.drawTrack();
     // adapt view
     await this.setMapView(); 
   }
 
  // 3.4. CREATE ALL CANVAS
+
+  async drawTrack() {
+    if (this.loaded) {
+      await this.displayTrackOnMap();
+      return;
+    }
+    else {
+      for (var i = 0; i<5; i++) {
+        await new Promise(f => setTimeout(f, 500));
+        if (this.loaded) await this.displayTrackOnMap(); break
+      }
+    }  
+  }
 
  async createCanvas() {
   var canvas: any
@@ -212,11 +212,16 @@ export class Tab3Page {
     // create canvas
     await this.createCanvas();
     // plot map
-    if (this.provider == 'Tomtom') this.createTomtomMap();
-    else this.createMapboxMap();
+    if (this.provider == 'Tomtom') await this.createTomtomMap();
+    else await this.createMapboxMap();
     // show map
     this.show('plots2', 'none');
-    this.show('map2', 'block')
+    this.show('map2', 'block');
+    this.show('onData', 'none');
+    //CH
+    this.show('onMap', 'block');
+    this.show('onSatellite','none');
+    //CH
   }  
 
   async displayTrackOnMap() {
@@ -326,45 +331,36 @@ export class Tab3Page {
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
-  async mapChange() {
-    if (this.provider == 'Tomtom') {
-      this.styleBasic = 'mapbox://styles/mapbox/outdoors-v12'
-      this.styleSatellite = 'mapbox://styles/mapbox/satellite-v9'
-    }
-    else {
-      this.styleBasic = {
-        map: '2/basic_street-light',
-        poi: '2/poi_light',
-        trafficIncidents: '2/incidents_light',
-        trafficFlow: '2/flow_relative-light',
-      }
-      this.styleSatellite = {
-        map: '2/basic_street-satellite', 
-        poi: '2/poi_light',
-        trafficIncidents: '2/incidents_light',
-        trafficFlow: '2/flow_relative-light',
-      }
-    }  
-    if (this.display == 'map' && this.style == this.styleBasic) return;
-    if (this.display == 'satellite' && this.style == this.styleSatellite) return;
-    await this.removeLayer('123')
-    if (this.display == 'map') this.style = this.styleBasic;
-    if (this.display == 'satellite') this.style = this.styleSatellite;
+  async mapChange2(option: string)  {
+    var previous: any = this.style
+    this.style = await this.fs.selectStyle(this.provider, option);
+    if (previous == this.style) return;
+    await this.removeLayer('123');
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
     await this.addLayer('123')
   }
 
-  async displayChange() {
+  async displayChange2(option: string) {
+    this.show('onData','none');
+    this.show('onMap','none');
+    this.show('onSatellite','none');
     this.show('plots2', 'none');
     this.show('map2', 'none');
-    if (this.display == 'map' || this.display == 'satellite') {
+    if (option == 'map') {
       this.show('map2', 'block');
-      this.mapChange()
+      this.show('onMap', 'block');
+      await this.mapChange2(option);
     }        
-    else if (this.display == 'plots') {
+    else if (option == 'satellite') {
+      this.show('map2', 'block');
+      this.show('onSatellite', 'block');
+      await this.mapChange2(option);
+    }
+    else if (option == 'data') {
       this.show('plots2', 'block');
-    }  
+      this.show('onData', 'block');
+    }
   }
 
   show (id: string, action: string) {
@@ -374,22 +370,24 @@ export class Tab3Page {
   }
 
 async createMapboxMap() {
+  this.style = await this.fs.selectStyle(this.provider, this.display)
   this.map = new mapboxgl.Map({
     container: 'map2',
     accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
-    style: 'mapbox://styles/mapbox/streets-v9',
-    // projection: 'globe', // Display the map as a globe, since satellite-v9 defaults to Mercator
-    zoom: 1,
-    center: [30, 15],
+    style: this.style,
+    center: [2, 41.5],
+    zoom: 6,
     trackResize: true,
   });
-
-  this.map.addControl(new mapboxgl.NavigationControl());
-  this.map.scrollZoom.disable();
+  this.map.on('load',() =>{
+    this.map.addControl(new mapboxgl.NavigationControl());
+    this.map.scrollZoom.disable();
+    this.loaded = true;
+  });  
 }
 
 async createTomtomMap() {
-  this.style = this.styleBasic;
+  this.style = await this.fs.selectStyle(this.provider, this.display)
   this.map = tt.map({
     key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
     container: "map2",
@@ -400,14 +398,14 @@ async createTomtomMap() {
   this.map.on('load',() =>{
     this.map.resize();
     this.map.addControl(new tt.NavigationControl()); 
-    // this.map.addControl(new tt.FullscreenControl());  
     this.map.addControl(new tt.ScaleControl());
     this.map.addControl(new tt.GeolocateControl({
       positionOptions: {
         enableHighAccuracy: true,
       },
       trackUserLocation: true,		
-    }));  
+    }));
+    this.loaded = true  
   });
 }
 

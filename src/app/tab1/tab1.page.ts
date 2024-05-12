@@ -115,7 +115,7 @@ export class Tab1Page   {
         showUserLocation: false,
       }));  
     });
-    this.show('plots', 'none');
+    this.show('data', 'none');
     this.show('map', 'block')
   }  
 
@@ -639,14 +639,14 @@ async addFullLayer() {
   }
 
   async displayChange() {
-    this.show('plots', 'none');
+    this.show('data', 'none');
     this.show('map', 'none')
     if (this.display == 'map' || this.display == 'satellite') {
       this.show('map', 'block')
       this.mapChange()
     }        
-    else if (this.display == 'plots') {
-      this.show('plots', 'block');  
+    else if (this.display == 'data') {
+      this.show('data', 'block');  
     }
   }
 
