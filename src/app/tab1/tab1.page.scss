@@ -1,38 +1,10 @@
-// header buttons
-.disabled {
-  --background: gray;
-}
-    
-.enabled {
-  --background: yellow;
-}
-
-ion-row{
-  margin: 0px;
-  padding: 0px;
-}
-
-ion-grid{
-  margin: 0px;
-  padding: 0px;
-}
-
 ion-icon {
   color: black
 }  
 
-// ion-radio-group
-ion-radio-group {
-  display: flex;
-  flex-direction: row;
-}
-
-ion-radio {
---color-checked: yellow !important;
-}
-
-ion-item {
-  flex: 1; /* Equal width for both items */
+ion-fab-button {
+  --background: yellow !important;
+  --color: black
 }
 
 // map
@@ -51,12 +23,14 @@ ion-item {
     font-family: 'Arial, sans-serif';
     font-weight: bold;
     text-align: center;
+    margin-top: 75px;
   }
 
   #card {
     margin-left: 20px;
     font-size: 15px;
     font-family: 'Arial, sans-serif';
-    font-weight: bold
+    font-weight: bold;
+    margin-top: 75px;
   }
   

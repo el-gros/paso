@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
+import mapboxgl from 'mapbox-gl';
 
 // 2. @COMPONENT
 
@@ -36,9 +37,9 @@ export class Tab1Page   {
   
   // global variables
   track: Track = global.track;
-  tracking = global.tracking;
   watcherId = global.watcherId;
   corr: Corr[] = global.corr;
+  provider: string = global.provider;
 
   // local variables
   vMax: number = 400; 
@@ -64,19 +65,14 @@ export class Tab1Page   {
   filtered: number = -1;
   mapStyle: string = 'basic'; 
   display: string = 'map'; 
-  styleBasic: any = {
-    map: '2/basic_street-light',
-    poi: '2/poi_light',
-    trafficIncidents: '2/incidents_light',
-    trafficFlow: '2/flow_relative-light',
-  }
-  styleSatellite: any = {
+    styleSatellite: any = {
     map: '2/basic_street-satellite', 
     poi: '2/poi_light',
     trafficIncidents: '2/incidents_light',
     trafficFlow: '2/flow_relative-light',
   }
   style: any;
+  loaded: boolean = false;
 
   // 3.2. CONSTRUCTOR  
 
@@ -93,33 +89,58 @@ export class Tab1Page   {
     // create canvas
     await this.createCanvas();
     // plot map
-    this.style = this.styleBasic;
+    this.style = await this.fs.selectStyle(this.provider, this.display)
+    if (this.provider == 'Tomtom') await this.createTomtomMap();
+    else await this.createMapboxMap();
+    this.show('data', 'none');
+    this.show('map', 'block');
+    this.show('onMap', 'block');
+    this.show('onSatellite','none');
+    this.show('before', 'block');
+    this.show('while', 'none');
+    this.show('after', 'none');
+  }  
+
+ // 3.4. CREATE ALL CANVAS
+
+  async createTomtomMap() {
     this.map = tt.map({
       key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
       container: "map",
-      center: [2, 41.5],
+      center: [1, 41.5],
       zoom: 6,
-      style: this.style,
+      style: this.style
     });
-    // add controls 
     this.map.on('load',() =>{
       this.map.resize();
       this.map.addControl(new tt.NavigationControl()); 
-      //this.map.addControl(new tt.FullscreenControl());  
       this.map.addControl(new tt.ScaleControl());
       this.map.addControl(new tt.GeolocateControl({
         positionOptions: {
           enableHighAccuracy: true,
         },
-        trackUserLocation: true,
-        showUserLocation: false,
-      }));  
+        trackUserLocation: true,		
+      }));
+      this.loaded = true  
     });
-    this.show('data', 'none');
-    this.show('map', 'block')
-  }  
+  }
 
- // 3.4. CREATE ALL CANVAS
+  async createMapboxMap() {
+    this.map = new mapboxgl.Map({
+      container: 'map',
+      accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
+      style: this.style,
+      center: [1, 41.5],
+      zoom: 6,
+      trackResize: true,
+    });
+    this.map.on('load',() =>{
+      this.map.resize();
+      this.map.addControl(new mapboxgl.NavigationControl());
+      this.map.scrollZoom.disable();
+      this.loaded = true;
+    });      
+  }
 
   async createCanvas() {
     var canvas: any
@@ -191,7 +212,7 @@ export class Tab1Page   {
     if (this.currentMarker) this.currentMarker.remove();        
     await this.removeCustomLayers();
     // start tracking
-    this.tracking = true;
+    this.show('while','block')
     await this.trackPosition();
   }
 
@@ -273,8 +294,10 @@ export class Tab1Page   {
     this.track.map.push([location.longitude, location.latitude]);
     // filter
     num = this.track.data.length; 
-    if (num > this.lag) await this.filter(num - this.lag -1);
-    this.filtered = num - this.lag -1;
+    if (num > this.lag) {
+      await this.filter(num - this.lag -1);
+      this.filtered = num - this.lag -1;
+    }  
     // filter speed
     this.filterSpeed()
     // current values
@@ -325,8 +348,9 @@ export class Tab1Page   {
     try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
     catch {}
     // control variables
-    this.tracking = false;
+    this.show('after','block')
     this.watcherId = 0;
+    if (num == 0) return;
     // filter remaining values
     for (var i = this.filtered + 1; i < num; i++) {
       await this.filter(i)
@@ -338,6 +362,7 @@ export class Tab1Page   {
 
 
   async setTrackDetails() {
+    this.show('before','block')
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: 'Track Details',
@@ -451,7 +476,7 @@ async trackOnMap() {
 async addLayer(id: string) {
   var num = this.track.data.length;
   var color: string;
-  if (this.style == this.styleBasic) color = '#00aa00'
+  if (this.display == 'map') color = '#00aa00'
   else color = '#ff0000'
   // build slice
   var idNum: number = +id - 124;
@@ -627,33 +652,50 @@ async addFullLayer() {
     this.track.data[num-1].compSpeed = 3600000 * distance / time;
   }
 
-  async mapChange() {
-    if (this.display == 'map' && this.style == this.styleBasic) return;
-    if (this.display == 'satellite' && this.style == this.styleSatellite) return;
+  async displayChange2(option: string) {
+    this.display = option
+    this.show('onMap','none');
+    this.show('onSatellite','none');
+    this.show('data', 'none');
+    this.show('map', 'none');
+    if (this.display == 'map') {
+      this.show('map', 'block');
+      this.show('onMap', 'block');
+      await this.mapChange2();
+    }        
+    else if (this.display == 'satellite') {
+      this.show('map', 'block');
+      this.show('onSatellite', 'block');
+      await this.mapChange2();
+    }
+    else if (this.display == 'data') {
+      this.show('data', 'block');
+    }
+  }
+
+  async mapChange2() {
+    var previous: any = this.style
+    this.style = await this.fs.selectStyle(this.provider, this.display);
+    if (previous == this.style) return;
     await this.removeCustomLayers();
-    if (this.display == 'map') this.style = this.styleBasic;
-    if (this.display == 'satellite') this.style = this.styleSatellite;
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
     await this.addFullLayer()
-  }
-
-  async displayChange() {
-    this.show('data', 'none');
-    this.show('map', 'none')
-    if (this.display == 'map' || this.display == 'satellite') {
-      this.show('map', 'block')
-      this.mapChange()
-    }        
-    else if (this.display == 'data') {
-      this.show('data', 'block');  
-    }
   }
 
   show (id: string, action: string) {
     var obj: HTMLElement | null = document.getElementById(id);
     if (!obj) return;
     obj.style.display = action
+  }
+
+  async recordChange(option: string) {
+    this.show('before', 'none');
+    this.show('while', 'none');
+    this.show('after', 'none');
+    if (option == 'play') await this.startTracking();
+    else if (option == 'stop') await this.stopTracking();
+    else await this.setTrackDetails();  
   }
 
 }

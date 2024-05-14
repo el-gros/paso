@@ -16,9 +16,10 @@ export var global = {
 
   corr: [] as Corr[], 
   
-  tracking: false as boolean,
   watcherId: 0 as number,
   collection: [] as TrackDefinition[],                                                                   
+  provider: 'Tomtom' as string, // Tomtom or Mapbox
+
 } 
 
 export var environment = {

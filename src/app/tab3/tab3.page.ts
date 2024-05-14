@@ -49,10 +49,9 @@ export class Tab3Page {
   map: any;
   initialMarker: any = undefined;
   finalMarker: any = undefined;
-  mapStyle: string = 'basic' 
-  display: string = 'map'; 
+  display: string = 'map2'; 
   style: any;
-  provider: string = 'Tomtom' // 'Tomtom' or 'Mapbox';
+  provider: string = global.provider // 'Tomtom' or 'Mapbox';
   loaded: boolean = false
 
   constructor(
@@ -141,7 +140,6 @@ export class Tab3Page {
     const f = this.margin - bounds.max * d;
     // draw lines
     ctx.setTransform(a, 0, 0, d, e, f)
-    //ctx.strokeStyle = '#8bf2f2';
     ctx.beginPath();
     ctx.moveTo(0,bounds.min);
     for (var i in this.track.data) {
@@ -212,16 +210,14 @@ export class Tab3Page {
     // create canvas
     await this.createCanvas();
     // plot map
+    this.style = await this.fs.selectStyle(this.provider, this.display)
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
     // show map
-    this.show('plots2', 'none');
+    this.show('data2', 'none');
     this.show('map2', 'block');
-    this.show('onData', 'none');
-    //CH
-    this.show('onMap', 'block');
-    this.show('onSatellite','none');
-    //CH
+    this.show('onMap2', 'block');
+    this.show('onSatellite2','none');
   }  
 
   async displayTrackOnMap() {
@@ -237,7 +233,7 @@ export class Tab3Page {
 
   async addLayer(id: string) {
     var color: string;
-    if (this.display == 'map') color = '#00aa00'
+    if (this.display == 'map2') color = '#00aa00'
     else color = '#ff0000'
     // add layer
     await this.map.addLayer({
@@ -275,7 +271,7 @@ export class Tab3Page {
     this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
       setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
     // show map
-    this.show('plots2', 'none');
+    this.show('data2', 'none');
     this.show('map2', 'block')
   }
   
@@ -331,9 +327,9 @@ export class Tab3Page {
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
-  async mapChange2(option: string)  {
+  async mapChange2()  {
     var previous: any = this.style
-    this.style = await this.fs.selectStyle(this.provider, option);
+    this.style = await this.fs.selectStyle(this.provider, this.display);
     if (previous == this.style) return;
     await this.removeLayer('123');
     await this.map.setStyle(this.style)
@@ -342,24 +338,23 @@ export class Tab3Page {
   }
 
   async displayChange2(option: string) {
-    this.show('onData','none');
-    this.show('onMap','none');
-    this.show('onSatellite','none');
-    this.show('plots2', 'none');
+    this.display = option
+    this.show('onMap2','none');
+    this.show('onSatellite2','none');
+    this.show('data2', 'none');
     this.show('map2', 'none');
-    if (option == 'map') {
+    if (this.display == 'map2') {
       this.show('map2', 'block');
-      this.show('onMap', 'block');
-      await this.mapChange2(option);
+      this.show('onMap2', 'block');
+      await this.mapChange2();
     }        
-    else if (option == 'satellite') {
+    else if (this.display == 'satellite2') {
       this.show('map2', 'block');
-      this.show('onSatellite', 'block');
-      await this.mapChange2(option);
+      this.show('onSatellite2', 'block');
+      await this.mapChange2();
     }
-    else if (option == 'data') {
-      this.show('plots2', 'block');
-      this.show('onData', 'block');
+    else if (this.display == 'data2') {
+      this.show('data2', 'block');
     }
   }
 
@@ -370,16 +365,16 @@ export class Tab3Page {
   }
 
 async createMapboxMap() {
-  this.style = await this.fs.selectStyle(this.provider, this.display)
   this.map = new mapboxgl.Map({
     container: 'map2',
     accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
     style: this.style,
-    center: [2, 41.5],
+    center: [1, 41.5],
     zoom: 6,
     trackResize: true,
   });
   this.map.on('load',() =>{
+    this.map.resize();
     this.map.addControl(new mapboxgl.NavigationControl());
     this.map.scrollZoom.disable();
     this.loaded = true;
@@ -387,11 +382,10 @@ async createMapboxMap() {
 }
 
 async createTomtomMap() {
-  this.style = await this.fs.selectStyle(this.provider, this.display)
   this.map = tt.map({
     key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
     container: "map2",
-    center: [2, 41.5],
+    center: [1, 41.5],
     zoom: 6,
     style: this.style
   });
