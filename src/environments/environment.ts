@@ -2,23 +2,7 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-import { Location, Bounds, Track, TrackDefinition, Corr } from '../globald';
-
 export var global = {
-  track: {
-    data: [], 
-    map: [],
-    name: '',
-    place: '',
-    date: new Date(),
-    description: '', 
-  } as Track,
-
-  corr: [] as Corr[], 
-  
-  watcherId: 0 as number,
-  collection: [] as TrackDefinition[],                                                                   
-  provider: 'Tomtom' as string, // Tomtom or Mapbox
 
 } 
 

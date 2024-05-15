@@ -1,8 +1,8 @@
      // 1. IMPORTS
  
-import { Location, Bounds, Track, Corr, TrackDefinition, Data } from '../../globald';
+import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, ChangeDetectorRef} from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -35,13 +35,18 @@ export class Tab1Page   {
 
   // 3.1. VARIABLES  
   
-  // global variables
-  track: Track = global.track;
-  watcherId = global.watcherId;
-  corr: Corr[] = global.corr;
-  provider: string = global.provider;
-
   // local variables
+  provider: string = 'Tomtom' // Tomtom or Mapbox;
+  display: string = 'map'
+  watcherId: any = 0;
+  track: Track = {
+    data: [], 
+    map: [],
+    name: '',
+    place: '',
+    date: new Date(),
+    description: '', 
+  };
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
   canvasNum: number = 400; // canvas size
@@ -63,14 +68,6 @@ export class Tab1Page   {
   currentMarker: any | undefined = undefined;
   lag: number = 8;
   filtered: number = -1;
-  mapStyle: string = 'basic'; 
-  display: string = 'map'; 
-    styleSatellite: any = {
-    map: '2/basic_street-satellite', 
-    poi: '2/poi_light',
-    trafficIncidents: '2/incidents_light',
-    trafficFlow: '2/flow_relative-light',
-  }
   style: any;
   loaded: boolean = false;
 
@@ -95,7 +92,7 @@ export class Tab1Page   {
     this.show('data', 'none');
     this.show('map', 'block');
     this.show('onMap', 'block');
-    this.show('onSatellite','none');
+    this.show('satellite','none');
     this.show('before', 'block');
     this.show('while', 'none');
     this.show('after', 'none');
@@ -220,9 +217,14 @@ export class Tab1Page   {
 
   initialize() {
     // in case of a new track, initialize variables
-    this.track.data = []; 
-    this.track.map = [];
-    this.corr = [];
+    this.track = {
+      data: [], 
+      map: [],
+      name: '',
+      place: '',
+      date: new Date(),
+      description: '', 
+    };
     this.watcherId = 0;
     this.htmlVariables();
   } 
@@ -333,7 +335,6 @@ export class Tab1Page   {
   // we suppose the previous location is in the same subtrail
     this.track.data.pop();
     this.track.map.pop();
-    //this.corr.pop();
     this.htmlVariables();
   }
 
@@ -626,6 +627,8 @@ async addFullLayer() {
     }
   } 
 
+  //////////////////////////////////////////////
+  // RESIZE AND CENTER MAP in tab1 and tab3
   async setMapView() {
     // Calculate bounding box
     let minLat = Number.POSITIVE_INFINITY;
@@ -639,11 +642,14 @@ async addFullLayer() {
       maxLng = Math.max(maxLng, point[0]);
     });
     // map view
+    await this.map.resize();
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
-    await this.map.resize();
   }
+  /////////////////////////////////////////////////////////
 
+  ////////////////////////////////////////
+  // FILTER SPEED only in tab1
   async filterSpeed() {
     var num: number = this.track.data.length;
     var start: number = Math.max(num - this.lag - 1, 0);
@@ -651,11 +657,12 @@ async addFullLayer() {
     var time: number = this.track.data[num-1].time - this.track.data[start].time;
     this.track.data[num-1].compSpeed = 3600000 * distance / time;
   }
+  /////////////////////////////////////////////////////
 
   async displayChange2(option: string) {
     this.display = option
     this.show('onMap','none');
-    this.show('onSatellite','none');
+    this.show('satellite','none');
     this.show('data', 'none');
     this.show('map', 'none');
     if (this.display == 'map') {
@@ -665,10 +672,10 @@ async addFullLayer() {
     }        
     else if (this.display == 'satellite') {
       this.show('map', 'block');
-      this.show('onSatellite', 'block');
+      this.show('satellite', 'block');
       await this.mapChange2();
     }
-    else if (this.display == 'data') {
+    else {
       this.show('data', 'block');
     }
   }
@@ -683,12 +690,18 @@ async addFullLayer() {
     await this.addFullLayer()
   }
 
+  ////////////////////////////////////////////
+  // SHOW OR HIDE AN ELEMENT in tab1 and tab3
   show (id: string, action: string) {
     var obj: HTMLElement | null = document.getElementById(id);
     if (!obj) return;
     obj.style.display = action
   }
+  /////////////////////////////////////////
 
+  ///////////////////////////////////////
+  // ON CHANGE ON RECORD STATUS (START, 
+  // STOP, SAVE)  only in tab1
   async recordChange(option: string) {
     this.show('before', 'none');
     this.show('while', 'none');
@@ -697,6 +710,7 @@ async addFullLayer() {
     else if (option == 'stop') await this.stopTracking();
     else await this.setTrackDetails();  
   }
+  /////////////////////////////////////////////////////
 
 }
 

@@ -1,6 +1,6 @@
-import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
+import { Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -26,8 +26,15 @@ import mapboxgl from 'mapbox-gl';
 })
 export class Tab3Page {
   [x: string]: any;
-
-  track: Track = global.track;
+  track: Track = {
+    data: [], 
+    map: [],
+    name: '',
+    place: '',
+    date: new Date(),
+    description: '', 
+  };
+  display2: string = 'map';
   collection: TrackDefinition[] = [];
   // local variables
   ctxMap: CanvasRenderingContext2D | undefined;
@@ -49,10 +56,10 @@ export class Tab3Page {
   map: any;
   initialMarker: any = undefined;
   finalMarker: any = undefined;
-  display: string = 'map2'; 
   style: any;
-  provider: string = global.provider // 'Tomtom' or 'Mapbox';
-  loaded: boolean = false
+  provider: string = 'Tomtom' // Tomtom or Mapbox;
+  loaded: boolean = false;
+  previousTrack: Track | null = null;
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -62,25 +69,23 @@ export class Tab3Page {
     private storage: Storage
   ) {}
 
-  async ionViewWillEnter() {
-    this.track = global.track;
-  }
-
   async ionViewDidEnter() {
     // retrieve track
     await this.retrieveTrack();
+    // check if track did change
+    if (this.previousTrack == this.track) return;
     // write variables
     await this.htmlVariables();
     // update canvas
     await this.updateAllCanvas();
     // display track on map
     await this.drawTrack();
+    await this.displayChange2(this.display2) 
+    this.previousTrack = this.track; 
     // adapt view
-    await this.setMapView(); 
+    await this.setMapView();
   }
-
- // 3.4. CREATE ALL CANVAS
-
+   
   async drawTrack() {
     if (this.loaded) {
       await this.displayTrackOnMap();
@@ -186,11 +191,13 @@ export class Tab3Page {
     ctx.setLineDash([]);
   }
   
-  
-  async selectTrack() {
+  //////////////////////////////////
+  // FUNCTION TO CREATE AN ALERT
+  // ASKING YOU TO SELECT A TRACK
+    async selectTrack() {
     // create alert control
     const alert = await this.alertController.create({
-      cssClass: 'alert blueAlert',
+      cssClass: 'alert greenAlert',
       // header and message
       header: 'Select a track',
       message: 'Kindly select the track to display',
@@ -205,39 +212,47 @@ export class Tab3Page {
     alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
     await alert.present();  
   }
+  ///////////////////////////////////////////////
 
+  //////////////////////////////////
+  // ON INIT, CANVAS AND MAP ARE CRATED
+  // AND THE MAP IS SHOWN
   async ngOnInit() {
     // create canvas
     await this.createCanvas();
     // plot map
-    this.style = await this.fs.selectStyle(this.provider, this.display)
+    this.style = await this.fs.selectStyle(this.provider, this.display2)
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
     // show map
     this.show('data2', 'none');
     this.show('map2', 'block');
     this.show('onMap2', 'block');
-    this.show('onSatellite2','none');
-  }  
+    this.show('satellite2','none');
+  }
+  ////////////////////////////////////  
 
+  /////////////////////////////////////
+  // DISPLAY THE TRACK ON THE ORIGINAL MAP
   async displayTrackOnMap() {
     // no map
     if (!this.map) return;
     // no points enough
-    console.log(this.track.map.length)
     if (this.track.map.length < 2) return;
-    // create layer 123
-    await this.removeLayer('123')
-    await this.addLayer('123')
+    // remove old stuff and create new layer 123
+    await this.removeMarkers();
+    await this.removeLayer('123');
+    await this.addLayer('123');
   }
+  ////////////////////////////////////
 
   async addLayer(id: string) {
     var color: string;
-    if (this.display == 'map2') color = '#00aa00'
+    if (this.display2 == 'map') color = '#00aa00'
     else color = '#ff0000'
     // add layer
     await this.map.addLayer({
-      'id': id,
+      'id': 'elGros' + id,
       'type': 'line',
       'slot': 'top',
       'source': {
@@ -275,17 +290,27 @@ export class Tab3Page {
     this.show('map2', 'block')
   }
   
-
+  //////////////////////////////////////
+  // REMOVE A LAYER FROM A MAP 
   async removeLayer(id: string) {
-    // remove markers
-    if (this.initialMarker) await this.initialMarker.remove();
-    if (this.finalMarker) await this.finalMarker.remove();    
+    id = 'elGros' + id
     // remove layer and source
     if (this.map.getLayer(id)) {
       await this.map.removeLayer(id)
       await this.map.removeSource(id)
     }
-  }  
+  }
+  //////////////////////////////////////////////  
+
+  ////////////////////////////////////
+  // REMOVE MARKERS in tab3
+  async removeMarkers() {
+    // remove markers
+    if (this.initialMarker) await this.initialMarker.remove();
+    if (this.finalMarker) await this.finalMarker.remove();    
+  }
+  //////////////////////////////////////////
+
 
   async htmlVariables() {
     const num: number = this.track.data.length;
@@ -309,6 +334,8 @@ export class Tab3Page {
     }
   }
 
+  //////////////////////////////////////////////
+  // RESIZE AND CENTER MAP in tab1 and tab3
   async setMapView() {
     // Calculate bounding box
     let minLat = Number.POSITIVE_INFINITY;
@@ -326,11 +353,13 @@ export class Tab3Page {
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
+  /////////////////////////////////////////////////////////
 
   async mapChange2()  {
     var previous: any = this.style
-    this.style = await this.fs.selectStyle(this.provider, this.display);
+    this.style = await this.fs.selectStyle(this.provider, this.display2);
     if (previous == this.style) return;
+    await this.removeMarkers();
     await this.removeLayer('123');
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
@@ -338,31 +367,35 @@ export class Tab3Page {
   }
 
   async displayChange2(option: string) {
-    this.display = option
+    this.display2 = option
+    console.log(this.display2)
     this.show('onMap2','none');
-    this.show('onSatellite2','none');
+    this.show('satellite2','none');
     this.show('data2', 'none');
     this.show('map2', 'none');
-    if (this.display == 'map2') {
+    if (this.display2 == 'map') {
       this.show('map2', 'block');
       this.show('onMap2', 'block');
       await this.mapChange2();
     }        
-    else if (this.display == 'satellite2') {
+    else if (this.display2 == 'satellite2') {
       this.show('map2', 'block');
-      this.show('onSatellite2', 'block');
+      this.show('satellite2', 'block');
       await this.mapChange2();
     }
-    else if (this.display == 'data2') {
+    else {
       this.show('data2', 'block');
     }
   }
 
+  ////////////////////////////////////////////
+  // SHOW OR HIDE AN ELEMENT in tab1 and tab3
   show (id: string, action: string) {
     var obj: HTMLElement | null = document.getElementById(id);
     if (!obj) return;
     obj.style.display = action
   }
+  /////////////////////////////////////////
 
 async createMapboxMap() {
   this.map = new mapboxgl.Map({
