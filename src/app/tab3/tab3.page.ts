@@ -69,13 +69,15 @@ export class Tab3Page {
     private storage: Storage
   ) {}
 
+  ////////////////////////////////////
+  // IONVIEWDIDENTER in tab3
   async ionViewDidEnter() {
     // retrieve track
     await this.retrieveTrack();
     // check if track did change
     if (this.previousTrack == this.track) return;
     // write variables
-    await this.htmlVariables();
+    await this.htmlVariables(true);
     // update canvas
     await this.updateAllCanvas();
     // display track on map
@@ -85,7 +87,10 @@ export class Tab3Page {
     // adapt view
     await this.setMapView();
   }
+  ///////////////////////////////////////////
    
+  ///////////////////////////////////////////
+  // CHECK THE MAP TO DISPLAY TRACK in tab3
   async drawTrack() {
     if (this.loaded) {
       await this.displayTrackOnMap();
@@ -98,34 +103,37 @@ export class Tab3Page {
       }
     }  
   }
+  ////////////////////////////////////////////////
 
- async createCanvas() {
-  var canvas: any
-  for (var i in this.properties) {
-    canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
-    this.ctx[i] = await canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = canvas.width;
-    this.canvasNum = canvas.width;
+  ///////////////////////////////////////////////
+  // CREATE CANVAS in tab1 and tab3 (diference in canvas name)
+  async createCanvas(tab1: boolean) {
+    var canvas: any
+    for (var i in this.properties) {
+      canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
+      this.ctx[i] = await canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = canvas.width;
+      this.canvasNum = canvas.width;
+    }
   }
-}  
+  /////////////////////////////////////////////  
 
-  // 3.6. UPDATE ALL CANVAS
-
+  //////////////////////////////////////
+  // UPDATE ALL CANVAS in tab1 and tab3
   async updateAllCanvas() {
-  //  await this.updateMapCanvas(end);
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(this.ctx[i], this.properties[i], 'x');
       else await this.updateCanvas(this.ctx[i], this.properties[i], 't');
     }  
     this.cd.detectChanges();
   } 
+  //////////////////////////////////////
 
-  // 3.9. UPDATE CANVAS
-
+  ///////////////////////////////////////////
+  // UPDATE CANVAS in tab1 and tab3 (difference in color)
   async updateCanvas (ctx: CanvasRenderingContext2D | undefined, propertyName: keyof Data, xParam: string) {
     var num = this.track.data.length;
-    if (!this.track) return;
     if (!ctx) return;
     if (propertyName == 'simulated') return;
     if (xParam == 'x') var xTot = this.track.data[num - 1].distance
@@ -156,11 +164,13 @@ export class Tab3Page {
     ctx.fillStyle = '#00ff00';
     ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    //ctx.stroke();
+    // grid
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
   }
+  ///////////////////////////////////////////
 
-
+  /////////////////////////////////////////////
+  // GRID in tab1 and tab3
   async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number, xParam: string) {
     if (!ctx) return;
     ctx.font = "15px Arial"
@@ -187,13 +197,13 @@ export class Tab3Page {
       ctx.stroke();
       ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
     }
-    ctx.strokeStyle = 'black';
     ctx.setLineDash([]);
   }
+  ///////////////////////////////////////////////////////
   
   //////////////////////////////////
   // FUNCTION TO CREATE AN ALERT
-  // ASKING YOU TO SELECT A TRACK
+  // ASKING YOU TO SELECT A TRACK in tab3
     async selectTrack() {
     // create alert control
     const alert = await this.alertController.create({
@@ -214,16 +224,16 @@ export class Tab3Page {
   }
   ///////////////////////////////////////////////
 
-  //////////////////////////////////
-  // ON INIT, CANVAS AND MAP ARE CRATED
-  // AND THE MAP IS SHOWN
+  ////////////////////////////////////////
+  // ON INIT in tab1 and tab3 (difference in elements shown)
+  // and parameter of createCanvas
   async ngOnInit() {
     // create canvas
-    await this.createCanvas();
+    await this.createCanvas(false);
     // plot map
     this.style = await this.fs.selectStyle(this.provider, this.display2)
-    if (this.provider == 'Tomtom') await this.createTomtomMap();
-    else await this.createMapboxMap();
+    if (this.provider == 'Tomtom') await this.createTomtomMap('map2');
+    else await this.createMapboxMap('map2');
     // show map
     this.show('data2', 'none');
     this.show('map2', 'block');
@@ -233,7 +243,8 @@ export class Tab3Page {
   ////////////////////////////////////  
 
   /////////////////////////////////////
-  // DISPLAY THE TRACK ON THE ORIGINAL MAP
+  // DISPLAY THE TRACK ON THE 
+  // ORIGINAL MAP in tab3
   async displayTrackOnMap() {
     // no map
     if (!this.map) return;
@@ -242,19 +253,14 @@ export class Tab3Page {
     // remove old stuff and create new layer 123
     await this.removeMarkers();
     await this.removeLayer('123');
-    await this.addLayer('123');
+    await this.customLayer('123');
   }
   ////////////////////////////////////
 
-  async addLayer(id: string) {
-    var color: string;
-    if (this.display2 == 'map') color = '#00aa00'
-    else color = '#ff0000'
-    // add layer
+  async addLayer(id: string, slice: any, color: string) {
     await this.map.addLayer({
-      'id': 'elGros' + id,
+      'id': id,
       'type': 'line',
-      'slot': 'top',
       'source': {
         'type': 'geojson',
         'data': {
@@ -265,10 +271,10 @@ export class Tab3Page {
               'geometry': {
                 'type': 'LineString',
                 'properties': {},
-                'coordinates': this.track.map
-               }
+                'coordinates': slice
+              }
             }
-          ] 
+          ]
         }
       },
       'layout': {
@@ -280,6 +286,15 @@ export class Tab3Page {
         'line-width': 4
       }
     }); 
+  }
+
+
+  async customLayer(id: string) {
+    var color: string;
+    if (this.display2 == 'map') color = '#00aa00'
+    else color = '#ff0000'
+    // add layer
+    await this.addLayer('elGros' + id, this.track.map, color)
     var num: number = this.track.data.length;
     this.initialMarker = new tt.Marker({color: '#00aa00', width: '25px', height: '25px'}).
       setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
@@ -291,7 +306,7 @@ export class Tab3Page {
   }
   
   //////////////////////////////////////
-  // REMOVE A LAYER FROM A MAP 
+  // REMOVE A LAYER FROM A MAP in tab1 and tab3
   async removeLayer(id: string) {
     id = 'elGros' + id
     // remove layer and source
@@ -311,17 +326,21 @@ export class Tab3Page {
   }
   //////////////////////////////////////////
 
-
-  async htmlVariables() {
+  ///////////////////////////////////////////
+  // HTMLVARIABLES in tab1 and tab3
+  async htmlVariables(tab1: boolean) {
     const num: number = this.track.data.length;
     if (num > 0) {
       this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);
       this.currentDistance = this.track.data[num - 1].distance;
-      this.currentElevationGain = this.track.data[num - 1].elevationGain;
-      this.currentElevationLoss = this.track.data[num - 1].elevationLoss;
+      if (tab1) {
+        this.currentElevationGain = this.track.data[num - 1].elevationGain;
+        this.currentElevationLoss = this.track.data[num - 1].elevationLoss;
+      }
       this.currentNumber = num;
       this.currentAltitude = this.track.data[num - 1].altitude;
-      this.currentSpeed = this.track.data[num - 1].speed;     
+      if (tab1) this.currentSpeed = this.track.data[num - 1].speed;
+      else this.currentSpeed = this.track.data[num - 1].compSpeed;          
     }
     else {
       this.currentTime = "00:00:00";
@@ -333,6 +352,7 @@ export class Tab3Page {
       this.currentSpeed = 0;
     }
   }
+  ///////////////////////////////////////////
 
   //////////////////////////////////////////////
   // RESIZE AND CENTER MAP in tab1 and tab3
@@ -363,12 +383,11 @@ export class Tab3Page {
     await this.removeLayer('123');
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
-    await this.addLayer('123')
+    await this.customLayer('123')
   }
 
   async displayChange2(option: string) {
     this.display2 = option
-    console.log(this.display2)
     this.show('onMap2','none');
     this.show('satellite2','none');
     this.show('data2', 'none');
@@ -397,75 +416,84 @@ export class Tab3Page {
   }
   /////////////////////////////////////////
 
-async createMapboxMap() {
-  this.map = new mapboxgl.Map({
-    container: 'map2',
-    accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
-    style: this.style,
-    center: [1, 41.5],
-    zoom: 6,
-    trackResize: true,
-  });
-  this.map.on('load',() =>{
-    this.map.resize();
-    this.map.addControl(new mapboxgl.NavigationControl());
-    this.map.scrollZoom.disable();
-    this.loaded = true;
-  });  
-}
-
-async createTomtomMap() {
-  this.map = tt.map({
-    key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
-    container: "map2",
-    center: [1, 41.5],
-    zoom: 6,
-    style: this.style
-  });
-  this.map.on('load',() =>{
-    this.map.resize();
-    this.map.addControl(new tt.NavigationControl()); 
-    this.map.addControl(new tt.ScaleControl());
-    this.map.addControl(new tt.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true,
-      },
-      trackUserLocation: true,		
-    }));
-    this.loaded = true  
-  });
-}
-
-async retrieveTrack() {
-  // get collection
-  this.collection = await this.storage.get('collection'); 
-  if (!this.collection) this.collection = [];
-  // compute number of checked tracks
-  var numChecked = 0;
-  for (var item of this.collection) {
-    if (item.isChecked) numChecked = numChecked + 1;
-    if (numChecked > 1) break;
+  /////////////////////////////////////////////
+  // CREATE MAPBOX MAP in tab1 and tab3 (diff. in container)
+  async createMapboxMap(container: any) {
+    this.map = new mapboxgl.Map({
+      container: container,
+      accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
+      style: this.style,
+      center: [1, 41.5],
+      zoom: 6,
+      trackResize: true,
+    });
+    this.map.on('load',() =>{
+      this.map.resize();
+      this.map.addControl(new mapboxgl.NavigationControl());
+      this.map.scrollZoom.disable();
+      this.loaded = true;
+    });      
   }
-  // if more than one track is checked, uncheck all
-  if (numChecked > 1)  {
-    for (var item of this.collection) { item.isChecked = false; }      
-    numChecked = 0; 
-  } 
-  // if no checked items
-  if (numChecked == 0) {
-    await this.selectTrack();
-    return;
-  }  
-  // find key
-  var key: any;
-  for (var i in this.collection) {  
-    if (this.collection[i].isChecked) {
-      key = this.collection[i].date;
-      break;
+  ///////////////////////////////////////////////
+
+  /////////////////////////////////////////
+  // CREATE TOMTOM MAP in tab1 and tab3 (diff. in container)
+  async createTomtomMap(container: any) {
+    this.map = tt.map({
+      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
+      container: container,
+      center: [1, 41.5],
+      zoom: 6,
+      style: this.style
+    });
+    this.map.on('load',() =>{
+      this.map.resize();
+      this.map.addControl(new tt.NavigationControl()); 
+      this.map.addControl(new tt.ScaleControl());
+      this.map.addControl(new tt.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,		
+      }));
+      this.loaded = true  
+    });
+  }
+  ////////////////////////////////////////////
+
+  ////////////////////////////////////////////
+  // RETRIEVE TRACK in track3
+  async retrieveTrack() {
+    // get collection
+    this.collection = await this.storage.get('collection'); 
+    if (!this.collection) this.collection = [];
+    // compute number of checked tracks
+    var numChecked = 0;
+    for (var item of this.collection) {
+      if (item.isChecked) numChecked = numChecked + 1;
+      if (numChecked > 1) break;
     }
-  }    
-  // retrieve track
-  this.track = await this.storage.get(JSON.stringify(key));
-}
+    // if more than one track is checked, uncheck all
+    if (numChecked > 1)  {
+      for (var item of this.collection) { item.isChecked = false; }      
+      numChecked = 0; 
+    } 
+    // if no checked items
+    if (numChecked == 0) {
+      await this.selectTrack();
+      return;
+    }  
+    // find key
+    var key: any;
+    for (var i in this.collection) {  
+      if (this.collection[i].isChecked) {
+        key = this.collection[i].date;
+        break;
+      }
+    }    
+    // retrieve track
+    this.track = await this.storage.get(JSON.stringify(key));
+  }
+  /////////////////////////////////////////////////
 
 }
