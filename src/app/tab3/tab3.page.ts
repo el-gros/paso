@@ -57,9 +57,13 @@ export class Tab3Page {
   initialMarker: any = undefined;
   finalMarker: any = undefined;
   style: any;
-  provider: string = 'Tomtom' // Tomtom or Mapbox;
   loaded: boolean = false;
-  previousTrack: Track | null = null;
+
+
+  provider: string = 'Tomtom' // Tomtom or Mapbox;
+  mapVisible: string = 'block'
+  dataVisible: string = 'nome'
+  mapStyle: string = 'basic'
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -69,28 +73,23 @@ export class Tab3Page {
     private storage: Storage
   ) {}
 
-  ////////////////////////////////////
-  // IONVIEWDIDENTER in tab3
-  async ionViewDidEnter() {
-    // retrieve track
-    await this.retrieveTrack();
-    // check if track did change
-    if (this.previousTrack == this.track) return;
-    // write variables
-    await this.htmlVariables(true);
-    // update canvas
-    await this.updateAllCanvas();
-    // display track on map
-    await this.drawTrack();
-    await this.displayChange2(this.display2) 
-    this.previousTrack = this.track; 
-    // adapt view
-    await this.setMapView();
+  /*
+  async mapDataShift(option: string) {
+    if (option == 'data') {
+      this.mapVisible = 'none'
+      this.dataVisible = 'block'
+    }
+    else if (option == 'map') {
+      this.mapVisible = 'block'
+      this.dataVisible = 'none'
+    }
   }
-  ///////////////////////////////////////////
+
+
    
   ///////////////////////////////////////////
   // CHECK THE MAP TO DISPLAY TRACK in tab3
+  /*
   async drawTrack() {
     if (this.loaded) {
       await this.displayTrackOnMap();
@@ -117,8 +116,9 @@ export class Tab3Page {
       this.canvasNum = canvas.width;
     }
   }
+  */
   /////////////////////////////////////////////  
-
+/*
   //////////////////////////////////////
   // UPDATE ALL CANVAS in tab1 and tab3
   async updateAllCanvas() {
@@ -201,60 +201,10 @@ export class Tab3Page {
   }
   ///////////////////////////////////////////////////////
   
-  //////////////////////////////////
-  // FUNCTION TO CREATE AN ALERT
-  // ASKING YOU TO SELECT A TRACK in tab3
-    async selectTrack() {
-    // create alert control
-    const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
-      // header and message
-      header: 'Select a track',
-      message: 'Kindly select the track to display',
-      // buttons
-      buttons: [{
-        // proceed button
-        text: 'OK',
-        cssClass: 'alert-button',
-        handler: () => { this.router.navigate(['./tabs/tab2']); }
-      }]
-    });
-    alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
-    await alert.present();  
-  }
-  ///////////////////////////////////////////////
-
-  ////////////////////////////////////////
-  // ON INIT in tab1 and tab3 (difference in elements shown)
-  // and parameter of createCanvas
-  async ngOnInit() {
-    // create canvas
-    await this.createCanvas(false);
-    // plot map
-    this.style = await this.fs.selectStyle(this.provider, this.display2)
-    if (this.provider == 'Tomtom') await this.createTomtomMap('map2');
-    else await this.createMapboxMap('map2');
-    // show map
-    this.show('data2', 'none');
-    this.show('map2', 'block');
-    this.show('onMap2', 'block');
-    this.show('satellite2','none');
-  }
-  ////////////////////////////////////  
 
   /////////////////////////////////////
   // DISPLAY THE TRACK ON THE 
   // ORIGINAL MAP in tab3
-  async displayTrackOnMap() {
-    // no map
-    if (!this.map) return;
-    // no points enough
-    if (this.track.map.length < 2) return;
-    // remove old stuff and create new layer 123
-    await this.removeMarkers();
-    await this.removeLayer('123');
-    await this.customLayer('123');
-  }
   ////////////////////////////////////
 
   async addLayer(id: string, slice: any, color: string) {
@@ -289,21 +239,6 @@ export class Tab3Page {
   }
 
 
-  async customLayer(id: string) {
-    var color: string;
-    if (this.display2 == 'map') color = '#00aa00'
-    else color = '#ff0000'
-    // add layer
-    await this.addLayer('elGros' + id, this.track.map, color)
-    var num: number = this.track.data.length;
-    this.initialMarker = new tt.Marker({color: '#00aa00', width: '25px', height: '25px'}).
-      setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-    this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
-      setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
-    // show map
-    this.show('data2', 'none');
-    this.show('map2', 'block')
-  }
   
   //////////////////////////////////////
   // REMOVE A LAYER FROM A MAP in tab1 and tab3
@@ -319,14 +254,15 @@ export class Tab3Page {
 
   ////////////////////////////////////
   // REMOVE MARKERS in tab3
+  /*
   async removeMarkers() {
     // remove markers
-    if (this.initialMarker) await this.initialMarker.remove();
-    if (this.finalMarker) await this.finalMarker.remove();    
   }
+  */
   //////////////////////////////////////////
 
   ///////////////////////////////////////////
+  /*
   // HTMLVARIABLES in tab1 and tab3
   async htmlVariables(tab1: boolean) {
     const num: number = this.track.data.length;
@@ -375,6 +311,7 @@ export class Tab3Page {
   }
   /////////////////////////////////////////////////////////
 
+  /*
   async mapChange2()  {
     var previous: any = this.style
     this.style = await this.fs.selectStyle(this.provider, this.display2);
@@ -406,8 +343,10 @@ export class Tab3Page {
       this.show('data2', 'block');
     }
   }
+*/
 
   ////////////////////////////////////////////
+/*
   // SHOW OR HIDE AN ELEMENT in tab1 and tab3
   show (id: string, action: string) {
     var obj: HTMLElement | null = document.getElementById(id);
@@ -461,39 +400,7 @@ export class Tab3Page {
   }
   ////////////////////////////////////////////
 
-  ////////////////////////////////////////////
-  // RETRIEVE TRACK in track3
-  async retrieveTrack() {
-    // get collection
-    this.collection = await this.storage.get('collection'); 
-    if (!this.collection) this.collection = [];
-    // compute number of checked tracks
-    var numChecked = 0;
-    for (var item of this.collection) {
-      if (item.isChecked) numChecked = numChecked + 1;
-      if (numChecked > 1) break;
-    }
-    // if more than one track is checked, uncheck all
-    if (numChecked > 1)  {
-      for (var item of this.collection) { item.isChecked = false; }      
-      numChecked = 0; 
-    } 
-    // if no checked items
-    if (numChecked == 0) {
-      await this.selectTrack();
-      return;
-    }  
-    // find key
-    var key: any;
-    for (var i in this.collection) {  
-      if (this.collection[i].isChecked) {
-        key = this.collection[i].date;
-        break;
-      }
-    }    
-    // retrieve track
-    this.track = await this.storage.get(JSON.stringify(key));
-  }
-  /////////////////////////////////////////////////
-
+*/
 }
+
+

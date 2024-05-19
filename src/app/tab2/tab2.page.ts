@@ -141,7 +141,7 @@ export class Tab2Page {
 
 
   async displayTrack() {
-    this.router.navigate(['./tabs/tab3']);
+    this.router.navigate(['./tabs/tab2']);
   }
 
   async uncheckAll() {
