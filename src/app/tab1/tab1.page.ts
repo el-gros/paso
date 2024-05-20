@@ -97,10 +97,20 @@ export class Tab1Page   {
     else await this.createMapboxMap();
     // elements shown
     //this.show('data', this.dataVisible);
-    this.show('map', this.mapVisible);
+    this.show('map', 'block');
+    this.show('data', 'none');
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'none');
+    this.show('mappage', 'none');
+    this.show('datapage', 'block');
   }  
 
   async ionViewDidEnter() {
+    // change map provider
+    await this.changeMapProvider();
+    // change map style
+    await this.changeMapStyle();
     // retrieve track
     await this.retrieveTrack();
     // check if there is track or it did not change
@@ -116,6 +126,23 @@ export class Tab1Page   {
     this.previousTrack = this.oldTrack; 
     // adapt view
     await this.setMapView(this.oldTrack);
+  }
+
+  async changeMapProvider() {
+    this.provider = await this.fs.getProvider();
+  }
+
+  async changeMapStyle() {
+    var preStyle = this.mapStyle;
+    this.mapStyle = await this.fs.getStyle();
+    if (this.mapStyle != preStyle) return;
+    // remove all custom layers
+    await this.removeCustomLayers();
+    // change map style
+    await this.map.setStyle(this.style)
+    // display all custom layers
+    await new Promise(f => setTimeout(f, 500));
+    await this.addFullLayer()
   }
 
   async createCanvas() {
@@ -193,10 +220,7 @@ export class Tab1Page   {
       numChecked = 0; 
     } 
     // if no checked items
-    if (numChecked == 0) {
-      await this.selectTrack();
-      return;
-    }  
+    if (numChecked == 0) return;
     // find key
     var key: any;
     for (var i in this.collection) {  
@@ -207,25 +231,6 @@ export class Tab1Page   {
     }    
     // retrieve track
     this.oldTrack = await this.storage.get(JSON.stringify(key));
-  }
-
-  async selectTrack() {
-    // create alert control
-    const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
-      // header and message
-      header: 'Select a track',
-      message: 'Kindly select the track to display',
-      // buttons
-      buttons: [{
-        // proceed button
-        text: 'OK',
-        cssClass: 'alert-button',
-        handler: () => { this.router.navigate(['./tabs/tab2']); }
-      }]
-    });
-    alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
-    await alert.present();  
   }
 
   async displayOldTrack() {
@@ -393,6 +398,9 @@ export class Tab1Page   {
     if (this.oldTrack) await this.displayOldTrack();
     // start tracking
     await this.trackPosition();
+    this.show('start', 'none');
+    this.show('stop', 'block');
+    this.show('save', 'none');
   }
 
   async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number, xParam: string) {
@@ -625,6 +633,9 @@ export class Tab1Page   {
   }
 
   async stopTracking() {
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'block');
     // red marker
     const num: number = this.track.data.length
     if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
@@ -632,10 +643,7 @@ export class Tab1Page   {
     // remove watcher
     try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
     catch {}
-    // control variables
-    //this.show('after','block')
     this.watcherId = 0;
-    if (num == 0) return;
     // filter remaining values
     for (var i = this.filtered + 1; i < num; i++) {
       await this.filter(i)
@@ -646,7 +654,6 @@ export class Tab1Page   {
   }
 
   async setTrackDetails() {
-    //this.show('before','block')
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: 'Track Details',
@@ -708,6 +715,9 @@ export class Tab1Page   {
     // add new track definition and save collection
     this.collection.push(trackDef);
     await this.storage.set('collection', this.collection)
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'none');
   }
 
   async addFullLayer() {
@@ -717,10 +727,24 @@ export class Tab1Page   {
     await this.addLayer('elGros122', this.track.map, color)
   }
 
-  async recordChange(option: string) {
+  async buttonClick(option: string) {
     if (option == 'play') await this.startTracking();
     else if (option == 'stop') await this.stopTracking();
-    else await this.setTrackDetails();  
+    else if (option == 'save') await this.setTrackDetails();  
+    else if (option == 'mappage') {
+      this.show('map', 'block');
+      this.show('data', 'none');
+      this.show('mappage', 'none');
+      this.show('datapage', 'block');
+    }
+    else if (option == 'datapage') {
+      this.show('map', 'none');
+      this.show('data', 'block');
+      this.show('mappage', 'block');
+      this.show('datapage', 'none');
+    }
+    else if (option == 'settings') this.router.navigate(['tab3']);
+    else if (option == 'list') this.router.navigate(['tab2']);
   }
 
   /////////////////////////////////////////////////
@@ -763,7 +787,27 @@ export class Tab1Page   {
     }
   }
   //////////////////////////////////////////////  
-*/
+  async selectTrack() {
+    // create alert control
+    const alert = await this.alertController.create({
+      cssClass: 'alert greenAlert',
+      // header and message
+      header: 'Select a track',
+      message: 'Kindly select the track to display',
+      // buttons
+      buttons: [{
+        // proceed button
+        text: 'OK',
+        cssClass: 'alert-button',
+        handler: () => { this.router.navigate(['./tabs/tab2']); }
+      }]
+    });
+    alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
+    await alert.present();  
+  }
+
+
+  */
 
 }
 

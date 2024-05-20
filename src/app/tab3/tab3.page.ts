@@ -7,7 +7,6 @@ import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
-import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms'
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
@@ -72,6 +71,22 @@ export class Tab3Page {
     private router: Router,
     private storage: Storage
   ) {}
+
+  styleChanged(event: any) {
+    const style = event.detail.checked;
+    this.fs.setStyle(style);
+    this.router.navigate(['tab1']);
+  } 
+ 
+  providerChanged(event: any) {
+    const provider = event.detail.checked;
+    this.fs.setProvider(provider);
+    this.router.navigate(['tab1']);
+  } 
+
+  goHome() {
+    this.router.navigate(['tab1']);
+  }
 
   /*
   async mapDataShift(option: string) {

@@ -141,7 +141,7 @@ export class Tab2Page {
 
 
   async displayTrack() {
-    this.router.navigate(['./tabs/tab2']);
+    this.router.navigate(['tab1']);
   }
 
   async uncheckAll() {
@@ -160,5 +160,8 @@ export class Tab2Page {
     }
   }
 
+  async ngOndestroy() {
+    await this.uncheckAll();
+  }
 
 }

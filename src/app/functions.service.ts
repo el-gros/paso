@@ -5,8 +5,27 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class FunctionsService {
+  private _style: any;
+  private _provider: any;
+  private _view: any;
 
   constructor() { }
+
+  setStyle(value: any) {
+    this._style = value;
+  }
+
+  getStyle(): any {
+    return this._style;
+  }
+
+  setProvider(value: any) {
+    this._provider = value;
+  }
+
+  getProvider(): any {
+    return this._provider;
+  }
 
   async computeDistance(lon1: number, lat1: number, lon2:number, lat2:number) {
     const toRadians = (degrees: number) => degrees * (Math.PI / 180);

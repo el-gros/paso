@@ -1,5 +1,51 @@
 <ion-content>
-  Hello!
+
+  <!-- home -->
+  <ion-button shape="round">
+    <ion-icon name='home' (click)="goHome()"></ion-icon>        
+  </ion-button>
+  <!-- map provider -->
+  <ion-grid>
+    <ion-row class="centered-content">
+      <ion-label>
+        <h2 class="toggle-title">Map provider</h2>
+      </ion-label>
+    </ion-row>
+    <ion-row>
+      <div class="toggle-container">
+        <ion-col size = 4 class="centered-content">
+          <span class="toggle-label">Tomtom</span>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <ion-toggle (ionChange)="providerChanged($event)"></ion-toggle>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <span class="toggle-label">Mapbox</span>
+        </ion-col>
+      </div>
+    </ion-row>
+
+  <!-- map style -->
+    <ion-row class="centered-content">
+      <ion-label>
+        <h2 class="toggle-title">Map style</h2>
+      </ion-label>
+    </ion-row>
+    <ion-row>
+      <div class="toggle-container">
+        <ion-col size = 4 class="centered-content">
+          <span class="toggle-label">Basic</span>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <ion-toggle (ionChange)="styleChanged($event)"></ion-toggle>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <span class="toggle-label">Satellite</span>
+        </ion-col>
+      </div>
+    </ion-row>
+  </ion-grid>
+  
 </ion-content>
   <!-- CURRENT: MAP-DATA SHIFT
   <ion-fab id='mapDataShift' slot="fixed" horizontal="left" vertical="top">
