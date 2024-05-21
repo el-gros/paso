@@ -27,6 +27,10 @@ export class Tab2Page {
     private storage: Storage
   ) {}
 
+  goHome() {
+    this.router.navigate(['tab1']);
+  }
+
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
     // retrieve tracks definition
@@ -158,10 +162,6 @@ export class Tab2Page {
     for (var element of remove) {
       await this.storage.remove(JSON.stringify(element.date));
     }
-  }
-
-  async ngOndestroy() {
-    await this.uncheckAll();
   }
 
 }

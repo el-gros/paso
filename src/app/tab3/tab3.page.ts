@@ -58,7 +58,8 @@ export class Tab3Page {
   style: any;
   loaded: boolean = false;
 
-
+  styleChecked: boolean = false;
+  providerChecked: boolean = false;
   provider: string = 'Tomtom' // Tomtom or Mapbox;
   mapVisible: string = 'block'
   dataVisible: string = 'nome'
@@ -72,20 +73,33 @@ export class Tab3Page {
     private storage: Storage
   ) {}
 
-  styleChanged(event: any) {
-    const style = event.detail.checked;
-    this.fs.setStyle(style);
+  async styleChanged() {
+    if (this.styleChecked) this.style = 'satellite';
+    else this.style = 'basic'
+    await this.storage.set('style', this.style)
     this.router.navigate(['tab1']);
   } 
  
-  providerChanged(event: any) {
-    const provider = event.detail.checked;
-    this.fs.setProvider(provider);
+  async providerChanged() {
+    if (this.providerChecked) this.provider = 'Mapbox';
+    else this.provider = 'Tomtom'
+    await this.storage.set('provider', this.provider)
     this.router.navigate(['tab1']);
   } 
 
   goHome() {
     this.router.navigate(['tab1']);
+  }
+
+  async ionViewWillEnter() {
+    try{this.provider = await this.storage.get('provider'); }
+    catch{}
+    try {this.style = await this.storage.get('style'); }
+    catch{}  
+    if (this.provider == 'Mapbox') this.providerChecked = true;
+    else this.providerChecked = false;
+    if (this.style == 'satellite') this.styleChecked = true;
+    else this.styleChecked = false    
   }
 
   /*

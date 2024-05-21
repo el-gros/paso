@@ -1,9 +1,12 @@
 <ion-content>
 
   <!-- home -->
-  <ion-button shape="round">
-    <ion-icon name='home' (click)="goHome()"></ion-icon>        
-  </ion-button>
+  <ion-fab slot="fixed" horizontal="center" vertical="top">
+    <ion-fab-button (click)="goHome()">
+      <ion-icon name='home'></ion-icon>
+    </ion-fab-button>  
+  </ion-fab>
+
   <!-- map provider -->
   <ion-grid>
     <ion-row class="centered-content">
@@ -14,13 +17,13 @@
     <ion-row>
       <div class="toggle-container">
         <ion-col size = 4 class="centered-content">
-          <span class="toggle-label">Tomtom</span>
+          <span class="label_a">Tomtom</span>
         </ion-col>
         <ion-col size = 4 class="centered-content">
-          <ion-toggle (ionChange)="providerChanged($event)"></ion-toggle>
+          <ion-toggle [(ngModel)]="providerChecked" (ionChange)="providerChanged()"></ion-toggle>
         </ion-col>
         <ion-col size = 4 class="centered-content">
-          <span class="toggle-label">Mapbox</span>
+          <span class="label_b">Mapbox</span>
         </ion-col>
       </div>
     </ion-row>
@@ -34,13 +37,13 @@
     <ion-row>
       <div class="toggle-container">
         <ion-col size = 4 class="centered-content">
-          <span class="toggle-label">Basic</span>
+          <span class="label_a">Basic</span>
         </ion-col>
         <ion-col size = 4 class="centered-content">
-          <ion-toggle (ionChange)="styleChanged($event)"></ion-toggle>
+          <ion-toggle [(ngModel)]="styleChecked" (ionChange)="styleChanged()"></ion-toggle>
         </ion-col>
         <ion-col size = 4 class="centered-content">
-          <span class="toggle-label">Satellite</span>
+          <span class="label_b">Satellite</span>
         </ion-col>
       </div>
     </ion-row>

@@ -72,9 +72,9 @@ export class Tab1Page   {
   loaded: boolean = false;
 
   provider: string = 'Tomtom' // Tomtom or Mapbox;
-  mapVisible: string = 'block';
-  dataVisible: string = 'nome';
   mapStyle: string = 'basic';
+  providerChecked: boolean = false;
+  styleChecked: boolean = false
   previousTrack: Track | null = null;
   oldTrack: Track | null = null;
 
@@ -89,6 +89,14 @@ export class Tab1Page   {
   async ngOnInit() {
     // create storage 
     await this.storage.create();
+    // map provider
+    try{this.provider = await this.storage.get('provider'); }
+    catch {}
+    // map style
+    try{this.mapStyle = await this.storage.get('style'); }
+    catch{}
+    // change map style
+    await this.changeMapStyle();
     // create canvas
     await this.createCanvas();
     // plot map
@@ -96,14 +104,13 @@ export class Tab1Page   {
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
     // elements shown
-    //this.show('data', this.dataVisible);
     this.show('map', 'block');
     this.show('data', 'none');
     this.show('start', 'block');
     this.show('stop', 'none');
     this.show('save', 'none');
-    this.show('mappage', 'none');
-    this.show('datapage', 'block');
+    this.show('mapbutton', 'none');
+    this.show('databutton', 'block');
   }  
 
   async ionViewDidEnter() {
@@ -122,27 +129,43 @@ export class Tab1Page   {
     await this.updateAllCanvas(this.oldCtx, this.oldTrack);
     // display track on map
     await this.displayOldTrack();
-    //await this.displayChange2(this.display2) 
     this.previousTrack = this.oldTrack; 
     // adapt view
     await this.setMapView(this.oldTrack);
   }
 
-  async changeMapProvider() {
-    this.provider = await this.fs.getProvider();
-  }
-
   async changeMapStyle() {
     var preStyle = this.mapStyle;
-    this.mapStyle = await this.fs.getStyle();
-    if (this.mapStyle != preStyle) return;
-    // remove all custom layers
+    try{this.mapStyle = await this.storage.get('style'); }
+    catch {}
+    if (this.mapStyle == preStyle) return;
     await this.removeCustomLayers();
-    // change map style
+    await this.removeLayer('123');
+    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     await this.map.setStyle(this.style)
-    // display all custom layers
     await new Promise(f => setTimeout(f, 500));
-    await this.addFullLayer()
+    // display old track on map
+    await this.displayOldTrack();
+    // display current track
+    await this.addFullLayer();
+  }
+
+  async changeMapProvider() {
+    var preProvider = this.provider;
+    try{this.provider = await this.storage.get('provider'); }
+    catch {}
+    if (preProvider == this.provider) return;
+    this.map.remove();
+    // plot map
+    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
+    if (this.provider == 'Tomtom') await this.createTomtomMap();
+    else await this.createMapboxMap();
+    this.map.on('load', async () => {
+      // display old track on map
+      await this.displayOldTrack();
+      // display current track
+      await this.addFullLayer();
+    })
   }
 
   async createCanvas() {
@@ -208,6 +231,7 @@ export class Tab1Page   {
     // get collection
     this.collection = await this.storage.get('collection'); 
     if (!this.collection) this.collection = [];
+    console.log(this.collection)
     // compute number of checked tracks
     var numChecked = 0;
     for (var item of this.collection) {
@@ -231,6 +255,11 @@ export class Tab1Page   {
     }    
     // retrieve track
     this.oldTrack = await this.storage.get(JSON.stringify(key));
+    // uncheck all
+    for (var item of this.collection) {
+      item.isChecked = false;
+    }
+    await this.storage.set('collection', this.collection); 
   }
 
   async displayOldTrack() {
@@ -265,9 +294,6 @@ export class Tab1Page   {
       setLngLat([this.oldTrack.map[0][0], this.oldTrack.map[0][1]]).addTo(this.map);
     this.oldFinalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
       setLngLat([this.oldTrack.map[num - 1][0], this.oldTrack.map[num - 1][1]]).addTo(this.map);
-    // elements shown
-    //this.show('data', this.dataVisible);
-    this.show('map', this.mapVisible);
   }
 
   async setMapView(track: Track) {
@@ -731,17 +757,17 @@ export class Tab1Page   {
     if (option == 'play') await this.startTracking();
     else if (option == 'stop') await this.stopTracking();
     else if (option == 'save') await this.setTrackDetails();  
-    else if (option == 'mappage') {
+    else if (option == 'map') {
       this.show('map', 'block');
       this.show('data', 'none');
-      this.show('mappage', 'none');
-      this.show('datapage', 'block');
+      this.show('mapbutton', 'none');
+      this.show('databutton', 'block');
     }
-    else if (option == 'datapage') {
+    else if (option == 'data') {
       this.show('map', 'none');
       this.show('data', 'block');
-      this.show('mappage', 'block');
-      this.show('datapage', 'none');
+      this.show('mapbutton', 'block');
+      this.show('databutton', 'none');
     }
     else if (option == 'settings') this.router.navigate(['tab3']);
     else if (option == 'list') this.router.navigate(['tab2']);

@@ -23,9 +23,9 @@ ion-toggle {
   margin-left: 20px;
 }
 
-ion-fab-button {
-  --background: #00ff00 !important;
-  --color: black
+ion-button{
+  margin-top: 10px;
+  margin-left: 20px;
 }
 
 ion-icon {
@@ -33,5 +33,9 @@ ion-icon {
 }
 
 ion-grid {
-  margin-top: 20px;
+  margin-top: 75px;
+}
+
+.label_b {
+  color: #3880ff;
 }
