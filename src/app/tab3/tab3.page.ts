@@ -60,6 +60,7 @@ export class Tab3Page {
 
   styleChecked: boolean = false;
   providerChecked: boolean = false;
+  archivedChecked: boolean = true;
   provider: string = 'Tomtom' // Tomtom or Mapbox;
   mapVisible: string = 'block'
   dataVisible: string = 'nome'
@@ -84,6 +85,11 @@ export class Tab3Page {
     if (this.providerChecked) this.provider = 'Mapbox';
     else this.provider = 'Tomtom'
     await this.storage.set('provider', this.provider)
+    this.router.navigate(['tab1']);
+  } 
+
+  async archivedChanged() {
+    await this.storage.set('archived', this.archivedChecked)
     this.router.navigate(['tab1']);
   } 
 

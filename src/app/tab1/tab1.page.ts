@@ -73,8 +73,6 @@ export class Tab1Page   {
 
   provider: string = 'Tomtom' // Tomtom or Mapbox;
   mapStyle: string = 'basic';
-  providerChecked: boolean = false;
-  styleChecked: boolean = false
   previousTrack: Track | null = null;
   oldTrack: Track | null = null;
 
@@ -95,6 +93,8 @@ export class Tab1Page   {
     // map style
     try{this.mapStyle = await this.storage.get('style'); }
     catch{}
+    // archived track
+    await this.storage.set('archived', true); 
     // change map style
     await this.changeMapStyle();
     // create canvas
@@ -109,6 +109,7 @@ export class Tab1Page   {
     this.show('start', 'block');
     this.show('stop', 'none');
     this.show('save', 'none');
+    this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
   }  
@@ -118,6 +119,9 @@ export class Tab1Page   {
     await this.changeMapProvider();
     // change map style
     await this.changeMapStyle();
+    // archived track
+    var visible: boolean = await this.archivedVisibility();
+    if (!visible) return;
     // retrieve track
     await this.retrieveTrack();
     // check if there is track or it did not change
@@ -148,6 +152,18 @@ export class Tab1Page   {
     await this.displayOldTrack();
     // display current track
     await this.addFullLayer();
+  }
+
+  async archivedVisibility() {
+    try{var archived = await this.storage.get('archived'); }
+    catch{}
+    if (archived) return true
+    else {
+      if (this.oldInitialMarker) this.oldInitialMarker.remove();
+      if (this.oldFinalMarker) this.oldFinalMarker.remove();    
+      await this.removeLayer('123');
+      return false;
+    }
   }
 
   async changeMapProvider() {
@@ -421,11 +437,13 @@ export class Tab1Page   {
     if (this.finalMarker) this.finalMarker.remove();
     if (this.currentMarker) this.currentMarker.remove();        
     await this.removeCustomLayers();
+    // display old track
     if (this.oldTrack) await this.displayOldTrack();
     // start tracking
     await this.trackPosition();
     this.show('start', 'none');
     this.show('stop', 'block');
+    this.show('trash', 'none');
     this.show('save', 'none');
   }
 
@@ -659,9 +677,10 @@ export class Tab1Page   {
   }
 
   async stopTracking() {
-    this.show('start', 'block');
+    this.show('start', 'none');
     this.show('stop', 'none');
     this.show('save', 'block');
+    this.show('trash', 'block');
     // red marker
     const num: number = this.track.data.length
     if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
@@ -677,6 +696,20 @@ export class Tab1Page   {
     // update map and canvas
     await this.setMapView(this.track);
     await this.updateAllCanvas(this.ctx, this.track);
+  }
+
+  async removeTrack() {
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'none');
+    this.show('trash', 'none');
+    // new track: initialize all variables and plots
+    this.initialize();
+    // remove markers and track layers if exist
+    if (this.initialMarker) this.initialMarker.remove();
+    if (this.finalMarker) this.finalMarker.remove();
+    if (this.currentMarker) this.currentMarker.remove();        
+    await this.removeCustomLayers();
   }
 
   async setTrackDetails() {
@@ -744,6 +777,7 @@ export class Tab1Page   {
     this.show('start', 'block');
     this.show('stop', 'none');
     this.show('save', 'none');
+    this.show('trash', 'block');
   }
 
   async addFullLayer() {
@@ -757,6 +791,7 @@ export class Tab1Page   {
     if (option == 'play') await this.startTracking();
     else if (option == 'stop') await this.stopTracking();
     else if (option == 'save') await this.setTrackDetails();  
+    else if (option == 'trash') await this.removeTrack();  
     else if (option == 'map') {
       this.show('map', 'block');
       this.show('data', 'none');

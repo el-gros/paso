@@ -47,6 +47,26 @@
         </ion-col>
       </div>
     </ion-row>
+
+    <!-- archived track -->
+    <ion-row class="centered-content">
+      <ion-label>
+        <h2 class="toggle-title">Archived track</h2>
+      </ion-label>
+    </ion-row>
+    <ion-row>
+      <div class="toggle-container">
+        <ion-col size = 4 class="centered-content">
+          <span class="label_a">Invisible</span>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <ion-toggle [(ngModel)]="archivedChecked" (ionChange)="archivedChanged()"></ion-toggle>
+        </ion-col>
+        <ion-col size = 4 class="centered-content">
+          <span class="label_b">Visible</span>
+        </ion-col>
+      </div>
+    </ion-row>
   </ion-grid>
   
 </ion-content>
