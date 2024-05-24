@@ -80,7 +80,7 @@
 
 <swiper-container id="data">
   <swiper-slide>
-    <div id = "card">
+    <div id = "card" class="card">
       CURRENT ROUTE
       <br>
       Distance: {{currentDistance | number:'1.3' }} km
@@ -99,7 +99,10 @@
       Current speed: <ng-container *ngIf="currentSpeed !== undefined">{{currentSpeed | number:'1.1-1' }} km/h</ng-container>
       <br>
     </div>
-    <div id = "card">
+    <div id = "card2" *ngIf="oldTrack" class="card">
+      ARCHIVED ROUTE
+      <br>
+      {{oldTrack.name}}
       <br>
       Distance: {{oldDistance | number:'1.3' }} km
       <br>

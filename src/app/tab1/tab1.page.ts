@@ -66,8 +66,9 @@ export class Tab1Page   {
   oldInitialMarker: any | undefined = undefined;
   oldFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
-  lag: number = 8;
-  filtered: number = -1;
+  lag: number = 8; // 8
+  distanceFilter: number = 5; // 5
+  filtered: number = -1; 
   style: any;
   loaded: boolean = false;
 
@@ -335,8 +336,6 @@ export class Tab1Page   {
     if (num > 0) {
       this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);
       this.currentDistance = this.track.data[num - 1].distance;
-      this.currentElevationGain = this.track.data[num - 1].elevationGain;
-      this.currentElevationLoss = this.track.data[num - 1].elevationLoss;
       this.currentNumber = num;
       this.currentAltitude = this.track.data[num - 1].altitude;
       this.currentSpeed = this.track.data[num - 1].speed;
@@ -512,7 +511,7 @@ export class Tab1Page   {
       backgroundTitle: "Tracking You.",
       requestPermissions: true,
       stale: false,
-      distanceFilter: 5
+      distanceFilter: this.distanceFilter
     }, async (location: Location, error: Error) => {
       if (location) {
         await this.process(location);
@@ -635,16 +634,18 @@ export class Tab1Page   {
     // re-calculate elevation gains / losses
     if (i==0) return;
     var slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
+    console.log('s',slope, this.currentElevationGain, this.currentElevationLoss)
     if (slope > 0) {
-      this.track.data[i].elevationGain = this.currentElevationGain + slope; 
-      this.currentElevationGain = this.track.data[i].elevationGain;
-      this.track.data[i].elevationLoss = this.currentElevationLoss
+      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain + slope; 
+      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss
     }
     else {
-      this.track.data[i].elevationGain = this.currentElevationGain; 
-      this.track.data[i].elevationLoss = this.currentElevationLoss - slope
-      this.currentElevationLoss = this.track.data[i].elevationLoss;
+      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain; 
+      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss - slope
     }
+    this.currentElevationGain = this.track.data[i].elevationGain
+    this.currentElevationLoss = this.track.data[i].elevationLoss
+    console.log(this.currentElevationGain, this.currentElevationLoss)
   } 
 
   async filterSpeed() {

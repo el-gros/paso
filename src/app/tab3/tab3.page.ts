@@ -62,6 +62,7 @@ export class Tab3Page {
   providerChecked: boolean = false;
   archivedChecked: boolean = true;
   provider: string = 'Tomtom' // Tomtom or Mapbox;
+  archived: string = 'visible'
   mapVisible: string = 'block'
   dataVisible: string = 'nome'
   mapStyle: string = 'basic'
@@ -89,7 +90,9 @@ export class Tab3Page {
   } 
 
   async archivedChanged() {
-    await this.storage.set('archived', this.archivedChecked)
+    if (this.archivedChecked) this.archived = 'visible';
+    else this.archived = 'invisible'
+    await this.storage.set('archived', this.archived)
     this.router.navigate(['tab1']);
   } 
 
@@ -102,10 +105,14 @@ export class Tab3Page {
     catch{}
     try {this.style = await this.storage.get('style'); }
     catch{}  
+    try {this.style = await this.storage.get('archived'); }
+    catch{}  
     if (this.provider == 'Mapbox') this.providerChecked = true;
     else this.providerChecked = false;
     if (this.style == 'satellite') this.styleChecked = true;
-    else this.styleChecked = false    
+    else this.styleChecked = false;    
+    if (this.archived == 'visible') this.archivedChecked = true;
+    else this.archivedChecked = false;    
   }
 
   /*
