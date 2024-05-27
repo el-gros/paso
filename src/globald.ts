@@ -48,4 +48,3 @@ export interface Location {
     isChecked: boolean
   }
 
-

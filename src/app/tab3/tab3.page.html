@@ -67,7 +67,17 @@
         </ion-col>
       </div>
     </ion-row>
+
+    <ion-row>
+    </ion-row>
+    <ion-row>
+      <ion-col size="4" offset="4">
+        <input type="file" (change)="onFileSelected($event)" accept=".gpx">
+      </ion-col>  
+    </ion-row>
   </ion-grid>
+
+  
   
 </ion-content>
   <!-- CURRENT: MAP-DATA SHIFT

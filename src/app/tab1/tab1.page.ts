@@ -86,6 +86,7 @@ export class Tab1Page   {
   ) { }          
 
   async ngOnInit() {
+    return
     // create storage 
     await this.storage.create();
     // map provider
@@ -116,6 +117,7 @@ export class Tab1Page   {
   }  
 
   async ionViewDidEnter() {
+    return
     // change map provider
     await this.changeMapProvider();
     // change map style
@@ -131,12 +133,12 @@ export class Tab1Page   {
     // write variables
     await this.htmlVariables();
     // update canvas
-    await this.updateAllCanvas(this.oldCtx, this.oldTrack);
+//    await this.updateAllCanvas(this.oldCtx, this.oldTrack);
     // display track on map
     await this.displayOldTrack();
     this.previousTrack = this.oldTrack; 
     // adapt view
-    await this.setMapView(this.oldTrack);
+//    await this.setMapView(this.oldTrack);
   }
 
   async changeMapStyle() {
