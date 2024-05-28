@@ -43,10 +43,11 @@ export class Tab3Page {
   providerChecked: boolean = false;
   archivedChecked: boolean = true;
   provider: string = 'Tomtom' // Tomtom or Mapbox;
-  archived: string = 'visible'
-  mapVisible: string = 'block'
-  dataVisible: string = 'nome'
-  mapStyle: string = 'basic'
+  archived: string = 'visible';
+  mapVisible: string = 'block';
+  dataVisible: string = 'nome';
+  mapStyle: string = 'basic';
+
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -105,41 +106,91 @@ export class Tab3Page {
   }
 
   readFile(file: File) {
+    var success: boolean = false;
     const reader = new FileReader();
-    reader.onload = (e: any) => {
+    reader.onload = async (e: any) => {
       const text = e.target.result;
-      this.parseGpx(text);
+      success = await this.parseGpx(text);
+      console.log(success)
     };
     reader.readAsText(file);
   }
 
-  parseGpx(gpxText: string) {
+  async parseGpx(gpxText: string) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
     // Parse tracks and store the main track
     const tracks = xmlDoc.getElementsByTagName('trk');
-    console.log(tracks)
-    if (tracks.length == 0) return;
+    if (tracks.length == 0) return false;
     var trackSegments = tracks[0].getElementsByTagName('trkseg');
-    if (trackSegments.length == 0) return;
+    if (trackSegments.length == 0) return false;
     var trackSeg = trackSegments[0];
     this.importedTrack.name = tracks[0].getElementsByTagName('name')[0]?.textContent
-    var segment = [];
+    if (this.importedTrack.name == null) this.importedTrack.name = 'no name'
     var trackPoints = trackSeg.getElementsByTagName('trkpt');
     for (let k = 0; k < trackPoints.length; k++) {
       const lat = trackPoints[k].getAttribute('lat');
       const lon = trackPoints[k].getAttribute('lon');
       const ele = trackPoints[k].getElementsByTagName('ele')[0]?.textContent;
       const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
-      segment.push({ lat, lon, ele, time });
+      if (!lat || !lon) continue;
+      // lon, lat
+      await this.importedTrack.map.push([+lon, +lat]);
+      var num: number = await this.importedTrack.map.length;
+      // distance
+      if (num == 1) var distance = 0.
+      else distance = this.importedTrack.map[num-2].distance + await this.fs.computeDistance(this.importedTrack.map[num-2][0], this.importedTrack.map[num-2][1], +lon, +lat)
+      // altitude
+      if (ele) var alt: number | null = +ele;
+      else alt = null;
+      // elevation gain & loss
+      if (num == 1) {var gain: number | null = 0; var loss: number | null = 0;} 
+      else {
+        if (ele && this.importedTrack.data[num-2].altitude) {
+          var slope: number = +ele - this.importedTrack.data[num-2].altitude;
+          if (slope >=0) {
+            gain = this.importedTrack.data[num-2].elevationGain + slope;
+            loss = this.importedTrack.data[num-2].elevationLoss;
+          }
+          else {
+            gain = this.importedTrack.data[num-2].elevationGain;
+            loss = this.importedTrack.data[num-2].elevationLoss - slope;
+          }
+        }
+        else {gain = null; loss = null}
+      }
+      // time
+      if (time) var locTime: Date | null = new Date(time);
+      else locTime = null;
+      var accTime: number | null;
+      if (num == 1) accTime = 0;
+      else if (!locTime || !this.importedTrack.data[0].time) accTime = null
+      else accTime = locTime.getTime() - this.importedTrack.data[0].time 
+      this.importedTrack.data.push({
+        accuracy: null,
+        altitude: alt,
+        altitudeAccuracy: null,
+        bearing: null,
+        simulated: null,
+        speed: null,
+        time: locTime,
+        compSpeed: null,
+        distance: distance,
+        elevationGain: gain,
+        elevationLoss: loss,
+        accTime: accTime            
+      });
+      if (locTime && this.importedTrack.data[num-1].time) 
+        this.importedTrack = await this.fs.filterSpeed(this.importedTrack);
     }
-    console.log(segment)
+    return true
   }
+}
 
 
   
 
-}
+
 
 
 

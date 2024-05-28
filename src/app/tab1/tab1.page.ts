@@ -66,7 +66,7 @@ export class Tab1Page   {
   oldInitialMarker: any | undefined = undefined;
   oldFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
-  lag: number = 8; // 8
+  lag: number = global.lag; // 8
   distanceFilter: number = 5; // 5
   filtered: number = -1; 
   style: any;
@@ -86,7 +86,7 @@ export class Tab1Page   {
   ) { }          
 
   async ngOnInit() {
-    return
+    return // TOREMOVE
     // create storage 
     await this.storage.create();
     // map provider
@@ -117,7 +117,7 @@ export class Tab1Page   {
   }  
 
   async ionViewDidEnter() {
-    return
+    return // TOREMOVE
     // change map provider
     await this.changeMapProvider();
     // change map style
@@ -133,12 +133,12 @@ export class Tab1Page   {
     // write variables
     await this.htmlVariables();
     // update canvas
-//    await this.updateAllCanvas(this.oldCtx, this.oldTrack);
+    // TOREMOVE await this.updateAllCanvas(this.oldCtx, this.oldTrack);
     // display track on map
     await this.displayOldTrack();
     this.previousTrack = this.oldTrack; 
     // adapt view
-//    await this.setMapView(this.oldTrack);
+    // TOREMOVE await this.setMapView(this.oldTrack);
   }
 
   async changeMapStyle() {
@@ -575,7 +575,7 @@ export class Tab1Page   {
       this.filtered = num - this.lag -1;
     }  
     // filter speed
-    this.filterSpeed()
+    this.track = await this.fs.filterSpeed(this.track)
     // current values
     this.htmlVariables();
   }
@@ -649,14 +649,6 @@ export class Tab1Page   {
     this.currentElevationLoss = this.track.data[i].elevationLoss
     console.log(this.currentElevationGain, this.currentElevationLoss)
   } 
-
-  async filterSpeed() {
-    var num: number = this.track.data.length;
-    var start: number = Math.max(num - this.lag - 1, 0);
-    var distance: number = this.track.data[num-1].distance - this.track.data[start].distance;
-    var time: number = this.track.data[num-1].time - this.track.data[start].time;
-    this.track.data[num-1].compSpeed = 3600000 * distance / time;
-  }
 
   async newLayer(id: string) {
     //color

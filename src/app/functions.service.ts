@@ -1,10 +1,13 @@
-import { Data, Bounds } from 'src/globald';
+import { global } from 'src/environments/environment';
+import { Data, Bounds, Track } from 'src/globald';
 import { Injectable } from '@angular/core';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FunctionsService {
+
+  lag: number = global.lag; // 8
 
   constructor() { }
 
@@ -76,6 +79,15 @@ export class FunctionsService {
       else style = 'mapbox://styles/mapbox/satellite-v9' 
     }
     return style;
+  }
+
+  async filterSpeed(track: Track) {
+    var num: number = track.data.length;
+    var start: number = Math.max(num - this.lag - 1, 0);
+    var distance: number = track.data[num-1].distance - track.data[start].distance;
+    var time: number = track.data[num-1].time - track.data[start].time;
+    track.data[num-1].compSpeed = 3600000 * distance / time;
+    return track;
   }
 
 

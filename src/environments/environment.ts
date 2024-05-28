@@ -3,7 +3,7 @@
 // The list of file replacements can be found in `angular.json`.
 
 export var global = {
-
+  lag: 8 as number
 } 
 
 export var environment = {
