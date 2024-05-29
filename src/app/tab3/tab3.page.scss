@@ -23,9 +23,10 @@ ion-toggle {
   margin-left: 20px;
 }
 
-ion-button{
+.bigButton{
   margin-top: 0px;
-  margin-left: 0px;
+  margin-right: 20px;
+  margin-left: 20px;
 }
 
 .pick {
@@ -46,7 +47,8 @@ ion-grid {
 }
 
 .circle {
-  width: 20px;         /* Set the width of the circle */
-  height: 20px;        /* Set the height of the circle */
+  width: 40px;         /* Set the width of the circle */
+  height: 40px;         /* Set the height of the circle */
+  border-radius: 20px;
 }
 

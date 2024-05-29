@@ -81,11 +81,12 @@ export class Tab3Page {
       'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
     var input: any = [];
     for (var item of arr) {
-      var inputElement = {name: item, type: 'radio', id: item, value: item, checked: false}
+      var inputElement = {name: item, type: 'radio', label: item, value: item, checked: false}
       if (currArch == 'Current' && this.currentColor == item) inputElement.checked = true;
       if (currArch == 'Archived' && this.archivedColor == item) inputElement.checked = true;
       input.push(inputElement)
     }
+    console.log(input)
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: currArch + ' Track',
@@ -102,10 +103,10 @@ export class Tab3Page {
           text: 'Ok',
           cssClass: 'alert-button',
           handler: (data) => {
-            if (currArch == 'Current') this.currentColor = data.value;
-            if (currArch == 'Archived') this.archivedColor = data.value;
-            this.storage.set('archivedColor', this.archivedColor);
-            this.storage.set('currentColor', this.currentColor);            
+            if (currArch == 'Current') this.currentColor = data;
+            if (currArch == 'Archived') this.archivedColor = data;
+            console.log(this.currentColor)
+            console.log(this.archivedColor)
           }
         }
       ]
@@ -113,7 +114,13 @@ export class Tab3Page {
     alert.present();
   }
   
+  async confirm(curArch: string) {
+    if (curArch == 'Archived') this.storage.set('archivedColor', this.archivedColor);
+    if (curArch == 'Current') this.storage.set('currentColor', this.currentColor);            
+  }
+
   async ionViewWillEnter() {
+    await this.storage.create();
     try{this.provider = await this.storage.get('provider'); }
     catch{}
     try {this.style = await this.storage.get('style'); }
