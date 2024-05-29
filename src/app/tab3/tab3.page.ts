@@ -88,7 +88,7 @@ export class Tab3Page {
     }
     console.log(input)
     const alert = await this.alertController.create({
-      cssClass: 'alert yellowAlert',
+      cssClass: 'alert primaryAlert',
       header: currArch + ' Track',
       message: 'Kindly set the track color',
       inputs: input,

@@ -25,8 +25,8 @@ ion-toggle {
 
 .bigButton{
   margin-top: 0px;
-  margin-right: 20px;
-  margin-left: 20px;
+  margin-right: 5px;
+  margin-left: 5px;
 }
 
 .pick {
@@ -46,9 +46,9 @@ ion-grid {
   color: #3880ff;
 }
 
-.circle {
-  width: 40px;         /* Set the width of the circle */
-  height: 40px;         /* Set the height of the circle */
-  border-radius: 20px;
+.line {
+  margin-top: 20px;
+  height: 5px; /* Thickness of the line */
+  width: 100%; /* Full width */
+  border: none;
 }
-

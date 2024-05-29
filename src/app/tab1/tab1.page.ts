@@ -76,6 +76,8 @@ export class Tab1Page   {
   mapStyle: string = 'basic';
   previousTrack: Track | null = null;
   oldTrack: Track | null = null;
+  currentColor: string = 'orange'
+  archivedColor: string = 'green'
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -118,8 +120,8 @@ export class Tab1Page   {
   async ionViewDidEnter() {
     // change map provider
     await this.changeMapProvider();
-    // change map style
-    await this.changeMapStyle();
+    // change map style and tracks color
+    await this.changeStyleColor();
     // archived track
     var visible: boolean = await this.archivedVisibility();
     if (!visible) return;
@@ -144,6 +146,28 @@ export class Tab1Page   {
     try{this.mapStyle = await this.storage.get('style'); }
     catch {}
     if (this.mapStyle == preStyle) return;
+    await this.removeCustomLayers();
+    await this.removeLayer('123');
+    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
+    await this.map.setStyle(this.style)
+    await new Promise(f => setTimeout(f, 500));
+    // display old track on map
+    await this.displayOldTrack();
+    // display current track
+    await this.addFullLayer();
+  }
+
+  async changeStyleColor() {
+    var preArchived = this.archivedColor;
+    try{this.archivedColor = await this.storage.get('archivedColor'); }
+    catch {}
+    var preCurrent = this.currentColor;
+    try{this.currentColor = await this.storage.get('currentColor'); }
+    catch {}
+    var preStyle = this.mapStyle;
+    try{this.mapStyle = await this.storage.get('style'); }
+    catch {}
+    if (this.archivedColor == preArchived && this.currentColor == preCurrent && this.mapStyle == preStyle) return;
     await this.removeCustomLayers();
     await this.removeLayer('123');
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
@@ -301,10 +325,8 @@ export class Tab1Page   {
 
   async oldTrackLayer(id: string) {
     if (!this.oldTrack) return;
-    // color
-    var color: string = 'green';
     // add layer
-    await this.addLayer('elGros' + id, this.oldTrack.map, color)
+    await this.addLayer('elGros' + id, this.oldTrack.map, this.archivedColor)
     // add markers
     var num: number = this.oldTrack.data.length;
     this.oldInitialMarker = new tt.Marker({color: '#00aa00', width: '25px', height: '25px'}).
@@ -649,8 +671,6 @@ export class Tab1Page   {
   } 
 
   async newLayer(id: string) {
-    //color
-    var color: string = 'orange';
     // id
     var idNum: number = +id - 124;
     //slice
@@ -658,7 +678,7 @@ export class Tab1Page   {
     var num = this.track.data.length;
     const slice = this.track.map.slice(start, num)
     // add layer
-    await this.addLayer('elGros' + id, slice, color)
+    await this.addLayer('elGros' + id, slice, this.currentColor)
     // initial marker and map center
     if (num == 2) {
       this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
@@ -774,10 +794,8 @@ export class Tab1Page   {
   }
 
   async addFullLayer() {
-    // define color
-    var color: string = 'orange';
     // add layer
-    await this.addLayer('elGros122', this.track.map, color)
+    await this.addLayer('elGros122', this.track.map, this.currentColor)
   }
 
   async buttonClick(option: string) {
