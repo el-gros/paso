@@ -86,7 +86,6 @@ export class Tab1Page   {
   ) { }          
 
   async ngOnInit() {
-    return // TOREMOVE
     // create storage 
     await this.storage.create();
     // map provider
@@ -117,7 +116,6 @@ export class Tab1Page   {
   }  
 
   async ionViewDidEnter() {
-    return // TOREMOVE
     // change map provider
     await this.changeMapProvider();
     // change map style
@@ -133,12 +131,12 @@ export class Tab1Page   {
     // write variables
     await this.htmlVariables();
     // update canvas
-    // TOREMOVE await this.updateAllCanvas(this.oldCtx, this.oldTrack);
+    await this.updateAllCanvas(this.oldCtx, this.oldTrack);
     // display track on map
     await this.displayOldTrack();
     this.previousTrack = this.oldTrack; 
     // adapt view
-    // TOREMOVE await this.setMapView(this.oldTrack);
+    await this.setMapView(this.oldTrack);
   }
 
   async changeMapStyle() {
@@ -803,67 +801,6 @@ export class Tab1Page   {
     else if (option == 'list') this.router.navigate(['tab2']);
   }
 
-  /////////////////////////////////////////////////
-
-/*
-
-
-
-
-
-  
-  async mapChangeCurrent() {
-    var previous: any = this.style
-    this.style = await this.fs.selectStyle(this.provider, this.mapStyle);
-    if (previous == this.style) return;
-    await this.removeCustomLayers();
-    await this.map.setStyle(this.style)
-    await new Promise(f => setTimeout(f, 500));
-    await this.addFullLayer()
-  }
-
-  async displayChangeCurrent(option: string) {
-    this.display = option
-    this.show('onMap','none');
-    this.show('satellite','none');
-    this.show('data', 'none');
-    this.show('map', 'none');
-    if (this.display == 'map') {
-      this.show('map', 'block');
-      this.show('onMap', 'block');
-      await this.mapChangeCurrent();
-    }        
-    else if (this.display == 'satellite') {
-      this.show('map', 'block');
-      this.show('satellite', 'block');
-      await this.mapChangeCurrent();
-    }
-    else {
-      this.show('data', 'block');
-    }
-  }
-  //////////////////////////////////////////////  
-  async selectTrack() {
-    // create alert control
-    const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
-      // header and message
-      header: 'Select a track',
-      message: 'Kindly select the track to display',
-      // buttons
-      buttons: [{
-        // proceed button
-        text: 'OK',
-        cssClass: 'alert-button',
-        handler: () => { this.router.navigate(['./tabs/tab2']); }
-      }]
-    });
-    alert.onDidDismiss().then((data) => { this.router.navigate(['./tabs/tab2']); });
-    await alert.present();  
-  }
-
-
-  */
 
 }
 

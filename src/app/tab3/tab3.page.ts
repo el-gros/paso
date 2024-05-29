@@ -1,9 +1,7 @@
-import { Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
-import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
@@ -11,7 +9,6 @@ import { FormsModule } from '@angular/forms'
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
-import mapboxgl from 'mapbox-gl';
 
 @Component({      
   selector: 'app-tab3',
@@ -24,7 +21,10 @@ import mapboxgl from 'mapbox-gl';
 })
 
 export class Tab3Page {
-  [x: string]: any;
+  @ViewChild('fileInput')
+  fileInput!: ElementRef;
+  archivedColor: string = 'green';
+  currentColor: string = 'orange'
 
   importedTrack: any = {
     data: [], 
@@ -34,11 +34,6 @@ export class Tab3Page {
     date: new Date(),
     description: '', 
   };
-
-  // collection: TrackDefinition[] = [];
-  // local variables
-  // properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  style: any;
   styleChecked: boolean = false;
   providerChecked: boolean = false;
   archivedChecked: boolean = true;
@@ -46,11 +41,10 @@ export class Tab3Page {
   archived: string = 'visible';
   mapVisible: string = 'block';
   dataVisible: string = 'nome';
-  mapStyle: string = 'basic';
-
+  style: string = 'basic';
+  uploaded: string = ''; 
 
   constructor(
-    private cd: ChangeDetectorRef,
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
@@ -82,13 +76,54 @@ export class Tab3Page {
     this.router.navigate(['tab1']);
   }
 
+  async selectColor(currArch: string) {
+    var arr: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow',
+      'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
+    var input: any = [];
+    for (var item of arr) {
+      var inputElement = {name: item, type: 'radio', id: item, value: item, checked: false}
+      if (currArch == 'Current' && this.currentColor == item) inputElement.checked = true;
+      if (currArch == 'Archived' && this.archivedColor == item) inputElement.checked = true;
+      input.push(inputElement)
+    }
+    const alert = await this.alertController.create({
+      cssClass: 'alert yellowAlert',
+      header: currArch + ' Track',
+      message: 'Kindly set the track color',
+      inputs: input,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'alert-cancel-button',
+          handler: () => {}
+        }, 
+        {
+          text: 'Ok',
+          cssClass: 'alert-button',
+          handler: (data) => {
+            if (currArch == 'Current') this.currentColor = data.value;
+            if (currArch == 'Archived') this.archivedColor = data.value;
+            this.storage.set('archivedColor', this.archivedColor);
+            this.storage.set('currentColor', this.currentColor);            
+          }
+        }
+      ]
+    });
+    alert.present();
+  }
+  
   async ionViewWillEnter() {
     try{this.provider = await this.storage.get('provider'); }
     catch{}
     try {this.style = await this.storage.get('style'); }
     catch{}  
-    try {this.style = await this.storage.get('archived'); }
+    try {this.archived = await this.storage.get('archived'); }
     catch{}  
+    try {this.archivedColor = await this.storage.get('archivedColor'); }
+    catch{}
+    try {this.currentColor = await this.storage.get('currentColor'); }
+    catch{}
     if (this.provider == 'Mapbox') this.providerChecked = true;
     else this.providerChecked = false;
     if (this.style == 'satellite') this.styleChecked = true;
@@ -97,21 +132,28 @@ export class Tab3Page {
     else this.archivedChecked = false;    
   }
 
-  onFileSelected(event: Event) {
+  async onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      const file = input.files[0];
+      var file = input.files[0];
+      this.uploaded = file.name
       this.readFile(file);
     }
   }
 
+  triggerFileInput() {
+    this.fileInput.nativeElement.click();
+  }
+
   readFile(file: File) {
-    var success: boolean = false;
     const reader = new FileReader();
     reader.onload = async (e: any) => {
-      const text = e.target.result;
-      success = await this.parseGpx(text);
-      console.log(success)
+      try{
+        const text = e.target.result;
+        await this.parseGpx(text);
+        this.uploaded = this.uploaded + ' uploaded'
+      }
+      catch{this.uploaded = 'uploaded failed'}
     };
     reader.readAsText(file);
   }
@@ -121,9 +163,9 @@ export class Tab3Page {
     const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
     // Parse tracks and store the main track
     const tracks = xmlDoc.getElementsByTagName('trk');
-    if (tracks.length == 0) return false;
+    if (tracks.length == 0) return;
     var trackSegments = tracks[0].getElementsByTagName('trkseg');
-    if (trackSegments.length == 0) return false;
+    if (trackSegments.length == 0) return;
     var trackSeg = trackSegments[0];
     this.importedTrack.name = tracks[0].getElementsByTagName('name')[0]?.textContent
     if (this.importedTrack.name == null) this.importedTrack.name = 'no name'
@@ -139,7 +181,7 @@ export class Tab3Page {
       var num: number = await this.importedTrack.map.length;
       // distance
       if (num == 1) var distance = 0.
-      else distance = this.importedTrack.map[num-2].distance + await this.fs.computeDistance(this.importedTrack.map[num-2][0], this.importedTrack.map[num-2][1], +lon, +lat)
+      else distance = this.importedTrack.data[num-2].distance + await this.fs.computeDistance(this.importedTrack.map[num-2][0], this.importedTrack.map[num-2][1], +lon, +lat)
       // altitude
       if (ele) var alt: number | null = +ele;
       else alt = null;
@@ -180,11 +222,22 @@ export class Tab3Page {
         elevationLoss: loss,
         accTime: accTime            
       });
-      if (locTime && this.importedTrack.data[num-1].time) 
-        this.importedTrack = await this.fs.filterSpeed(this.importedTrack);
+      var num: number = await this.importedTrack.data.length;
+      if (this.importedTrack.data[num-1].time) this.importedTrack = await this.fs.filterSpeed(this.importedTrack);
     }
-    return true
+    var num: number = await this.importedTrack.data.length;
+    if (this.importedTrack.data[num-1].time) this.importedTrack.date = this.importedTrack.data[num-1].time
+    else this.importedTrack.date = new Date();
+    await this.storage.set(JSON.stringify(this.importedTrack.date), this.importedTrack);
+    const trackDef = {name: this.importedTrack.name, date: this.importedTrack.date, place: '', description: '', isChecked: false};
+    console.log(trackDef)
+    // add new track definition and save collection
+    var collection: any = await this.storage. get('collection');
+    collection.push(trackDef);
+    console.log(collection)
+    await this.storage.set('collection', collection)
   }
+
 }
 
 

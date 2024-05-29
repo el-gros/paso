@@ -24,8 +24,13 @@ ion-toggle {
 }
 
 ion-button{
-  margin-top: 10px;
-  margin-left: 20px;
+  margin-top: 0px;
+  margin-left: 0px;
+}
+
+.pick {
+  font-size: 15px !important;
+  font-family: 'Arial, sans-serif';
 }
 
 ion-icon {
@@ -39,3 +44,9 @@ ion-grid {
 .label_b {
   color: #3880ff;
 }
+
+.circle {
+  width: 20px;         /* Set the width of the circle */
+  height: 20px;        /* Set the height of the circle */
+}
+
