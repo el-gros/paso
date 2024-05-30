@@ -39,6 +39,7 @@ export class Tab1Page   {
     date: new Date(),
     description: '', 
   };
+  geoTrack: any = {} //1
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
   oldCtx: CanvasRenderingContext2D[] = [];
@@ -537,6 +538,7 @@ export class Tab1Page   {
     }, async (location: Location, error: Error) => {
       if (location) {
         await this.process(location);
+        // await this.buildGeoJson(location); //1
         await this.trackOnMap();
         await this.updateAllCanvas(this.ctx, this.track);
         this.cd.detectChanges();
@@ -599,6 +601,83 @@ export class Tab1Page   {
     // current values
     this.htmlVariables();
   }
+
+  //11
+  async buildGeoJson(location: Location) {
+    var num: number = 0; 
+    try {num = this.geoTrack.features[0].geometry.coordinates.length; }
+    catch {}
+    // m/s to km/h
+    location.speed = location.speed * 3.6
+    // excessive uncertainty / no altitude measured
+    if (location.accuracy > this.threshold) return;
+    if (location.altitude == null) return;
+    // CHECK ORDER ////////////////////////
+    // FIRST GEOJSON /////////////////////
+    if (num == 0) await this.firstGeoJson(location); return;
+    const lastPoint: number[] = this.geoTrack.features[0].geometry.coordinates[num - 1];
+    const lastData: Data = this.geoTrack.features[0].geometry.properties.data[num - 1];
+    var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
+    var time: number = location.time - lastData.time;
+    const compSpeed = 3600000 * distance / time;
+    if (compSpeed > this.vMax) return;
+    distance = lastData.distance + distance;
+    time = lastData.accTime + time;  
+    this.geoTrack.features[0].geometry.properties.data.push({
+      accuracy: location.accuracy,
+      altitude: location.altitude,
+      altitudeAccuracy: location.altitudeAccuracy,
+      bearing: location.bearing,
+      simulated: location.simulated,
+      speed: location.speed,
+      time: location.time,
+      compSpeed: compSpeed,
+      distance: distance,
+      elevationGain: lastData.elevationGain,
+      elevationLoss: lastData.elevationLoss,
+      accTime: time,
+    })
+    this.geoTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
+    // filter
+    num = this.geoTrack.features[0].geometry.properties.data.length;
+    if (num > this.lag) {
+      await this.filterGeoJson(num - this.lag -1);
+      this.filtered = num - this.lag -1;
+    }  
+    // FILTER SPEED //////////////////
+    // HTML VARIABLES ///////////////
+  }
+
+  async firstGeoJson(location: Location) {}
+
+  async filterGeoJson(i: number) {
+    var abb: any = this.geoTrack.features[0].geometry.properties.data
+    var num = abb.length;
+    const start = Math.max(0, i-this.lag);
+    const end = Math.min(i+this.lag, num - 1);
+    // average altitude
+    var sum: number = 0
+    for (var j= start; j<=end;j++) sum = sum + abb[j].altitude;
+    abb[i].altitude = sum/(end - start +1);
+    // re-calculate elevation gains / losses
+    if (i==0) return;
+    var slope = abb[i].altitude - abb[i-1].altitude;
+    console.log('s',slope, this.currentElevationGain, this.currentElevationLoss)
+    if (slope > 0) {
+      abb[i].elevationGain = abb[i-1].elevationGain + slope; 
+      abb[i].elevationLoss = abb[i-1].elevationLoss
+    }
+    else {
+      abb[i].elevationGain = abb[i-1].elevationGain; 
+      abb[i].elevationLoss = abb[i-1].elevationLoss - slope
+    }
+    this.currentElevationGain = abb[i].elevationGain
+    this.currentElevationLoss = abb[i].elevationLoss
+    this.geoTrack.features[0].geometry.properties.data = abb
+  } 
+
+
+  //11
 
   async trackOnMap() {
     const num = this.track.map.length
