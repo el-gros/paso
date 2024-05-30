@@ -39,7 +39,19 @@ export class Tab1Page   {
     date: new Date(),
     description: '', 
   };
-  geoTrack: any = {} //1
+  geoTrack: any = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [],
+        properties: {
+          data: [],
+        }
+      }  
+    }]
+  }  
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
   oldCtx: CanvasRenderingContext2D[] = [];
@@ -68,7 +80,7 @@ export class Tab1Page   {
   oldFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = global.lag; // 8
-  distanceFilter: number = 5; // 5
+  distanceFilter: number = .05; // 5
   filtered: number = -1; 
   style: any;
   loaded: boolean = false;
@@ -142,6 +154,25 @@ export class Tab1Page   {
     await this.setMapView(this.oldTrack);
   }
 
+  async changeMapProvider() {
+    var preProvider = this.provider;
+    try{this.provider = await this.storage.get('provider'); }
+    catch {}
+    if (preProvider == this.provider) return;
+    this.map.remove();
+    // plot map
+    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
+    if (this.provider == 'Tomtom') await this.createTomtomMap();
+    else await this.createMapboxMap();
+    this.map.on('load', async () => {
+      // display old track on map
+      await this.displayOldTrack();
+      // display current track
+      await this.addFullLayer(); //1
+      //await this.addGeoLayer();
+    })
+  }
+
   async changeMapStyle() {
     var preStyle = this.mapStyle;
     try{this.mapStyle = await this.storage.get('style'); }
@@ -156,6 +187,19 @@ export class Tab1Page   {
     await this.displayOldTrack();
     // display current track
     await this.addFullLayer();
+  }
+
+  async addGeoLayer() {
+    this.map.addSource('elGros122', { type: 'geojson', data: this.geoTrack });
+    this.map.addLayer({
+        'id': 'elGros122',
+        'type': 'line',
+        'source': 'elGros122',
+        'paint': {
+            'line-color': this.currentColor,
+            'line-width': 5
+        }
+    });
   }
 
   async changeStyleColor() {
@@ -190,24 +234,6 @@ export class Tab1Page   {
       await this.removeLayer('123');
       return false;
     }
-  }
-
-  async changeMapProvider() {
-    var preProvider = this.provider;
-    try{this.provider = await this.storage.get('provider'); }
-    catch {}
-    if (preProvider == this.provider) return;
-    this.map.remove();
-    // plot map
-    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-    if (this.provider == 'Tomtom') await this.createTomtomMap();
-    else await this.createMapboxMap();
-    this.map.on('load', async () => {
-      // display old track on map
-      await this.displayOldTrack();
-      // display current track
-      await this.addFullLayer();
-    })
   }
 
   async createCanvas() {
@@ -273,7 +299,6 @@ export class Tab1Page   {
     // get collection
     this.collection = await this.storage.get('collection'); 
     if (!this.collection) this.collection = [];
-    console.log(this.collection)
     // compute number of checked tracks
     var numChecked = 0;
     for (var item of this.collection) {
@@ -362,6 +387,28 @@ export class Tab1Page   {
       this.currentNumber = num;
       this.currentAltitude = this.track.data[num - 1].altitude;
       this.currentSpeed = this.track.data[num - 1].speed;
+    }
+    if (this.oldTrack) {
+      num = this.oldTrack.data.length;
+      if (num > 0) {
+        this.oldTime = this.fs.formatMillisecondsToUTC(this.oldTrack.data[num - 1].accTime);
+        this.oldDistance = this.oldTrack.data[num - 1].distance;
+        this.oldElevationGain = this.oldTrack.data[num - 1].elevationGain;
+        this.oldElevationLoss = this.oldTrack.data[num - 1].elevationLoss;
+        this.oldNumber = num;
+      }
+    } 
+  }
+
+  async geoHtml() {
+    var num: number = this.geoTrack.features[0].geometry.coordinates.length;
+    var abb: any = this.geoTrack.features[0].geometry.properties.data; 
+    if (num > 0) {
+      this.currentTime = this.fs.formatMillisecondsToUTC(abb.accTime[num-1]);
+      this.currentDistance = abb.distance[num-1];
+      this.currentNumber = num;
+      this.currentAltitude = abb.altitude[num-1];
+      this.currentSpeed = abb.speed[num-1];
     }
     if (this.oldTrack) {
       num = this.oldTrack.data.length;
@@ -538,7 +585,8 @@ export class Tab1Page   {
     }, async (location: Location, error: Error) => {
       if (location) {
         await this.process(location);
-        // await this.buildGeoJson(location); //1
+//        await this.buildGeoJson(location); //1
+//        await this.geoHtml() //1
         await this.trackOnMap();
         await this.updateAllCanvas(this.ctx, this.track);
         this.cd.detectChanges();
@@ -556,7 +604,7 @@ export class Tab1Page   {
     // check for the locations order...
     for (var i = num - 1; i>=1; i--) {
       // case tnew < tprevious, remove previous location
-      const previous: Data = this.track.data[num - 1];
+      const previous: Data = this.track.data[i];
       if (previous.time > location.time) { await this.removePrevious(); }
       else break;
     }
@@ -602,7 +650,6 @@ export class Tab1Page   {
     this.htmlVariables();
   }
 
-  //11
   async buildGeoJson(location: Location) {
     var num: number = 0; 
     try {num = this.geoTrack.features[0].geometry.coordinates.length; }
@@ -612,67 +659,99 @@ export class Tab1Page   {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return;
     if (location.altitude == null) return;
-    // CHECK ORDER ////////////////////////
-    // FIRST GEOJSON /////////////////////
-    if (num == 0) await this.firstGeoJson(location); return;
+    // check for the locations order...
+    for (var i = num - 1; i>=1; i--) {
+      // case tnew < tprevious, remove previous location
+      const previous: any = this.geoTrack.features[0].geometry.properties.data.time[i];
+      if (previous > location.time) { await this.removeGeoPrevious(); }
+      else break;
+    }
+    // initial point
+    var abb = this.geoTrack.features[0].geometry.properties.data;
+    if (num == 0) {
+      abb = await this.firstGeoJson(abb, location); 
+      this.geoTrack.features[0].geometry.properties.data = abb;
+      return;
+    }  
     const lastPoint: number[] = this.geoTrack.features[0].geometry.coordinates[num - 1];
-    const lastData: Data = this.geoTrack.features[0].geometry.properties.data[num - 1];
     var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
-    var time: number = location.time - lastData.time;
+    var time: number = location.time - abb.time[num-1];
     const compSpeed = 3600000 * distance / time;
     if (compSpeed > this.vMax) return;
-    distance = lastData.distance + distance;
-    time = lastData.accTime + time;  
-    this.geoTrack.features[0].geometry.properties.data.push({
-      accuracy: location.accuracy,
-      altitude: location.altitude,
-      altitudeAccuracy: location.altitudeAccuracy,
-      bearing: location.bearing,
-      simulated: location.simulated,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: compSpeed,
-      distance: distance,
-      elevationGain: lastData.elevationGain,
-      elevationLoss: lastData.elevationLoss,
-      accTime: time,
-    })
+    distance = abb.distance[num-1] + distance;
+    time = abb.accTime[num-1] + time;  
+    abb.accuracy.push(location.accuracy);
+    abb.altitude.push(location.altitude);
+    abb.altitudeAccuracy.push(location.altitudeAccuracy);
+    abb.bearing.push(location.bearing);
+    abb.simulated.push(location.simulated);
+    abb.speed.push(location.speed);
+    abb.time.push(location.time);
+    abb.compSpeed.push(compSpeed);
+    abb.distance.push(distance);
+    abb.elevationGain.push(abb.elevationGain[num-1]);
+    abb.elevationLoss.push(abb.elevationLoss[num-1]);
+    abb.accTime.push(time);
     this.geoTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
     // filter
-    num = this.geoTrack.features[0].geometry.properties.data.length;
+    num = this.geoTrack.features[0].geometry.coordinates.length;
     if (num > this.lag) {
-      await this.filterGeoJson(num - this.lag -1);
+      await this.filterHeight(num - this.lag -1);
       this.filtered = num - this.lag -1;
     }  
-    // FILTER SPEED //////////////////
-    // HTML VARIABLES ///////////////
+    // filter speed
+    this.fs.geoFilterSpeed(abb, num, this.lag);
+    this.geoTrack.features[0].geometry.properties.data = abb;
   }
 
-  async firstGeoJson(location: Location) {}
+  async firstGeoJson(abb: any, location: Location) {
+    abb.accuracy.push(location.accuracy);
+    abb.altitude.push(location.altitude);
+    abb.altitudeAccuracy.push(location.altitudeAccuracy);
+    abb.bearing.push(location.bearing);
+    abb.simulated.push(location.simulated);
+    abb.speed.push(location.speed);
+    abb.time.push(location.time);
+    abb.compSpeed.push(0);
+    abb.distance.push(0);
+    abb.elevationGain.push(0);
+    abb.elevationLoss.push(0);
+    abb.accTime.push(0);
+    this.geoTrack.features[0].geometry.coordinates.push(
+      [location.longitude, location.latitude]
+    )
+    return abb
+  }
 
-  async filterGeoJson(i: number) {
-    var abb: any = this.geoTrack.features[0].geometry.properties.data
-    var num = abb.length;
+  async removeGeoPrevious() {
+    // we suppose the previous location is in the same subtrail
+    this.geoTrack.features[0].geometry.coordinates.pop();
+    this.geoTrack.features[0].geometry.properties.data.pop();
+  }
+
+  async filterHeight(i: number) {
+    var abb: any = this.geoTrack.features[0].geometry.properties.data;
+    var num = this.geoTrack.features[0].geometry.coordinates.length;
     const start = Math.max(0, i-this.lag);
     const end = Math.min(i+this.lag, num - 1);
     // average altitude
     var sum: number = 0
-    for (var j= start; j<=end;j++) sum = sum + abb[j].altitude;
-    abb[i].altitude = sum/(end - start +1);
+    for (var j= start; j<=end;j++) sum = sum + abb.altitude[j];
+    abb.altitude[i] = sum/(end - start +1);
     // re-calculate elevation gains / losses
     if (i==0) return;
-    var slope = abb[i].altitude - abb[i-1].altitude;
+    var slope = abb.altitude[i] - abb.altitude[i-1];
     console.log('s',slope, this.currentElevationGain, this.currentElevationLoss)
     if (slope > 0) {
-      abb[i].elevationGain = abb[i-1].elevationGain + slope; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss
+      abb[i].elevationGain = abb.elevationGain[i-1] + slope; 
+      abb[i].elevationLoss = abb.elevationLoss[i-1]
     }
     else {
-      abb[i].elevationGain = abb[i-1].elevationGain; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss - slope
+      abb.elevationGain[i] = abb.elevationGain[i-1]; 
+      abb.elevationLoss[i] = abb.elevationLoss[i-1] - slope
     }
-    this.currentElevationGain = abb[i].elevationGain
-    this.currentElevationLoss = abb[i].elevationLoss
+    this.currentElevationGain = abb.elevationGain[i]
+    this.currentElevationLoss = abb.elevationLoss[i]
     this.geoTrack.features[0].geometry.properties.data = abb
   } 
 
@@ -899,6 +978,6 @@ export class Tab1Page   {
   }
 
 
+// refresh: https://docs.mapbox.com/mapbox-gl-js/example/live-update-feature/
+
 }
-
-

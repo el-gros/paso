@@ -90,5 +90,15 @@ export class FunctionsService {
     return track;
   }
 
+  async geoFilterSpeed(abb: any, num: number, lag: number) {
+    var num: number = abb.data.properties;
+    var start: number = Math.max(num - lag - 1, 0);
+    var distance: number = abb.distance[num-1] - abb.distance[start];
+    var time: number = abb.time[num-1] - abb.time[start];
+    abb.compSpeed[num-1] = 3600000 * distance / time;
+    return abb;
+  }
+
+
 
 }
