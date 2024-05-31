@@ -91,11 +91,11 @@ export class FunctionsService {
   }
 
   async geoFilterSpeed(abb: any, num: number, lag: number) {
-    var num: number = abb.data.properties;
+    var num: number = abb.length;
     var start: number = Math.max(num - lag - 1, 0);
-    var distance: number = abb.distance[num-1] - abb.distance[start];
-    var time: number = abb.time[num-1] - abb.time[start];
-    abb.compSpeed[num-1] = 3600000 * distance / time;
+    var distance: number = abb[num-1].distance - abb[start].distance;
+    var time: number = abb[num-1].time - abb[start].time;
+    abb[num-1].compSpeed = 3600000 * distance / time;
     return abb;
   }
 
