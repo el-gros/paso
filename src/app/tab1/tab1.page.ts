@@ -52,6 +52,7 @@ export class Tab1Page   {
       }  
     }]
   }  
+  archivedTrack: any = this.geoTrack
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
   oldCtx: CanvasRenderingContext2D[] = [];
@@ -111,8 +112,6 @@ export class Tab1Page   {
     catch{}
     // archived track
     await this.storage.set('archived', true); 
-    // change map style
-    //await this.changeMapStyle();
     // create canvas
     await this.createCanvas();
     // plot map
@@ -138,14 +137,16 @@ export class Tab1Page   {
     // archived track
     var visible: boolean = await this.archivedVisibility();
     if (!visible) return;
+    // check if an old track has to be displayed
     // retrieve track
     await this.retrieveTrack();
     // check if there is track or it did not change
     if (!this.oldTrack) return;
     if (this.previousTrack == this.oldTrack) return;
     // write variables
-    await this.htmlVariables();
+    await this.archivedHtml();
     // update canvas
+// TO CONVERT TO GEOJSON /////////////////////////////////////
     await this.updateAllCanvas(this.oldCtx, this.oldTrack);
     // display track on map
     await this.displayOldTrack();
@@ -165,11 +166,11 @@ export class Tab1Page   {
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
     this.map.on('load', async () => {
+      // TO CONVERT TO GEOJSON /////////////////////////////////////  
       // display old track on map
       await this.displayOldTrack();
       // display current track
-      await this.addFullLayer(); //1
-      //await this.addGeoLayer();
+      await this.displayCurrentTrack(); //1
     })
   }
 
@@ -182,21 +183,34 @@ export class Tab1Page   {
     await this.removeLayer('123');
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     await this.map.setStyle(this.style)
-    await new Promise(f => setTimeout(f, 500));
+    await new Promise(f => setTimeout(f, 500));          
     // display old track on map
-    // await this.displayOldTrack();
+    await this.addGeoLayer('Archived');
     // display current track
-    await this.addGeoLayer();
+    await this.addGeoLayer('Current');
   }
 
-  async addGeoLayer() {
-    this.map.addSource('elGros122', { type: 'geojson', data: this.geoTrack });
+  async addGeoLayer(which: string) {
+    var id: string;
+    var color: string;
+    var track: any;
+    if (which == 'Current') {
+      id = 'elGros122';
+      color = this.currentColor;
+      track = this.geoTrack;
+    }
+    else {
+      id = 'elGros123';
+      color = this.archivedColor;
+      track = this.archivedTrack;
+    }
+    this.map.addSource(id, { type: 'geojson', data: track });
     this.map.addLayer({
-        'id': 'elGros122',
+        'id': id,
         'type': 'line',
-        'source': 'elGros122',
+        'source': id,
         'paint': {
-            'line-color': this.currentColor,
+            'line-color': color,
             'line-width': 5
         }
     });
@@ -400,7 +414,7 @@ export class Tab1Page   {
     } 
   }
 
-  async geoHtml() {
+  async currentHtml() {
     var num: number = this.geoTrack.features[0].geometry.coordinates.length;
     var abb: any = this.geoTrack.features[0].geometry.properties.data; 
     if (num > 0) {
@@ -410,16 +424,16 @@ export class Tab1Page   {
       this.currentAltitude = abb[num-1].altitude;
       this.currentSpeed = abb[num-1].speed;
     }
-    if (this.oldTrack) {
-      num = this.oldTrack.data.length;
-      if (num > 0) {
-        this.oldTime = this.fs.formatMillisecondsToUTC(this.oldTrack.data[num - 1].accTime);
-        this.oldDistance = this.oldTrack.data[num - 1].distance;
-        this.oldElevationGain = this.oldTrack.data[num - 1].elevationGain;
-        this.oldElevationLoss = this.oldTrack.data[num - 1].elevationLoss;
-        this.oldNumber = num;
-      }
-    } 
+  }
+
+  async archivedHtml() {
+    var num: number = this.archivedTrack.features[0].geometry.coordinates.length;
+    var abb: any = this.archivedTrack.features[0].geometry.properties.data; 
+    if (num > 0) {
+      this.oldTime = this.fs.formatMillisecondsToUTC(abb[num-1].accTime);
+      this.oldDistance = abb[num-1].distance;
+      this.oldNumber = num;
+    }
   }
 
   async updateAllCanvas(context: any, track: Track) {
@@ -617,8 +631,8 @@ export class Tab1Page   {
       if (location) {
 //        await this.process(location);
         await this.buildGeoJson(location); //1
-        await this.geoHtml() //1
-        await this.geoTrackOnMap();
+        await this.currentHtml() //1
+        await this.displayCurrentTrack();
 //        await this.updateAllCanvas(this.ctx, this.track);
         this.cd.detectChanges();
       }
@@ -765,7 +779,7 @@ export class Tab1Page   {
     this.geoTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
-    await this.addGeoLayer();
+    await this.addGeoLayer('Current');
   }
 
   async removeGeoPrevious() {
@@ -799,19 +813,35 @@ export class Tab1Page   {
     this.geoTrack.features[0].geometry.properties.data = abb
   } 
 
-  async geoTrackOnMap() {
+  async displayCurrentTrack() {
     const num = this.geoTrack.features[0].geometry.coordinates.length
     console.log(num)
     // no map
     if (!this.map) return;
     // no points enough
     if (num < 2) return;
+    // just in case layer 122 didn't exist...
+    try {await this.addGeoLayer('Archived')}
+    catch {}
     // update
     await this.map.getSource('elGros122').setData(this.geoTrack); 
     if (this.currentMarker) this.currentMarker.remove();        
     this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
       setLngLat([this.geoTrack.features[0].geometry.coordinates[num - 1][0], 
         this.geoTrack.features[0].geometry.coordinates[num - 1][1]]).addTo(this.map);
+  }
+
+  async displayArchivedTrack() {
+    const num = this.archivedTrack.features[0].geometry.coordinates.length
+    // no map
+    if (!this.map) return;
+    // no points enough
+    if (num < 2) return;
+    // just in case layer 123 didn't exist...
+    // try {await this.addGeoLayer()}
+    // catch {}
+    // update
+    await this.map.getSource('elGros123').setData(this.archivedTrack); 
   }
 
   async trackOnMap() {
