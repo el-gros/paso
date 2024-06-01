@@ -77,8 +77,8 @@ export class Tab1Page   {
   map: any;
   currentInitialMarker: any | undefined = undefined;
   currentFinalMarker: any | undefined = undefined;
-  oldInitialMarker: any | undefined = undefined;
-  oldFinalMarker: any | undefined = undefined;
+  archivedInitialMarker: any | undefined = undefined;
+  archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = global.lag; // 8
   distanceFilter: number = .05; // 5
@@ -293,7 +293,7 @@ export class Tab1Page   {
     try{this.mapStyle = await this.storage.get('style'); }
     catch {}
     if (this.archivedColor == preArchived && this.currentColor == preCurrent && this.mapStyle == preStyle) return;
-    await this.removeCustomLayers();
+    await this.removeLayer('122');
     await this.removeLayer('123');
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     await this.map.setStyle(this.style)
@@ -301,7 +301,9 @@ export class Tab1Page   {
     // display old track on map
     await this.displayArchivedTrack();
     // display current track
-    await this.addFullLayer();
+    await this.addGeoLayer('Current');
+    this.currentInitialMarker = await this.createMarker('Current', 'Initial');
+    this.currentMarker = await this.createMarker('Current', 'Current');
   }
 
   async archivedVisibility() {
@@ -309,8 +311,6 @@ export class Tab1Page   {
     catch{}
     if (archived) return true
     else {
-      if (this.oldInitialMarker) this.oldInitialMarker.remove();
-      if (this.oldFinalMarker) this.oldFinalMarker.remove();    
       await this.removeLayer('123');
       return false;
     }
@@ -356,12 +356,10 @@ export class Tab1Page   {
     // no archived track
     if (!this.archivedTrack) return;
     // remove old stuff and create new layer 123 and markers
-    if (this.oldInitialMarker) this.oldInitialMarker.remove();
-    if (this.oldFinalMarker) this.oldFinalMarker.remove();    
     await this.removeLayer('123');
     this.addGeoLayer('Archived')
-    this.oldInitialMarker = await this.createMarker('Archived', 'Initial');
-    this.oldFinalMarker = await this.createMarker('Archived', 'Final');
+    this.archivedInitialMarker = await this.createMarker('Archived', 'Initial');
+    this.archivedFinalMarker = await this.createMarker('Archived', 'Final');
   }
 
   async removeLayer(id: string) {
@@ -370,6 +368,15 @@ export class Tab1Page   {
     if (this.map.getLayer(id)) {
       await this.map.removeLayer(id)
       await this.map.removeSource(id)
+    }
+    if (id == '122') {
+      if (this.currentInitialMarker) this.currentInitialMarker.remove();
+      if (this.currentFinalMarker) this.currentFinalMarker.remove();
+      if (this.currentMarker) this.currentMarker.remove();        
+    }
+    else if (id == '123') {
+      if (this.archivedInitialMarker) this.archivedInitialMarker.remove();
+      if (this.archivedFinalMarker) this.archivedFinalMarker.remove();
     }
   }
 
@@ -389,27 +396,6 @@ export class Tab1Page   {
     await this.map.resize();
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
-  }
-
-  async htmlVariables() {
-    var num: number = this.track.data.length;
-    if (num > 0) {
-      this.currentTime = this.fs.formatMillisecondsToUTC(this.track.data[num - 1].accTime);
-      this.currentDistance = this.track.data[num - 1].distance;
-      this.currentNumber = num;
-      this.currentAltitude = this.track.data[num - 1].altitude;
-      this.currentSpeed = this.track.data[num - 1].speed;
-    }
-    if (this.archivedTrack) {
-      num = this.archivedTrack.data.length;
-      if (num > 0) {
-        this.oldTime = this.fs.formatMillisecondsToUTC(this.archivedTrack.data[num - 1].accTime);
-        this.oldDistance = this.archivedTrack.data[num - 1].distance;
-        this.oldElevationGain = this.archivedTrack.data[num - 1].elevationGain;
-        this.oldElevationLoss = this.archivedTrack.data[num - 1].elevationLoss;
-        this.oldNumber = num;
-      }
-    } 
   }
 
   async currentHtml() {
@@ -511,16 +497,8 @@ export class Tab1Page   {
   }
 
   async startTracking() {
-    // new track: initialize all variables and plots
-    //this.initialize();
+    // initialize
     this.geoInitialize();
-    // remove markers and track layers if exist
-    if (this.currentInitialMarker) this.currentInitialMarker.remove();
-    if (this.currentFinalMarker) this.currentFinalMarker.remove();
-    if (this.currentMarker) this.currentMarker.remove();        
-    await this.removeLayer('122');
-    // display old track
-    //if (this.oldTrack) await this.displayOldTrack();
     // start tracking
     await this.trackPosition();
     this.show('start', 'none');
@@ -574,30 +552,6 @@ export class Tab1Page   {
       }]
     }
     await this.removeLayer('122')  
-    // remove markers and track layers if exist
-    if (this.currentInitialMarker) this.currentInitialMarker.remove();
-    if (this.currentFinalMarker) this.currentFinalMarker.remove();
-    if (this.currentMarker) this.currentMarker.remove();        
-//    await this.map.addSource('elGros122', { type: 'geojson', data: this.geoTrack });
-    this.watcherId = 0;
-    this.currentAltitude = 0;
-    this.currentSpeed = 0;
-    this.currentDistance = 0;
-    this.currentElevationGain = 0;
-    this.currentElevationLoss = 0;
-    this.currentTime = '00:00:00';
-    this.currentNumber = 0;
-  } 
-
-  initialize() {
-    this.track = {
-      data: [], 
-      map: [],
-      name: '',
-      place: '',
-      date: new Date(),
-      description: '', 
-    };
     this.watcherId = 0;
     this.currentAltitude = 0;
     this.currentSpeed = 0;
@@ -627,7 +581,6 @@ export class Tab1Page   {
       distanceFilter: this.distanceFilter
     }, async (location: Location, error: Error) => {
       if (location) {
-//        await this.process(location);
         await this.buildGeoJson(location); //1
         await this.currentHtml() //1
         await this.displayCurrentTrack();
@@ -635,62 +588,6 @@ export class Tab1Page   {
         this.cd.detectChanges();
       }
     }).then((value: any) => this.watcherId = value);
-  }
-
-  async process(location: Location) {
-    var num: number = this.track.data.length; 
-    // m/s to km/h
-    location.speed = location.speed * 3.6
-    // excessive uncertainty / no altitude measured
-    if (location.accuracy > this.threshold) return;
-    if (location.altitude == null) return;
-    // check for the locations order...
-    for (var i = num - 1; i>=1; i--) {
-      // case tnew < tprevious, remove previous location
-      const previous: Data = this.track.data[i];
-      if (previous.time > location.time) { await this.removePrevious(); }
-      else break;
-    }
-    num = this.track.data.length; 
-    // if the new location is the first one in the trail 
-    if (num == 0) {
-      await this.firstLocation(location);
-      return;
-    }
-    const lastPoint: number[] = this.track.map[num - 1];
-    const lastData: Data = this.track.data[num - 1];
-    var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
-    var time: number = location.time - lastData.time;
-    const compSpeed = 3600000 * distance / time;
-    if (compSpeed > this.vMax) return;
-    distance = lastData.distance + distance;
-    time = lastData.accTime + time;
-    // add location  
-    this.track.data.push({
-      accuracy: location.accuracy,
-      altitude: location.altitude,
-      altitudeAccuracy: location.altitudeAccuracy,
-      bearing: location.bearing,
-      simulated: location.simulated,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: compSpeed,
-      distance: distance,
-      elevationGain: lastData.elevationGain,
-      elevationLoss: lastData.elevationLoss,
-      accTime: time,
-    })
-    this.track.map.push([location.longitude, location.latitude]);
-    // filter
-    num = this.track.data.length; 
-    if (num > this.lag) {
-      await this.filter(num - this.lag -1);
-      this.filtered = num - this.lag -1;
-    }  
-    // filter speed
-    this.track = await this.fs.filterSpeed(this.track)
-    // current values
-    this.htmlVariables();
   }
 
   async buildGeoJson(location: Location) {
@@ -747,15 +644,14 @@ export class Tab1Page   {
       accTime: time
     })
     this.geoTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
-    // filter
+    // altitude filter
     num = this.geoTrack.features[0].geometry.coordinates.length;
-    console.log(num)
     if (num > this.lag) {
-      await this.filterHeight(num - this.lag -1);
+      await this.altitudeFilter(num - this.lag -1);
       this.filtered = num - this.lag -1;
     }  
     // filter speed
-    abb = await this.fs.geoFilterSpeed(abb, num, this.lag);
+    abb = await this.fs.speedFilter(abb, num, this.lag);
     this.geoTrack.features[0].geometry.properties.data = abb;
   }
 
@@ -787,7 +683,7 @@ export class Tab1Page   {
     this.geoTrack.features[0].geometry.properties.data.pop();
   }
 
-  async filterHeight(i: number) {
+  async altitudeFilter(i: number) {
     var abb: any = this.geoTrack.features[0].geometry.properties.data;
     var num = this.geoTrack.features[0].geometry.coordinates.length;
     const start = Math.max(0, i-this.lag);
@@ -828,97 +724,6 @@ export class Tab1Page   {
     this.currentMarker = await this.createMarker('Current', 'Current')
   }
 
-/*
-  async trackOnMap() {
-    const num = this.track.map.length
-    // no map
-    if (!this.map) return;
-    // no points enough
-    if (num < 2) return;
-    // compute layer number
-    var layer = 124 + Math.floor((num - 1) / 50)
-    // update layer
-    const layerString = layer.toString() 
-    await this.removeLayer(layerString)
-//    await this.newLayer(layerString)
-    if (this.currentMarker) this.currentMarker.remove();        
-    this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
-      setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
-  }
-*/
-
-  async removePrevious() {
-    // we suppose the previous location is in the same subtrail
-    this.track.data.pop();
-    this.track.map.pop();
-    this.htmlVariables();
-  }
-
-  async firstLocation(location: Location) {
-    this.track.data.push({
-      accuracy: location.accuracy,
-      altitude: location.altitude,
-      altitudeAccuracy: location.altitudeAccuracy,
-      bearing: location.bearing,
-      simulated: location.simulated,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: 0,
-      distance: 0,
-      elevationGain: 0,
-      elevationLoss: 0,
-      accTime: 0,
-    })
-    this.track.map.push(
-      [location.longitude, location.latitude]
-    )
-    this.htmlVariables();
-  }
-
-  async filter(i: number) {
-    var num: number = this.track.data.length;
-    const start = Math.max(0, i-this.lag);
-    const end = Math.min(i+this.lag, num - 1);
-    // average altitude
-    var sum: number = 0
-    for (var j= start; j<=end;j++) sum = sum + this.track.data[j].altitude;
-    this.track.data[i].altitude = sum/(end - start +1);
-    // re-calculate elevation gains / losses
-    if (i==0) return;
-    var slope = this.track.data[i].altitude - this.track.data[i-1].altitude;
-    if (slope > 0) {
-      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain + slope; 
-      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss
-    }
-    else {
-      this.track.data[i].elevationGain = this.track.data[i-1].elevationGain; 
-      this.track.data[i].elevationLoss = this.track.data[i-1].elevationLoss - slope
-    }
-    this.currentElevationGain = this.track.data[i].elevationGain
-    this.currentElevationLoss = this.track.data[i].elevationLoss
-  } 
-
-  /*
-  async newLayer(id: string) {
-    // id
-    var idNum: number = +id - 124;
-    //slice
-    var start = Math.max(0, idNum * 50 - 1);
-    var num = this.track.data.length;
-    const slice = this.track.map.slice(start, num)
-    // add layer
-    await this.addLayer('elGros' + id, slice, this.currentColor)
-    // initial marker and map center
-    if (num == 2) {
-      this.initialMarker = new tt.Marker({color:'#00aa00', width: '25px', height: '25px'}).
-        setLngLat([this.track.map[0][0], this.track.map[0][1]]).addTo(this.map);
-      await this.setMapView(this.track);
-    }
-    // map center and zoom
-    if (num === 10 || num === 50 || num % 100 === 0) await this.setMapView(this.track)
-  }
-*/
-
   async stopTracking() {
     this.show('start', 'none');
     this.show('stop', 'none');
@@ -935,25 +740,11 @@ export class Tab1Page   {
     this.watcherId = 0;
     // filter remaining values
     for (var i = this.filtered + 1; i < num; i++) {
-      await this.filter(i)
+      await this.altitudeFilter(i)
     };
     // update map and canvas
     await this.setMapView(this.track);
     await this.updateAllCanvas(this.ctx, this.track);
-  }
-
-  async removeTrack() {
-    this.show('start', 'block');
-    this.show('stop', 'none');
-    this.show('save', 'none');
-    this.show('trash', 'none');
-    // new track: initialize all variables and plots
-    this.initialize();
-    // remove markers and track layers if exist
-    //if (this.initialMarker) this.initialMarker.remove();
-    //if (this.finalMarker) this.finalMarker.remove();
-    //if (this.currentMarker) this.currentMarker.remove();        
-    await this.removeCustomLayers();
   }
 
   async removeGeoTrack() {
@@ -1031,11 +822,6 @@ export class Tab1Page   {
     this.show('stop', 'none');
     this.show('save', 'none');
     this.show('trash', 'block');
-  }
-
-  async addFullLayer() {
-    // add layer
-    await this.addLayer('elGros122', this.track.map, this.currentColor)
   }
 
   async buttonClick(option: string) {

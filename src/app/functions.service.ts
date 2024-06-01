@@ -90,7 +90,7 @@ export class FunctionsService {
     return track;
   }
 
-  async geoFilterSpeed(abb: any, num: number, lag: number) {
+  async speedFilter(abb: any, num: number, lag: number) {
     var num: number = abb.length;
     var start: number = Math.max(num - lag - 1, 0);
     var distance: number = abb[num-1].distance - abb[start].distance;
