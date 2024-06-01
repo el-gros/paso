@@ -55,7 +55,7 @@ export class Tab1Page   {
   archivedTrack: any = this.geoTrack
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
-  oldCtx: CanvasRenderingContext2D[] = [];
+  archivedCtx: CanvasRenderingContext2D[] = [];
   canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
@@ -75,8 +75,8 @@ export class Tab1Page   {
   oldNumber: number = 0;
   collection: TrackDefinition[] = [];
   map: any;
-  initialMarker: any | undefined = undefined;
-  finalMarker: any | undefined = undefined;
+  currentInitialMarker: any | undefined = undefined;
+  currentFinalMarker: any | undefined = undefined;
   oldInitialMarker: any | undefined = undefined;
   oldFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
@@ -84,12 +84,10 @@ export class Tab1Page   {
   distanceFilter: number = .05; // 5
   filtered: number = -1; 
   style: any;
-  loaded: boolean = false;
 
   provider: string = 'Tomtom' // Tomtom or Mapbox;
   mapStyle: string = 'basic';
   previousTrack: Track | null = null;
-  oldTrack: Track | null = null;
   currentColor: string = 'orange'
   archivedColor: string = 'green'
 
@@ -101,6 +99,7 @@ export class Tab1Page   {
     private storage: Storage,
   ) { }          
 
+  // ON INIT ////////////////////////////////
   async ngOnInit() {
     // create storage 
     await this.storage.create();
@@ -129,6 +128,75 @@ export class Tab1Page   {
     this.show('databutton', 'block');
   }  
 
+  // CREATE ALL CANVAS ////////////////////////
+  async createCanvas() {
+    var canvas: any
+    var archivedCanvas: any;
+    for (var i in this.properties) {
+      canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
+      archivedCanvas = document.getElementById('oldcanvas' + i) as HTMLCanvasElement;
+      this.ctx[i] = await canvas.getContext("2d");
+      this.archivedCtx[i] = await archivedCanvas.getContext("2d");
+    }
+    canvas.width = window.innerWidth;
+    canvas.height = canvas.width;
+    this.canvasNum = canvas.width;
+  }
+
+  // CREATE TOMTOM MAP //////////////////////////////
+  async createTomtomMap() {
+    // create Tomtom map
+    this.map = tt.map({
+      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom
+      container: 'map',
+      center: [1, 41.5],
+      zoom: 6,
+      style: this.style
+    });
+    // once loaded, resize and add controls
+    this.map.on('load',() =>{
+      this.map.resize();
+      this.map.addControl(new tt.NavigationControl()); 
+      this.map.addControl(new tt.ScaleControl());
+      this.map.addControl(new tt.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,		
+      }));
+    });
+  }
+
+  // CREATE MAPBOX MAP //////////////////////////////
+  async createMapboxMap() {
+    // create Mapbox map
+    this.map = new mapboxgl.Map({
+      container: 'map',
+      accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
+      style: this.style,
+      center: [1, 41.5],
+      zoom: 6,
+      trackResize: true,
+    });
+    // once loaded, resize and add controls
+    this.map.on('load',() =>{
+      this.map.resize();
+      this.map.addControl(new mapboxgl.NavigationControl());
+      this.map.scrollZoom.disable();
+    });      
+  }
+
+  // SHOW / HIDE ELEMENTS ///////////////////////////////// 
+  show (id: string, action: string) {
+    var obj: HTMLElement | null = document.getElementById(id);
+    if (!obj) return;
+    obj.style.display = action
+  }
+
+  ///////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////
+
+  // ION VIEW DID ENTER
   async ionViewDidEnter() {
     // change map provider
     await this.changeMapProvider();
@@ -137,22 +205,21 @@ export class Tab1Page   {
     // archived track
     var visible: boolean = await this.archivedVisibility();
     if (!visible) return;
-    // check if an old track has to be displayed
+    // check if an archived track has to be displayed
     // retrieve track
     await this.retrieveTrack();
     // check if there is track or it did not change
-    if (!this.oldTrack) return;
-    if (this.previousTrack == this.oldTrack) return;
+    if (!this.archivedTrack) return;
+    if (this.previousTrack == this.archivedTrack) return;
     // write variables
     await this.archivedHtml();
     // update canvas
-// TO CONVERT TO GEOJSON /////////////////////////////////////
-    await this.updateAllCanvas(this.oldCtx, this.oldTrack);
+    await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // display track on map
-    await this.displayOldTrack();
-    this.previousTrack = this.oldTrack; 
+    await this.displayArchivedTrack();
+    this.previousTrack = this.archivedTrack; 
     // adapt view
-    await this.setMapView(this.oldTrack);
+    await this.setMapView(this.archivedTrack);
   }
 
   async changeMapProvider() {
@@ -166,9 +233,8 @@ export class Tab1Page   {
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
     this.map.on('load', async () => {
-      // TO CONVERT TO GEOJSON /////////////////////////////////////  
       // display old track on map
-      await this.displayOldTrack();
+      await this.displayArchivedTrack();
       // display current track
       await this.displayCurrentTrack(); //1
     })
@@ -185,9 +251,9 @@ export class Tab1Page   {
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));          
     // display old track on map
-    await this.addGeoLayer('Archived');
+    await this.displayArchivedTrack();
     // display current track
-    await this.addGeoLayer('Current');
+    await this.displayCurrentTrack(); //1
   }
 
   async addGeoLayer(which: string) {
@@ -233,7 +299,7 @@ export class Tab1Page   {
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
     // display old track on map
-    await this.displayOldTrack();
+    await this.displayArchivedTrack();
     // display current track
     await this.addFullLayer();
   }
@@ -248,65 +314,6 @@ export class Tab1Page   {
       await this.removeLayer('123');
       return false;
     }
-  }
-
-  async createCanvas() {
-    var canvas: any
-    var oldCanvas: any;
-    for (var i in this.properties) {
-      canvas = document.getElementById('canvas' + i) as HTMLCanvasElement;
-      oldCanvas = document.getElementById('oldcanvas' + i) as HTMLCanvasElement;
-      this.ctx[i] = await canvas.getContext("2d");
-      this.oldCtx[i] = await oldCanvas.getContext("2d");
-    }
-    canvas.width = window.innerWidth;
-    canvas.height = canvas.width;
-    this.canvasNum = canvas.width;
-  }
-
-  async createTomtomMap() {
-    this.map = tt.map({
-      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom, not Google Maps
-      container: 'map',
-      center: [1, 41.5],
-      zoom: 6,
-      style: this.style
-    });
-    this.map.on('load',() =>{
-      this.map.resize();
-      this.map.addControl(new tt.NavigationControl()); 
-      this.map.addControl(new tt.ScaleControl());
-      this.map.addControl(new tt.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,		
-      }));
-      this.loaded = true  
-    });
-  }
-
-  async createMapboxMap() {
-    this.map = new mapboxgl.Map({
-      container: 'map',
-      accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
-      style: this.style,
-      center: [1, 41.5],
-      zoom: 6,
-      trackResize: true,
-    });
-    this.map.on('load',() =>{
-      this.map.resize();
-      this.map.addControl(new mapboxgl.NavigationControl());
-      this.map.scrollZoom.disable();
-      this.loaded = true;
-    });      
-  }
-
-  show (id: string, action: string) {
-    var obj: HTMLElement | null = document.getElementById(id);
-    if (!obj) return;
-    obj.style.display = action
   }
 
   async retrieveTrack() {
@@ -335,7 +342,7 @@ export class Tab1Page   {
       }
     }    
     // retrieve track
-    this.oldTrack = await this.storage.get(JSON.stringify(key));
+    this.archivedTrack = await this.storage.get(JSON.stringify(key));
     // uncheck all
     for (var item of this.collection) {
       item.isChecked = false;
@@ -343,15 +350,18 @@ export class Tab1Page   {
     await this.storage.set('collection', this.collection); 
   }
 
-  async displayOldTrack() {
-    // no points enough
-    if (!this.oldTrack) return;
-    if (this.oldTrack.map.length < 2) return;
-    // remove old stuff and create new layer 123
+  async displayArchivedTrack() {
+    // no map
+    if (!this.map) return;
+    // no archived track
+    if (!this.archivedTrack) return;
+    // remove old stuff and create new layer 123 and markers
     if (this.oldInitialMarker) this.oldInitialMarker.remove();
     if (this.oldFinalMarker) this.oldFinalMarker.remove();    
     await this.removeLayer('123');
-    await this.oldTrackLayer('123');
+    this.addGeoLayer('Archived')
+    this.oldInitialMarker = await this.createMarker('Archived', 'Initial');
+    this.oldFinalMarker = await this.createMarker('Archived', 'Final');
   }
 
   async removeLayer(id: string) {
@@ -361,18 +371,6 @@ export class Tab1Page   {
       await this.map.removeLayer(id)
       await this.map.removeSource(id)
     }
-  }
-
-  async oldTrackLayer(id: string) {
-    if (!this.oldTrack) return;
-    // add layer
-    await this.addLayer('elGros' + id, this.oldTrack.map, this.archivedColor)
-    // add markers
-    var num: number = this.oldTrack.data.length;
-    this.oldInitialMarker = new tt.Marker({color: '#00aa00', width: '25px', height: '25px'}).
-      setLngLat([this.oldTrack.map[0][0], this.oldTrack.map[0][1]]).addTo(this.map);
-    this.oldFinalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
-      setLngLat([this.oldTrack.map[num - 1][0], this.oldTrack.map[num - 1][1]]).addTo(this.map);
   }
 
   async setMapView(track: Track) {
@@ -402,13 +400,13 @@ export class Tab1Page   {
       this.currentAltitude = this.track.data[num - 1].altitude;
       this.currentSpeed = this.track.data[num - 1].speed;
     }
-    if (this.oldTrack) {
-      num = this.oldTrack.data.length;
+    if (this.archivedTrack) {
+      num = this.archivedTrack.data.length;
       if (num > 0) {
-        this.oldTime = this.fs.formatMillisecondsToUTC(this.oldTrack.data[num - 1].accTime);
-        this.oldDistance = this.oldTrack.data[num - 1].distance;
-        this.oldElevationGain = this.oldTrack.data[num - 1].elevationGain;
-        this.oldElevationLoss = this.oldTrack.data[num - 1].elevationLoss;
+        this.oldTime = this.fs.formatMillisecondsToUTC(this.archivedTrack.data[num - 1].accTime);
+        this.oldDistance = this.archivedTrack.data[num - 1].distance;
+        this.oldElevationGain = this.archivedTrack.data[num - 1].elevationGain;
+        this.oldElevationLoss = this.archivedTrack.data[num - 1].elevationLoss;
         this.oldNumber = num;
       }
     } 
@@ -517,8 +515,8 @@ export class Tab1Page   {
     //this.initialize();
     this.geoInitialize();
     // remove markers and track layers if exist
-    if (this.initialMarker) this.initialMarker.remove();
-    if (this.finalMarker) this.finalMarker.remove();
+    if (this.currentInitialMarker) this.currentInitialMarker.remove();
+    if (this.currentFinalMarker) this.currentFinalMarker.remove();
     if (this.currentMarker) this.currentMarker.remove();        
     await this.removeLayer('122');
     // display old track
@@ -577,8 +575,8 @@ export class Tab1Page   {
     }
     await this.removeLayer('122')  
     // remove markers and track layers if exist
-    if (this.initialMarker) this.initialMarker.remove();
-    if (this.finalMarker) this.finalMarker.remove();
+    if (this.currentInitialMarker) this.currentInitialMarker.remove();
+    if (this.currentFinalMarker) this.currentFinalMarker.remove();
     if (this.currentMarker) this.currentMarker.remove();        
 //    await this.map.addSource('elGros122', { type: 'geojson', data: this.geoTrack });
     this.watcherId = 0;
@@ -780,6 +778,7 @@ export class Tab1Page   {
       [location.longitude, location.latitude]
     )
     await this.addGeoLayer('Current');
+    this.currentInitialMarker = await this.createMarker('Current', 'Initial');
   }
 
   async removeGeoPrevious() {
@@ -821,29 +820,15 @@ export class Tab1Page   {
     // no points enough
     if (num < 2) return;
     // just in case layer 122 didn't exist...
-    try {await this.addGeoLayer('Archived')}
+    try {await this.addGeoLayer('Current')}
     catch {}
     // update
     await this.map.getSource('elGros122').setData(this.geoTrack); 
     if (this.currentMarker) this.currentMarker.remove();        
-    this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
-      setLngLat([this.geoTrack.features[0].geometry.coordinates[num - 1][0], 
-        this.geoTrack.features[0].geometry.coordinates[num - 1][1]]).addTo(this.map);
+    this.currentMarker = await this.createMarker('Current', 'Current')
   }
 
-  async displayArchivedTrack() {
-    const num = this.archivedTrack.features[0].geometry.coordinates.length
-    // no map
-    if (!this.map) return;
-    // no points enough
-    if (num < 2) return;
-    // just in case layer 123 didn't exist...
-    // try {await this.addGeoLayer()}
-    // catch {}
-    // update
-    await this.map.getSource('elGros123').setData(this.archivedTrack); 
-  }
-
+/*
   async trackOnMap() {
     const num = this.track.map.length
     // no map
@@ -855,11 +840,12 @@ export class Tab1Page   {
     // update layer
     const layerString = layer.toString() 
     await this.removeLayer(layerString)
-    await this.newLayer(layerString)
+//    await this.newLayer(layerString)
     if (this.currentMarker) this.currentMarker.remove();        
     this.currentMarker = new tt.Marker({color:'#0000ff', width: '25px', height: '25px'}).
       setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
   }
+*/
 
   async removePrevious() {
     // we suppose the previous location is in the same subtrail
@@ -912,6 +898,7 @@ export class Tab1Page   {
     this.currentElevationLoss = this.track.data[i].elevationLoss
   } 
 
+  /*
   async newLayer(id: string) {
     // id
     var idNum: number = +id - 124;
@@ -930,6 +917,7 @@ export class Tab1Page   {
     // map center and zoom
     if (num === 10 || num === 50 || num % 100 === 0) await this.setMapView(this.track)
   }
+*/
 
   async stopTracking() {
     this.show('start', 'none');
@@ -937,9 +925,10 @@ export class Tab1Page   {
     this.show('save', 'block');
     this.show('trash', 'block');
     // red marker
-    const num: number = this.track.data.length
-    if (num > 1) this.finalMarker = new tt.Marker({color: '#ff0000', width: '25px', height: '25px'}).
-      setLngLat([this.track.map[num - 1][0], this.track.map[num - 1][1]]).addTo(this.map);
+    var num: number = 0;
+    try {num = this.geoTrack.features[0].geometry.coordinates.length; }
+    catch {}
+    if (num > 0) this.currentFinalMarker = this.createMarker('Current', 'Final')
     // remove watcher
     try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
     catch {}
@@ -961,9 +950,9 @@ export class Tab1Page   {
     // new track: initialize all variables and plots
     this.initialize();
     // remove markers and track layers if exist
-    if (this.initialMarker) this.initialMarker.remove();
-    if (this.finalMarker) this.finalMarker.remove();
-    if (this.currentMarker) this.currentMarker.remove();        
+    //if (this.initialMarker) this.initialMarker.remove();
+    //if (this.finalMarker) this.finalMarker.remove();
+    //if (this.currentMarker) this.currentMarker.remove();        
     await this.removeCustomLayers();
   }
 
@@ -1073,4 +1062,39 @@ export class Tab1Page   {
 
 // refresh: https://docs.mapbox.com/mapbox-gl-js/example/live-update-feature/
 
+  async createMarker(which: string, where: string) {
+    var track: any
+    var num: number = 0;
+    var point: any;
+    var marker: any; 
+    var color: string;
+    // track selection
+    if (which == 'Archived') {
+      track = this.archivedTrack.features[0].geometry.coordinates;
+    }
+    else {
+      track = this.geoTrack.features[0].geometry.coordinates
+    }
+    try {num = track.length}
+    catch {}
+    if (num == 0) return;
+    // point and color selection
+    if (where == 'Initial') {
+      point = [track[0][0], track[0][1]];
+      color = 'green'
+    }
+    else if (where == 'Current') {
+      point = [track[num - 1][0], track[num - 1][1]];
+      color = 'blue';            
+    }
+    else {
+      point = [track[num - 1][0], track[num - 1][1]];
+      color = 'red';            
+    }
+    var char: any = {color: color, width: '25px', height: '25px'}
+    // marker creation
+    if (this.provider == 'Tomtom') marker = new tt.Marker(char).setLngLat(point).addTo(this.map);
+    else marker = new mapboxgl.Marker(char).setLngLat(point).addTo(this.map);
+    return marker;
+  }
 }
