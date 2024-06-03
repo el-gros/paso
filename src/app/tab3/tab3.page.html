@@ -68,30 +68,36 @@
       </div>
     </ion-row>
     <ion-row>
-      <ion-col size="4" offset="1">
+      <ion-col size="4">
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Current')">
           <div class="pick" >CURRENT<br>TRACK</div>
         </ion-button>
       </ion-col>  
-      <ion-col size="1" offset="1">
+      <ion-col size="2" offset="1">
         <div class="line" [ngStyle]="{'background-color': currentColor}"></div>
       </ion-col>  
-      <ion-col size="2" offset='1'>
+      <ion-col size="2">
+        <div class ="quest"><strong>??</strong></div>
+      </ion-col>
+      <ion-col size="2">
         <ion-button (click)="confirm('Current')">
           <div class="pick" >OK</div>
         </ion-button>
       </ion-col>  
     </ion-row>
     <ion-row>
-      <ion-col size="4" offset="1">
+      <ion-col size="4">
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Archived')">
           <div class="pick" >ARCHIVED<br>TRACK</div>
         </ion-button>
       </ion-col>  
-      <ion-col size="1" offset="1">
+      <ion-col size="2" offset="1">
         <div class="line" [ngStyle]="{'background-color': archivedColor}"></div>
       </ion-col>  
-      <ion-col size="2" offset='1'>
+      <ion-col size="2">
+        <div class="quest"><strong>??</strong></div>
+      </ion-col>
+      <ion-col size="2">
         <ion-button (click)="confirm('Archived')">
           <div class="pick" >OK</div>
         </ion-button>

@@ -1,5 +1,5 @@
 import { global } from 'src/environments/environment';
-import { Data, Bounds, Track } from 'src/globald';
+import { Data, Bounds } from 'src/globald';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -81,13 +81,13 @@ export class FunctionsService {
     return style;
   }
 
-  async filterSpeed(track: Track) {
-    var num: number = track.data.length;
+  async filterSpeed(abb: any) {
+    var num: number = abb.length;
     var start: number = Math.max(num - this.lag - 1, 0);
-    var distance: number = track.data[num-1].distance - track.data[start].distance;
-    var time: number = track.data[num-1].time - track.data[start].time;
-    track.data[num-1].compSpeed = 3600000 * distance / time;
-    return track;
+    var distance: number = abb[num-1].distance - abb[start].distance;
+    var time: number = abb[num-1].time - abb[start].time;
+    abb[num-1].compSpeed = 3600000 * distance / time;
+    return abb;
   }
 
   async speedFilter(abb: any, num: number, lag: number) {

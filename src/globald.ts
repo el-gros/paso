@@ -32,12 +32,23 @@ export interface Location {
   }
 
   export interface Track {
-    name: string,
-    date: Date,
-    place: string,
-    description: string,
-    data: Data[],
-    map: number[][],
+    type: string,
+    features: [{
+      type: string,
+      properties: {
+        name: string,
+        place: string,
+        date: Date,
+        description: string,
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: [],
+        properties: {
+          data: [],
+        }
+      }  
+    }]
   }
 
   export interface TrackDefinition {

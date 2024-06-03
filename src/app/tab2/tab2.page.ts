@@ -113,10 +113,10 @@ export class Tab2Page {
     var track: Track
     track = await this.storage.get(JSON.stringify(this.collection[i].date));
     if (!track) return;
-    track.name = name;
-    track.place = place;
-    track.description = description;
-    await this.storage.set(JSON.stringify(track.date), track);
+    track.features[0].properties.name = name;
+    track.features[0].properties.place = place;
+    track.features[0].properties.description = description;
+    await this.storage.set(JSON.stringify(track.features[0].properties.date), track);
   }
 
   async deleteTracks() {

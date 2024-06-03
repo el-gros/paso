@@ -31,31 +31,8 @@ import mapboxgl from 'mapbox-gl';
 export class Tab1Page   {
 
   watcherId: any = 0;
-  track: Track = {
-    data: [], 
-    map: [],
-    name: '',
-    place: '',
-    date: new Date(),
-    description: '', 
-  };
-  currentTrack: any = {
-    type: 'FeatureCollection',
-    features: [{
-      type: 'feature',
-      properties: {
-        data: [],
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: [],
-        properties: {
-          data: [],
-        }
-      }  
-    }]
-  }  
-  archivedTrack: any = this.currentTrack
+  currentTrack: any = null;
+  archivedTrack: any = null;
   vMax: number = 400; 
   ctx: CanvasRenderingContext2D[] = [];
   archivedCtx: CanvasRenderingContext2D[] = [];
@@ -90,9 +67,10 @@ export class Tab1Page   {
 
   provider: string = 'Tomtom' // Tomtom or Mapbox;
   mapStyle: string = 'basic';
-  previousTrack: Track | null = null;
-  currentColor: string = 'orange'
-  archivedColor: string = 'green'
+  previousTrack: any = null;
+  currentColor: string = 'orange';
+  archivedColor: string = 'green';
+  intervalId: any;
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -113,7 +91,7 @@ export class Tab1Page   {
     try{this.mapStyle = await this.storage.get('style'); }
     catch{}
     // archived track
-    await this.storage.set('archived', true); 
+    await this.storage.set('archived', 'visible'); 
     // create canvas
     await this.createCanvas();
     // plot map
@@ -217,7 +195,8 @@ export class Tab1Page   {
     // write variables
     await this.archivedHtml();
     // update canvas
-    await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    try {await this.updateAllCanvas(this.archivedCtx, this.archivedTrack); }
+    catch {}
     // display track on map
     await this.displayArchivedTrack();
     this.previousTrack = this.archivedTrack; 
@@ -298,7 +277,7 @@ export class Tab1Page   {
   async archivedVisibility() {
     try{var archived = await this.storage.get('archived'); }
     catch{}
-    if (archived) return true
+    if (archived == 'visible') return true
     else {
       await this.removeLayer('123');
       return false;
@@ -345,7 +324,7 @@ export class Tab1Page   {
     var num: number = this.archivedTrack.features[0].geometry.coordinates.length;
     var abb: any = this.archivedTrack.features[0].geometry.properties.data; 
     if (num > 0) {
-      this.archivedTime = this.fs.formatMillisecondsToUTC(abb[num-1].accTime);
+      this.archivedTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
       this.archivedDistance = abb[num-1].distance;
       this.archivedElevationGain = abb[num-1].elevationGain;
       this.archivedElevationLoss = abb[num-1].elevationLoss;
@@ -390,13 +369,17 @@ export class Tab1Page   {
     });
     // map view
     await this.map.resize();
+    console.log('1', minLng)
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
+    console.log('2', minLng)
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
   // DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
-    const num = this.currentTrack.features[0].geometry.coordinates.length
+    var num: number = 0;
+    try{ num = this.currentTrack.features[0]?.geometry.coordinates.length;}
+    catch {}
     // no map
     if (!this.map) return;
     // no points enough
@@ -438,7 +421,7 @@ export class Tab1Page   {
     var num = abb.length;
     if (propertyName == 'simulated') return;
     if (xParam == 'x') var xTot = abb[num - 1].distance;
-    else xTot = abb[num - 1].accTime;
+    else xTot = abb[num - 1].time - abb[0].time;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     // compute bounds
@@ -458,7 +441,10 @@ export class Tab1Page   {
     ctx.moveTo(0, bounds.min);
     for (var i in abb) {
       if (xParam == 'x') ctx.lineTo(abb[i].distance, abb[i][propertyName])
-      else ctx.lineTo(abb[i].accTime, abb[i][propertyName])
+      else {
+        var inter = abb[i].time - abb[0].time;
+        ctx.lineTo(inter, abb[i][propertyName])
+      }
     }     
     ctx.lineTo(xTot,bounds.min);
     ctx.closePath();
@@ -466,7 +452,37 @@ export class Tab1Page   {
     ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // grid
-    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f, xParam) 
+    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f) 
+  }
+
+  // GRID /////////////////////////////////////////////////////
+  async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number) {
+    if (!ctx) return;
+    ctx.font = "15px Arial"
+    const gridx = this.fs.gridValue(xMax - xMin);
+    const gridy = this.fs.gridValue(yMax - yMin);
+    const fx = Math.ceil(xMin / gridx);
+    const fy = Math.ceil(yMin / gridy);
+    ctx.setLineDash([5, 15]);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black'  
+    // vertical lines
+    for (var xi = fx * gridx; xi <= xMax; xi = xi + gridx) {
+      ctx.beginPath();
+      ctx.moveTo(xi*a+e, yMin*d+f);
+      ctx.lineTo(xi*a+e, yMax*d+f);
+      ctx.stroke();
+      ctx.fillText(xi.toLocaleString(),xi*a+e + 2,yMax*d+f + 2)
+    }
+    // horizontal lines
+    for (var yi = fy * gridy; yi <= yMax; yi = yi + gridy) {
+      ctx.beginPath();
+      ctx.moveTo(xMin*a+e, yi*d+f);
+      ctx.lineTo(xMax*a+e, yi*d+f);
+      ctx.stroke();
+      ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
+    }
+    ctx.setLineDash([]);
   }
 
   ///////////////////////////////////////////////////////////////
@@ -474,6 +490,7 @@ export class Tab1Page   {
 
   // START TRACKING /////////////////////////////////
   async startTracking() {
+    console.log(this.watcherId)
     // initialize
     this.initialize();
     // start tracking
@@ -488,7 +505,7 @@ export class Tab1Page   {
         await this.buildGeoJson(location); 
         await this.currentHtml();
         await this.displayCurrentTrack();
-        await this.updateAllCanvas(this.ctx, this.currentTrack);
+        //await this.updateAllCanvas(this.ctx, this.currentTrack);
         this.cd.detectChanges();
       }
     }).then((value: any) => this.watcherId = value);
@@ -507,7 +524,10 @@ export class Tab1Page   {
       features: [{
         type: 'feature',
         properties: {
-          data: [],
+          name: '',
+          place: '',
+          date: null,
+          description: '',
         },
         geometry: {
           type: 'LineString',
@@ -519,7 +539,6 @@ export class Tab1Page   {
       }]
     }
     await this.removeLayer('122')  
-    this.watcherId = 0;
     this.currentAltitude = 0;
     this.currentSpeed = 0;
     this.currentDistance = 0;
@@ -562,25 +581,24 @@ export class Tab1Page   {
     var abb = this.currentTrack.features[0].geometry.properties.data;
     const lastPoint: number[] = this.currentTrack.features[0].geometry.coordinates[num - 1];
     var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
-    var time: number = location.time - abb[num-1].time;
+    var time: number = location.time;
     const compSpeed = 3600000 * distance / time;
     if (compSpeed > this.vMax) return;
     distance = abb[num-1].distance + distance;
-    time = abb[num-1].accTime + time;  
     // add properties to geojson
     abb.push({
       accuracy: location.accuracy,
       altitude: location.altitude,
-      altitudeAccuracy: location.altitudeAccuracy,
-      bearing: location.bearing,
-      simulated: location.simulated,
+//      altitudeAccuracy: location.altitudeAccuracy,
+//      bearing: location.bearing,
+//      simulated: location.simulated,
       speed: location.speed,
       time: location.time,
       compSpeed: compSpeed,
       distance: distance,
       elevationGain: abb[num-1].elevationGain,
       elevationLoss: abb[num-1].elevationLoss,
-      accTime: time
+//      accTime: time
     })
     // add coordinates
     this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
@@ -593,6 +611,8 @@ export class Tab1Page   {
     // speed filter
     abb = await this.fs.speedFilter(abb, num, this.lag);
     this.currentTrack.features[0].geometry.properties.data = abb;
+    // ippdate canvas
+    if (num % 20 == 0) await this.updateAllCanvas(this.ctx, this.currentTrack);
   }
 
   // DISPLAY VALUES FROM THE CURRENT TRACK ///////////////////
@@ -600,7 +620,7 @@ export class Tab1Page   {
     var num: number = this.currentTrack.features[0].geometry.coordinates.length;
     var abb: any = this.currentTrack.features[0].geometry.properties.data; 
     if (num > 0) {
-      this.currentTime = this.fs.formatMillisecondsToUTC(abb[num-1].accTime);
+      this.currentTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
       this.currentDistance = abb[num-1].distance;
       this.currentNumber = num;
       this.currentAltitude = abb[num-1].altitude;
@@ -613,16 +633,16 @@ export class Tab1Page   {
     this.currentTrack.features[0].geometry.properties.data.push({
       accuracy: location.accuracy,
       altitude: location.altitude,
-      altitudeAccuracy: location.altitudeAccuracy,
-      bearing: location.bearing,
-      simulated: location.simulated,
+  //    altitudeAccuracy: location.altitudeAccuracy,
+  //    bearing: location.bearing,
+  //    simulated: location.simulated,
       speed: location.speed,
       time: location.time,
       compSpeed: 0,
       distance: 0,
       elevationGain: 0,
       elevationLoss: 0,
-      accTime: 0
+  //    accTime: 0
     })
     this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
@@ -637,36 +657,45 @@ export class Tab1Page   {
     this.currentTrack.features[0].geometry.coordinates.pop();
     this.currentTrack.features[0].geometry.properties.data.pop();
   }
-  
-  async grid(ctx: CanvasRenderingContext2D | undefined , xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number, xParam: string) {
-    if (!ctx) return;
-    ctx.font = "15px Arial"
-    const gridx = this.fs.gridValue(xMax - xMin);
-    const gridy = this.fs.gridValue(yMax - yMin);
-    const fx = Math.ceil(xMin / gridx);
-    const fy = Math.ceil(yMin / gridy);
-    ctx.setLineDash([5, 15]);
-    ctx.strokeStyle = 'black';
-    ctx.fillStyle = 'black'  
-    // vertical lines
-    for (var xi = fx * gridx; xi <= xMax; xi = xi + gridx) {
-      ctx.beginPath();
-      ctx.moveTo(xi*a+e, yMin*d+f);
-      ctx.lineTo(xi*a+e, yMax*d+f);
-      ctx.stroke();
-      ctx.fillText(xi.toLocaleString(),xi*a+e + 2,yMax*d+f + 2)
+
+  // CREATE MARKER ///////////////////////////////////
+  async createMarker(which: string, where: string) {
+    var track: any
+    var num: number = 0;
+    var point: any;
+    var marker: any; 
+    var color: string;
+    // track selection
+    if (which == 'Archived') {
+      track = this.archivedTrack.features[0].geometry.coordinates;
     }
-    // horizontal lines
-    for (var yi = fy * gridy; yi <= yMax; yi = yi + gridy) {
-      ctx.beginPath();
-      ctx.moveTo(xMin*a+e, yi*d+f);
-      ctx.lineTo(xMax*a+e, yi*d+f);
-      ctx.stroke();
-      ctx.fillText(yi.toLocaleString(),xMin*a+e + 2, yi*d+f - 2)
+    else {
+      track = this.currentTrack.features[0].geometry.coordinates
     }
-    ctx.setLineDash([]);
+    try {num = track.length}
+    catch {}
+    if (num == 0) return;
+    // point and color selection
+    if (where == 'Initial') {
+      point = [track[0][0], track[0][1]];
+      color = 'green'
+    }
+    else if (where == 'Current') {
+      point = [track[num - 1][0], track[num - 1][1]];
+      color = 'blue';            
+    }
+    else {
+      point = [track[num - 1][0], track[num - 1][1]];
+      color = 'red';            
+    }
+    var char: any = {color: color, width: '25px', height: '25px'}
+    // marker creation
+    if (this.provider == 'Tomtom') marker = new tt.Marker(char).setLngLat(point).addTo(this.map);
+    else marker = new mapboxgl.Marker(char).setLngLat(point).addTo(this.map);
+    return marker;
   }
 
+  // ALTITUDE FILTER /////////////////////////////////
   async altitudeFilter(i: number) {
     var abb: any = this.currentTrack.features[0].geometry.properties.data;
     var num = this.currentTrack.features[0].geometry.coordinates.length;
@@ -692,7 +721,24 @@ export class Tab1Page   {
     this.currentTrack.features[0].geometry.properties.data = abb
   } 
 
+  // TIMER FOR CANVAS UPDATING /////////////////////////////////
+  async interval() {
+    await this.updateAllCanvas(this.ctx, this.currentTrack)
+  }  
+
+  // REMOVE TRACK ///////////////////////////////////
+  async removeTrack() {
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'none');
+    this.show('trash', 'none');
+    // new track: initialize all variables and plots
+    this.initialize();
+  }
+
+  // STOP TRACKING //////////////////////////////////
   async stopTracking() {
+    console.log(this.watcherId)
     this.show('start', 'none');
     this.show('stop', 'none');
     this.show('save', 'block');
@@ -703,27 +749,20 @@ export class Tab1Page   {
     catch {}
     if (num > 0) this.currentFinalMarker = await this.createMarker('Current', 'Final')
     // remove watcher
-    try {await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
-    catch {}
-    this.watcherId = 0;
+    await BackgroundGeolocation.removeWatcher({id: this.watcherId});
     // filter remaining values
     for (var i = this.filtered + 1; i < num; i++) {
       await this.altitudeFilter(i)
     };
-    // update map and canvas
+    // update map
     await this.setMapView(this.currentTrack);
-    await this.updateAllCanvas(this.ctx, this.currentTrack);
+    // update canvas
+    this.intervalId = setInterval(this.interval, 20000); 
+    // stop interval
+    clearInterval(this.intervalId);
   }
 
-  async removeGeoTrack() {
-    this.show('start', 'block');
-    this.show('stop', 'none');
-    this.show('save', 'none');
-    this.show('trash', 'none');
-    // new track: initialize all variables and plots
-    this.initialize();
-  }
-
+  // SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
@@ -772,33 +811,35 @@ export class Tab1Page   {
     alert.present();
   }
 
+  // SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
     // retrieve tracks definition
     this.collection = await this.storage.get('collection'); 
     if (!this.collection) this.collection = [];
     // build new track definition
-    var abb: any = this.currentTrack.features[0].properties.data
+    var abb: any = this.currentTrack.features[0].properties
     abb.name = name;
     abb.place = place;
     abb.description = description;
     abb.date = new Date();
-    this.currentTrack.features[0].properties.data = abb
+    this.currentTrack.features[0].properties = abb
     await this.storage.set(JSON.stringify(abb.date), this.currentTrack);
     const trackDef = {name: abb.name, date: abb.date, place: abb.place, description: abb.description, isChecked: false};
     // add new track definition and save collection
     this.collection.push(trackDef);
     await this.storage.set('collection', this.collection)
     this.show('start', 'block');
-    this.show('stop', 'none');
+       this.show('stop', 'none');
     this.show('save', 'none');
     this.show('trash', 'block');
   }
 
+  // ON BOTTON CLICK... //////////////////////////////
   async buttonClick(option: string) {
     if (option == 'play') await this.startTracking();
     else if (option == 'stop') await this.stopTracking();
     else if (option == 'save') await this.setTrackDetails();  
-    else if (option == 'trash') await this.removeGeoTrack();  
+    else if (option == 'trash') await this.removeTrack();  
     else if (option == 'map') {
       this.show('map', 'block');
       this.show('data', 'none');
@@ -815,42 +856,4 @@ export class Tab1Page   {
     else if (option == 'list') this.router.navigate(['tab2']);
   }
 
-
-// refresh: https://docs.mapbox.com/mapbox-gl-js/example/live-update-feature/
-
-  async createMarker(which: string, where: string) {
-    var track: any
-    var num: number = 0;
-    var point: any;
-    var marker: any; 
-    var color: string;
-    // track selection
-    if (which == 'Archived') {
-      track = this.archivedTrack.features[0].geometry.coordinates;
-    }
-    else {
-      track = this.currentTrack.features[0].geometry.coordinates
-    }
-    try {num = track.length}
-    catch {}
-    if (num == 0) return;
-    // point and color selection
-    if (where == 'Initial') {
-      point = [track[0][0], track[0][1]];
-      color = 'green'
-    }
-    else if (where == 'Current') {
-      point = [track[num - 1][0], track[num - 1][1]];
-      color = 'blue';            
-    }
-    else {
-      point = [track[num - 1][0], track[num - 1][1]];
-      color = 'red';            
-    }
-    var char: any = {color: color, width: '25px', height: '25px'}
-    // marker creation
-    if (this.provider == 'Tomtom') marker = new tt.Marker(char).setLngLat(point).addTo(this.map);
-    else marker = new mapboxgl.Marker(char).setLngLat(point).addTo(this.map);
-    return marker;
-  }
 }
