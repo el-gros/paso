@@ -49,7 +49,6 @@ export class FunctionsService {
       min: Number.POSITIVE_INFINITY,
       max: Number.NEGATIVE_INFINITY
     }  
-    if (propertyName == 'simulated') return bounds;
     for (const datum of data) {
       const value = datum[propertyName];
       if (value < bounds.min) bounds.min = value; 
@@ -98,7 +97,5 @@ export class FunctionsService {
     abb[num-1].compSpeed = 3600000 * distance / time;
     return abb;
   }
-
-
 
 }

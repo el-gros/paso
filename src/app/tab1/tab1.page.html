@@ -57,7 +57,7 @@
     <div id = "card2" *ngIf="archivedTrack" class="card">
       ARCHIVED ROUTE
       <br>
-      {{archivedTrack.name}}
+      {{archivedName}}
       <br>
       Distance: {{archivedDistance | number:'1.3' }} km
       <br>
@@ -67,18 +67,18 @@
       <br>
       Time: {{ archivedTime }}
       <br>
-      {{oldNumber}} points recorded
+      {{archivedNumber}} points recorded
     </div>
   </swiper-slide>
   <swiper-slide>
     <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-    <canvas class = 'canvas' id="canvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    <canvas class = 'canvas' id="oldcanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
   <swiper-slide>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <canvas class = 'canvas' id="canvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    <canvas class = 'canvas' id="oldcanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide> 
 </swiper-container>    
         
