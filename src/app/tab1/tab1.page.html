@@ -35,50 +35,61 @@
 
 <swiper-container id="data">
   <swiper-slide>
-    <div id = "card" class="card">
+    <div id = "card" class="card" *ngIf="currentTrack">
       CURRENT ROUTE
       <br>
-      Distance: {{currentTrack.features[0].properties.currentDistance | number:'1.3' }} km
+      Distance: {{currentTrack.features[0].properties.totaltDistance | number:'1.3' }} km
       <br>
-      Elevation gain: {{currentTrack.features[0].properties.currentElevationGain | number:'1.0-0' }} m
+      Elevation gain: {{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
       <br>
-      Elevation loss: {{currentTrack.features[0].properties.currentElevationLoss | number:'1.0-0' }} m
+      Elevation loss: {{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
       <br>
-      Time: {{ currentTrack.features[0].properties.currentTime }}
+      Time: {{ currentTrack.features[0].properties.totalTime }}
       <br>
-      {{ currentTrack.features[0].properties.currentNumber}} points recorded
+      {{ currentTrack.features[0].properties.totalNumber}} points recorded
       <br>
       <br>
-      Current elevation: <ng-container *ngIf="currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container>
+      Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container>
       <br>
-      Current speed: <ng-container *ngIf="currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentNumber.currentSpeed | number:'1.1-1' }} km/h</ng-container>
+      Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentNumber.currentSpeed | number:'1.1-1' }} km/h</ng-container>
       <br>
     </div>
     <div id = "card2" *ngIf="archivedTrack" class="card">
       ARCHIVED ROUTE
       <br>
-      {{archivedName}}
+      {{archivedTrack.features[0].properties.name}}
       <br>
-      Distance: {{archivedDistance | number:'1.3' }} km
+      Distance: <ng-container *ngIf="currentTrack.features[0].properties.totalDistance !== null">
+        {{archivedTrack.features[0].properties.totaltDistance | number:'1.3' }} km</ng-container>
       <br>
-      Elevation gain: {{archivedElevationGain | number:'1.0-0' }} m
+      Elevation gain: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationGain !== null">
+        {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</ng-container>
       <br>
-      Elevation loss: {{archivedElevationLoss | number:'1.0-0' }} m
+      Elevation loss: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationLoss !== null">
+        {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</ng-container>
       <br>
-      Time: {{ archivedTime }}
+      Time: <ng-container *ngIf="currentTrack.features[0].properties.totalTime !== null">
+        {{ archivedTrack.features[0].properties.totalTime }}</ng-container>
       <br>
-      {{archivedNumber}} points recorded
-    </div>
+      {{ archivedTrack.features[0].properties.totalNumber}} points recorded
+      <br>
+    </div>  
   </swiper-slide>
   <swiper-slide>
-    <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-    <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+      <h1 *ngIf="currentTrack" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+      <br *ngIf="!currentTrack"> 
+      <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+      <h1 *ngIf="archivedTrack" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+      <br *ngIf="!archivedTrack"> 
+      <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
   <swiper-slide>
     <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <canvas *ngIf="currentTrack" class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <br *ngIf="!currentTrack"> 
+    <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
+    <br *ngIf="!archivedTrack"> 
+    <canvas *ngIf="archivedTrack" class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide> 
 </swiper-container>    
         

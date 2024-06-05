@@ -32,7 +32,7 @@ export class Tab1Page   {
 
   watcherId: any = 0;
   currentTrack: any = undefined;
-  archivedTrack: Track | undefined;
+  archivedTrack: any;
   vMax: number = 400; 
   currentCtx: CanvasRenderingContext2D[] = [];
   archivedCtx: CanvasRenderingContext2D[] = [];
@@ -94,10 +94,12 @@ export class Tab1Page   {
     await this.storage.set('archived', 'visible'); 
     // create canvas
     await this.createCanvas();
+    console.log('canvas created')
     // plot map
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
+    console.log('map created')
     // elements shown
     this.show('map', 'block');
     this.show('data', 'none');
@@ -113,15 +115,18 @@ export class Tab1Page   {
   async createCanvas() {
     var currentCanvas: any;
     var archivedCanvas: any;
+//    this.canvasNum = window.innerWidth;
     for (var i in this.properties) {
       currentCanvas = document.getElementById('currentCanvas' + i) as HTMLCanvasElement;
+//      currentCanvas.width = window.innerWidth;
+//      currentCanvas.height = currentCanvas.width;
       archivedCanvas = document.getElementById('archivedCanvas' + i) as HTMLCanvasElement;
+//      archivedCanvas.width = currentCanvas.width;
+//      archivedCanvas.height = currentCanvas.width;
       this.currentCtx[i] = await currentCanvas.getContext("2d");
       this.archivedCtx[i] = await archivedCanvas.getContext("2d");
     }
-    currentCanvas.width = window.innerWidth;
-    currentCanvas.height = currentCanvas.width;
-    this.canvasNum = currentCanvas.width;
+//    this.canvasNum = currentCanvas.width;
   }
 
   
@@ -195,7 +200,7 @@ export class Tab1Page   {
     if (!this.archivedTrack) return;
     if (this.previousTrack == this.archivedTrack) return;
     // write variables
-    await this.archivedHtml();
+    //await this.archivedHtml();
     // update canvas
     try {await this.updateAllCanvas(this.archivedCtx, this.archivedTrack, this.archivedColor); }
     catch {}
@@ -321,18 +326,20 @@ export class Tab1Page   {
     await this.storage.set('collection', this.collection); 
   }
 
+  /*
   // DISPLAY VALUES OF ARCHIVED TRACK ////////////////////////
   async archivedHtml() {
     let num = this.archivedTrack?.features[0].geometry.coordinates.length ?? 0;
     if (num == 0) return;
-    this.archivedName = this.archivedTrack?.features[0].properties.name ?? '';  
     var abb: any = this.archivedTrack?.features[0].geometry.properties.data; 
-    this.archivedTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
-    this.archivedDistance = abb[num-1].distance;
-    this.archivedElevationGain = abb[num-1].elevationGain;
-    this.archivedElevationLoss = abb[num-1].elevationLoss;
-    this.archivedNumber = num;
+    this.archivedTrack.features[0].properties.name = this.archivedTrack?.features[0].properties.name ?? '';  
+    this.archivedTrack.features[0].properties.totalDistance = abb[num-1].distance;
+    this.archivedTrack.features[0].properties.totalElevationGain = abb[num-1].elevationGain;
+    this.archivedTrack.features[0].properties.totalElevationLoss = abb[num-1].elevationGain;
+    this.archivedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
+    this.archivedTrack.features[0].properties.totalNumber = num;
   }
+  */
 
   // UPDATE ALL CANVAS ///////////////////////////////////
   async updateAllCanvas(context: any, track: any, color: string) {
@@ -527,11 +534,11 @@ export class Tab1Page   {
           place: '',
           date: '',
           description: '',
-          currentDistance: '',
-          currentElevationGain: '',
-          currentElevationLoss: '',
-          currentTime: '',
-          currentNumber: ''
+          totalDistance: '',
+          totalElevationGain: '',
+          totalElevationLoss: '',
+          totalTime: '',
+          totalNumber: ''
         },
         geometry: {
           type: 'LineString',
@@ -597,11 +604,11 @@ export class Tab1Page   {
 //      accTime: time
     })
     // html values
-    this.currentTrack.features[0].properties.currentDistance = distance;
-    this.currentTrack.features[0].properties.currentElevationGain = abb[num-1].elevationGain;
-    this.currentTrack.features[0].properties.currentElevationLoss = abb[num-1].elevationGain;
-    this.currentTrack.features[0].properties.currentTime = this.fs.formatMillisecondsToUTC(location.time - abb[0].time);
-    this.currentTrack.features[0].properties.currentNumber = num;
+    this.currentTrack.features[0].properties.totalDistance = distance;
+    this.currentTrack.features[0].properties.totalElevationGain = abb[num-1].elevationGain;
+    this.currentTrack.features[0].properties.totalElevationLoss = abb[num-1].elevationGain;
+    this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(location.time - abb[0].time);
+    this.currentTrack.features[0].properties.totalNumber = num;
     this.currentTrack.features[0].properties.currentAltitude = location.altitude;
     this.currentTrack.features[0].properties.currentSpeed = location.speed;
     // add coordinates
@@ -722,9 +729,9 @@ export class Tab1Page   {
       abb[i].elevationGain = abb[i-1].elevationGain; 
       abb[i].elevationLoss = abb[i-1].elevationLoss - slope
     }
-    this.currentTrack.features[0].properties.altitude = abb[i].altitude;
-    this.currentTrack.features[0].properties.currentElevationGain = abb[i].elevationGain;
-    this.currentTrack.features[0].properties.currentElevationLoss = abb[i].elevationGain;
+    this.currentTrack.features[0].properties.currentAltitude = abb[i].altitude;
+    this.currentTrack.features[0].properties.totalElevationGain = abb[i].elevationGain;
+    this.currentTrack.features[0].properties.totalElevationLoss = abb[i].elevationGain;
     this.currentTrack.features[0].geometry.properties.data = abb
   } 
 

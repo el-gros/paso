@@ -166,6 +166,11 @@ export class Tab3Page {
           place: '',
           date: null,
           description: '',
+          totalDistance: '',
+          totalElevationGain: '',
+          totalElevationLoss: '',
+          totalTime: '',
+          totalNumber: ''
         },
         geometry: {
           type: 'LineString',
@@ -233,8 +238,11 @@ export class Tab3Page {
       this.importedTrack.features[0].geometry.properties.data.push(newGroup);
     }
     var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
+    this.importedTrack.features[0].properties.totalDistance = this.importedTrack.features[0].geometry.properties.data[num -1].distance;
+    this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - 
+      this.importedTrack.features[0].geometry.properties.data[0].time);
+    this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
-    console.log(num, altitudeOk)
     // filter
     //var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
     if (altitudeOk) {
@@ -293,6 +301,8 @@ export class Tab3Page {
       abb[i].elevationGain = abb[i-1].elevationGain; 
       abb[i].elevationLoss = abb[i-1].elevationLoss - slope
     }
+    this.importedTrack.features[0].properties.totalElevationGain = abb[i].elevationGain;
+    this.importedTrack.features[0].properties.totalElevationLoss = abb[i].elevationGain;
     this.importedTrack.features[0].geometry.properties.data = abb
   } 
 
