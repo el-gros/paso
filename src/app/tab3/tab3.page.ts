@@ -164,8 +164,13 @@ export class Tab3Page {
         properties: {
           name: '',
           place: '',
-          date: null,
+          date: '',
           description: '',
+          totalTime: '',
+          totalDistance: '',
+          totalNumber: '',
+          totalElevationGain: '',
+          totalElevationLoss: '',
         },
         geometry: {
           type: 'LineString',
@@ -223,16 +228,17 @@ export class Tab3Page {
       // to add
       var newGroup: any = {
         altitude: alt,
-        speed: null,
+        speed: '',
         time: locTime,
-        compSpeed: null,
+        compSpeed: '',
         distance: distance,
-        elevationGain: null,
-        elevationLoss: null,
+        elevationGain: '',
+        elevationLoss: '',
       }
-      this.importedTrack.features[0].geometry.properties.data.push(newGroup);
+      this.importedTrack.features[0].geometry.properties.data.push(newGroup)
     }
     var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
+    this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
     console.log(num, altitudeOk)
     // filter
@@ -245,6 +251,11 @@ export class Tab3Page {
       };
     }
     console.log(this.importedTrack)
+    this.importedTrack.features[0].properties.totalElevationGain = this.importedTrack.features[0].geometry.properties.data[num - 1].elevationGain;
+    this.importedTrack.features[0].properties.totalElevationLoss = this.importedTrack.features[0].geometry.properties.data[num - 1].elevationLoss;
+    this.importedTrack.features[0].properties.totalTime = this.importedTrack.features[0].geometry.properties.data[num - 1].time - this.importedTrack.features[0].geometry.properties.data[0].time;
+    this.importedTrack.features[0].properties.totalDistance = this.importedTrack.features[0].geometry.properties.data[num - 1].distance;
+    this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
     else this.importedTrack.features[0].properties.date = new Date();
     await this.storage.set(JSON.stringify(this.importedTrack.features[0].properties.date), this.importedTrack);
