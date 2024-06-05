@@ -38,47 +38,49 @@
     <div id = "card" class="card">
       CURRENT ROUTE
       <br>
-      Distance: {{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km
+      Distance: {{currentTrack?.features[0].properties.totalDistance | number:'1.3' }} km
       <br>
-      Elevation gain: {{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
+      Elevation gain: {{currentTrack?.features[0].properties.totalElevationGain | number:'1.0-0' }} m
       <br>
-      Elevation loss: {{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
+      Elevation loss: {{currentTrack?.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
       <br>
-      Time: {{ currentTrack.features[0].properties.totalTime }}
+      Time: {{ currentTrack?.features[0].properties.totalTime }}
       <br>
-      {{ currentTrack.features[0].properties.totalNumber}} points recorded
+      {{ currentTrack?.features[0].properties.totalNumber}} points recorded
       <br>
       <br>
-      Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container>
+      Current elevation: {{ currentTrack?.features[0].properties.currentAltitude | number:'1.0-0' }} m
       <br>
-      Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentNumber.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentNumber.currentSpeed | number:'1.1-1' }} km/h</ng-container>
+      Current speed: {{ currentTrack?.features[0].properties.currentSpeed | number:'1.1-1' }} km/h
       <br>
     </div>
-    <div id = "card2" *ngIf="archivedTrack" class="card">
+    <div id = "card2" class="card">
       ARCHIVED ROUTE
       <br>
-      {{archivedName}}
+      {{archivedTrack?.features[0].properties.name}}
       <br>
-      Distance: {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km
+      Distance: {{archivedTrack?.features[0].properties.totalDistance | number:'1.3' }} km
       <br>
-      Elevation gain: {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
+      Elevation gain: {{archivedTrack?.features[0].properties.totalElevationGain | number:'1.0-0' }} m
       <br>
-      Elevation loss: {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
+      Elevation loss: {{archivedTrack?.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
       <br>
-      Time: {{ archivedTrack.features[0].properties.totalTime }}
+      Time: {{ archivedTrack?.features[0].properties.totalTime }}
       <br>
-      {{ archivedTrack.features[0].properties.totalNumber}} points recorded
+      {{ archivedTrack?.features[0].properties.totalNumber}} points recorded
       <br>
     </div>  
   </swiper-slide>
   <swiper-slide>
-    <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+    <h1 class = 'title'>altitude (m) vs distance (km)</h1>
     <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <h1 class = 'title'>altitude (m) vs distance (km)</h1>
     <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide>  
   <swiper-slide>
-    <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
+    <h1 class = 'title'>speed (km/h) vs time (ms)</h1>
     <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <h1 class = 'title'>speed (km/h) vs time (ms)</h1>
     <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
   </swiper-slide> 
 </swiper-container>    

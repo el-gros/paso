@@ -253,7 +253,7 @@ export class Tab3Page {
     console.log(this.importedTrack)
     this.importedTrack.features[0].properties.totalElevationGain = this.importedTrack.features[0].geometry.properties.data[num - 1].elevationGain;
     this.importedTrack.features[0].properties.totalElevationLoss = this.importedTrack.features[0].geometry.properties.data[num - 1].elevationLoss;
-    this.importedTrack.features[0].properties.totalTime = this.importedTrack.features[0].geometry.properties.data[num - 1].time - this.importedTrack.features[0].geometry.properties.data[0].time;
+    this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - this.importedTrack.features[0].geometry.properties.data[0].time);
     this.importedTrack.features[0].properties.totalDistance = this.importedTrack.features[0].geometry.properties.data[num - 1].distance;
     this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
@@ -298,13 +298,13 @@ export class Tab3Page {
     var slope = abb[i].altitude - abb[i-1].altitude;
     if (slope > 0) {
       abb[i].elevationGain = abb[i-1].elevationGain + slope; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss
+      abb[i].elevationLoss = abb[i-1].elevationLoss + 0;
     }
     else {
-      abb[i].elevationGain = abb[i-1].elevationGain; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss - slope
+      abb[i].elevationGain = abb[i-1].elevationGain + 0; 
+      abb[i].elevationLoss = abb[i-1].elevationLoss - slope;
     }
-    this.importedTrack.features[0].geometry.properties.data = abb
+    this.importedTrack.features[0].geometry.properties.data = abb;
   } 
 
 }
