@@ -40,7 +40,6 @@ export class Tab1Page   {
   margin: number = 10;
   threshold: number = 20;
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  gridsize: string = '-';
   archivedDistance: number = 0;
   archivedElevationGain: number = 0;
   archivedElevationLoss: number = 0;
@@ -229,6 +228,7 @@ export class Tab1Page   {
     // display old track on map
     await this.displayArchivedTrack();
     // display current track
+    await this.addLayer('Current')
     await this.displayCurrentTrack(); 
   }
 
@@ -247,7 +247,6 @@ export class Tab1Page   {
       color = this.archivedColor;
       track = this.archivedTrack;
     }
-    console.log('id ', id)
     this.map.addSource(id, { type: 'geojson', data: track });
     this.map.addLayer({
         'id': id,
@@ -322,12 +321,10 @@ export class Tab1Page   {
     // no archived track
     if (!this.archivedTrack) return;
     // remove old stuff and create new layer 123 and markers
-    console.log('remove and display archived track')
     await this.removeLayer('123');
     this.addLayer('Archived')
     this.archivedInitialMarker = await this.createMarker('Archived', 'Initial');
     this.archivedFinalMarker = await this.createMarker('Archived', 'Final');
-    console.log('remove and display archived track done')
     // update canvas
     await this.updateAllCanvas(this.archivedCtx, this.archivedTrack); 
   }
@@ -347,14 +344,13 @@ export class Tab1Page   {
     });
     // map view
     await this.map.resize();
-    console.log('1', minLng)
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
-    console.log('2', minLng)
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
   }
 
   // DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
+    if (!this.currentTrack) return;
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     // no map
     if (!this.map) return;
@@ -365,6 +361,8 @@ export class Tab1Page   {
     if (this.currentMarker) this.currentMarker.remove();        
     this.currentMarker = await this.createMarker('Current', 'Current')
     if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial')
+    // set map view  
+    if (num == 4 || num == 10 || num % 50 == 0) await this.setMapView(this.currentTrack);  
   }
 
   // REMOVE LAYER AND MARKERS
@@ -464,7 +462,6 @@ export class Tab1Page   {
   async startTracking() {
     // initialize
     this.initialize();
-    console.log(this.currentTrack)
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -519,7 +516,6 @@ export class Tab1Page   {
   // BUILD GEOJSON ////////////////////////////////////
   async buildGeoJson(location: Location) {
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    console.log('num', num)
     // m/s to km/h
     location.speed = location.speed * 3.6
     // excessive uncertainty / no altitude measured
@@ -599,7 +595,6 @@ export class Tab1Page   {
 
   // REMOVE PREVIOUS POINT ///////////////////////
   async removePrevious() {
-    console.log('REMOVE PREVIOUS')
     // we suppose the previous location is in the same subtrail
     this.currentTrack.features[0].geometry.coordinates.pop();
     this.currentTrack.features[0].geometry.properties.data.pop();
@@ -687,7 +682,6 @@ export class Tab1Page   {
 
   // STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    console.log(this.watcherId)
     this.show('start', 'none');
     this.show('stop', 'none');
     this.show('save', 'block');
@@ -783,7 +777,6 @@ export class Tab1Page   {
 
   // ON BOTTON CLICK... //////////////////////////////
   async buttonClick(option: string) {
-    console.log(option)
     if (option == 'play') await this.startTracking();
     else if (option == 'stop') await this.stopTracking();
     else if (option == 'save') await this.setTrackDetails();  

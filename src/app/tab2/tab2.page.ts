@@ -62,7 +62,7 @@ export class Tab2Page {
     }
     if (index == -1) return;
     const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
+      cssClass: 'alert redAlert',
       header: 'Track Details',
       message: 'You may modify the track details',
       inputs: [
@@ -122,7 +122,7 @@ export class Tab2Page {
   async deleteTracks() {
     // create alert control
     const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
+      cssClass: 'alert redAlert',
       // header and message
       header: 'Confirm deletion',
       message: 'The checked track(s) will be definitely removed',

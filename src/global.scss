@@ -65,12 +65,6 @@
     .alert-radio-inner {
       background-color: white;
     }
-    [aria-checked=true] .alert-radio-label {
-      color: white;
-    }     
-    [aria-checked=true] .alert-radio-icon {
-      border-color: white !important;
-    }
     .alert-cancel-button{  
         width: 200px;
         border-radius: 2px;
@@ -81,12 +75,24 @@
 
   .yellowAlert{
     --background: #ffffbb !important;
+    [aria-checked=true] .yellowAlert-radio-label { color: yellow; }     
+    [aria-checked=true] .yellowAlert-radio-icon { border-color: yellow !important; }
   }
 
   .primaryAlert {
     --background: #aac6f7 !important;
+    [aria-checked=true] .primaryAlert-radio-label { color: #3880ff; }     
+    [aria-checked=true] .primaryAlert-radio-icon { border-color: #3880ff !important; }
   }
 
   .greenAlert{
     --background: #ddffdd !important;
+    [aria-checked=true] .greenAlert-radio-label { color: green; }     
+    [aria-checked=true] .greenAlert-radio-icon { border-color: green !important; }
+  }
+
+  .redAlert{
+    --background: #ffdddd !important;
+    [aria-checked=true] .redAlert-radio-label { color: red; }     
+    [aria-checked=true] .redAlert-radio-icon { border-color: red !important; }
   }
