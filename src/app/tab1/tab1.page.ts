@@ -40,12 +40,6 @@ export class Tab1Page   {
   margin: number = 10;
   threshold: number = 20;
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  archivedDistance: number = 0;
-  archivedElevationGain: number = 0;
-  archivedElevationLoss: number = 0;
-  archivedTime: any = '00:00:00';
-  archivedNumber: number = 0;
-  archivedName: string = '';
   collection: TrackDefinition[] = [];
   map: any;
   currentInitialMarker: any | undefined = undefined;
@@ -116,7 +110,6 @@ export class Tab1Page   {
     this.canvasNum = currentCanvas.width;
   }
 
-  
   // CREATE TOMTOM MAP //////////////////////////////
   async createTomtomMap() {
     // create Tomtom map
@@ -207,6 +200,7 @@ export class Tab1Page   {
       // display old track on map
       await this.displayArchivedTrack();
       // display current track
+      //await this.addLayer('122')
       await this.displayCurrentTrack(); 
     })
   }
@@ -228,22 +222,19 @@ export class Tab1Page   {
     // display old track on map
     await this.displayArchivedTrack();
     // display current track
-    await this.addLayer('Current')
+    //await this.addLayer('122')
     await this.displayCurrentTrack(); 
   }
 
   // ADD LAYER ///////////////////////////////
-  async addLayer(which: string) {
-    var id: string;
-    var color: string;
+  async addLayer(id: string) {
+      var color: string;
     var track: any;
-    if (which == 'Current') {
-      id = '122';
+    if (id == '122') {
       color = this.currentColor;
       track = this.currentTrack;
     }
     else {
-      id = '123';
       color = this.archivedColor;
       track = this.archivedTrack;
     }
@@ -307,7 +298,7 @@ export class Tab1Page   {
 
   // UPDATE ALL CANVAS ///////////////////////////////////
   async updateAllCanvas(context: any, track: any) {
-    if (!track) return
+    //if (!track) return
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(context[i], track, this.properties[i], 'x');
       else await this.updateCanvas(context[i], track, this.properties[i], 't');
@@ -322,7 +313,7 @@ export class Tab1Page   {
     if (!this.archivedTrack) return;
     // remove old stuff and create new layer 123 and markers
     await this.removeLayer('123');
-    this.addLayer('Archived')
+    this.addLayer('123')
     this.archivedInitialMarker = await this.createMarker('Archived', 'Initial');
     this.archivedFinalMarker = await this.createMarker('Archived', 'Final');
     // update canvas
@@ -345,19 +336,22 @@ export class Tab1Page   {
     // map view
     await this.map.resize();
     await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
-    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 50 });
+    await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 500 });
   }
 
   // DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
-    if (!this.currentTrack) return;
-    let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    var num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // no map
     if (!this.map) return;
     // no points enough
     if (num < 2) return;
     // update
-    await this.map.getSource('122').setData(this.currentTrack); 
+    try {await this.map.getSource('122').setData(this.currentTrack); }
+    catch {
+      await this.addLayer('122')
+      await this.map.getSource('122').setData(this.currentTrack);
+    }
     if (this.currentMarker) this.currentMarker.remove();        
     this.currentMarker = await this.createMarker('Current', 'Current')
     if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial')
@@ -461,7 +455,9 @@ export class Tab1Page   {
   // START TRACKING /////////////////////////////////
   async startTracking() {
     // initialize
-    this.initialize();
+    this.currentTrack = undefined;
+    this.removeLayer('122');
+    this.updateAllCanvas(this.currentCtx, this.currentTrack);
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -483,9 +479,70 @@ export class Tab1Page   {
     this.show('save', 'none');
   }
 
-  // INITIALIZE /////////////////////////////////
-  async initialize() {
-    // in case of a new track, initialize variables
+  // BUILD GEOJSON ////////////////////////////////////
+  async buildGeoJson(location: Location) {
+    // m/s to km/h
+    location.speed = location.speed * 3.6
+    // excessive uncertainty / no altitude measured
+    if (location.accuracy > this.threshold) return;
+    if (location.altitude == null) return;
+    // initial point
+    if (!this.currentTrack) {
+      await this.firstPoint(location); 
+      return;
+    }  
+    // check for the locations order...
+    let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    for (var i = num - 1; i>=2; i--) {
+      // case tnew < tprevious, remove previous location
+      const previous: any = await this.currentTrack.features[0].geometry.properties.data[i].time;
+      if (previous > location.time) { await this.removePrevious(); }
+      else break;
+    }
+    // compute properties...
+    var abb = this.currentTrack?.features[0].geometry.properties.data;
+    const lastPoint: number[] = this.currentTrack?.features[0].geometry.coordinates[num - 1];
+    var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
+    var time: number = location.time;
+    const compSpeed = 3600000 * distance / time;
+    if (compSpeed > this.vMax) return;
+    distance = await abb[num-1].distance + distance;
+    // add properties to geojson
+    abb.push({
+      altitude: location.altitude,
+      speed: location.speed,
+      time: location.time,
+      compSpeed: compSpeed,
+      distance: distance,
+      elevationGain: abb[num - 1].elevationGain,
+      elevationLoss: abb[num - 1].elevationLoss,
+    })
+    num = abb.length;
+    // template values
+    this.currentTrack.features[0].properties.totalDistance = await abb[num -1].distance;
+    this.currentTrack.features[0].properties.totalElevationGain = await abb[num-1].elevationGain;
+    this.currentTrack.features[0].properties.totalElevationLoss = await abb[num-1].elevationLoss;
+    this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
+    this.currentTrack.features[0].properties.totalNumber = num;
+    this.currentTrack.features[0].properties.currentAltitude = await abb[num-1].altitude;
+    this.currentTrack.features[0].properties.currentSpeed = await abb[num-1].speed;
+    // add coordinates
+    this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
+    // speed filter
+    abb = await this.fs.speedFilter(abb, num, this.lag);
+    this.currentTrack.features[0].geometry.properties.data = abb;
+    // altitude filter
+    num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    if (num > this.lag) {
+      await this.altitudeFilter(num - this.lag -1);
+      this.filtered = num - this.lag -1;
+    }  
+    // uppdate canvas
+    if (num == 2 || num == 10 || num % 20 == 0) await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+  }
+
+  // FIRST POINT OF THE TRACK /////////////////////////////
+  async firstPoint(location: Location) {
     this.currentTrack = {
       type: 'FeatureCollection',
       features: [{
@@ -510,74 +567,7 @@ export class Tab1Page   {
         }  
       }]
     }
-    await this.removeLayer('122')  
-  } 
-  
-  // BUILD GEOJSON ////////////////////////////////////
-  async buildGeoJson(location: Location) {
-    let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    // m/s to km/h
-    location.speed = location.speed * 3.6
-    // excessive uncertainty / no altitude measured
-    if (location.accuracy > this.threshold) return;
-    if (location.altitude == null) return;
-    // initial point
-    if (num == 0) {
-      this.firstPoint(location); 
-      return;
-    }  
-    // check for the locations order...
-    for (var i = num - 1; i>=2; i--) {
-      // case tnew < tprevious, remove previous location
-      const previous: any = this.currentTrack.features[0].geometry.properties.data[i].time;
-      if (previous > location.time) { await this.removePrevious(); }
-      else break;
-    }
-    // compute properties...
-    var abb = this.currentTrack?.features[0].geometry.properties.data;
-    const lastPoint: number[] = this.currentTrack?.features[0].geometry.coordinates[num - 1];
-    var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
-    var time: number = location.time;
-    const compSpeed = 3600000 * distance / time;
-    if (compSpeed > this.vMax) return;
-    distance = abb[num-1].distance + distance;
-    // add properties to geojson
-    await abb.push({
-      altitude: location.altitude,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: compSpeed,
-      distance: distance,
-      elevationGain: abb[num-1].elevationGain,
-      elevationLoss: abb[num-1].elevationLoss,
-    })
-    num = await abb.length;
-    // template values
-    this.currentTrack.features[0].properties.totalDistance = abb[num -1].distance;
-    this.currentTrack.features[0].properties.totalElevationGain = abb[num-1].elevationGain;
-    this.currentTrack.features[0].properties.totalElevationLoss = abb[num-1].elevationLoss;
-    this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(abb[num-1].time - abb[0].time);
-    this.currentTrack.features[0].properties.totalNumber = num;
-    this.currentTrack.features[0].properties.currentAltitude = abb[num-1].altitude;
-    this.currentTrack.features[0].properties.currentSpeed = abb[num-1].speed;
-    // add coordinates
-    this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
-    // speed filter
-    abb = await this.fs.speedFilter(abb, num, this.lag);
-    this.currentTrack.features[0].geometry.properties.data = abb;
-    // altitude filter
-    num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    if (num > this.lag) {
-      await this.altitudeFilter(num - this.lag -1);
-      this.filtered = num - this.lag -1;
-    }  
-    // uppdate canvas
-    if (num % 20 == 0) await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-  }
-
-  // FIRST POINT OF THE TRACK /////////////////////////////
-  async firstPoint(location: Location) {
-    this.currentTrack.features[0].geometry.properties.data.push({
+    this.currentTrack?.features[0].geometry.properties.data.push({
       altitude: location.altitude,
       speed: location.speed,
       time: location.time,
@@ -586,18 +576,18 @@ export class Tab1Page   {
       elevationGain: 0,
       elevationLoss: 0,
     })
-    this.currentTrack.features[0].geometry.coordinates.push(
+    this.currentTrack?.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
-    await this.addLayer('Current')
+    //await this.addLayer('122')
     this.currentInitialMarker = await this.createMarker('Current', 'Initial');
   }
 
   // REMOVE PREVIOUS POINT ///////////////////////
   async removePrevious() {
     // we suppose the previous location is in the same subtrail
-    this.currentTrack.features[0].geometry.coordinates.pop();
-    this.currentTrack.features[0].geometry.properties.data.pop();
+    this.currentTrack?.features[0].geometry.coordinates.pop();
+    this.currentTrack?.features[0].geometry.properties.data.pop();
   }
 
   // CREATE MARKER ///////////////////////////////////
@@ -612,7 +602,7 @@ export class Tab1Page   {
       track = this.archivedTrack?.features[0].geometry.coordinates;
     }
     else {
-      track = this.currentTrack.features[0].geometry.coordinates
+      track = this.currentTrack?.features[0].geometry.coordinates
     }
     num = track.length ?? 0
     if (num == 0) return;
@@ -638,8 +628,9 @@ export class Tab1Page   {
 
   // ALTITUDE FILTER /////////////////////////////////
   async altitudeFilter(i: number) {
-    var abb: any = this.currentTrack.features[0].geometry.properties.data;
-    var num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    if (!this.currentTrack) return;
+    var abb: any = this.currentTrack?.features[0].geometry.properties.data;
+    var num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     const start = Math.max(0, i-this.lag);
     const end = Math.min(i+this.lag, num - 1);
     // average altitude
@@ -674,8 +665,9 @@ export class Tab1Page   {
     this.show('stop', 'none');
     this.show('save', 'none');
     this.show('trash', 'none');
-    // new track: initialize all variables and plots
-    this.initialize();
+    // remove layer and track
+    await this.removeLayer('122');
+    this.currentTrack = undefined;  
     // update canvas
     await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
@@ -687,7 +679,7 @@ export class Tab1Page   {
     this.show('save', 'block');
     this.show('trash', 'block');
     // red marker
-    let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0; 
+    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0; 
     if (num > 0) this.currentFinalMarker = await this.createMarker('Current', 'Final')
     // remove watcher
     await BackgroundGeolocation.removeWatcher({id: this.watcherId});
@@ -705,6 +697,7 @@ export class Tab1Page   {
 
   // SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
+    if (!this.currentTrack) return;
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: 'Track Details',
@@ -743,8 +736,11 @@ export class Tab1Page   {
         {
           text: 'Ok',
           cssClass: 'alert-button',
-          handler: (data) => {
-            this.saveFile(data.name, data.place, data.description);
+          handler: async (data) => {
+            this.currentTrack.features[0].properties.name = await data.name;
+            this.currentTrack.features[0].properties.place = await data.place;
+            this.currentTrack.features[0].properties.description = await data.description;
+            this.saveFile();
           }
         }
       ]
@@ -753,19 +749,22 @@ export class Tab1Page   {
   }
 
   // SAVE FILE ////////////////////////////////////////
-  async saveFile(name: string, place: string, description: string) {
+  async saveFile() {
+    if (!this.currentTrack) return;
     // retrieve tracks definition
     this.collection = await this.storage.get('collection'); 
     if (!this.collection) this.collection = [];
     // build new track definition
-    var abb: any = this.currentTrack.features[0].properties
-    abb.name = name;
-    abb.place = place;
-    abb.description = description;
-    abb.date = new Date();
-    this.currentTrack.features[0].properties = abb
-    await this.storage.set(JSON.stringify(abb.date), this.currentTrack);
-    const trackDef = {name: abb.name, date: abb.date, place: abb.place, description: abb.description, isChecked: false};
+    var date = new Date()
+    this.currentTrack.features[0].properties.date = date;
+    await this.storage.set(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
+    const trackDef = {
+      name: this.currentTrack.features[0].properties.name, 
+      date: this.currentTrack.features[0].properties.date, 
+      place: this.currentTrack.features[0].properties.place, 
+      description: this.currentTrack.features[0].properties.description,
+      isChecked: false
+    };
     // add new track definition and save collection
     this.collection.push(trackDef);
     await this.storage.set('collection', this.collection)
