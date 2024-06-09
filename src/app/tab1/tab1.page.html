@@ -35,61 +35,72 @@
 
 <swiper-container id="data">
   <swiper-slide>
-    <div id = "card" class="card" *ngIf="currentTrack">
-      CURRENT ROUTE
-      <br>
-      Distance: {{currentTrack.features[0].properties.totaltDistance | number:'1.3' }} km
-      <br>
-      Elevation gain: {{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
-      <br>
-      Elevation loss: {{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
-      <br>
-      Time: {{ currentTrack.features[0].properties.totalTime }}
-      <br>
-      {{ currentTrack.features[0].properties.totalNumber}} points recorded
-      <br>
-      <br>
-      Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container>
-      <br>
-      Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentNumber.currentSpeed | number:'1.1-1' }} km/h</ng-container>
-      <br>
+    <div class = empty></div>  
+    <div class = element>
+      <div class="card" *ngIf="currentTrack">
+        CURRENT ROUTE
+        <br>
+        Distance: {{currentTrack.features[0].properties.totaltDistance | number:'1.3' }} km
+        <br>
+        Elevation gain: {{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
+        <br>
+        Elevation loss: {{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
+        <br>
+        Time: {{ currentTrack.features[0].properties.totalTime }}
+        <br>
+        {{ currentTrack.features[0].properties.totalNumber}} points recorded
+        <br>
+        <br>
+        Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container>
+        <br>
+        Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentNumber.currentSpeed | number:'1.1-1' }} km/h</ng-container>
+        <br>
+      </div>
     </div>
-    <div id = "card2" *ngIf="archivedTrack" class="card">
-      ARCHIVED ROUTE
-      <br>
-      {{archivedTrack.features[0].properties.name}}
-      <br>
-      Distance: <ng-container *ngIf="currentTrack.features[0].properties.totalDistance !== null">
-        {{archivedTrack.features[0].properties.totaltDistance | number:'1.3' }} km</ng-container>
-      <br>
-      Elevation gain: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationGain !== null">
-        {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</ng-container>
-      <br>
-      Elevation loss: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationLoss !== null">
-        {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</ng-container>
-      <br>
-      Time: <ng-container *ngIf="currentTrack.features[0].properties.totalTime !== null">
-        {{ archivedTrack.features[0].properties.totalTime }}</ng-container>
-      <br>
-      {{ archivedTrack.features[0].properties.totalNumber}} points recorded
-      <br>
+    <div class = element>
+      <div *ngIf="archivedTrack" class="card">
+        ARCHIVED ROUTE
+        <br>
+        {{archivedTrack.features[0].properties.name}}
+        <br>
+        Distance: <ng-container *ngIf="currentTrack.features[0].properties.totalDistance !== null">
+          {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</ng-container>
+        <br>
+        Elevation gain: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationGain !== null">
+          {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</ng-container>
+        <br>
+        Elevation loss: <ng-container *ngIf="currentTrack.features[0].properties.totalElevationLoss !== null">
+          {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</ng-container>
+        <br>
+        Time: <ng-container *ngIf="currentTrack.features[0].properties.totalTime !== null">
+          {{ archivedTrack.features[0].properties.totalTime }}</ng-container>
+        <br>
+        {{ archivedTrack.features[0].properties.totalNumber}} points recorded
+        <br>
+      </div>  
     </div>  
   </swiper-slide>
   <swiper-slide>
+    <div class = empty></div>  
+    <div class = element>
       <h1 *ngIf="currentTrack" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-      <br *ngIf="!currentTrack"> 
       <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    </div>
+    <div class = element>
       <h1 *ngIf="archivedTrack" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
-      <br *ngIf="!archivedTrack"> 
       <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    </div>  
   </swiper-slide>  
   <swiper-slide>
-    <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <canvas *ngIf="currentTrack" class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    <br *ngIf="!currentTrack"> 
-    <h1 class = 'title'>SPEED (km/h) vs time (ms)</h1>
-    <br *ngIf="!archivedTrack"> 
-    <canvas *ngIf="archivedTrack" class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    <div class = empty></div>
+    <div class = element>  
+      <h1 *ngIf="currentTrack" class = 'title'>SPEED (km/h) vs time (ms)</h1>
+      <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    </div>
+    <div class = element>  
+      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time (ms)</h1>
+      <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
+    </div>
   </swiper-slide> 
 </swiper-container>    
         

@@ -40,6 +40,11 @@ export interface Location {
         place: string,
         date: Date,
         description: string,
+        totalDistance: number,
+        totalTime: string,
+        totalElevationGain: number,
+        totalElevationLoss: number,
+        totalNumber: number,
       },
       geometry: {
         type: 'LineString',

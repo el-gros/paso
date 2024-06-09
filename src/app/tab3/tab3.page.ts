@@ -1,7 +1,7 @@
-//import { Track } from '../../globald';
+ //import { Track } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, ViewChild, ElementRef } from '@angular/core';
-import { IonicModule, AlertController } from '@ionic/angular';
+import { IonicModule, AlertController, LoadingController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -42,6 +42,7 @@ export class Tab3Page {
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
+    private loadingController: LoadingController,
     private router: Router,
     private storage: Storage
   ) {}
@@ -143,7 +144,11 @@ export class Tab3Page {
     this.fileInput.nativeElement.click();
   }
 
-  readFile(file: File) {
+  async readFile(file: File) {
+    var loading = await this.loadingController.create({
+      message: 'Please, wait...'
+    });
+    await loading.present();
     const reader = new FileReader();
     reader.onload = async (e: any) => {
       try{
@@ -152,6 +157,7 @@ export class Tab3Page {
         this.uploaded = this.uploaded + ' uploaded'
       }
       catch{this.uploaded = 'upload failed'}
+      if (loading) await loading.dismiss();
     };
     reader.readAsText(file);
   }
@@ -244,7 +250,6 @@ export class Tab3Page {
     this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
     // filter
-    //var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
     if (altitudeOk) {
       console.log('start')
       for (var i = 1; i < num; i++) {
@@ -252,7 +257,6 @@ export class Tab3Page {
         await this.importedAltitudeFilter(i, this.lag)
       };
     }
-    console.log(this.importedTrack)
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
     else this.importedTrack.features[0].properties.date = new Date();
     await this.storage.set(JSON.stringify(this.importedTrack.features[0].properties.date), this.importedTrack);
