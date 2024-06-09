@@ -105,15 +105,15 @@ export class Tab1Page   {
 //    this.canvasNum = window.innerWidth;
     for (var i in this.properties) {
       currentCanvas = document.getElementById('currentCanvas' + i) as HTMLCanvasElement;
-//      currentCanvas.width = window.innerWidth;
-//      currentCanvas.height = currentCanvas.width;
+      currentCanvas.width = window.innerWidth;
+      currentCanvas.height = window.innerWidth;
       archivedCanvas = document.getElementById('archivedCanvas' + i) as HTMLCanvasElement;
-//      archivedCanvas.width = currentCanvas.width;
-//      archivedCanvas.height = currentCanvas.width;
+      archivedCanvas.width = window.innerWidth;
+      archivedCanvas.height = window.innerWidth;
       this.currentCtx[i] = await currentCanvas.getContext("2d");
       this.archivedCtx[i] = await archivedCanvas.getContext("2d");
     }
-//    this.canvasNum = currentCanvas.width;
+    this.canvasNum = window.innerWidth;
   }
 
   
@@ -703,7 +703,9 @@ export class Tab1Page   {
 
   // STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    console.log(this.watcherId)
+    // stop interval
+    clearInterval(this.intervalId);
+    // elements visibility
     this.show('start', 'none');
     this.show('stop', 'none');
     this.show('save', 'block');
@@ -720,9 +722,7 @@ export class Tab1Page   {
     // update map
     await this.setMapView(this.currentTrack);
     // update canvas
-    this.intervalId = setInterval(this.interval, 20000); 
-    // stop interval
-    clearInterval(this.intervalId);
+    await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // SET TRACK NAME, TIME, DESCRIPTION, ... 

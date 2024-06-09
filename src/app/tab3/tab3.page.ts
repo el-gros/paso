@@ -195,38 +195,34 @@ export class Tab3Page {
     var trackSegments = tracks[0].getElementsByTagName('trkseg');
     if (trackSegments.length == 0) return;
     var trackSeg = trackSegments[0];
-    this.importedTrack.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent ?? 'no name';
+    this.importedTrack.features[0].properties.name = await tracks[0].getElementsByTagName('name')[0]?.textContent ?? 'no name';
     let trackPoints: any = trackSeg.getElementsByTagName('trkpt');
     var altitudeOk = true;
     for (let k = 0; k < trackPoints.length; k++) {
-      const lat = trackPoints[k].getAttribute('lat');
-      const lon = trackPoints[k].getAttribute('lon');
-      const ele = trackPoints[k].getElementsByTagName('ele')[0]?.textContent;
-      const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
+      const lat = await trackPoints[k].getAttribute('lat');
+      const lon = await trackPoints[k].getAttribute('lon');
+      const ele = await trackPoints[k].getElementsByTagName('ele')[0]?.textContent;
+      const time = await trackPoints[k].getElementsByTagName('time')[0]?.textContent;
       if (!lat || !lon) continue;
       // lon, lat
-      this.importedTrack.features[0].geometry.coordinates.push([+lon, +lat]);
-      var num: number = this.importedTrack.features[0].geometry.coordinates.length;
+      await this.importedTrack.features[0].geometry.coordinates.push([+lon, +lat]);
+      var num: number = await this.importedTrack.features[0].geometry.coordinates.length;
       // distance
       if (num == 1) var distance = 0.
-      else distance = this.importedTrack.features[0].geometry.properties.data[num-2].distance + await this.fs.computeDistance(this.importedTrack.features[0].geometry.coordinates[num-2][0], this.importedTrack.features[0].geometry.coordinates[num-2][1], +lon, +lat)
+      else distance = await this.importedTrack.features[0].geometry.properties.data[num-2].distance + await this.fs.computeDistance(this.importedTrack.features[0].geometry.coordinates[num-2][0], this.importedTrack.features[0].geometry.coordinates[num-2][1], +lon, +lat)
       // altitude
       if (ele) var alt: number | null = +ele;
       else {
         alt = null;
         altitudeOk = false;
       }  
-      if (alt == 0 && num > 1) alt = this.importedTrack.features[0].geometry.properties.data[num-2].altitude; 
+      if (alt == 0 && num > 1) alt = await this.importedTrack.features[0].geometry.properties.data[num-2].altitude; 
       // elevation gain / loss
-      var gain: any;
-      var loss: any;
+      var gain: any = null;
+      var loss: any = null;
       if (num == 1) {
         gain = 0;
         loss = 0;
-      }
-      else {
-        gain = null;
-        loss = null;
       }
       // time
       if (time) var locTime: Date | null = new Date(time);
@@ -241,25 +237,27 @@ export class Tab3Page {
         elevationGain: null,
         elevationLoss: null,
       }
-      this.importedTrack.features[0].geometry.properties.data.push(newGroup);
+      await this.importedTrack.features[0].geometry.properties.data.push(newGroup);
     }
     var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
-    this.importedTrack.features[0].properties.totalDistance = this.importedTrack.features[0].geometry.properties.data[num -1].distance;
+    this.importedTrack.features[0].properties.totalDistance = await this.importedTrack.features[0].geometry.properties.data[num -1].distance;
     this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - 
       this.importedTrack.features[0].geometry.properties.data[0].time);
     this.importedTrack.features[0].properties.totalNumber = num;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
     // filter
     if (altitudeOk) {
-      console.log('start')
       for (var i = 1; i < num; i++) {
         console.log(i)
         await this.importedAltitudeFilter(i, this.lag)
       };
     }
+    this.importedTrack.features[0].properties.totalElevationGain = await this.importedTrack.features[0].geometry.properties.data[num - 1].elevationGain;
+    this.importedTrack.features[0].properties.totalElevationLoss = await this.importedTrack.features[0].geometry.properties.data[num - 1].elevationLoss;
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
     else this.importedTrack.features[0].properties.date = new Date();
     await this.storage.set(JSON.stringify(this.importedTrack.features[0].properties.date), this.importedTrack);
+    console.log(this.importedTrack);
     const trackDef = {
       name: this.importedTrack.features[0].properties.name, 
       date: this.importedTrack.features[0].properties.date, 
@@ -305,8 +303,6 @@ export class Tab3Page {
       abb[i].elevationGain = abb[i-1].elevationGain; 
       abb[i].elevationLoss = abb[i-1].elevationLoss - slope
     }
-    this.importedTrack.features[0].properties.totalElevationGain = abb[i].elevationGain;
-    this.importedTrack.features[0].properties.totalElevationLoss = abb[i].elevationGain;
     this.importedTrack.features[0].geometry.properties.data = abb
   } 
 

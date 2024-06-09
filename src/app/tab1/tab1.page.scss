@@ -14,8 +14,12 @@ ion-fab-button {
   }
 
 // data & plots  
-  #canvas {
+  .canvas {
     text-align: center;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 10px;
+    padding: 0;
   }
   
   .title {
@@ -23,6 +27,8 @@ ion-fab-button {
     font-family: 'Arial, sans-serif';
     font-weight: bold;
     text-align: center;
+    margin: 0;
+    padding: 0;
   }
 
   .card {
