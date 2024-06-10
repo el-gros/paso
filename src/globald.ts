@@ -15,8 +15,6 @@ export interface Location {
     speed: number,
     compSpeed: number,
     distance: number,
-    elevationGain: number,
-    elevationLoss: number,
   }
 
 

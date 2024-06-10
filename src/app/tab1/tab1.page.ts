@@ -357,7 +357,7 @@ export class Tab1Page {
     // update
     console.log('goto set data')
     await this.map.getSource('122').setData(this.currentTrack);
-    if (this.currentMarker) this.currentMarker.remove();
+    if (this.currentMarker) await this.currentMarker.remove();
     this.currentMarker = await this.createMarker('Current', 'Current')
     if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial')
   }
@@ -387,12 +387,11 @@ export class Tab1Page {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return;
-    var abb = track.features[0].geometry.properties.data;
-    var num = abb?.length ?? 0;
-    if (xParam == 'x') var xTot = abb[num - 1].distance;
-    else xTot = abb[num - 1].time - abb[0].time;
+    var num = await track.features[0].geometry.properties.data.length ?? 0;
+    if (xParam == 'x') var xTot = track.features[0].geometry.properties.data[num - 1].distance;
+    else xTot = await track.features[0].geometry.properties.data[num - 1].time - track.features[0].geometry.properties.data[0].time;
     // compute bounds
-    const bounds: Bounds = await this.fs.computeMinMaxProperty(abb, propertyName);
+    const bounds: Bounds = await this.fs.computeMinMaxProperty(track.features[0].geometry.properties.data, propertyName);
     if (bounds.max == bounds.min) {
       bounds.max = bounds.max + 2;
       bounds.min = bounds.min - 2;
@@ -406,11 +405,11 @@ export class Tab1Page {
     ctx.setTransform(a, 0, 0, d, e, f)
     ctx.beginPath();
     ctx.moveTo(0, bounds.min);
-    for (var i in abb) {
-      if (xParam == 'x') ctx.lineTo(abb[i].distance, abb[i][propertyName])
+    for (var i in track.features[0].geometry.properties.data) {
+      if (xParam == 'x') ctx.lineTo(track.features[0].geometry.properties.data[i].distance, track.features[0].geometry.properties.data[i][propertyName])
       else {
-        var inter = abb[i].time - abb[0].time;
-        ctx.lineTo(inter, abb[i][propertyName])
+        var inter = await track.features[0].geometry.properties.data[i].time - track.features[0].geometry.properties.data[0].time;
+        ctx.lineTo(inter, track.features[0].geometry.properties.data[i][propertyName])
       }
     }
     ctx.lineTo(xTot, bounds.min);
@@ -461,7 +460,7 @@ export class Tab1Page {
     this.currentTrack = undefined;
     await this.removeLayer('122')
     // set interval to update canvas
-    this.intervalId = setInterval(this.interval, 20000); 
+    //this.intervalId = setInterval(this.interval, 20000); 
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -487,7 +486,7 @@ export class Tab1Page {
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return;
-    if (location.altitude == null) return;
+    if (location.altitude == null || location.altitude == undefined) return;
     // m/s to km/h
     location.speed = location.speed * 3.6
     // initial point
@@ -514,8 +513,8 @@ export class Tab1Page {
       time: location.time,
       compSpeed: location.speed,
       distance: distance,
-      elevationGain: 0,
-      elevationLoss: 0,
+      //elevationGain: 0,
+      //elevationLoss: 0,
     })
     // add coordinates
     await this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
@@ -563,16 +562,14 @@ export class Tab1Page {
         }
       }]
     }
-    this.currentTrack.features[0].geometry.properties.data.push({
+    await this.currentTrack.features[0].geometry.properties.data.push({
       altitude: location.altitude,
       speed: location.speed,
       time: location.time,
       compSpeed: 0,
       distance: 0,
-      elevationGain: 0,
-      elevationLoss: 0,
     })
-    this.currentTrack.features[0].geometry.coordinates.push(
+    await this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
     await this.addCurrentLayer()
@@ -625,36 +622,28 @@ export class Tab1Page {
 
   // ALTITUDE FILTER /////////////////////////////////
   async altitudeFilter(i: number) {
-    var abb: any = await this.currentTrack.features[0].geometry.properties.data;
     var num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     const start = Math.max(0, i - this.lag);
     const end = Math.min(i + this.lag, num - 1);
     // average altitude
     var sum: number = 0
-    for (var j = start; j <= end; j++) sum = sum + abb[j].altitude;
-    abb[i].altitude = sum / (end - start + 1);
+    for (var j = start; j <= end; j++) sum = sum + this.currentTrack.features[0].geometry.properties.data[j].altitude;
+    this.currentTrack.features[0].geometry.properties.data[i].altitude = sum / (end - start + 1);
     // re-calculate elevation gains / losses
     if (i == 0) return;
-    var slope = await abb[i].altitude - abb[i - 1].altitude;
+    var slope = await this.currentTrack.features[0].geometry.properties.data[i].altitude - this.currentTrack.features[0].geometry.properties.data[i - 1].altitude;
 
-    if (slope > 0) {
-      abb[i].elevationGain = await this.currentTrack.features[0].properties.totalElevationGain + slope;
-      abb[i].elevationLoss = await this.currentTrack.features[0].properties.totalElevationLoss;
-      this.currentTrack.features[0].properties.totalElevationGain = await abb[i].elevationGain;
-    }
-    else {
-      abb[i].elevationGain = await this.currentTrack.features[0].properties.totalElevationGain;
-      abb[i].elevationLoss = await this.currentTrack.features[0].properties.totalElevationLoss - slope;
-      this.currentTrack.features[0].properties.totalElevationLoss = await abb[i].elevationLoss;
-    }
-    this.currentTrack.features[0].properties.currentAltitude = await abb[i].altitude;
-    this.currentTrack.features[0].geometry.properties.data = await abb
+    if (slope > 0) {this.currentTrack.features[0].properties.totalElevationGain = await this.currentTrack.features[0].properties.totalElevationGain + slope; }
+    else {this.currentTrack.features[0].properties.totalElevationLoss = await this.currentTrack.features[0].properties.totalElevationLoss - slope; }
+    this.currentTrack.features[0].properties.currentAltitude = await this.currentTrack.features[0].geometry.properties.data[i].altitude;
   }
 
   // TIMER FOR CANVAS UPDATING /////////////////////////////////
+  /*
   async interval() {
     await this.updateAllCanvas(this.currentCtx, this.currentTrack)
   }
+  */
 
   // REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
@@ -671,7 +660,7 @@ export class Tab1Page {
   // STOP TRACKING //////////////////////////////////
   async stopTracking() {
     // stop interval
-    clearInterval(this.intervalId);
+    //clearInterval(this.intervalId);
     // elements visibility
     this.show('start', 'none');
     this.show('stop', 'none');
@@ -746,14 +735,12 @@ export class Tab1Page {
     // retrieve tracks definition
     var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
     // build new track definition
-    var abb: any = this.currentTrack.features[0].properties
-    abb.name = name;
-    abb.place = place;
-    abb.description = description;
-    abb.date = new Date();
-    this.currentTrack.features[0].properties = abb
-    await this.storage.set(JSON.stringify(abb.date), this.currentTrack);
-    const trackDef = { name: abb.name, date: abb.date, place: abb.place, description: abb.description, isChecked: false };
+    this.currentTrack.features[0].properties.name = name;
+    this.currentTrack.features[0].properties.place = place;
+    this.currentTrack.features[0].properties.description = description;
+    this.currentTrack.features[0].properties.date = new Date();
+    await this.storage.set(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
+    const trackDef = { name: name, date: this.currentTrack.features[0].properties.date, place: place, description: description, isChecked: false };
     // add new track definition and save collection
     collection.push(trackDef);
     await this.storage.set('collection', collection)

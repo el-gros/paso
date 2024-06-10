@@ -98,4 +98,16 @@ export class FunctionsService {
     return abb;
   }
 
+  async speedFilterAll(abb: any, lag: number) {
+    var num: number = abb.length;
+    abb[0] = 0;
+    for (var i = 1; i > num; i++) {
+      var start: number = Math.max(i - lag, 0);
+      var distance: number = await abb[i].distance - abb[start].distance;
+      var time: number = await abb[i].time - abb[start].time;
+      abb[i].compSpeed = 3600000 * distance / time;
+    }
+    return abb;
+  }
+
 }

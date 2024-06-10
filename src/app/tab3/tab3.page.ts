@@ -170,11 +170,11 @@ export class Tab3Page {
         properties: {
           name: '',
           place: '',
-          date: null,
+          date: undefined,
           description: '',
           totalDistance: '',
-          totalElevationGain: '',
-          totalElevationLoss: '',
+          totalElevationGain: 0,
+          totalElevationLoss: 0,
           totalTime: '',
           totalNumber: ''
         },
@@ -212,31 +212,29 @@ export class Tab3Page {
       if (num == 1) var distance = 0.
       else distance = await this.importedTrack.features[0].geometry.properties.data[num-2].distance + await this.fs.computeDistance(this.importedTrack.features[0].geometry.coordinates[num-2][0], this.importedTrack.features[0].geometry.coordinates[num-2][1], +lon, +lat)
       // altitude
-      if (ele) var alt: number | null = +ele;
+      if (ele) var alt: number | undefined = +ele;
       else {
-        alt = null;
+        alt = undefined;
         altitudeOk = false;
       }  
       if (alt == 0 && num > 1) alt = await this.importedTrack.features[0].geometry.properties.data[num-2].altitude; 
       // elevation gain / loss
-      var gain: any = null;
-      var loss: any = null;
+      var gain: any = undefined;
+      var loss: any = undefined;
       if (num == 1) {
         gain = 0;
         loss = 0;
       }
       // time
-      if (time) var locTime: Date | null = new Date(time);
-      else locTime = null;
+      if (time) var locTime: Date | undefined = new Date(time);
+      else locTime = undefined;
       // to add
       var newGroup: any = {
         altitude: alt,
-        speed: null,
+        speed: undefined,
         time: locTime,
-        compSpeed: null,
+        compSpeed: undefined,
         distance: distance,
-        elevationGain: null,
-        elevationLoss: null,
       }
       await this.importedTrack.features[0].geometry.properties.data.push(newGroup);
     }
@@ -252,8 +250,9 @@ export class Tab3Page {
         await this.importedAltitudeFilter(i, this.lag)
       };
     }
-    this.importedTrack.features[0].properties.totalElevationGain = await this.importedTrack.features[0].geometry.properties.data[num - 1].elevationGain;
-    this.importedTrack.features[0].properties.totalElevationLoss = await this.importedTrack.features[0].geometry.properties.data[num - 1].elevationLoss;
+    // speed filter      
+    this.importedTrack.features[0].geometry.properties.data = await this.fs.speedFilterAll(this.importedTrack.features[0].geometry.properties.data, this.lag);
+    // save...
     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
     else this.importedTrack.features[0].properties.date = new Date();
     await this.storage.set(JSON.stringify(this.importedTrack.features[0].properties.date), this.importedTrack);
@@ -283,26 +282,18 @@ export class Tab3Page {
   }
 
   async importedAltitudeFilter(i: number, lag: number) {
-    var abb: any = this.importedTrack.features[0].geometry.properties.data;
     var num = this.importedTrack.features[0].geometry.coordinates.length ?? 0;
     const start = Math.max(0, i - lag);
     const end = Math.min(i + lag, num - 1);
     // average altitude
     var sum: number = 0
-    for (var j= start; j<=end;j++) sum = sum + abb[j].altitude;
-    abb[i].altitude = sum/(end - start +1);
+    for (var j = start; j <= end; j++) sum = sum + this.importedTrack.features[0].geometry.properties.data[j].altitude;
+    this.importedTrack.features[0].geometry.properties.data[i].altitude = sum/(end - start +1);
     // re-calculate elevation gains / losses
     if (i==0) return;
-    var slope = abb[i].altitude - abb[i-1].altitude;
-    if (slope > 0) {
-      abb[i].elevationGain = abb[i-1].elevationGain + slope; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss
-    }
-    else {
-      abb[i].elevationGain = abb[i-1].elevationGain; 
-      abb[i].elevationLoss = abb[i-1].elevationLoss - slope
-    }
-    this.importedTrack.features[0].geometry.properties.data = abb
+    var slope = await this.importedTrack.features[0].geometry.properties.data[i].altitude - this.importedTrack.features[0].geometry.properties.data[i-1].altitude;
+    if (slope > 0) { this.importedTrack.features[0].properties.totalElevationGain = await this.importedTrack.features[0].properties.totalElevationGain + slope; }
+    else {this.importedTrack.features[0].properties.totalElevationLoss = await this.importedTrack.features[0].properties.totalElevationLoss - slope; }
   } 
 
 }
