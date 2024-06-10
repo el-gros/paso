@@ -203,6 +203,7 @@ export class Tab3Page {
       const lon = await trackPoints[k].getAttribute('lon');
       const ele = await trackPoints[k].getElementsByTagName('ele')[0]?.textContent;
       const time = await trackPoints[k].getElementsByTagName('time')[0]?.textContent;
+      console.log(ele, time)
       if (!lat || !lon) continue;
       // lon, lat
       await this.importedTrack.features[0].geometry.coordinates.push([+lon, +lat]);
@@ -248,7 +249,6 @@ export class Tab3Page {
     // filter
     if (altitudeOk) {
       for (var i = 1; i < num; i++) {
-        console.log(i)
         await this.importedAltitudeFilter(i, this.lag)
       };
     }
@@ -283,7 +283,6 @@ export class Tab3Page {
   }
 
   async importedAltitudeFilter(i: number, lag: number) {
-    console.log(i)
     var abb: any = this.importedTrack.features[0].geometry.properties.data;
     var num = this.importedTrack.features[0].geometry.coordinates.length ?? 0;
     const start = Math.max(0, i - lag);

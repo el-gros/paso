@@ -11,17 +11,17 @@ export class FunctionsService {
 
   constructor() { }
 
-  async computeDistance(lon1: number, lat1: number, lon2:number, lat2:number) {
+  async computeDistance(lon1: number, lat1: number, lon2: number, lat2: number) {
     const toRadians = (degrees: number) => degrees * (Math.PI / 180);
     const dLat = toRadians(lat2 - lat1);
     const dLon = toRadians(lon2 - lon1);
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const earthRadiusKm = 6371;
-    return earthRadiusKm * c; 
+    return earthRadiusKm * c;
   }
 
   formatMillisecondsToUTC(milliseconds: number): string {
@@ -31,7 +31,7 @@ export class FunctionsService {
     const remainingSeconds = seconds % 60;
     return `${this.padZero(hours)}:${this.padZero(minutes)}:${this.padZero(remainingSeconds)}`;
   }
-  
+
   padZero(value: number): string {
     return value.toString().padStart(2, '0');
   }
@@ -48,16 +48,16 @@ export class FunctionsService {
     var bounds: Bounds = {
       min: Number.POSITIVE_INFINITY,
       max: Number.NEGATIVE_INFINITY
-    }  
+    }
     for (const datum of data) {
       const value = datum[propertyName];
-      if (value < bounds.min) bounds.min = value; 
-      if (value > bounds.max) bounds.max = value; 
-    }  
-    return bounds ;
+      if (value < bounds.min) bounds.min = value;
+      if (value > bounds.max) bounds.max = value;
+    }
+    return bounds;
   }
 
-  selectStyle(provider: string, type: string|null) {
+  selectStyle(provider: string, type: string | null) {
     var style: any
     if (provider == 'Tomtom') {
       if (type == 'basic') style = {
@@ -65,9 +65,9 @@ export class FunctionsService {
         poi: '2/poi_light',
         trafficIncidents: '2/incidents_light',
         trafficFlow: '2/flow_relative-light',
-      } 
+      }
       else style = {
-        map: '2/basic_street-satellite', 
+        map: '2/basic_street-satellite',
         poi: '2/poi_light',
         trafficIncidents: '2/incidents_light',
         trafficFlow: '2/flow_relative-light',
@@ -75,7 +75,7 @@ export class FunctionsService {
     }
     else {
       if (type == 'basic') style = 'mapbox://styles/mapbox/outdoors-v12'
-      else style = 'mapbox://styles/mapbox/satellite-v9' 
+      else style = 'mapbox://styles/mapbox/satellite-v9'
     }
     return style;
   }
@@ -83,18 +83,18 @@ export class FunctionsService {
   async filterSpeed(abb: any) {
     var num: number = abb.length;
     var start: number = Math.max(num - this.lag - 1, 0);
-    var distance: number = abb[num-1].distance - abb[start].distance;
-    var time: number = abb[num-1].time - abb[start].time;
-    abb[num-1].compSpeed = 3600000 * distance / time;
+    var distance: number = abb[num - 1].distance - abb[start].distance;
+    var time: number = abb[num - 1].time - abb[start].time;
+    abb[num - 1].compSpeed = 3600000 * distance / time;
     return abb;
   }
 
-  async speedFilter(abb: any, num: number, lag: number) {
+  async speedFilter(abb: any, lag: number) {
     var num: number = abb.length;
     var start: number = Math.max(num - lag - 1, 0);
-    var distance: number = abb[num-1].distance - abb[start].distance;
-    var time: number = abb[num-1].time - abb[start].time;
-    abb[num-1].compSpeed = 3600000 * distance / time;
+    var distance: number = abb[num - 1].distance - abb[start].distance;
+    var time: number = abb[num - 1].time - abb[start].time;
+    abb[num - 1].compSpeed = 3600000 * distance / time;
     return abb;
   }
 

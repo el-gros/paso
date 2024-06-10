@@ -11,18 +11,12 @@ export interface Location {
   }
 
   export interface Data {
-  //  accuracy: number,
     altitude: number,
-  //  altitudeAccuracy: number,
-  //  bearing: number,
-  //  simulated: boolean,
     speed: number,
- //    time: number,
     compSpeed: number,
     distance: number,
     elevationGain: number,
     elevationLoss: number,
-  //  accTime: number,
   }
 
 
