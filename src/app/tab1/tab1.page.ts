@@ -33,6 +33,7 @@ export class Tab1Page {
   watcherId: any = 0;
   currentTrack: any;
   archivedTrack: Track | undefined;
+  previousTrack: Track | undefined;
   vMax: number = 400;
   currentCtx: CanvasRenderingContext2D[] = [];
   archivedCtx: CanvasRenderingContext2D[] = [];
@@ -178,11 +179,13 @@ export class Tab1Page {
     if (!visible) return;
     // retrieve track
     this.archivedTrack = await this.retrieveTrack();
+    console.log(this.archivedTrack)
     // check if there is track or it did not change
     if (!this.archivedTrack) return;
+    if (this.previousTrack == this.archivedTrack) return;
+    this.previousTrack = this.archivedTrack;
     // update canvas
-    try { await this.updateAllCanvas(this.archivedCtx, this.archivedTrack); }
-    catch { }
+    await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // display track on map
     await this.displayArchivedTrack();
     // adapt view
@@ -266,6 +269,9 @@ export class Tab1Page {
     if (archived == 'visible') return true
     else {
       await this.removeLayer('123');
+      this.archivedTrack = undefined;
+      this.previousTrack = undefined;
+      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
       return false;
     }
   }
@@ -303,7 +309,8 @@ export class Tab1Page {
     await this.storage.set('collection', collection);
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
-    return track 
+    console.log(track)
+    return track
   }
 
   // UPDATE ALL CANVAS ///////////////////////////////////
@@ -343,7 +350,6 @@ export class Tab1Page {
     });
     // map view
     await this.map.resize();
-    //await this.map.setCenter({lng: 0.5*(maxLng + minLng), lat: 0.5*(maxLat + minLat)});
     await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 80 });
   }
 
@@ -355,11 +361,12 @@ export class Tab1Page {
     // no points enough
     if (num < 2) return;
     // update
-    console.log('goto set data')
     await this.map.getSource('122').setData(this.currentTrack);
     if (this.currentMarker) await this.currentMarker.remove();
-    this.currentMarker = await this.createMarker('Current', 'Current')
-    if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial')
+    this.currentMarker = await this.createMarker('Current', 'Current');
+    if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial');
+    // set map view
+    if (num ==  5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
   }
 
   // REMOVE LAYER AND MARKERS
@@ -675,7 +682,7 @@ export class Tab1Page {
     for (var i = this.filtered + 1; i < num; i++) {
       await this.altitudeFilter(i)
     };
-    // update map
+    // set map view
     await this.setMapView(this.currentTrack);
     // update canvas
     await this.updateAllCanvas(this.currentCtx, this.currentTrack);

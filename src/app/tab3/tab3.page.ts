@@ -168,10 +168,10 @@ export class Tab3Page {
       features: [{
         type: 'feature',
         properties: {
-          name: '',
-          place: '',
+          name: undefined,
+          place: undefined,
           date: undefined,
-          description: '',
+          description: undefined,
           totalDistance: '',
           totalElevationGain: 0,
           totalElevationLoss: 0,
@@ -233,7 +233,7 @@ export class Tab3Page {
         altitude: alt,
         speed: undefined,
         time: locTime,
-        compSpeed: undefined,
+        compSpeed: 0,
         distance: distance,
       }
       await this.importedTrack.features[0].geometry.properties.data.push(newGroup);
@@ -260,8 +260,8 @@ export class Tab3Page {
     const trackDef = {
       name: this.importedTrack.features[0].properties.name, 
       date: this.importedTrack.features[0].properties.date, 
-      place: '', 
-      description: '', 
+      place: this.importedTrack.features[0].properties.place, 
+      description: this.importedTrack.features[0].properties.description, 
       isChecked: false
     };
     // add new track definition and save collection
