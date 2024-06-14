@@ -56,7 +56,6 @@ export class Tab1Page {
   mapStyle: string = 'basic';
   currentColor: string = 'orange';
   archivedColor: string = 'green';
-  intervalId!: any;
   switch: boolean = true;
 
   constructor(
@@ -204,9 +203,14 @@ export class Tab1Page {
     else await this.createMapboxMap();
     this.map.on('load', async () => {
       // display old track on map
-      await this.displayArchivedTrack();
+      if (this.archivedTrack) await this.displayArchivedTrack();
       // display current track
-      await this.displayCurrentTrack();
+      if (this.currentTrack) {
+        await this.addCurrentLayer()
+        this.currentInitialMarker = await this.createMarker('Current',
+          'Initial');
+        await this.displayCurrentTrack();
+      }
     })
   }
 
@@ -224,10 +228,17 @@ export class Tab1Page {
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     await this.map.setStyle(this.style)
     await new Promise(f => setTimeout(f, 500));
-    // display old track on map
-    await this.displayArchivedTrack();
-    // display current track
-    await this.displayCurrentTrack();
+    this.map.on('load', async () => {
+      // display old track on map
+      if (this.archivedTrack) await this.displayArchivedTrack();
+      // display current track
+      if (this.currentTrack) {
+        await this.addCurrentLayer()
+        this.currentInitialMarker = await this.createMarker('Current',
+          'Initial');
+        await this.displayCurrentTrack();
+      }
+    })
     // update canvas
     await this.updateAllCanvas(this.currentCtx, this.currentTrack);
     await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
@@ -466,8 +477,6 @@ export class Tab1Page {
     // initialize
     this.currentTrack = undefined;
     await this.removeLayer('122')
-    // set interval to update canvas
-    //this.intervalId = setInterval(this.interval, 20000); 
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -512,7 +521,7 @@ export class Tab1Page {
     // compute properties...
     const lastPoint: number[] = await this.currentTrack.features[0].geometry.coordinates[num - 1];
     var distance: number = await this.fs.computeDistance(lastPoint[0], lastPoint[1], location.longitude, location.latitude)
-    distance = distance + await this.currentTrack.features[0].geometry.properties.data[num - 1].distance;
+    distance += await this.currentTrack.features[0].geometry.properties.data[num - 1].distance;
     // add properties to geojson
     await this.currentTrack.features[0].geometry.properties.data.push({
       altitude: location.altitude,
@@ -520,8 +529,6 @@ export class Tab1Page {
       time: location.time,
       compSpeed: location.speed,
       distance: distance,
-      //elevationGain: 0,
-      //elevationLoss: 0,
     })
     // add coordinates
     await this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
@@ -585,8 +592,6 @@ export class Tab1Page {
 
   // REMOVE PREVIOUS POINT ///////////////////////
   async removePrevious() {
-    console.log('REMOVE PREVIOUS')
-    // we suppose the previous location is in the same subtrail
     this.currentTrack.features[0].geometry.coordinates.pop();
     this.currentTrack.features[0].geometry.properties.data.pop();
   }
@@ -634,23 +639,15 @@ export class Tab1Page {
     const end = Math.min(i + this.lag, num - 1);
     // average altitude
     var sum: number = 0
-    for (var j = start; j <= end; j++) sum = sum + this.currentTrack.features[0].geometry.properties.data[j].altitude;
+    for (var j = start; j <= end; j++) sum += this.currentTrack.features[0].geometry.properties.data[j].altitude;
     this.currentTrack.features[0].geometry.properties.data[i].altitude = sum / (end - start + 1);
     // re-calculate elevation gains / losses
     if (i == 0) return;
     var slope = await this.currentTrack.features[0].geometry.properties.data[i].altitude - this.currentTrack.features[0].geometry.properties.data[i - 1].altitude;
-
-    if (slope > 0) {this.currentTrack.features[0].properties.totalElevationGain = await this.currentTrack.features[0].properties.totalElevationGain + slope; }
-    else {this.currentTrack.features[0].properties.totalElevationLoss = await this.currentTrack.features[0].properties.totalElevationLoss - slope; }
+    if (slope > 0) this.currentTrack.features[0].properties.totalElevationGain += slope;
+    else this.currentTrack.features[0].properties.totalElevationLoss -= slope;
     this.currentTrack.features[0].properties.currentAltitude = await this.currentTrack.features[0].geometry.properties.data[i].altitude;
   }
-
-  // TIMER FOR CANVAS UPDATING /////////////////////////////////
-  /*
-  async interval() {
-    await this.updateAllCanvas(this.currentCtx, this.currentTrack)
-  }
-  */
 
   // REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
@@ -666,8 +663,6 @@ export class Tab1Page {
 
   // STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    // stop interval
-    //clearInterval(this.intervalId);
     // elements visibility
     this.show('start', 'none');
     this.show('stop', 'none');
