@@ -64,7 +64,7 @@ export class Tab1Page {
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-  ) { }
+  ) {}
 
   // ON INIT ////////////////////////////////
   async ngOnInit() {
@@ -112,7 +112,6 @@ export class Tab1Page {
     this.canvasNum = window.innerWidth;
   }
 
-
   // CREATE TOMTOM MAP //////////////////////////////
   async createTomtomMap() {
     // create Tomtom map
@@ -124,7 +123,7 @@ export class Tab1Page {
       style: this.style
     });
     // once loaded, resize and add controls
-    this.map.on('load', () => {
+    this.map.on('load', async () => { 
       this.map.resize();
       this.map.addControl(new tt.NavigationControl());
       this.map.addControl(new tt.ScaleControl());
@@ -133,9 +132,29 @@ export class Tab1Page {
           enableHighAccuracy: true,
         },
         trackUserLocation: true,
-      }));
+      }))
     });
   }
+
+  /*
+  async tomtomReady() {
+    if (this.map.isStyleLoaded()) {
+      this.map.resize();
+      this.map.addControl(new tt.NavigationControl());
+      this.map.addControl(new tt.ScaleControl());
+      this.map.addControl(new tt.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+      }))
+    }
+    else {
+      await new Promise(f => setTimeout(f, 200));
+      await this.tomtomReady();
+    }
+  }
+  */
 
   // CREATE MAPBOX MAP //////////////////////////////
   async createMapboxMap() {
@@ -149,12 +168,26 @@ export class Tab1Page {
       trackResize: true,
     });
     // once loaded, resize and add controls
-    this.map.on('load', () => {
+    this.map.on('load', async () => {
       this.map.resize();
       this.map.addControl(new mapboxgl.NavigationControl());
       this.map.scrollZoom.disable();
     });
   }
+
+/*
+  async mapboxReady() {
+    if (this.map.isStyleLoaded()) {
+      this.map.resize();
+      this.map.addControl(new mapboxgl.NavigationControl());
+      this.map.scrollZoom.disable();
+    }
+    else {
+      await new Promise(f => setTimeout(f, 200));
+      await this.mapboxReady();
+    }
+  }
+  */
 
   // SHOW / HIDE ELEMENTS ///////////////////////////////// 
   show(id: string, action: string) {
@@ -177,12 +210,11 @@ export class Tab1Page {
     var visible: boolean = await this.archivedVisibility();
     if (!visible) return;
     // retrieve track
-    this.archivedTrack = await this.retrieveTrack();
+    this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
     console.log(this.archivedTrack)
     // check if there is track or it did not change
     if (!this.archivedTrack) return;
     if (this.previousTrack == this.archivedTrack) return;
-    this.previousTrack = this.archivedTrack;
     // update canvas
     await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // display track on map
@@ -201,18 +233,21 @@ export class Tab1Page {
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     if (this.provider == 'Tomtom') await this.createTomtomMap();
     else await this.createMapboxMap();
+    // update custom layers
     this.map.on('load', async () => {
       // display old track on map
       if (this.archivedTrack) await this.displayArchivedTrack();
       // display current track
       if (this.currentTrack) {
         await this.addCurrentLayer()
-        this.currentInitialMarker = await this.createMarker('Current',
-          'Initial');
-        await this.displayCurrentTrack();
+        this.currentInitialMarker = await this.createMarker('Current', 'Initial');
       }
-    })
+      // update canvas
+      await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    }) 
   }
+
 
   // CHANGE MAP STYLE AND TRACK COLOR //////////////////
   async changeStyleColor() {
@@ -227,28 +262,33 @@ export class Tab1Page {
     await this.removeLayer('123');
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     await this.map.setStyle(this.style)
-    await new Promise(f => setTimeout(f, 500));
-    this.map.on('load', async () => {
+    await this.styleReady();
+  }
+
+  async styleReady() {
+    if (this.map.isStyleLoaded()) {
       // display old track on map
       if (this.archivedTrack) await this.displayArchivedTrack();
       // display current track
       if (this.currentTrack) {
         await this.addCurrentLayer()
-        this.currentInitialMarker = await this.createMarker('Current',
-          'Initial');
-        await this.displayCurrentTrack();
+        this.currentInitialMarker = await this.createMarker('Current', 'Initial');
       }
-    })
-    // update canvas
-    await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      // update canvas
+      await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    }
+    else {
+      await new Promise(f => setTimeout(f, 200));
+      await this.styleReady();
+    }
   }
 
   // ADD CURRENT LAYER ///////////////////////////////
   async addCurrentLayer() {
     console.log('id ', '122')
-    this.map.addSource('122', { type: 'geojson', data: this.currentTrack });
-    this.map.addLayer({
+    await this.map.addSource('122', { type: 'geojson', data: this.currentTrack });
+    await this.map.addLayer({
       'id': '122',
       'type': 'line',
       'source': '122',
@@ -271,6 +311,7 @@ export class Tab1Page {
         'line-width': 5
       }
     });
+    this.previousTrack = this.archivedTrack;
   }
 
   // CHECK VISIBILITY OF ARCHIVED TRACK ////////////////////
@@ -281,7 +322,6 @@ export class Tab1Page {
     else {
       await this.removeLayer('123');
       this.archivedTrack = undefined;
-      this.previousTrack = undefined;
       await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
       return false;
     }
@@ -372,12 +412,24 @@ export class Tab1Page {
     // no points enough
     if (num < 2) return;
     // update
-    await this.map.getSource('122').setData(this.currentTrack);
-    if (this.currentMarker) await this.currentMarker.remove();
-    this.currentMarker = await this.createMarker('Current', 'Current');
-    if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial');
-    // set map view
-    if (num ==  5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
+    await this.waitForSource() 
+  }
+
+  async waitForSource() {
+    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        if (this.map.getSource('122')) {
+          clearInterval(interval);
+          await this.map.getSource('122').setData(this.currentTrack);
+          if (this.currentMarker) await this.currentMarker.remove();
+          this.currentMarker = await this.createMarker('Current', 'Current');
+          if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial');
+          // set map view
+          if (num == 5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
+        }
+      }, 100); // Check every 100ms, adjust as needed
+    });
   }
 
   // REMOVE LAYER AND MARKERS
@@ -396,6 +448,7 @@ export class Tab1Page {
     else if (id == '123') {
       if (this.archivedInitialMarker) await this.archivedInitialMarker.remove();
       if (this.archivedFinalMarker) await this.archivedFinalMarker.remove();
+      this.previousTrack = undefined;
     }
   }
 
