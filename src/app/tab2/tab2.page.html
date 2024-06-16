@@ -30,6 +30,13 @@
 <ion-footer>
   <ion-grid>
     <ion-row>
+      <ion-col size="4">
+        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="exportTrack()" expand="block" [disabled]='(numChecked != 1)'>
+          <div>EXPORT<br>TRACK</div>
+        </ion-button>
+      </ion-col>
+    </ion-row>
+    <ion-row>
       <ion-col size ="4">
         <ion-button [ngClass]="(numChecked == 0) ? 'redDisabled' : 'redEnabled'" (click)="deleteTracks()" expand ="block" [disabled] = '(numChecked == 0)'>
           <div>REMOVE<br>TRACKS</div>

@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
 import { global } from '../../environments/environment';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 @Component({
   selector: 'app-tab2',
@@ -33,6 +34,7 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
+    await this.storage.create();
     // retrieve tracks definition
     this.collection = await this.storage.get('collection'); 
     if (!this.collection) this.collection = [];
@@ -162,6 +164,96 @@ export class Tab2Page {
     for (var element of remove) {
       await this.storage.remove(JSON.stringify(element.date));
     }
+  }
+
+  async geoJsonToGpx(feature: any) {
+    var gpxText: string = 
+      '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'
+      + '<gpx version="1.1" creator="elGros" '
+      + 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+      + 'xmlns="http://www.topografix.com/GPX/1/1" '
+      + 'xsi:schemaLocation="http://www.topografix.com/GPX/1/1 '
+      + 'http://www.topografix.com/GPX/1/1/gpx.xsd">'
+      + '<trk><name>'
+      + feature.properties.name
+      + '</name><trkseg>'
+    for (var i in feature.geometry.coordinates) {
+      const date = new Date(feature.geometry.properties.data[i].time);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-based
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const hours = String(date.getUTCHours()).padStart(2, '0');
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+      var date2 = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`; 
+      var prov: string =
+        '<trkpt lat="' + feature.geometry.coordinates[i][1].toString() + '" '
+        + 'lon="' + feature.geometry.coordinates[i][0].toString() + '">'
+        + '<ele>' + feature.geometry.properties.data[i].altitude + '</ele>'
+        + '<time>' + date2 + '</time>'
+        + '</trkpt>'
+      gpxText += prov
+    } 
+    gpxText += '</trkseg></trk></gpx>'
+    return gpxText;
+  }
+
+  async exportTrack() {
+    var track: Track | undefined;
+    track = await this.retrieveTrack();
+    if (!track) return;
+    console.log(track)
+    var gpxText = await this.geoJsonToGpx(track.features[0])
+    console.log(gpxText)
+    try {
+      // Write the file to the Data directory
+      const result = await Filesystem.writeFile({
+        path: 'sample.gpx', // Specify the path to the Downloads folder
+        data: gpxText,
+        directory: Directory.External, // Use Directory.Documents for cross-platform compatibility
+        encoding: Encoding.UTF8,
+      });
+      console.log('GPX file written successfully:', result);
+    } catch (e) {
+      console.error('Unable to write file', e);
+    }
+  }
+
+  // RETRIEVE ARCHIVED TRACK //////////////////////////
+  async retrieveTrack() {
+    var track: Track | undefined;
+    // get collection
+    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    // compute number of checked tracks
+    var numChecked = 0;
+    for (var item of collection) {
+      if (item.isChecked) numChecked = numChecked + 1;
+      if (numChecked > 1) break;
+    }
+    // if more than one track is checked, uncheck all
+    if (numChecked > 1) {
+      for (var item of collection) { item.isChecked = false; }
+      numChecked = 0;
+    }
+    // if no checked items
+    if (numChecked == 0) return undefined;
+    // find key
+    var key: any;
+    for (var item of collection) {
+      if (item.isChecked) {
+        key = item.date;
+        break;
+      }
+    }
+    // uncheck all
+    for (var item of collection) {
+      item.isChecked = false;
+    }
+    await this.storage.set('collection', collection);
+    // retrieve track
+    track = await this.storage.get(JSON.stringify(key));
+    console.log(track)
+    return track
   }
 
 }

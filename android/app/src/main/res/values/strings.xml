@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">paso</string>
     <string name="title_activity_main">paso</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="package_name">io.elgros.paso</string>
+    <string name="custom_url_scheme">io.elgros.paso</string>
         <!--
         The channel name for the background notification. This will be visible
         when the user presses & holds the notification. It defaults to

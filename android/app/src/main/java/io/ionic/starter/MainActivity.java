@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package io.elgros.paso;
 
 import com.getcapacitor.BridgeActivity;
 
