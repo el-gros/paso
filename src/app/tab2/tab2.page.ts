@@ -6,8 +6,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
-import { global } from '../../environments/environment';
+//import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+//import { FunctionsService } from '../functions.service';
 
 @Component({
   selector: 'app-tab2',
@@ -20,13 +21,14 @@ export class Tab2Page {
 
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
-  output: any; 
+  info: string | undefined = undefined;
 
   constructor(
     private alertController: AlertController,
     private router: Router,
-    private storage: Storage
-  ) {}
+    private storage: Storage,
+    //public fs: FunctionsService,
+  ) { }
 
   goHome() {
     this.router.navigate(['tab1']);
@@ -34,9 +36,9 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
-    await this.storage.create();
+    this.info = undefined;
     // retrieve tracks definition
-    this.collection = await this.storage.get('collection'); 
+    this.collection = await this.storage.get('collection');
     if (!this.collection) this.collection = [];
     // uncheck all items
     for (var item of this.collection) item.isChecked = false;
@@ -50,17 +52,17 @@ export class Tab2Page {
     this.numChecked = 0;
     for (const item of this.collection) {
       if (item.isChecked) this.numChecked = this.numChecked + 1
-    }   
-    await this.storage.set('collection', this.collection) 
-  }  
+    }
+    await this.storage.set('collection', this.collection)
+  }
   ///////////////////////////////////////
 
 
   async editTrack() {
     // compute index
-    var index: number = -1; 
+    var index: number = -1;
     for (var i = 0; i < this.collection.length; i++) {
-      if (this.collection[i].isChecked) {index = i; break;}
+      if (this.collection[i].isChecked) { index = i; break; }
     }
     if (index == -1) return;
     const alert = await this.alertController.create({
@@ -94,7 +96,7 @@ export class Tab2Page {
           cssClass: 'alert-cancel-button',
           handler: () => {
           }
-        }, 
+        },
         {
           text: 'OK',
           cssClass: 'alert-button',
@@ -142,7 +144,7 @@ export class Tab2Page {
         handler: () => { this.yesDeleteTracks(); }
       }]
     });
-    await alert.present();  
+    await alert.present();
   }
 
 
@@ -167,7 +169,7 @@ export class Tab2Page {
   }
 
   async geoJsonToGpx(feature: any) {
-    var gpxText: string = 
+    var gpxText: string =
       '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'
       + '<gpx version="1.1" creator="elGros" '
       + 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
@@ -185,7 +187,7 @@ export class Tab2Page {
       const hours = String(date.getUTCHours()).padStart(2, '0');
       const minutes = String(date.getUTCMinutes()).padStart(2, '0');
       const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-      var date2 = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`; 
+      var date2 = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
       var prov: string =
         '<trkpt lat="' + feature.geometry.coordinates[i][1].toString() + '" '
         + 'lon="' + feature.geometry.coordinates[i][0].toString() + '">'
@@ -193,7 +195,7 @@ export class Tab2Page {
         + '<time>' + date2 + '</time>'
         + '</trkpt>'
       gpxText += prov
-    } 
+    }
     gpxText += '</trkseg></trk></gpx>'
     return gpxText;
   }
@@ -205,16 +207,19 @@ export class Tab2Page {
     console.log(track)
     var gpxText = await this.geoJsonToGpx(track.features[0])
     console.log(gpxText)
+    var file: string = track.features[0].properties.name.replaceAll(' ', '_') +'.gpx' ?? 'sample.gpx' 
     try {
       // Write the file to the Data directory
       const result = await Filesystem.writeFile({
-        path: 'sample.gpx', // Specify the path to the Downloads folder
+        path: file, // Specify the path to the Downloads folder
         data: gpxText,
         directory: Directory.External, // Use Directory.Documents for cross-platform compatibility
         encoding: Encoding.UTF8,
       });
+      this.info = file + ' is ready to export';
       console.log('GPX file written successfully:', result);
     } catch (e) {
+      this.info = 'exportation of ' + file + ' failed';
       console.error('Unable to write file', e);
     }
   }

@@ -56,7 +56,12 @@ export class Tab1Page {
   mapStyle: string = 'basic';
   currentColor: string = 'orange';
   archivedColor: string = 'green';
+  stopped: any = 0;
+  vMin: number = 1; 
+  currentAverageSpeed: number | undefined = undefined;
+  currentAverageCorrSpeed: number | undefined = undefined;
   switch: boolean = true;
+  timeCorr: any;
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -64,7 +69,7 @@ export class Tab1Page {
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-  ) {}
+  ) { }
 
   // ON INIT ////////////////////////////////
   async ngOnInit() {
@@ -123,7 +128,7 @@ export class Tab1Page {
       style: this.style
     });
     // once loaded, resize and add controls
-    this.map.on('load', async () => { 
+    this.map.on('load', async () => {
       this.map.resize();
       this.map.addControl(new tt.NavigationControl());
       this.map.addControl(new tt.ScaleControl());
@@ -135,26 +140,6 @@ export class Tab1Page {
       }))
     });
   }
-
-  /*
-  async tomtomReady() {
-    if (this.map.isStyleLoaded()) {
-      this.map.resize();
-      this.map.addControl(new tt.NavigationControl());
-      this.map.addControl(new tt.ScaleControl());
-      this.map.addControl(new tt.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,
-      }))
-    }
-    else {
-      await new Promise(f => setTimeout(f, 200));
-      await this.tomtomReady();
-    }
-  }
-  */
 
   // CREATE MAPBOX MAP //////////////////////////////
   async createMapboxMap() {
@@ -175,19 +160,19 @@ export class Tab1Page {
     });
   }
 
-/*
-  async mapboxReady() {
-    if (this.map.isStyleLoaded()) {
-      this.map.resize();
-      this.map.addControl(new mapboxgl.NavigationControl());
-      this.map.scrollZoom.disable();
+  /*
+    async mapboxReady() {
+      if (this.map.isStyleLoaded()) {
+        this.map.resize();
+        this.map.addControl(new mapboxgl.NavigationControl());
+        this.map.scrollZoom.disable();
+      }
+      else {
+        await new Promise(f => setTimeout(f, 200));
+        await this.mapboxReady();
+      }
     }
-    else {
-      await new Promise(f => setTimeout(f, 200));
-      await this.mapboxReady();
-    }
-  }
-  */
+    */
 
   // SHOW / HIDE ELEMENTS ///////////////////////////////// 
   show(id: string, action: string) {
@@ -245,7 +230,7 @@ export class Tab1Page {
       // update canvas
       await this.updateAllCanvas(this.currentCtx, this.currentTrack);
       await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    }) 
+    })
   }
 
 
@@ -327,43 +312,6 @@ export class Tab1Page {
     }
   }
 
-  // RETRIEVE ARCHIVED TRACK //////////////////////////
-  async retrieveTrack() {
-    var track: Track | undefined;
-    // get collection
-    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
-    // compute number of checked tracks
-    var numChecked = 0;
-    for (var item of collection) {
-      if (item.isChecked) numChecked = numChecked + 1;
-      if (numChecked > 1) break;
-    }
-    // if more than one track is checked, uncheck all
-    if (numChecked > 1) {
-      for (var item of collection) { item.isChecked = false; }
-      numChecked = 0;
-    }
-    // if no checked items
-    if (numChecked == 0) return undefined;
-    // find key
-    var key: any;
-    for (var item of collection) {
-      if (item.isChecked) {
-        key = item.date;
-        break;
-      }
-    }
-    // uncheck all
-    for (var item of collection) {
-      item.isChecked = false;
-    }
-    await this.storage.set('collection', collection);
-    // retrieve track
-    track = await this.storage.get(JSON.stringify(key));
-    console.log(track)
-    return track
-  }
-
   // UPDATE ALL CANVAS ///////////////////////////////////
   async updateAllCanvas(context: any, track: any) {
     if (!context) return
@@ -412,7 +360,7 @@ export class Tab1Page {
     // no points enough
     if (num < 2) return;
     // update
-    await this.waitForSource() 
+    await this.waitForSource()
   }
 
   async waitForSource() {
@@ -530,6 +478,7 @@ export class Tab1Page {
     // initialize
     this.currentTrack = undefined;
     await this.removeLayer('122')
+    this.stopped = 0;
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -599,6 +548,18 @@ export class Tab1Page {
     }
     // speed filter      
     this.currentTrack.features[0].geometry.properties.data = await this.fs.speedFilter(this.currentTrack.features[0].geometry.properties.data, this.lag);
+    // average speed
+    if (this.currentTrack.features[0].geometry.properties.data[num - 1].compSpeed < this.vMin) {
+      this.stopped += (this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[num - 2].time)/1000
+    }
+    console.log(this.stopped)
+    var tim = await this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[0].time
+    tim = tim / 1000
+    console.log(tim)
+    this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
+    console.log(this.currentAverageSpeed)
+    if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
+    this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
     // ippdate canvas
     if (num % 20 == 0) await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
@@ -836,6 +797,43 @@ export class Tab1Page {
       } else { }
     } catch { }
     return variable
+  }
+
+  // RETRIEVE ARCHIVED TRACK //////////////////////////
+  async retrieveTrack() {
+    var track: Track | undefined;
+    // get collection
+    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    // compute number of checked tracks
+    var numChecked = 0;
+    for (var item of collection) {
+      if (item.isChecked) numChecked = numChecked + 1;
+      if (numChecked > 1) break;
+    }
+    // if more than one track is checked, uncheck all
+    if (numChecked > 1) {
+      for (var item of collection) { item.isChecked = false; }
+      numChecked = 0;
+    }
+    // if no checked items
+    if (numChecked == 0) return undefined;
+    // find key
+    var key: any;
+    for (var item of collection) {
+      if (item.isChecked) {
+        key = item.date;
+        break;
+      }
+    }
+    // uncheck all
+    for (var item of collection) {
+      item.isChecked = false;
+    }
+    await this.storage.set('collection', collection);
+    // retrieve track
+    track = await this.storage.get(JSON.stringify(key));
+    console.log(track)
+    return track
   }
 
 }
