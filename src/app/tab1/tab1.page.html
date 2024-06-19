@@ -1,3 +1,6 @@
+<!--
+<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /></head>
+-->
 <ion-content>
 
   <!-- buttons to select start / stop recording or save track -->
@@ -81,11 +84,11 @@
   <swiper-slide>
     <div class = empty></div>
     <div class = element>  
-      <h1 *ngIf="currentTrack" class = 'title'>SPEED (km/h) vs time (ms)</h1>
+      <h1 *ngIf="currentTrack" class = 'title'>SPEED (km/h) vs time ({{tUnit}})</h1>
       <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = element>  
-      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time (ms)</h1>
+      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time ({{tUnit}})</h1>
       <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
   </swiper-slide> 

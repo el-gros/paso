@@ -2,7 +2,7 @@
 
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, ɵdefaultIterableDiffers } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -17,6 +17,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
 import mapboxgl from 'mapbox-gl';
+//import * as L from 'leaflet';
 
 @Component({
   selector: 'app-tab1',
@@ -27,9 +28,8 @@ import mapboxgl from 'mapbox-gl';
   providers: [DecimalPipe, DatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-
+  
 export class Tab1Page {
-
   watcherId: any = 0;
   currentTrack: any;
   archivedTrack: Track | undefined;
@@ -49,7 +49,7 @@ export class Tab1Page {
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = global.lag; // 8
-  distanceFilter: number = .05; // 5
+  distanceFilter: number = 5; // 5
   filtered: number = -1;
   style: any;
   provider: string = 'Tomtom' // Tomtom or Mapbox;
@@ -61,7 +61,8 @@ export class Tab1Page {
   currentAverageSpeed: number | undefined = undefined;
   currentAverageCorrSpeed: number | undefined = undefined;
   switch: boolean = true;
-  timeCorr: any;
+  timeCorr: any = undefined;
+  tUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)   
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -76,6 +77,15 @@ export class Tab1Page {
     if (!this.switch) return;
     // create storage 
     await this.storage.create();
+    // elements shown
+    this.show('map', 'block');
+    this.show('data', 'none');
+    this.show('start', 'block');
+    this.show('stop', 'none');
+    this.show('save', 'none');
+    this.show('trash', 'none');
+    this.show('mapbutton', 'none');
+    this.show('databutton', 'block');
     // map provider
     this.provider = await this.check(this.provider, 'provider')
     // map style
@@ -86,17 +96,8 @@ export class Tab1Page {
     await this.createCanvas();
     // plot map
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-    if (this.provider == 'Tomtom') await this.createTomtomMap();
-    else await this.createMapboxMap();
-    // elements shown
-    this.show('map', 'block');
-    this.show('data', 'none');
-    this.show('start', 'block');
-    this.show('stop', 'none');
-    this.show('save', 'none');
-    this.show('trash', 'none');
-    this.show('mapbutton', 'none');
-    this.show('databutton', 'block');
+    if (this.provider == 'Tomtom') { await this.createTomtomMap(); }
+    else if (this.provider == 'Mapbox') { await this.createMapboxMap(); }
   }
 
   // CREATE ALL CANVAS ////////////////////////
@@ -159,20 +160,6 @@ export class Tab1Page {
       this.map.scrollZoom.disable();
     });
   }
-
-  /*
-    async mapboxReady() {
-      if (this.map.isStyleLoaded()) {
-        this.map.resize();
-        this.map.addControl(new mapboxgl.NavigationControl());
-        this.map.scrollZoom.disable();
-      }
-      else {
-        await new Promise(f => setTimeout(f, 200));
-        await this.mapboxReady();
-      }
-    }
-    */
 
   // SHOW / HIDE ELEMENTS ///////////////////////////////// 
   show(id: string, action: string) {
@@ -407,8 +394,28 @@ export class Tab1Page {
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return;
     var num = await track.features[0].geometry.properties.data.length ?? 0;
-    if (xParam == 'x') var xTot = track.features[0].geometry.properties.data[num - 1].distance;
-    else xTot = await track.features[0].geometry.properties.data[num - 1].time - track.features[0].geometry.properties.data[0].time;
+    // time units
+    var xDiv: number = 1; 
+    if (xParam == 'x') {
+      var xTot = track.features[0].geometry.properties.data[num - 1].distance;
+      this.tUnit = '';
+    } 
+    else {
+      xTot = await track.features[0].geometry.properties.data[num - 1].time - track.features[0].geometry.properties.data[0].time;
+      if (xTot > 3600000) {
+        this.tUnit = 'h';
+        xDiv = 3600000
+      }
+      else if (xTot > 60000) {
+        this.tUnit = 'min';
+        xDiv = 60000;
+      }
+      else {
+        this.tUnit = 's';
+        xDiv = 1000;
+      }
+      xTot = xTot / xDiv;
+    }
     // compute bounds
     const bounds: Bounds = await this.fs.computeMinMaxProperty(track.features[0].geometry.properties.data, propertyName);
     if (bounds.max == bounds.min) {
@@ -428,6 +435,7 @@ export class Tab1Page {
       if (xParam == 'x') ctx.lineTo(track.features[0].geometry.properties.data[i].distance, track.features[0].geometry.properties.data[i][propertyName])
       else {
         var inter = await track.features[0].geometry.properties.data[i].time - track.features[0].geometry.properties.data[0].time;
+        inter = inter / xDiv;
         ctx.lineTo(inter, track.features[0].geometry.properties.data[i][propertyName])
       }
     }
@@ -452,7 +460,7 @@ export class Tab1Page {
     ctx.strokeStyle = 'black';
     ctx.fillStyle = 'black'
     // vertical lines
-    for (var xi = fx * gridx; xi <= xMax; xi = xi + gridx) {
+    for (var xi = fx * gridx; xi <= xMax; xi += gridx) {
       ctx.beginPath();
       ctx.moveTo(xi * a + e, yMin * d + f);
       ctx.lineTo(xi * a + e, yMax * d + f);
@@ -479,6 +487,10 @@ export class Tab1Page {
     this.currentTrack = undefined;
     await this.removeLayer('122')
     this.stopped = 0;
+    this.currentAverageSpeed = undefined;
+    this.currentAverageCorrSpeed = undefined;
+    this.timeCorr = undefined;
+
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
