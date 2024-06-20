@@ -84,11 +84,11 @@
   <swiper-slide>
     <div class = empty></div>
     <div class = element>  
-      <h1 *ngIf="currentTrack" class = 'title'>SPEED (km/h) vs time ({{tUnit}})</h1>
+      <h1 *ngIf="currentTrack" class = 'title'>SPEED (km/h) vs time ({{currentUnit}})</h1>
       <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = element>  
-      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time ({{tUnit}})</h1>
+      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time ({{archivedUnit}})</h1>
       <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
   </swiper-slide> 

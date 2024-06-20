@@ -2,7 +2,7 @@
 
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, ChangeDetectorRef, ɵdefaultIterableDiffers } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -62,8 +62,9 @@ export class Tab1Page {
   currentAverageCorrSpeed: number | undefined = undefined;
   switch: boolean = true;
   timeCorr: any = undefined;
-  tUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)   
-
+  currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
+  archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)   
+  
   constructor(
     private cd: ChangeDetectorRef,
     public fs: FunctionsService,
@@ -188,7 +189,7 @@ export class Tab1Page {
     if (!this.archivedTrack) return;
     if (this.previousTrack == this.archivedTrack) return;
     // update canvas
-    await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // display track on map
     await this.displayArchivedTrack();
     // adapt view
@@ -215,8 +216,8 @@ export class Tab1Page {
         this.currentInitialMarker = await this.createMarker('Current', 'Initial');
       }
       // update canvas
-      await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     })
   }
 
@@ -247,8 +248,8 @@ export class Tab1Page {
         this.currentInitialMarker = await this.createMarker('Current', 'Initial');
       }
       // update canvas
-      await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     }
     else {
       await new Promise(f => setTimeout(f, 200));
@@ -294,18 +295,20 @@ export class Tab1Page {
     else {
       await this.removeLayer('123');
       this.archivedTrack = undefined;
-      await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
       return false;
     }
   }
 
   // UPDATE ALL CANVAS ///////////////////////////////////
   async updateAllCanvas(context: any, track: any) {
-    if (!context) return
+    var tUnit: string = '';
+    if (!context) return tUnit
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(context[i], track, this.properties[i], 'x');
-      else await this.updateCanvas(context[i], track, this.properties[i], 't');
+      else tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
     }
+    return tUnit;
   }
 
   // DISPLAY AN ARCHIVED TRACK /////////////////////////
@@ -389,29 +392,29 @@ export class Tab1Page {
 
   // UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: CanvasRenderingContext2D | undefined, track: any, propertyName: keyof Data, xParam: string) {
-    if (!ctx) return;
+    var tUnit: string = ''
+    if (!ctx) return tUnit;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
-    if (!track) return;
+    if (!track) return tUnit;
     var num = await track.features[0].geometry.properties.data.length ?? 0;
     // time units
     var xDiv: number = 1; 
     if (xParam == 'x') {
       var xTot = track.features[0].geometry.properties.data[num - 1].distance;
-      this.tUnit = '';
     } 
     else {
       xTot = await track.features[0].geometry.properties.data[num - 1].time - track.features[0].geometry.properties.data[0].time;
       if (xTot > 3600000) {
-        this.tUnit = 'h';
+        tUnit = 'h';
         xDiv = 3600000
       }
       else if (xTot > 60000) {
-        this.tUnit = 'min';
+        tUnit = 'min';
         xDiv = 60000;
       }
       else {
-        this.tUnit = 's';
+        tUnit = 's';
         xDiv = 1000;
       }
       xTot = xTot / xDiv;
@@ -446,6 +449,7 @@ export class Tab1Page {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // grid
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f)
+    return tUnit;
   }
 
   // GRID /////////////////////////////////////////////////////
@@ -573,7 +577,7 @@ export class Tab1Page {
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
     this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
     // ippdate canvas
-    if (num % 20 == 0) await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -684,7 +688,7 @@ export class Tab1Page {
     // new track: initialize all variables and plots
     await this.removeLayer('122');
     this.currentTrack = undefined;
-    await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // STOP TRACKING //////////////////////////////////
@@ -706,7 +710,7 @@ export class Tab1Page {
     // set map view
     await this.setMapView(this.currentTrack);
     // update canvas
-    await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // SET TRACK NAME, TIME, DESCRIPTION, ... 
