@@ -17,8 +17,16 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
 import mapboxgl from 'mapbox-gl';
-//import * as L from 'leaflet';
-
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import OSM from 'ol/source/OSM';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { fromLonLat } from 'ol/proj';
 @Component({
   selector: 'app-tab1',
   templateUrl: 'tab1.page.html',
@@ -78,7 +86,7 @@ export class Tab1Page {
     if (!this.switch) return;
     // create storage 
     await this.storage.create();
-    // elements shown
+    // elements shown, elements hidden
     this.show('map', 'block');
     this.show('data', 'none');
     this.show('start', 'block');
@@ -91,14 +99,16 @@ export class Tab1Page {
     this.provider = await this.check(this.provider, 'provider')
     // map style
     this.mapStyle = await this.check(this.mapStyle, 'style')
-    // archived track
+    // check whether the archived track must be visible
     await this.storage.set('archived', 'visible');
     // create canvas
     await this.createCanvas();
     // plot map
     this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
+//    this.provider = 'OSM'
     if (this.provider == 'Tomtom') { await this.createTomtomMap(); }
     else if (this.provider == 'Mapbox') { await this.createMapboxMap(); }
+    else if (this.provider == 'OSM') { await this.createOSMMap(); }
   }
 
   // CREATE ALL CANVAS ////////////////////////
@@ -159,6 +169,66 @@ export class Tab1Page {
       this.map.resize();
       this.map.addControl(new mapboxgl.NavigationControl());
       this.map.scrollZoom.disable();
+    });
+  }
+
+  async createOSMMap() {
+    // Create the OpenStreetMap layer
+    const osmLayer = new TileLayer({
+      source: new OSM(),
+    });
+    osmLayer.set('osm', 'osmLayer'); 
+
+    // Create a vector source to hold the current track
+    const currentSource = new VectorSource({
+      features: [
+//        new Feature({
+//         geometry: new Point(fromLonLat([0, 0])), // Example feature at coordinates (0, 0)
+//        }),
+      ],
+    });
+
+    // Create a vector layer to display the current track
+    const currentLayer = new VectorLayer({
+      source: currentSource,
+      style: new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'red' }),
+          stroke: new Stroke({ color: 'black', width: 2 }),
+        }),
+      }),
+    });
+
+    // Create a vector source to hold the archived track
+    const archivedSource = new VectorSource({
+      features: [
+      ],
+    });
+
+    // Create a vector layer to display the archived track
+    const archivedLayer = new VectorLayer({
+      source: archivedSource,
+      style: new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'red' }),
+          stroke: new Stroke({ color: 'black', width: 2 }),
+        }),
+      }),
+    });
+
+    // Create the map view
+    const view = new View({
+      center: fromLonLat([0, 0]),
+      zoom: 2,
+    });
+
+    // Create the map
+    this.map = new Map({
+      target: 'map',
+      layers: [osmLayer, currentLayer, archivedLayer],
+      view: view,
     });
   }
 
