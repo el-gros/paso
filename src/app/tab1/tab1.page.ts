@@ -522,15 +522,10 @@ export class Tab1Page {
   }
 
   async waitForSource2() {
-//    var num = await this.currentTrack.features[0].geometry.coordinates.length;
-//    for (var i = 0; i < num; i ++) {
-//      this.currentTrack.features[0].geometry.coordinates[i][1] += 1; 
-//      this.archivedTrack.features[0].geometry.coordinates[i][1] -= 1; 
-//    }
     this.currentFeature.setGeometry(new LineString(
-      [[-2, 37], [4, 37]]
+      this.currentTrack.features[0].geometry.coordinates
     ))
-  }
+  }  
 
   // REMOVE LAYER AND MARKERS
   async removeLayer(id: string) {
@@ -649,8 +644,6 @@ export class Tab1Page {
 
   // START TRACKING /////////////////////////////////
   async startTracking() {
-    this.waitForSource2() //OSM
-    return //OSM
     // initialize
     this.currentTrack = undefined;
     if (this.provider != 'OSM') await this.removeLayer('122')
