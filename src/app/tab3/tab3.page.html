@@ -14,7 +14,32 @@
         <h2 class="toggle-title">Map provider</h2>
       </ion-label>
     </ion-row>
-    <ion-row>
+      <ion-list class="centered-content">
+        <ion-radio-group [(ngModel)]="provider" (ionChange)="onProviderChange($event)">
+        <ion-row>
+          <ion-item>
+            <ion-label>Tomtom</ion-label>
+            <ion-radio slot="start" value="Tomtom"></ion-radio>
+          </ion-item>
+          <ion-item>
+            <ion-label>Mapbox</ion-label>
+            <ion-radio slot="start" value="Mapbox"></ion-radio>
+          </ion-item>
+          <ion-item>
+            <ion-label>OSM</ion-label>
+            <ion-radio slot="start" value="OSM"></ion-radio>
+          </ion-item>
+        </ion-row>
+        </ion-radio-group>
+      </ion-list>
+  <!-- commercial provider -->
+<!--
+  <ion-row *ngIf="comChecked" class="centered-content">
+      <ion-label>
+        <h2 class="toggle-title">Commercial provider</h2>
+      </ion-label>
+    </ion-row>
+    <ion-row *ngIf="comChecked">
       <div class="toggle-container">
         <ion-col size = 4 class="centered-content">
           <span class="label_a">Tomtom</span>
@@ -27,14 +52,14 @@
         </ion-col>
       </div>
     </ion-row>
-
+-->
   <!-- map style -->
-    <ion-row class="centered-content">
+    <ion-row *ngIf="(provider != 'OSM')" class="centered-content">
       <ion-label>
         <h2 class="toggle-title">Map style</h2>
       </ion-label>
     </ion-row>
-    <ion-row>
+    <ion-row *ngIf="(provider != 'OSM')">
       <div class="toggle-container">
         <ion-col size = 4 class="centered-content">
           <span class="label_a">Basic</span>

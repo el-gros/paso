@@ -38,6 +38,7 @@ export class Tab3Page {
   style: string = 'basic';
   uploaded: string = ''; 
   lag: number = global.lag; // 8
+  comChecked: boolean = false 
 
   constructor(
     public fs: FunctionsService,
@@ -56,11 +57,21 @@ export class Tab3Page {
   } 
 
   // PROVIDER CHANGE ////////////////////////////
+/*
   async providerChanged() {
     if (this.providerChecked) this.provider = 'Mapbox';
     else this.provider = 'Tomtom'
     await this.storage.set('provider', this.provider)
     this.goHome();
+  } 
+*/
+
+  // PROVIDER CHANGE ////////////////////////////
+  async comChanged() {
+    if (!this.comChecked) {
+      this.provider = 'OSM';
+      await this.storage.set('provider', this.provider)
+    }
   } 
 
   // CHANGE VISIBILITY OF ARCHIVED TRACK //////////////////////
@@ -166,7 +177,7 @@ export class Tab3Page {
     this.importedTrack = {
       type: 'FeatureCollection',
       features: [{
-        type: 'feature',
+        type: 'Feature',
         properties: {
           name: undefined,
           place: undefined,
@@ -295,6 +306,12 @@ export class Tab3Page {
     if (slope > 0) { this.importedTrack.features[0].properties.totalElevationGain = await this.importedTrack.features[0].properties.totalElevationGain + slope; }
     else {this.importedTrack.features[0].properties.totalElevationLoss = await this.importedTrack.features[0].properties.totalElevationLoss - slope; }
   } 
+
+  async onProviderChange(event: any) {
+    console.log('Provider changed to:', this.provider);
+    await this.storage.set('provider', this.provider)
+    this.goHome();
+  }
 
 }
 
