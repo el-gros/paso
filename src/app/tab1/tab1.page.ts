@@ -33,6 +33,9 @@ import { Coordinate } from 'ol/coordinate';
 import { useGeographic } from 'ol/proj.js';
 import Polyline from 'ol/format/Polyline.js';
 import { Source } from 'ol/source';
+import { Zoom, ScaleLine, Rotate } from 'ol/control'
+import { MapboxVectorLayer } from 'ol-mapbox-style';
+import XYZ from 'ol/source/XYZ';
 useGeographic();
 
 @Component({
@@ -76,12 +79,12 @@ export class Tab1Page {
   vMin: number = 1; 
   currentAverageSpeed: number | undefined = undefined;
   currentAverageCorrSpeed: number | undefined = undefined;
-  switch: boolean = true;
   timeCorr: any = undefined;
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
   currentFeature: any; 
+  isTracking: boolean = false;
 
   constructor(
     public fs: FunctionsService,
@@ -92,7 +95,6 @@ export class Tab1Page {
 
   // ON INIT ////////////////////////////////
   async ngOnInit() {
-    if (!this.switch) return;
     // create storage 
     await this.storage.create();
     // elements shown, elements hidden
@@ -104,18 +106,18 @@ export class Tab1Page {
     this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
+    // on init archived map always visible to avoid suspicious malfunction
+    await this.storage.set('archived', 'visible');
+    // map provider
+    this.provider = await this.check(this.provider, 'provider')
     if (this.provider != 'OSM') {
-      // map provider
-      this.provider = await this.check(this.provider, 'provider')
       // map style
       this.mapStyle = await this.check(this.mapStyle, 'style')
-      // check whether the archived track must be visible
-      await this.storage.set('archived', 'visible');
+      this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     }
     // create canvas
     await this.createCanvas();
     // plot map
-    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
     if (this.provider == 'Tomtom') { await this.createTomtomMap(); }
     else if (this.provider == 'Mapbox') { await this.createMapboxMap(); }
     else if (this.provider == 'OSM') {
@@ -184,63 +186,102 @@ export class Tab1Page {
     });
   }
 
-  // create feature to hold current track
-  /*
-  this.currentFeature = new Feature({
-    geometry: new LineString(
-      [this.currentTrack?.features[0].geometry.coordinates[0],
-        this.currentTrack?.features[0].geometry.coordinates[0]],
-    )
-  });
-  // source for current track
-  var source = new VectorSource({
-    features: [this.currentFeature],
-  });
-  // layer for current track
-  var layer = new VectorLayer({
-    source: source,
-    style: new Style({
-      stroke: new Stroke({ color: this.currentColor, width: 5 })
-    })
-  });  
-  this.map.addLayer(layer)
-  */
-
-
   async createOSMMap() {
     // create feature to hold current and archived tracks
-    this.currentFeature = new Feature({ geometry: new LineString([[0, 0],[20, 0]]) });
-    this.archivedFeature = new Feature({ geometry: new LineString([[0, 0], [0, 20]]) });
+    this.currentFinalMarker = new Feature({ geometry: new Point([0, 40]) });
+    this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
+    if (this.currentTrack) {
+      let num = this.currentTrack.features[0].geometry.coordinates.length; 
+      this.currentFeature = new Feature({ geometry: new LineString(this.currentTrack.features[0].geometry.coordinates) });
+      await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
+      this.currentInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
+      await this.currentInitialMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'green' })
+        })
+      }))
+      if (this.isTracking) {
+        this.currentMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
+        this.currentMarker.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 10,
+            fill: new Fill({ color: 'blue' })
+          })
+        }))
+      }
+      else {
+        this.currentFinalMarker.setGeometry( new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) );
+        this.currentFinalMarker.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 10,
+            fill: new Fill({ color: 'red' })
+          })
+        }))
+      }
+    }
+    else {
+      this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+      this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+    }
+    if (this.archivedTrack) {
+      let num = this.archivedTrack.features[0].geometry.coordinates.length;
+      this.archivedFeature = new Feature({ geometry: new LineString(this.archivedTrack.features[0].geometry.coordinates) });
+      this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }));
+      this.archivedInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
+      this.archivedInitialMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'green' })
+        })
+      }))
+      this.archivedFinalMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) });
+      this.archivedFinalMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'red' })
+        })
+      }))
+    }
+    else {
+      this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+      this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+      this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
+    }
     // sources for current and archived tracks
-    var csource = new VectorSource({ features: [this.currentFeature] });
-    var asource = new VectorSource({ features: [this.archivedFeature] });
+    var csource = new VectorSource({ features: [this.currentFeature, this.currentInitialMarker, this.currentMarker, this.currentFinalMarker] });
+    var asource = new VectorSource({ features: [this.archivedFeature, this.archivedInitialMarker, this.archivedFinalMarker] });
     // layer for current track
-    var currentLayer = new VectorLayer({
-      source: csource,
-      style: new Style({
-        stroke: new Stroke({ color: this.currentColor, width: 5 })
-      })
-    });
-    var archivedLayer = new VectorLayer({
-      source: asource,
-      style: new Style({
-        stroke: new Stroke({ color: this.archivedColor, width: 5 })
-      })
-    });
+    var currentLayer = new VectorLayer({source: csource});
+    var archivedLayer = new VectorLayer({source: asource});
     // Create the OpenStreetMap layer
     var osmLayer = new TileLayer({
       source: new OSM(),
     });
-    // Create the map view
+//   var osm2Layer = new MapboxVectorLayer({
+//    styleUrl: 'mapbox://styles/mapbox/bright-v9',
+//    accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
+    //   })
+    var osm3Layer = new TileLayer({
+        source: new XYZ({
+          url: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp',
+          attributions: '© TomTom'
+        })
+      })
+    
+// Create the map view
     var view = new View({
       center: [1, 41.5],
       zoom: 6,
     });
+    // Controls
+    var controls = [ new Zoom(), new ScaleLine(), new Rotate() ]
     // Create the map
     this.map = new Map({
       target: 'map',
       layers: [osmLayer, currentLayer, archivedLayer],
       view: view,
+      controls: controls
     });
   }
 
@@ -256,9 +297,9 @@ export class Tab1Page {
 
   // ION VIEW DID ENTER
   async ionViewDidEnter() {
-    if (!this.switch) return;
     // change map provider
     await this.changeMapProvider();
+    console.log('0')
     if (this.provider != 'OSM') {
       // change map style and tracks color
       await this.changeStyleColor();
@@ -266,6 +307,7 @@ export class Tab1Page {
     else {
       await this.changeColor();
     }
+    console.log('1')
     // archived track
     var visible: boolean = await this.archivedVisibility();
     if (!visible) return;
@@ -286,6 +328,7 @@ export class Tab1Page {
   async changeMapProvider() {
     var preProvider = this.provider;
     this.provider = await this.check(this.provider, 'provider')
+    console.log(preProvider, this.provider)
     if (preProvider == this.provider) return;
     if (preProvider != 'OSM') this.map.remove();
     else {
@@ -299,12 +342,14 @@ export class Tab1Page {
     else await this.createOSMMap();
     // update custom layers
     this.map.on('load', async () => {
-      // display old track on map
-      if (this.archivedTrack) await this.displayArchivedTrack();
-      // display current track
-      if (this.currentTrack) {
-        await this.addCurrentLayer()
-        this.currentInitialMarker = await this.createMarker('Current', 'Initial');
+      if (this.provider != 'OSM') {
+        // display old track on map
+        if (this.archivedTrack) await this.displayArchivedTrack();
+        // display current track
+        if (this.currentTrack) {
+          await this.addCurrentLayer()
+          this.currentInitialMarker = await this.createMarker('Current', 'Initial');
+        }
       }
       // update canvas
       this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
@@ -336,12 +381,8 @@ export class Tab1Page {
     this.currentColor = await this.check(this.currentColor, 'currentColor')
     if (this.archivedColor == preArchived && this.currentColor == preCurrent) return;
     // change of color for current feature
-    this.currentFeature.setStyle(new Style({
-      stroke: new Stroke({ color: this.currentColor, width: 5 })
-    }));
-    this.archivedFeature.setStyle(new Style({
-      stroke: new Stroke({ color: this.archivedColor, width: 5 })
-    }));
+    this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 })}));
+    this.archivedFeature.setStyle(new Style({stroke: new Stroke({ color: this.archivedColor, width: 5 })}));
   }
 
   async styleReady() {
@@ -378,30 +419,6 @@ export class Tab1Page {
     });
   }
 
-  async addCurrentLayer2() {
-    // create feature to hold current track
-    /*
-    this.currentFeature = new Feature({
-      geometry: new LineString(
-        [this.currentTrack?.features[0].geometry.coordinates[0],
-          this.currentTrack?.features[0].geometry.coordinates[0]],
-      )
-    });
-    // source for current track
-    var source = new VectorSource({
-      features: [this.currentFeature],
-    });
-    // layer for current track
-    var layer = new VectorLayer({
-      source: source,
-      style: new Style({
-        stroke: new Stroke({ color: this.currentColor, width: 5 })
-      })
-    });  
-    this.map.addLayer(layer)
-    */
-    }
-
   // ADD ARCHIVED LAYER
   async addArchivedLayer() {
     this.map.addSource('123', { type: 'geojson', data: this.archivedTrack });
@@ -421,6 +438,26 @@ export class Tab1Page {
     this.archivedFeature.setGeometry(new LineString(
       this.archivedTrack.features[0].geometry.coordinates
     ))
+    this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }))
+    const num = this.archivedTrack.features[0].geometry.coordinates.length;
+    this.archivedInitialMarker.setGeometry(new Point(
+      this.archivedTrack.features[0].geometry.coordinates[0]
+    ));
+    this.archivedInitialMarker.setStyle(new Style({
+      image: new CircleStyle({
+        radius: 10,
+        fill: new Fill({ color: 'green' })
+      })
+    }))
+    this.archivedFinalMarker.setGeometry(new Point(
+      this.archivedTrack.features[0].geometry.coordinates[num - 1]
+    ));
+    this.archivedFinalMarker.setStyle(new Style({
+      image: new CircleStyle({
+        radius: 10,
+        fill: new Fill({ color: 'red' })
+      })
+    }))
   }
 
   // CHECK VISIBILITY OF ARCHIVED TRACK ////////////////////
@@ -429,10 +466,17 @@ export class Tab1Page {
     archived = await this.check(archived, 'archived')
     if (archived == 'visible') return true
     else {
-      await this.removeLayer('123');
-      this.archivedTrack = undefined;
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-      return false;
+      if (this.provider == 'OSM') {
+        this.archivedFeature.setStyle(undefined);
+        this.archivedInitialMarker.setStyle(undefined);
+        this.archivedFinalMarker.setStyle(undefined);
+      }
+      else {
+        await this.removeLayer('123');
+        this.archivedTrack = undefined;
+        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      }
+      return false
     }
   }
 
@@ -525,6 +569,13 @@ export class Tab1Page {
     this.currentFeature.setGeometry(new LineString(
       this.currentTrack.features[0].geometry.coordinates
     ))
+    this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
+    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+    this.currentMarker.setGeometry(new Point(
+      this.currentTrack.features[0].geometry.coordinates[num - 1]
+    ))
+    // set map view
+    if (num == 5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
   }  
 
   // REMOVE LAYER AND MARKERS
@@ -537,7 +588,7 @@ export class Tab1Page {
     // remove markers
     if (id == '122') {
       if (this.currentInitialMarker) await this.currentInitialMarker.remove();
-      if (this.currentFinalMarker) await this.currentFinalMarker.remove();
+           if (this.currentFinalMarker) await this.currentFinalMarker.remove();
       if (this.currentMarker) await this.currentMarker.remove();
     }
     else if (id == '123') {
@@ -645,6 +696,7 @@ export class Tab1Page {
   // START TRACKING /////////////////////////////////
   async startTracking() {
     // initialize
+    this.isTracking = true;
     this.currentTrack = undefined;
     if (this.provider != 'OSM') await this.removeLayer('122')
     this.stopped = 0;
@@ -777,8 +829,28 @@ export class Tab1Page {
     if (this.provider != 'OSM') {
       await this.addCurrentLayer();
       this.currentInitialMarker = await this.createMarker('Current', 'Initial');
-    }  
-    else await this.addCurrentLayer2();
+    }
+    else {
+      this.currentInitialMarker.setGeometry(new Point(
+        this.currentTrack.features[0].geometry.coordinates[0]
+      ));
+      this.currentInitialMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'green' })
+        })
+      }))
+      let num = this.currentTrack.features[0].geometry.coordinates.length;
+      this.currentMarker.setGeometry(new Point(
+        this.currentTrack.features[0].geometry.coordinates[num-1]
+      ));
+      this.currentMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'blue' })
+        })
+      }))
+    }
   }
 
   // REMOVE PREVIOUS POINT ///////////////////////
@@ -847,7 +919,12 @@ export class Tab1Page {
     this.show('save', 'none');
     this.show('trash', 'none');
     // new track: initialize all variables and plots
-    await this.removeLayer('122');
+    if (this.provider != 'OSM') this.removeLayer('122');
+    else {   
+      this.currentFeature.setStyle(undefined);
+      this.currentInitialMarker.setStyle(undefined);
+      this.currentFinalMarker.setStyle(undefined);
+    }
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
@@ -859,9 +936,24 @@ export class Tab1Page {
     this.show('stop', 'none');
     this.show('save', 'block');
     this.show('trash', 'block');
+    this.isTracking = false;
     // red marker
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    if (num > 0) this.currentFinalMarker = await this.createMarker('Current', 'Final')
+    if (num > 0) {
+      if (this.provider != 'OSM') this.currentFinalMarker = await this.createMarker('Current', 'Final')
+      else {
+        this.currentFinalMarker.setGeometry(new Point(
+          this.currentTrack.features[0].geometry.coordinates[num - 1]
+        ))
+        this.currentFinalMarker.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 10,
+            fill: new Fill({ color: 'red' })
+          })
+        }))
+        this.currentMarker.setStyle(undefined)
+      }
+    }
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
     // filter remaining values
