@@ -32,46 +32,6 @@
         </ion-row>
         </ion-radio-group>
       </ion-list>
-  <!-- commercial provider -->
-<!--
-  <ion-row *ngIf="comChecked" class="centered-content">
-      <ion-label>
-        <h2 class="toggle-title">Commercial provider</h2>
-      </ion-label>
-    </ion-row>
-    <ion-row *ngIf="comChecked">
-      <div class="toggle-container">
-        <ion-col size = 4 class="centered-content">
-          <span class="label_a">Tomtom</span>
-        </ion-col>
-        <ion-col size = 4 class="centered-content">
-          <ion-toggle [(ngModel)]="providerChecked" (ionChange)="providerChanged()"></ion-toggle>
-        </ion-col>
-        <ion-col size = 4 class="centered-content">
-          <span class="label_b">Mapbox</span>
-        </ion-col>
-      </div>
-    </ion-row>
--->
-  <!-- map style -->
-    <ion-row *ngIf="(provider != 'OSM')" class="centered-content">
-      <ion-label>
-        <h2 class="toggle-title">Map style</h2>
-      </ion-label>
-    </ion-row>
-    <ion-row *ngIf="(provider != 'OSM')">
-      <div class="toggle-container">
-        <ion-col size = 4 class="centered-content">
-          <span class="label_a">Basic</span>
-        </ion-col>
-        <ion-col size = 4 class="centered-content">
-          <ion-toggle [(ngModel)]="styleChecked" (ionChange)="styleChanged()"></ion-toggle>
-        </ion-col>
-        <ion-col size = 4 class="centered-content">
-          <span class="label_b">Satellite</span>
-        </ion-col>
-      </div>
-    </ion-row>
 
     <!-- archived track -->
     <ion-row class="centered-content">

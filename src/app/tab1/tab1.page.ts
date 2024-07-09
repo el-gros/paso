@@ -34,8 +34,9 @@ import { useGeographic } from 'ol/proj.js';
 import Polyline from 'ol/format/Polyline.js';
 import { Source } from 'ol/source';
 import { Zoom, ScaleLine, Rotate } from 'ol/control'
-import { MapboxVectorLayer } from 'ol-mapbox-style';
+import { applyStyle, MapboxVectorLayer } from 'ol-mapbox-style';
 import XYZ from 'ol/source/XYZ';
+import VectorTileLayer from 'ol/layer/VectorTile.js'
 useGeographic();
 
 @Component({
@@ -85,6 +86,7 @@ export class Tab1Page {
   archivedFeature: any;
   currentFeature: any; 
   isTracking: boolean = false;
+  archived: string = 'visible'
 
   constructor(
     public fs: FunctionsService,
@@ -106,170 +108,70 @@ export class Tab1Page {
     this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
-    // on init archived map always visible to avoid suspicious malfunction
+    // on init archived map is always visible
     await this.storage.set('archived', 'visible');
     // map provider
     this.provider = await this.check(this.provider, 'provider')
-    if (this.provider != 'OSM') {
-      // map style
-      this.mapStyle = await this.check(this.mapStyle, 'style')
-      this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-    }
     // create canvas
     await this.createCanvas();
+    // create features
+    this.createFeatures();
     // plot map
-    if (this.provider == 'Tomtom') { await this.createTomtomMap(); }
-    else if (this.provider == 'Mapbox') { await this.createMapboxMap(); }
-    else if (this.provider == 'OSM') {
-      await this.createOSMMap();
-    }
+    await this.createMap();
   }
 
-  // CREATE ALL CANVAS ////////////////////////
+  // CREATE CANVASES ////////////////////////
   async createCanvas() {
     var currentCanvas: any;
     var archivedCanvas: any;
     //    this.canvasNum = window.innerWidth;
     for (var i in this.properties) {
+      // get canvas to plot current track and define their height and width
       currentCanvas = document.getElementById('currentCanvas' + i) as HTMLCanvasElement;
       currentCanvas.width = window.innerWidth;
       currentCanvas.height = window.innerWidth;
+      // get canvas to plot archived track and define their height and width
       archivedCanvas = document.getElementById('archivedCanvas' + i) as HTMLCanvasElement;
       archivedCanvas.width = window.innerWidth;
       archivedCanvas.height = window.innerWidth;
+      // define their contexts
       this.currentCtx[i] = await currentCanvas.getContext("2d");
       this.archivedCtx[i] = await archivedCanvas.getContext("2d");
     }
+    // define canvasNum as height and width
     this.canvasNum = window.innerWidth;
   }
 
-  // CREATE TOMTOM MAP //////////////////////////////
-  async createTomtomMap() {
-    // create Tomtom map
-    this.map = tt.map({
-      key: "YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp", //TomTom
-      container: 'map',
-      center: [1, 41.5],
-      zoom: 6,
-      style: this.style
-    });
-    // once loaded, resize and add controls
-    this.map.on('load', async () => {
-      this.map.resize();
-      this.map.addControl(new tt.NavigationControl());
-      this.map.addControl(new tt.ScaleControl());
-      this.map.addControl(new tt.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,
-      }))
-    });
-  }
-
-  // CREATE MAPBOX MAP //////////////////////////////
-  async createMapboxMap() {
-    // create Mapbox map
-    this.map = new mapboxgl.Map({
-      container: 'map',
-      accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
-      style: this.style,
-      center: [1, 41.5],
-      zoom: 6,
-      trackResize: true,
-    });
-    // once loaded, resize and add controls
-    this.map.on('load', async () => {
-      this.map.resize();
-      this.map.addControl(new mapboxgl.NavigationControl());
-      this.map.scrollZoom.disable();
-    });
-  }
-
-  async createOSMMap() {
-    // create feature to hold current and archived tracks
-    this.currentFinalMarker = new Feature({ geometry: new Point([0, 40]) });
-    this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
-    if (this.currentTrack) {
-      let num = this.currentTrack.features[0].geometry.coordinates.length; 
-      this.currentFeature = new Feature({ geometry: new LineString(this.currentTrack.features[0].geometry.coordinates) });
-      await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
-      this.currentInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
-      await this.currentInitialMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'green' })
-        })
-      }))
-      if (this.isTracking) {
-        this.currentMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
-        this.currentMarker.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 10,
-            fill: new Fill({ color: 'blue' })
-          })
-        }))
-      }
-      else {
-        this.currentFinalMarker.setGeometry( new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) );
-        this.currentFinalMarker.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 10,
-            fill: new Fill({ color: 'red' })
-          })
-        }))
-      }
-    }
-    else {
-      this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-      this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
-    }
-    if (this.archivedTrack) {
-      let num = this.archivedTrack.features[0].geometry.coordinates.length;
-      this.archivedFeature = new Feature({ geometry: new LineString(this.archivedTrack.features[0].geometry.coordinates) });
-      this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }));
-      this.archivedInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
-      this.archivedInitialMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'green' })
-        })
-      }))
-      this.archivedFinalMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) });
-      this.archivedFinalMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'red' })
-        })
-      }))
-    }
-    else {
-      this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-      this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
-      this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
-    }
+  // CREATE MAP /////////////////////////////
+  async createMap() {
     // sources for current and archived tracks
     var csource = new VectorSource({ features: [this.currentFeature, this.currentInitialMarker, this.currentMarker, this.currentFinalMarker] });
     var asource = new VectorSource({ features: [this.archivedFeature, this.archivedInitialMarker, this.archivedFinalMarker] });
-    // layer for current track
+    // layers for current and archived track
     var currentLayer = new VectorLayer({source: csource});
     var archivedLayer = new VectorLayer({source: asource});
-    // Create the OpenStreetMap layer
-    var osmLayer = new TileLayer({
-      source: new OSM(),
-    });
-//   var osm2Layer = new MapboxVectorLayer({
-//    styleUrl: 'mapbox://styles/mapbox/bright-v9',
-//    accessToken: "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw",
-    //   })
-    var osm3Layer = new TileLayer({
-        source: new XYZ({
-          url: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp',
-          attributions: '© TomTom'
-        })
+    // Create the map layer
+    var olLayer: any;
+    var url: string;
+    if (this.provider == 'OSM') olLayer = new TileLayer({ source: new OSM() })
+    else if (this.provider == 'Mapbox') {
+      url = 'mapbox://styles/mapbox/outdoors-v12'
+      var accessToken = "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw"
+      olLayer = new MapboxVectorLayer({
+        styleUrl: url,
+        accessToken: accessToken,
       })
-    
-// Create the map view
+    }
+    else if (this.provider == 'Tomtom') {
+      url = 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp'
+      olLayer = new TileLayer({
+        source: new XYZ({
+          url: url,
+          attributions: '© TomTom',
+        }),
+      })
+    }  
+    // Create the map view
     var view = new View({
       center: [1, 41.5],
       zoom: 6,
@@ -279,7 +181,7 @@ export class Tab1Page {
     // Create the map
     this.map = new Map({
       target: 'map',
-      layers: [osmLayer, currentLayer, archivedLayer],
+      layers: [olLayer, currentLayer, archivedLayer],
       view: view,
       controls: controls
     });
@@ -292,28 +194,28 @@ export class Tab1Page {
     obj.style.display = action
   }
 
-  ///////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////
-
   // ION VIEW DID ENTER
   async ionViewDidEnter() {
     // change map provider
     await this.changeMapProvider();
-    console.log('0')
-    if (this.provider != 'OSM') {
-      // change map style and tracks color
-      await this.changeStyleColor();
-    }
-    else {
-      await this.changeColor();
-    }
-    console.log('1')
-    // archived track
-    var visible: boolean = await this.archivedVisibility();
-    if (!visible) return;
-    // retrieve track
+    // change color for current and archived tracks
+    await this.changeColor();
+    // check whether or not archived track shall be visible
+    this.archived = await this.check(this.archived, 'archived')
+    // in case archived track shall be invisible
+    if (this.archived == 'invisible') {
+      await this.archivedFeature.setStyle(undefined);
+      await this.archivedInitialMarker.setStyle(undefined);
+      await this.archivedFinalMarker.setStyle(undefined);
+      for (var i in this.properties) {
+        this.archivedCtx[i].setTransform(1, 0, 0, 1, 0, 0);
+        this.archivedCtx[i].clearRect(0, 0, this.canvasNum, this.canvasNum);
+      }
+      return;
+    }  
+    // retrieve archived track
     this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
-    // check if there is track or it did not change
+    // if there is not archived track or it will be invisible.. return 
     if (!this.archivedTrack) return;
     if (this.previousTrack == this.archivedTrack) return;
     // update canvas
@@ -328,50 +230,17 @@ export class Tab1Page {
   async changeMapProvider() {
     var preProvider = this.provider;
     this.provider = await this.check(this.provider, 'provider')
-    console.log(preProvider, this.provider)
     if (preProvider == this.provider) return;
-    if (preProvider != 'OSM') this.map.remove();
-    else {
-      this.map.setTarget(null);
-      this.map = null;
-    }
+    // remove map
+    if (this.map) await this.map.setTarget(null);
+    this.map = null;
+    // create features
+    this.createFeatures();
     // plot map
-    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-    if (this.provider == 'Tomtom') await this.createTomtomMap();
-    else if (this.provider == 'Mapbox') await this.createMapboxMap();
-    else await this.createOSMMap();
-    // update custom layers
-    this.map.on('load', async () => {
-      if (this.provider != 'OSM') {
-        // display old track on map
-        if (this.archivedTrack) await this.displayArchivedTrack();
-        // display current track
-        if (this.currentTrack) {
-          await this.addCurrentLayer()
-          this.currentInitialMarker = await this.createMarker('Current', 'Initial');
-        }
-      }
-      // update canvas
-      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    })
-  }
-
-
-  // CHANGE MAP STYLE AND TRACK COLOR //////////////////
-  async changeStyleColor() {
-    var preArchived = this.archivedColor;
-    this.archivedColor = await this.check(this.archivedColor, 'archivedColor')
-    var preCurrent = this.currentColor;
-    this.currentColor = await this.check(this.currentColor, 'currentColor')
-    var preStyle = this.mapStyle;
-    this.mapStyle = await this.check(this.mapStyle, 'style')
-    if (this.archivedColor == preArchived && this.currentColor == preCurrent && this.mapStyle == preStyle) return;
-    await this.removeLayer('122');
-    await this.removeLayer('123');
-    this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-    await this.map.setStyle(this.style)
-    await this.styleReady();
+    await this.createMap();
+    // update canvas
+    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
   }
 
   async changeColor() {
@@ -381,60 +250,11 @@ export class Tab1Page {
     this.currentColor = await this.check(this.currentColor, 'currentColor')
     if (this.archivedColor == preArchived && this.currentColor == preCurrent) return;
     // change of color for current feature
-    this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 })}));
-    this.archivedFeature.setStyle(new Style({stroke: new Stroke({ color: this.archivedColor, width: 5 })}));
+    if (this.currentFeature) await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 })}));
+    if (this.archivedFeature) await this.archivedFeature.setStyle(new Style({stroke: new Stroke({ color: this.archivedColor, width: 5 })}));
   }
 
-  async styleReady() {
-    if (this.map.isStyleLoaded()) {
-      // display old track on map
-      if (this.archivedTrack) await this.displayArchivedTrack();
-      // display current track
-      if (this.currentTrack) {
-        await this.addCurrentLayer()
-        this.currentInitialMarker = await this.createMarker('Current', 'Initial');
-      }
-      // update canvas
-      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    }
-    else {
-      await new Promise(f => setTimeout(f, 200));
-      await this.styleReady();
-    }
-  }
-
-  // ADD CURRENT LAYER ///////////////////////////////
-  async addCurrentLayer() {
-    console.log('id ', '122')
-    await this.map.addSource('122', { type: 'geojson', data: this.currentTrack });
-    await this.map.addLayer({
-      'id': '122',
-      'type': 'line',
-      'source': '122',
-      'paint': {
-        'line-color': this.currentColor,
-        'line-width': 5
-      }
-    });
-  }
-
-  // ADD ARCHIVED LAYER
   async addArchivedLayer() {
-    this.map.addSource('123', { type: 'geojson', data: this.archivedTrack });
-    this.map.addLayer({
-      'id': '123',
-      'type': 'line',
-      'source': '123',
-      'paint': {
-        'line-color': this.archivedColor,
-        'line-width': 5
-      }
-    });
-    this.previousTrack = this.archivedTrack;
-  }
-
-  async addArchivedLayer2() {
     this.archivedFeature.setGeometry(new LineString(
       this.archivedTrack.features[0].geometry.coordinates
     ))
@@ -460,26 +280,6 @@ export class Tab1Page {
     }))
   }
 
-  // CHECK VISIBILITY OF ARCHIVED TRACK ////////////////////
-  async archivedVisibility() {
-    var archived: string = 'visible';
-    archived = await this.check(archived, 'archived')
-    if (archived == 'visible') return true
-    else {
-      if (this.provider == 'OSM') {
-        this.archivedFeature.setStyle(undefined);
-        this.archivedInitialMarker.setStyle(undefined);
-        this.archivedFinalMarker.setStyle(undefined);
-      }
-      else {
-        await this.removeLayer('123');
-        this.archivedTrack = undefined;
-        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-      }
-      return false
-    }
-  }
-
   // UPDATE ALL CANVAS ///////////////////////////////////
   async updateAllCanvas(context: any, track: any) {
     var tUnit: string = '';
@@ -498,13 +298,7 @@ export class Tab1Page {
     // no archived track
     if (!this.archivedTrack) return;
     // remove old stuff and create new layer 123 and markers
-    if (this.provider != 'OSM') {
-      await this.removeLayer('123');
-      this.addArchivedLayer();
-      this.archivedInitialMarker = await this.createMarker('Archived', 'Initial');
-      this.archivedFinalMarker = await this.createMarker('Archived', 'Final');
-    }
-    else this.addArchivedLayer2();
+    this.addArchivedLayer();
   }
 
   // SET MAP VIEW /////////////////////////////////////////
@@ -521,19 +315,13 @@ export class Tab1Page {
       maxLng = Math.max(maxLng, point[0]);
     });
     // map view
-    if (this.provider != 'OSM') {
-      await this.map.resize();
-      await this.map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 80 });
-    }
-    else {
-      var extent = [minLng, minLat, maxLng, maxLat];
-      // map view
-      this.map.getView().fit(extent, {
-        size: this.map.getSize(),
-        padding: [50, 50, 50, 50],
-        duration: 1000  // Optional: animation duration in milliseconds
-      });
-    }
+    var extent = [minLng, minLat, maxLng, maxLat];
+    // map view
+    this.map.getView().fit(extent, {
+      size: this.map.getSize(),
+      padding: [50, 50, 50, 50],
+      duration: 1000  // Optional: animation duration in milliseconds
+    });
   }
 
   // DISPLAY CURRENT TRACK
@@ -544,28 +332,10 @@ export class Tab1Page {
     // no points enough
     if (num < 2) return;
     // update
-    if (this.provider != 'OSM') await this.waitForSource();
-    else await this.waitForSource2();
+    await this.waitForSource();
   }
 
   async waitForSource() {
-    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    return new Promise((resolve, reject) => {
-      const interval = setInterval(async () => {
-        if (this.map.getSource('122')) {
-          clearInterval(interval);
-          await this.map.getSource('122').setData(this.currentTrack);
-          if (this.currentMarker) await this.currentMarker.remove();
-          this.currentMarker = await this.createMarker('Current', 'Current');
-          if (!this.currentInitialMarker) await this.createMarker('Current', 'Initial');
-          // set map view
-          if (num == 5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
-        }
-      }, 100); // Check every 100ms, adjust as needed
-    });
-  }
-
-  async waitForSource2() {
     this.currentFeature.setGeometry(new LineString(
       this.currentTrack.features[0].geometry.coordinates
     ))
@@ -577,26 +347,6 @@ export class Tab1Page {
     // set map view
     if (num == 5 || num == 10 || num == 25 || num % 50 == 0) await this.setMapView(this.currentTrack);
   }  
-
-  // REMOVE LAYER AND MARKERS
-  async removeLayer(id: string) {
-    // remove layer and source
-    if (this.map.getLayer(id)) {
-      await this.map.removeLayer(id)
-      await this.map.removeSource(id)
-    }
-    // remove markers
-    if (id == '122') {
-      if (this.currentInitialMarker) await this.currentInitialMarker.remove();
-           if (this.currentFinalMarker) await this.currentFinalMarker.remove();
-      if (this.currentMarker) await this.currentMarker.remove();
-    }
-    else if (id == '123') {
-      if (this.archivedInitialMarker) await this.archivedInitialMarker.remove();
-      if (this.archivedFinalMarker) await this.archivedFinalMarker.remove();
-      this.previousTrack = undefined;
-    }
-  }
 
   // UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: CanvasRenderingContext2D | undefined, track: any, propertyName: keyof Data, xParam: string) {
@@ -690,15 +440,11 @@ export class Tab1Page {
     ctx.setLineDash([]);
   }
 
-  ///////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////
-
   // START TRACKING /////////////////////////////////
   async startTracking() {
     // initialize
     this.isTracking = true;
     this.currentTrack = undefined;
-    if (this.provider != 'OSM') await this.removeLayer('122')
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentAverageCorrSpeed = undefined;
@@ -733,9 +479,7 @@ export class Tab1Page {
     location.speed = location.speed * 3.6
     // initial point
     if (!this.currentTrack) {
-      console.log('go to first point')
       await this.firstPoint(location);
-      console.log('come from first point')
       return;
     }
     let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
@@ -778,10 +522,8 @@ export class Tab1Page {
     if (this.currentTrack.features[0].geometry.properties.data[num - 1].compSpeed < this.vMin) {
       this.stopped += (this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[num - 2].time)/1000
     }
-    console.log(this.stopped)
     var tim = await this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[0].time
     tim = tim / 1000
-    console.log(tim)
     this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
     console.log(this.currentAverageSpeed)
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
@@ -826,73 +568,31 @@ export class Tab1Page {
     await this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
-    if (this.provider != 'OSM') {
-      await this.addCurrentLayer();
-      this.currentInitialMarker = await this.createMarker('Current', 'Initial');
-    }
-    else {
-      this.currentInitialMarker.setGeometry(new Point(
-        this.currentTrack.features[0].geometry.coordinates[0]
-      ));
-      this.currentInitialMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'green' })
-        })
-      }))
-      let num = this.currentTrack.features[0].geometry.coordinates.length;
-      this.currentMarker.setGeometry(new Point(
-        this.currentTrack.features[0].geometry.coordinates[num-1]
-      ));
-      this.currentMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'blue' })
-        })
-      }))
-    }
+    this.currentInitialMarker.setGeometry(new Point(
+      this.currentTrack.features[0].geometry.coordinates[0]
+    ));
+    this.currentInitialMarker.setStyle(new Style({
+      image: new CircleStyle({
+        radius: 10,
+        fill: new Fill({ color: 'green' })
+      })
+    }))
+    let num = this.currentTrack.features[0].geometry.coordinates.length;
+    this.currentMarker.setGeometry(new Point(
+      this.currentTrack.features[0].geometry.coordinates[num-1]
+    ));
+    this.currentMarker.setStyle(new Style({
+      image: new CircleStyle({
+        radius: 10,
+        fill: new Fill({ color: 'blue' })
+      })
+    }))
   }
 
   // REMOVE PREVIOUS POINT ///////////////////////
   async removePrevious() {
     this.currentTrack.features[0].geometry.coordinates.pop();
     this.currentTrack.features[0].geometry.properties.data.pop();
-  }
-
-  // CREATE MARKER ///////////////////////////////////
-  async createMarker(which: string, where: string) {
-    var track: any
-    var num: number = 0;
-    var point: any;
-    var marker: any;
-    var color: string;
-    // track selection
-    if (which == 'Archived') {
-      track = this.archivedTrack?.features[0].geometry.coordinates;
-    }
-    else {
-      track = this.currentTrack.features[0].geometry.coordinates
-    }
-    num = track.length ?? 0
-    if (num == 0) return;
-    // point and color selection
-    if (where == 'Initial') {
-      point = [track[0][0], track[0][1]];
-      color = 'green'
-    }
-    else if (where == 'Current') {
-      point = [track[num - 1][0], track[num - 1][1]];
-      color = 'blue';
-    }
-    else {
-      point = [track[num - 1][0], track[num - 1][1]];
-      color = 'red';
-    }
-    var char: any = { color: color, width: '25px', height: '25px' }
-    // marker creation
-    if (this.provider == 'Tomtom') marker = new tt.Marker(char).setLngLat(point).addTo(this.map);
-    else marker = new mapboxgl.Marker(char).setLngLat(point).addTo(this.map);
-    return marker;
   }
 
   // ALTITUDE FILTER /////////////////////////////////
@@ -919,13 +619,10 @@ export class Tab1Page {
     this.show('save', 'none');
     this.show('trash', 'none');
     // new track: initialize all variables and plots
-    if (this.provider != 'OSM') this.removeLayer('122');
-    else {   
-      this.currentFeature.setStyle(undefined);
-      this.currentInitialMarker.setStyle(undefined);
-      this.currentFinalMarker.setStyle(undefined);
-    }
     this.currentTrack = undefined;
+    await this.currentFeature.setStyle(undefined);
+    await this.currentInitialMarker.setStyle(undefined);
+    await this.currentFinalMarker.setStyle(undefined);
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
@@ -940,19 +637,16 @@ export class Tab1Page {
     // red marker
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     if (num > 0) {
-      if (this.provider != 'OSM') this.currentFinalMarker = await this.createMarker('Current', 'Final')
-      else {
-        this.currentFinalMarker.setGeometry(new Point(
-          this.currentTrack.features[0].geometry.coordinates[num - 1]
-        ))
-        this.currentFinalMarker.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 10,
-            fill: new Fill({ color: 'red' })
-          })
-        }))
-        this.currentMarker.setStyle(undefined)
-      }
+      this.currentFinalMarker.setGeometry(new Point(
+        this.currentTrack.features[0].geometry.coordinates[num - 1]
+      ))
+      this.currentFinalMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'red' })
+        })
+      }))
+      this.currentMarker.setStyle(undefined)
     }
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
@@ -1105,4 +799,87 @@ export class Tab1Page {
     return track
   }
 
+  async createFeatures() {
+    // create features to hold current track and markers
+    this.currentFinalMarker = new Feature({ geometry: new Point([0, 40]) });
+    this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
+    if (this.currentTrack) {
+      let num = this.currentTrack.features[0].geometry.coordinates.length;
+      this.currentFeature = new Feature({ geometry: new LineString(this.currentTrack.features[0].geometry.coordinates) });
+      await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
+      this.currentInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
+      await this.currentInitialMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'green' })
+        })
+      }))
+      if (this.isTracking) {
+        this.currentMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
+        this.currentMarker.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 10,
+            fill: new Fill({ color: 'blue' })
+          })
+        }))
+      }
+      else {
+        this.currentFinalMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
+        this.currentFinalMarker.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 10,
+            fill: new Fill({ color: 'red' })
+          })
+        }))
+      }
+    }
+    else {
+      this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+      this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+    }
+    // create features to hold archived track and markers
+    if (this.archivedTrack) {
+      let num = this.archivedTrack.features[0].geometry.coordinates.length;
+      this.archivedFeature = new Feature({ geometry: new LineString(this.archivedTrack.features[0].geometry.coordinates) });
+      this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }));
+      this.archivedInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
+      this.archivedInitialMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'green' })
+        })
+      }))
+      this.archivedFinalMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) });
+      this.archivedFinalMarker.setStyle(new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({ color: 'red' })
+        })
+      }))
+    }
+    else {
+      this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+      this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+      this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
+    }
+  } 
+
 }
+
+/*
+  // CHANGE MAP STYLE AND TRACK COLOR //////////////////
+  async changeStyleColor() {
+  var preArchived = this.archivedColor;
+  this.archivedColor = await this.check(this.archivedColor, 'archivedColor')
+  var preCurrent = this.currentColor;
+  this.currentColor = await this.check(this.currentColor, 'currentColor')
+  var preStyle = this.mapStyle;
+  this.mapStyle = await this.check(this.mapStyle, 'style')
+  if (this.archivedColor == preArchived && this.currentColor == preCurrent && this.mapStyle == preStyle) return;
+  await this.removeLayer('122');
+  await this.removeLayer('123');
+  this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
+  await this.map.setStyle(this.style)
+  await this.styleReady();
+}
+*/

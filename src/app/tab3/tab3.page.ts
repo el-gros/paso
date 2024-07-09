@@ -29,9 +29,8 @@ export class Tab3Page {
   currentColor: string = 'orange'
   importedTrack: any;
   styleChecked: boolean = false;
-  providerChecked: boolean = false;
   archivedChecked: boolean = true;
-  provider: string = 'Tomtom' // Tomtom or Mapbox;
+  provider: string = 'Tomtom'; 
   archivedVis: string = 'visible';
   mapVisible: string = 'block';
   dataVisible: string = 'nome';
@@ -54,24 +53,6 @@ export class Tab3Page {
     else this.style = 'basic'
     await this.storage.set('style', this.style)
     this.goHome();
-  } 
-
-  // PROVIDER CHANGE ////////////////////////////
-/*
-  async providerChanged() {
-    if (this.providerChecked) this.provider = 'Mapbox';
-    else this.provider = 'Tomtom'
-    await this.storage.set('provider', this.provider)
-    this.goHome();
-  } 
-*/
-
-  // PROVIDER CHANGE ////////////////////////////
-  async comChanged() {
-    if (!this.comChecked) {
-      this.provider = 'OSM';
-      await this.storage.set('provider', this.provider)
-    }
   } 
 
   // CHANGE VISIBILITY OF ARCHIVED TRACK //////////////////////
@@ -130,14 +111,9 @@ export class Tab3Page {
   async ionViewWillEnter() {
     await this.storage.create();
     this.provider = await this.check(this.provider, 'provider') 
-    this.style = await this.check(this.style, 'style') 
     this.archivedVis = await this.check(this.archivedVis, 'archived') 
     this.archivedColor = await this.check(this.archivedColor, 'archivedColor') 
     this.currentColor = await this.check(this.currentColor, 'currentColor') 
-    if (this.provider == 'Mapbox') this.providerChecked = true;
-    else this.providerChecked = false;
-    if (this.style == 'satellite') this.styleChecked = true;
-    else this.styleChecked = false;    
     if (this.archivedVis == 'visible') this.archivedChecked = true;
     else this.archivedChecked = false;    
   }

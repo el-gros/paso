@@ -61,29 +61,6 @@ export class FunctionsService {
     return bounds;
   }
 
-  selectStyle(provider: string, type: string | null) {
-    var style: any
-    if (provider == 'Tomtom') {
-      if (type == 'basic') style = {
-        map: '2/basic_street-light',
-        poi: '2/poi_light',
-        trafficIncidents: '2/incidents_light',
-        trafficFlow: '2/flow_relative-light',
-      }
-      else style = {
-        map: '2/basic_street-satellite',
-        poi: '2/poi_light',
-        trafficIncidents: '2/incidents_light',
-        trafficFlow: '2/flow_relative-light',
-      }
-    }
-    else {
-      if (type == 'basic') style = 'mapbox://styles/mapbox/outdoors-v12'
-      else style = 'mapbox://styles/mapbox/satellite-v9'
-    }
-    return style;
-  }
-
   async filterSpeed(abb: any) {
     var num: number = abb.length;
     var start: number = Math.max(num - this.lag - 1, 0);
@@ -115,3 +92,28 @@ export class FunctionsService {
   }
 
 }
+
+/*
+  selectStyle(provider: string, type: string | null) {
+    var style: any
+    if (provider == 'Tomtom') {
+      if (type == 'basic') style = {
+        map: '2/basic_street-light',
+        poi: '2/poi_light',
+        trafficIncidents: '2/incidents_light',
+        trafficFlow: '2/flow_relative-light',
+      }
+      else style = {
+        map: '2/basic_street-satellite',
+        poi: '2/poi_light',
+        trafficIncidents: '2/incidents_light',
+        trafficFlow: '2/flow_relative-light',
+      }
+    }
+    else {
+      if (type == 'basic') style = 'mapbox://styles/mapbox/outdoors-v12'
+      else style = 'mapbox://styles/mapbox/satellite-v9'
+    }
+    return style;
+  }
+*/

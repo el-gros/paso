@@ -22,6 +22,7 @@ export class Tab2Page {
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
   info: string | undefined = undefined;
+  archived: string = '';
 
   constructor(
     private alertController: AlertController,
@@ -36,6 +37,8 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
+    this.archived = 'visible';
+    this.archived = await this.check(this.archived, 'archived')
     this.info = undefined;
     // retrieve tracks definition
     this.collection = await this.storage.get('collection');
@@ -259,6 +262,17 @@ export class Tab2Page {
     track = await this.storage.get(JSON.stringify(key));
     console.log(track)
     return track
+  }
+
+  // CHECK IN STORAGE //////////////////////////
+  async check(variable: any, key: string) {
+    try {
+      const result = await this.storage.get(key);
+      if (result !== null && result !== undefined) {
+        variable = result;
+      } else { }
+    } catch { }
+    return variable
   }
 
 }

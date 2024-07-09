@@ -55,7 +55,7 @@
       </div>
     </div>
     <div class = element>
-      <div *ngIf="archivedTrack" class="card">
+      <div *ngIf="archivedTrack && archived == 'visible'" class="card">
         ARCHIVED ROUTE<br>
         {{archivedTrack.features[0].properties.name}}<br>
         Distance: <ng-container *ngIf="archivedTrack.features[0].properties.totalDistance !== undefined">
@@ -77,7 +77,7 @@
       <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = element>
-      <h1 *ngIf="archivedTrack" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+      <h1 *ngIf="archivedTrack && archived == 'visible'" class = 'title'>ALTITUDE (m) vs distance (km)</h1>
       <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>  
   </swiper-slide>  
@@ -88,7 +88,7 @@
       <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = element>  
-      <h1 *ngIf="archivedTrack" class = 'title'>SPEED (km/h) vs time ({{archivedUnit}})</h1>
+      <h1 *ngIf="archivedTrack && archived == 'visible'" class = 'title'>SPEED (km/h) vs time ({{archivedUnit}})</h1>
       <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
   </swiper-slide> 
