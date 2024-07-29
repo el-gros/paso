@@ -51,7 +51,8 @@
         Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container><br>
         Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h</ng-container><br>
         Average speed: <ng-container *ngIf="currentAverageSpeed != undefined">{{currentAverageSpeed | number:'1.1-1'}} km/h</ng-container><br>
-        In-motion average speed: <ng-container *ngIf="currentAverageCorrSpeed != undefined">{{currentAverageCorrSpeed | number:'1.1-1'}} km/h</ng-container>
+        In-motion average speed: <ng-container *ngIf="currentAverageCorrSpeed != undefined">{{currentAverageCorrSpeed | number:'1.1-1'}} km/h</ng-container><br>
+        Correct way?  <ng-container *ngIf="onRouteColor != 'black'">{{onRouteColor}}</ng-container>
       </div>
     </div>
     <div class = element>

@@ -3,11 +3,7 @@
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, Injectable, OnInit } from '@angular/core';
-import { IonicModule, AlertController, Platform } from '@ionic/angular';
-//import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection, CapacitorSQLitePlugin,
-//capSQLiteUpgradeOptions, capSQLiteResult, capSQLiteValues } from '@capacitor-community/sqlite';
-//import { Http } from '@capacitor-community/http';
-import { SQLite, SQLiteObject } from '@awesome-cordova-plugins/sqlite/ngx';
+import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
@@ -15,12 +11,10 @@ import { Router } from '@angular/router';
 import { registerPlugin } from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
-import tt from '@tomtom-international/web-sdk-maps';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
-import mapboxgl from 'mapbox-gl';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -43,10 +37,8 @@ import XYZ from 'ol/source/XYZ';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
-import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
 
 useGeographic();
 
@@ -60,9 +52,7 @@ useGeographic();
   styleUrls: ['tab1.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule ],
-  providers: [DecimalPipe, DatePipe,
-    SQLite, AndroidPermissions
-  ],
+  providers: [DecimalPipe, DatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
   
@@ -104,45 +94,16 @@ export class Tab1Page {
   currentFeature: any; 
   isTracking: boolean = false;
   archived: string = 'visible';
-  //db: SQLiteDBConnection | undefined;
-  //sqlitePlugin!: CapacitorSQLitePlugin;
-  //sqliteConnection!: SQLiteConnection;
-  db!: SQLiteObject;
-  customLayer: any
+  threshDist: number = 0.00000016; // 0.0004 ** 2;
+  lastN: number = 0;
+  onRouteColor: string = 'black'
 
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-    private platform: Platform,
-    //private sqlite: SQLiteConnection,
-    private sqlite: SQLite,
-    private androidPermissions: AndroidPermissions
-  ) {  
-      this.platform.ready().then(() => {
-        this.checkPermissions().then(() => {
-          this.openDatabase().then(() => {
-            this.initializeMap();
-          });
-        });
-      });
-    }
-
-  async checkPermissions(): Promise<boolean> {
-    try {
-      const result = await this.androidPermissions.checkPermission(this.androidPermissions.PERMISSION.READ_EXTERNAL_STORAGE);
-      if (result.hasPermission) {
-        return true;
-      } else {
-        const requestResult = await this.androidPermissions.requestPermission(this.androidPermissions.PERMISSION.READ_EXTERNAL_STORAGE);
-        return requestResult.hasPermission;
-      }
-    } catch (e) {
-      console.error('Error checking permissions', e);
-      return false;
-    }
-  }
+  ) { }
 
   // ON INIT ////////////////////////////////
   async ngOnInit() {
@@ -157,8 +118,6 @@ export class Tab1Page {
     this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
-    // initialize database
-    // .......
     // on init archived map is always visible
     await this.storage.set('archived', 'visible');
     console.log('map shown')
@@ -170,96 +129,6 @@ export class Tab1Page {
     this.createFeatures();
     // plot map
     await this.createMap();
-  }
-
-  async offlineMap() {
-    this.map = new Map({
-      target: 'map',
-      layers: [this.customLayer],
-      view: new View({
-        center: [0, 0],
-        zoom: 2
-      }),
-      controls: defaultControls()
-    });
-  }
-
-  async verifyFilePath(): Promise<boolean> {
-    try {
-      const result = await Filesystem.stat({
-        path: 'spain.mbtiles',
-        directory: Directory.Documents
-      });
-      return !!result;
-    } catch (e) {
-      console.error('Error verifying file path', e);
-      return false;
-    }
-  }
-
-  async openDatabase() {
-    try {
-      const path = await this.getDatabasePath();
-      this.db = await this.sqlite.create({
-        name: path,
-        location: 'default',
-      });
-      console.log('Database opened successfully');
-    } catch (error) {
-      console.error('Error opening database', error);
-    }
-  }
-
-  async getDatabasePath(): Promise<string> {
-    const result = await Filesystem.getUri({
-      path: 'spain.mbtiles',
-      directory: Directory.Documents,
-    });
-    console.log(result.uri)
-    if (Capacitor.getPlatform() === 'android') {
-      return result.uri;
-    } else {
-      return result.uri.replace('file://', '');
-    }
-  }
-
-  fetchTile(z: number, x: number, y: number): Promise<ArrayBuffer> {
-    return new Promise((resolve, reject) => {
-      this.db.executeSql('SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?', [z, x, y])
-        .then(res => {
-          if (res.rows.length > 0) {
-            resolve(res.rows.item(0).tile_data);
-          } else {
-            reject('No tile found');
-          }
-        })
-        .catch(e => reject(e));
-    });
-  }
-
-  initializeMap() {
-    const customTileSource = new VectorTileSource({
-      format: new MVT(),
-      tileLoadFunction: (tile: any, url) => {
-        const [z, x, y] = url.split('/').map(Number);
-        this.fetchTile(z, x, y).then((tileData) => {
-          const blob = new Blob([tileData]);
-          tile.getFormat().readFeatures(blob).then((features: any) => {
-            tile.setFeatures(features);
-            tile.setProjection(tile.getProjection());
-          });
-        });
-      },
-      tileGrid: createXYZ({ maxZoom: 22 })
-    });
-
-    this.customLayer = new VectorTileLayer({
-      source: customTileSource,
-      style: new Style({
-        fill: new Fill({ color: 'rgba(255, 255, 255, 0.6)' }),
-        stroke: new Stroke({ color: '#319FD3', width: 1 }),
-      })
-    });
   }
 
   // CREATE CANVASES ////////////////////////
@@ -670,8 +539,17 @@ export class Tab1Page {
     console.log(this.currentAverageSpeed)
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
     this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
-    // ippdate canvas
-    if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    // update canvas and check route
+    if (num % 20 == 0) {
+      // check route
+      if (this.archivedTrack) {
+        this.onRouteColor = await this.onRoute() ?? 'black';
+        console.log(this.onRouteColor)
+      }
+      else this.onRouteColor = 'black'
+      // uppdate canvas
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    }
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -1006,12 +884,34 @@ export class Tab1Page {
     }
   } 
 
+  async onRoute() {
+    if (!this.currentTrack) return 'black';
+    if (!this.archivedTrack) return 'black';
+    const num: number = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    const num2: number = this.archivedTrack.features[0].geometry.coordinates.length ?? 0;
+    if (num == 0) return 'black';
+    if (num2 == 0) return 'black';
+    const point = this.currentTrack.features[0].geometry.coordinates[num - 1];
+    for (var i = this.lastN; i < num2; i++) {
+      let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
+      let dist = (Math.abs(point[0]-point2[0]))**2 + (Math.abs(point[1]-point2[1]))**2;
+      if (dist < this.threshDist) {
+        this.lastN = i;
+        return 'green'
+      }
+    } 
+    for (var i = this.lastN; i >= 0; i--) {
+      let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
+      let dist = (Math.abs(point[0]-point2[0]))**2 + (Math.abs(point[1]-point2[1]))**2;
+       if (dist < this.threshDist) {
+        this.lastN = i;
+        return 'orange';
+      }
+    } 
+    return 'red';
+  }
 }
 
-
-function defaultControls(): import("ol").Collection<import("ol/control").Control> | import("ol/control").Control[] | undefined {
-  throw new Error('Function not implemented.');
-}
 /*
   // CHANGE MAP STYLE AND TRACK COLOR //////////////////
   async changeStyleColor() {

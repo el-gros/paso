@@ -3,16 +3,16 @@ import { Data, Bounds, Track, TrackDefinition  } from 'src/globald';
 import { Injectable } from '@angular/core';
 //import { Storage } from '@ionic/storage-angular';
 
-
 @Injectable({
   providedIn: 'root'
 })
+
 export class FunctionsService {
 
   lag: number = global.lag; // 8
 
   constructor(
-//    private storage: Storage,
+
   ) { }
 
   async computeDistance(lon1: number, lat1: number, lon2: number, lat2: number) {
