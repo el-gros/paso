@@ -40,27 +40,6 @@ export class FunctionsService {
     return value.toString().padStart(2, '0');
   }
 
-  gridValue(dx: number) {
-    const nx = Math.floor(Math.log10(dx));
-    const x = dx / (10 ** nx);
-    if (x < 2.5) return 0.5 * (10 ** nx);
-    else if (x < 5) return 10 ** nx;
-    else return 2 * (10 ** nx);
-  }
-
-  async computeMinMaxProperty(data: Data[], propertyName: keyof Data) {
-    var bounds: Bounds = {
-      min: Number.POSITIVE_INFINITY,
-      max: Number.NEGATIVE_INFINITY
-    }
-    for (const datum of data) {
-      const value = datum[propertyName];
-      if (value < bounds.min) bounds.min = value;
-      if (value > bounds.max) bounds.max = value;
-    }
-    return bounds;
-  }
-
   async filterSpeed(abb: any) {
     var num: number = abb.length;
     var start: number = Math.max(num - this.lag - 1, 0);
