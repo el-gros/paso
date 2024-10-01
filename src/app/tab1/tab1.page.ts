@@ -344,9 +344,8 @@ export class Tab1Page {
   }
 
   // ON BOTTON CLICK... //////////////////////////////
-  async buttonClick(option: string) {
-    if (option == 'settings') this.router.navigate(['tab3']);
-    else if (option == 'list') this.router.navigate(['tab2']);
+  async gotoPage(option: string) {
+    this.router.navigate([option]);
   }
 
   // GO TO MAP ////////////////////////////
