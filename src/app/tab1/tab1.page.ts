@@ -32,13 +32,16 @@ import { useGeographic } from 'ol/proj.js';
 import Polyline from 'ol/format/Polyline.js';
 import { Source } from 'ol/source';
 import { Zoom, ScaleLine, Rotate } from 'ol/control'
-import { applyStyle, MapboxVectorLayer } from 'ol-mapbox-style';
+//import { applyStyle, MapboxVectorLayer } from 'ol-mapbox-style';
 import XYZ from 'ol/source/XYZ';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
 import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
+import { App } from '@capacitor/app';
+import { Platform } from '@ionic/angular';
+import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 useGeographic();
 
@@ -52,11 +55,12 @@ useGeographic();
   styleUrls: ['tab1.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule ],
-  providers: [DecimalPipe, DatePipe],
+  providers: [DecimalPipe, DatePipe, BackgroundMode],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
   
 export class Tab1Page {
+
   watcherId: any = 0;
   currentTrack: any;
   archivedTrack: any;
@@ -75,12 +79,10 @@ export class Tab1Page {
   archivedInitialMarker: any | undefined = undefined;
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
-  lag: number = global.lag; // 8
+  lag: number = 8; // 8
   distanceFilter: number = 5; // 5
   filtered: number = -1;
   style: any;
-  provider: string = 'OSM' // Tomtom, Mapbox or OSM;
-  mapStyle: string = 'basic';
   currentColor: string = 'orange';
   archivedColor: string = 'green';
   stopped: any = 0;
@@ -96,15 +98,31 @@ export class Tab1Page {
   archived: string = 'visible';
   threshDist: number = 0.00000016; // 0.0004 ** 2;
   lastN: number = 0;
-  onRouteColor: string = 'black'
+  onRouteColor: string = 'black';
 
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-  ) { }
+    private platform: Platform,
+    private backgroundMode: BackgroundMode
+  ) {
+    this.platform.ready().then(() => {
+      if (this.platform.is('capacitor')) {
+        this.enableBackgroundMode();
+      }
+    });
+  }
 
+  enableBackgroundMode() {
+    this.backgroundMode.enable();
+    this.backgroundMode.on('activate').subscribe(() => {
+      console.log('Background mode activated');
+      // You can do background tasks here.
+    });
+  }
+  
   // ON INIT ////////////////////////////////
   async ngOnInit() {
     // create storage 
@@ -120,9 +138,6 @@ export class Tab1Page {
     this.show('databutton', 'block');
     // on init archived map is always visible
     await this.storage.set('archived', 'visible');
-    console.log('map shown')
-    // map provider
-    this.provider = await this.check(this.provider, 'provider')
     // create canvas
     await this.createCanvas();
     // plot map
@@ -131,8 +146,6 @@ export class Tab1Page {
 
   // ION VIEW DID ENTER
   async ionViewDidEnter() {
-    // change map provider
-    await this.changeMapProvider();
     // change color for current and archived tracks
     await this.changeColor();
     // check whether or not archived track shall be visible
@@ -161,34 +174,19 @@ export class Tab1Page {
     await this.setMapView(this.archivedTrack);
   }
 
-  // CHANGE MAP PROVIDER //////////////////////////////
-  async changeMapProvider() {
-    var preProvider = this.provider;
-    this.provider = await this.check(this.provider, 'provider')
-    if (preProvider == this.provider) return;
-    // remove map
-    if (this.map) await this.map.setTarget(null);
-    this.map = null;
-    // plot map
-    await this.displayMap();
-    // update canvas
-    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-  }
-
   // DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
-    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // no map
     if (!this.map) return;
+    // number of points
+    let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // no points enough
     if (num < 2) return;
-    // update
+    // set line, marker and style
     this.currentFeature.setGeometry(new LineString(
       this.currentTrack.features[0].geometry.coordinates
     ))
     this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
-    num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     this.currentMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num - 1]
     ))
@@ -229,6 +227,7 @@ export class Tab1Page {
 
   // REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
+    // show / hide elements
     this.show('start', 'block');
     this.show('stop', 'none');
     this.show('save', 'none');
@@ -346,28 +345,33 @@ export class Tab1Page {
 
   // ON BOTTON CLICK... //////////////////////////////
   async buttonClick(option: string) {
-    if (option == 'play') await this.startTracking();
-    else if (option == 'stop') await this.stopTracking();
-    else if (option == 'save') await this.setTrackDetails();
-    else if (option == 'trash') await this.removeTrack();
-    else if (option == 'map') {
-      this.show('map', 'block');
-      this.show('data', 'none');
-      this.show('mapbutton', 'none');
-      this.show('databutton', 'block');
-    }
-    else if (option == 'data') {
-      this.show('map', 'none');
-      this.show('data', 'block');
-      this.show('mapbutton', 'block');
-      this.show('databutton', 'none');
-    }
-    else if (option == 'settings') this.router.navigate(['tab3']);
+    if (option == 'settings') this.router.navigate(['tab3']);
     else if (option == 'list') this.router.navigate(['tab2']);
   }
 
+  // GO TO MAP ////////////////////////////
+  async gotoMap() {
+    this.show('map', 'block');
+    this.show('data', 'none');
+    this.show('mapbutton', 'none');
+    this.show('databutton', 'block');
+    // center map after 100 ms...
+    setTimeout(async () => {
+      if (this.currentTrack) await this.setMapView(this.currentTrack);
+      else { if (this.archivedTrack) await this.setMapView(this.archivedTrack); }
+    }, 1);
+  }
+
+  // GO TO DATA ////////////////////////////
+  async gotoData() {
+    this.show('map', 'none');
+    this.show('data', 'block');
+    this.show('mapbutton', 'block');
+    this.show('databutton', 'none');
+  }
+
   /////////////////////////////////////////////////////
-  ///////////////////// GUILD GEOJSON /////////////////
+  ///////////////////// BUILD GEOJSON /////////////////
   /////////////////////////////////////////////////////
 
   // 1. buildGeoJson()
@@ -575,6 +579,14 @@ export class Tab1Page {
       minLng = Math.min(minLng, point[0]);
       maxLng = Math.max(maxLng, point[0]);
     });
+    // set a minimum area
+    const minVal = 0.002;
+    if ((maxLng - minLng < minVal) && (maxLng - minLng < minVal)) {
+      minLng = 0.5*(minLng + maxLng - minVal);
+      maxLng = minLng + minVal; 
+      minLat = 0.5*(minLat + maxLat - minVal);
+      maxLat = minLat + minVal;
+    }
     // map view
     var extent = [minLng, minLat, maxLng, maxLat];
     // map view
@@ -774,7 +786,10 @@ export class Tab1Page {
     // Create the map layer
     var olLayer: any;
     var url: string;
-    if (this.provider == 'OSM') olLayer = new TileLayer({ source: new OSM() })
+    olLayer = new TileLayer({ source: new OSM() })
+    
+    /*
+    if (this.provider == 'OSM') 
     else if (this.provider == 'Mapbox') {
       url = 'mapbox://styles/mapbox/outdoors-v12'
       var accessToken = "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw"
@@ -791,7 +806,8 @@ export class Tab1Page {
           attributions: '© TomTom',
         }),
       })
-    }  
+    }
+    */    
     // Create the map view
     var view = new View({
       center: [1, 41.5],
@@ -970,20 +986,3 @@ export class Tab1Page {
 
 }
 
-/*
-  // CHANGE MAP STYLE AND TRACK COLOR //////////////////
-  async changeStyleColor() {
-  var preArchived = this.archivedColor;
-  this.archivedColor = await this.check(this.archivedColor, 'archivedColor')
-  var preCurrent = this.currentColor;
-  this.currentColor = await this.check(this.currentColor, 'currentColor')
-  var preStyle = this.mapStyle;
-  this.mapStyle = await this.check(this.mapStyle, 'style')
-  if (this.archivedColor == preArchived && this.currentColor == preCurrent && this.mapStyle == preStyle) return;
-  await this.removeLayer('122');
-  await this.removeLayer('123');
-  this.style = await this.fs.selectStyle(this.provider, this.mapStyle)
-  await this.map.setStyle(this.style)
-  await this.styleReady();
-}
-*/

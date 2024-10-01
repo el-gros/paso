@@ -7,48 +7,19 @@
     </ion-fab-button>  
   </ion-fab>
 
-  <!-- map provider -->
   <ion-grid>
-    <ion-row class="centered-content">
-      <ion-label>
-        <h2 class="toggle-title">Map provider</h2>
-      </ion-label>
-    </ion-row>
-      <ion-list class="centered-content">
-        <ion-radio-group [(ngModel)]="provider" (ionChange)="onProviderChange($event)">
-        <ion-row>
-          <ion-item>
-            <ion-label>Tomtom</ion-label>
-            <ion-radio slot="start" value="Tomtom"></ion-radio>
-          </ion-item>
-          <ion-item>
-            <ion-label>Mapbox</ion-label>
-            <ion-radio slot="start" value="Mapbox"></ion-radio>
-          </ion-item>
-          <ion-item>
-            <ion-label>OSM</ion-label>
-            <ion-radio slot="start" value="OSM"></ion-radio>
-          </ion-item>
-        </ion-row>
-        </ion-radio-group>
-      </ion-list>
-
     <!-- archived track -->
     <ion-row class="centered-content">
-      <ion-label>
-        <h2 class="toggle-title">Archived track</h2>
-      </ion-label>
     </ion-row>
     <ion-row>
       <div class="toggle-container">
-        <ion-col size = 4 class="centered-content">
-          <span class="label_a">Invisible</span>
+        <ion-col size = 9 class="centered-content">
+          <ion-label>
+            <h2 class="toggle-title">Archived track</h2>
+          </ion-label>
         </ion-col>
-        <ion-col size = 4 class="centered-content">
+        <ion-col size = 3 class="centered-content">
           <ion-toggle [(ngModel)]="archivedChecked" (ionChange)="archivedChanged()"></ion-toggle>
-        </ion-col>
-        <ion-col size = 4 class="centered-content">
-          <span class="label_b">Visible</span>
         </ion-col>
       </div>
     </ion-row>
