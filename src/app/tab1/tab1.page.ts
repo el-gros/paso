@@ -41,7 +41,6 @@ import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
 import { App } from '@capacitor/app';
 import { Platform } from '@ionic/angular';
-import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 useGeographic();
 
@@ -55,7 +54,7 @@ useGeographic();
   styleUrls: ['tab1.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule ],
-  providers: [DecimalPipe, DatePipe, BackgroundMode],
+  providers: [DecimalPipe, DatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
   
@@ -64,7 +63,6 @@ export class Tab1Page {
   watcherId: any = 0;
   currentTrack: any;
   archivedTrack: any;
-  previousTrack: Track | undefined;
   vMax: number = 400;
   currentCtx: CanvasRenderingContext2D[] = [];
   archivedCtx: CanvasRenderingContext2D[] = [];
@@ -80,9 +78,8 @@ export class Tab1Page {
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = 8; // 8
-  distanceFilter: number = 5; // 5
+  distanceFilter: number = .05; // 5
   filtered: number = -1;
-  style: any;
   currentColor: string = 'orange';
   archivedColor: string = 'green';
   stopped: any = 0;
@@ -99,6 +96,8 @@ export class Tab1Page {
   threshDist: number = 0.00000016; // 0.0004 ** 2;
   lastN: number = 0;
   onRouteColor: string = 'black';
+  archivedCanvasVisible: boolean = false;
+  currentCanvasVisible: boolean = false;
 
   constructor(
     public fs: FunctionsService,
@@ -106,23 +105,8 @@ export class Tab1Page {
     private router: Router,
     public storage: Storage,
     private platform: Platform,
-    private backgroundMode: BackgroundMode
-  ) {
-    this.platform.ready().then(() => {
-      if (this.platform.is('capacitor')) {
-        this.enableBackgroundMode();
-      }
-    });
-  }
+  ) { }
 
-  enableBackgroundMode() {
-    this.backgroundMode.enable();
-    this.backgroundMode.on('activate').subscribe(() => {
-      console.log('Background mode activated');
-      // You can do background tasks here.
-    });
-  }
-  
   // ON INIT ////////////////////////////////
   async ngOnInit() {
     // create storage 
@@ -141,13 +125,19 @@ export class Tab1Page {
     // create canvas
     await this.createCanvas();
     // plot map
-    await this.displayMap();
+    await this.createFeatures();
+    await this.createMap();
   }
 
   // ION VIEW DID ENTER
   async ionViewDidEnter() {
     // change color for current and archived tracks
     await this.changeColor();
+    // center map and update canvas 
+    if (this.currentTrack) {
+      await this.setMapView(this.currentTrack);
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    }
     // check whether or not archived track shall be visible
     this.archived = await this.check(this.archived, 'archived')
     // in case archived track shall be invisible
@@ -155,23 +145,20 @@ export class Tab1Page {
       await this.archivedFeature.setStyle(undefined);
       await this.archivedInitialMarker.setStyle(undefined);
       await this.archivedFinalMarker.setStyle(undefined);
-      for (var i in this.properties) {
-        this.archivedCtx[i].setTransform(1, 0, 0, 1, 0, 0);
-        this.archivedCtx[i].clearRect(0, 0, this.canvasNum, this.canvasNum);
-      }
+      this.show('ac0','none');
+      this.show('ac1','none');
       return;
     }  
     // retrieve archived track
     this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
     // if there is not archived track or it will be invisible.. return 
     if (!this.archivedTrack) return;
-    if (this.previousTrack == this.archivedTrack) return;
     // update canvas
     this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // display track on map
     await this.displayArchivedTrack();
-    // adapt view
-    await this.setMapView(this.archivedTrack);
+    // center map
+    if (!(this.currentTrack) && (this.archivedTrack)) await this.setMapView(this.archivedTrack); 
   }
 
   // DISPLAY CURRENT TRACK
@@ -196,9 +183,14 @@ export class Tab1Page {
 
   // START TRACKING /////////////////////////////////
   async startTracking() {
+    // if there was a track, remove it
+    this.currentTrack = undefined;
+    await this.currentFeature.setStyle(undefined);
+    await this.currentInitialMarker.setStyle(undefined);
+    await this.currentFinalMarker.setStyle(undefined);
+    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
     // initialize
     this.isTracking = true;
-    this.currentTrack = undefined;
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentAverageCorrSpeed = undefined;
@@ -276,6 +268,7 @@ export class Tab1Page {
 
   // SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
+    console.log('set track details')
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: 'Track Details',
@@ -343,8 +336,9 @@ export class Tab1Page {
     this.show('trash', 'block');
   }
 
-  // ON BOTTON CLICK... //////////////////////////////
+  // GO TO PAGE ... //////////////////////////////
   async gotoPage(option: string) {
+    console.log(option)
     this.router.navigate([option]);
   }
 
@@ -354,11 +348,9 @@ export class Tab1Page {
     this.show('data', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
-    // center map after 100 ms...
-    setTimeout(async () => {
-      if (this.currentTrack) await this.setMapView(this.currentTrack);
-      else { if (this.archivedTrack) await this.setMapView(this.archivedTrack); }
-    }, 1);
+    // center map
+    if (this.currentTrack) await this.setMapView(this.currentTrack);
+    else { if (this.archivedTrack) await this.setMapView(this.archivedTrack); }
   }
 
   // GO TO DATA ////////////////////////////
@@ -367,6 +359,10 @@ export class Tab1Page {
     this.show('data', 'block');
     this.show('mapbutton', 'block');
     this.show('databutton', 'none');
+    // update canvas
+    setTimeout(async () => {
+      if (this.currentTrack) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    },200)  
   }
 
   /////////////////////////////////////////////////////
@@ -433,7 +429,6 @@ export class Tab1Page {
     var tim = await this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[0].time
     tim = tim / 1000
     this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
-    console.log(this.currentAverageSpeed)
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
     this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
     // update canvas and check route
@@ -441,7 +436,6 @@ export class Tab1Page {
       // check route
       if (this.archivedTrack) {
         this.onRouteColor = await this.onRoute() ?? 'black';
-        console.log(this.onRouteColor)
       }
       else this.onRouteColor = 'black'
     }
@@ -586,14 +580,16 @@ export class Tab1Page {
       minLat = 0.5*(minLat + maxLat - minVal);
       maxLat = minLat + minVal;
     }
-    // map view
+    // map extent
     var extent = [minLng, minLat, maxLng, maxLat];
     // map view
-    this.map.getView().fit(extent, {
-      size: this.map.getSize(),
-      padding: [50, 50, 50, 50],
-      duration: 1000  // Optional: animation duration in milliseconds
-    });
+    setTimeout(() => {
+      this.map.getView().fit(extent, {
+        size: this.map.getSize(),
+        padding: [50, 50, 50, 50],
+        duration: 1000  // Optional: animation duration in milliseconds
+      }, 100);
+    })
   }
   
   // ALTITUDE FILTER /////////////////////////////////
@@ -701,77 +697,17 @@ export class Tab1Page {
   ///////////////////// DISPLAY MAP ///////////////////
   /////////////////////////////////////////////////////
 
-  // 1. displayMap()
-
-  async displayMap() {
-    await this.createFeatures();
-    await this.createMap();
-  }
-
   // CREATE FEATURES /////////////////////////////
   async createFeatures() {
     // create features to hold current track and markers
     this.currentFinalMarker = new Feature({ geometry: new Point([0, 40]) });
     this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
-    if (this.currentTrack) {
-      let num = this.currentTrack.features[0].geometry.coordinates.length;
-      this.currentFeature = new Feature({ geometry: new LineString(this.currentTrack.features[0].geometry.coordinates) });
-      await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
-      this.currentInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
-      await this.currentInitialMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'green' })
-        })
-      }))
-      if (this.isTracking) {
-        this.currentMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
-        this.currentMarker.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 10,
-            fill: new Fill({ color: 'blue' })
-          })
-        }))
-      }
-      else {
-        this.currentFinalMarker.setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]));
-        this.currentFinalMarker.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 10,
-            fill: new Fill({ color: 'red' })
-          })
-        }))
-      }
-    }
-    else {
-      this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-      this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
-    }
+    this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+    this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
     // create features to hold archived track and markers
-    if (this.archivedTrack) {
-      let num = this.archivedTrack.features[0].geometry.coordinates.length;
-      this.archivedFeature = new Feature({ geometry: new LineString(this.archivedTrack.features[0].geometry.coordinates) });
-      this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }));
-      this.archivedInitialMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[0]) });
-      this.archivedInitialMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'green' })
-        })
-      }))
-      this.archivedFinalMarker = new Feature({ geometry: new Point(this.currentTrack.features[0].geometry.coordinates[num - 1]) });
-      this.archivedFinalMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'red' })
-        })
-      }))
-    }
-    else {
-      this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-      this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
-      this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
-    }
+    this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+    this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+    this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
   } 
 
   // CREATE MAP /////////////////////////////
@@ -784,29 +720,7 @@ export class Tab1Page {
     var archivedLayer = new VectorLayer({source: asource});
     // Create the map layer
     var olLayer: any;
-    var url: string;
     olLayer = new TileLayer({ source: new OSM() })
-    
-    /*
-    if (this.provider == 'OSM') 
-    else if (this.provider == 'Mapbox') {
-      url = 'mapbox://styles/mapbox/outdoors-v12'
-      var accessToken = "pk.eyJ1IjoiZWxncm9zIiwiYSI6ImNsdnUzNzh6MzAwbjgyanBqOGN6b3dydmQifQ.blr7ueZqkjw9LbIT5lhKiw"
-      olLayer = new MapboxVectorLayer({
-        styleUrl: url,
-        accessToken: accessToken,
-      })
-    }
-    else if (this.provider == 'Tomtom') {
-      url = 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=YHmhpHkBbjy4n85FVVEMHBh0bpDjyLPp'
-      olLayer = new TileLayer({
-        source: new XYZ({
-          url: url,
-          attributions: '© TomTom',
-        }),
-      })
-    }
-    */    
     // Create the map view
     var view = new View({
       center: [1, 41.5],
@@ -837,7 +751,12 @@ export class Tab1Page {
   async createCanvas() {
     var currentCanvas: any;
     var archivedCanvas: any;
-    //    this.canvasNum = window.innerWidth;
+    // show canvas
+    this.show('cc0','block');
+    this.show('cc1','block');
+    this.show('ac0','block');
+    this.show('ac1','block');
+    // loop on canvas types
     for (var i in this.properties) {
       // get canvas to plot current track and define their height and width
       currentCanvas = document.getElementById('currentCanvas' + i) as HTMLCanvasElement;
@@ -853,9 +772,23 @@ export class Tab1Page {
     }
     // define canvasNum as height and width
     this.canvasNum = window.innerWidth;
+    // hide canvas
+    this.show('cc0','none');
+    this.show('cc1','none');
+    this.show('ac0','none');
+    this.show('ac1','none');
   }
  
   async updateAllCanvas(context: any, track: any) {
+    // hide canvas
+    console.log('canvasupdate', track)
+    if (track == this.currentTrack) {
+      this.show('cc0','none');
+      this.show('cc1','none'); }
+    else if (track == this.archivedTrack) {
+      this.show('ac0','none');
+      this.show('ac1','none');
+    }
     var tUnit: string = '';
     if (!context) return tUnit
     for (var i in this.properties) {
@@ -867,11 +800,21 @@ export class Tab1Page {
 
   // UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: CanvasRenderingContext2D | undefined, track: any, propertyName: keyof Data, xParam: string) {
+    console.log('canvasupdate222', track)
     var tUnit: string = ''
     if (!ctx) return tUnit;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return tUnit;
+    // show canvas
+    console.log('canvasupdate333', track)
+    if (track == this.currentTrack) {
+      this.show('cc0','block');
+      this.show('cc1','block'); }
+    else if (track == this.archivedTrack) {
+      this.show('ac0','block');
+      this.show('ac1','block');
+    }
     var num = await track.features[0].geometry.properties.data.length ?? 0;
     // time units
     var xDiv: number = 1; 

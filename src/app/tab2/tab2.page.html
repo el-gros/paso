@@ -54,7 +54,7 @@
         </ion-button>
       </ion-col>
       <ion-col size="4">
-        <ion-button [ngClass]="(numChecked != 1 || archived == 'invisible') ? 'greenDisabled' : 'greenEnabled'" (click)="displayTrack()"
+        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="displayTrack()"
           expand="block" [disabled]='(numChecked != 1)'>
           <div>DISPLAY<br>TRACK</div>
         </ion-button>
