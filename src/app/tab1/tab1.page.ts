@@ -2,7 +2,7 @@
 
 import { Location, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
-import { Component, Injectable, OnInit } from '@angular/core';
+import { Component, NgZone, Injectable, OnInit } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
@@ -39,8 +39,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
-import { App } from '@capacitor/app';
-import { Platform } from '@ionic/angular';
+import { Dialog } from '@capacitor/dialog';
 
 useGeographic();
 
@@ -78,7 +77,7 @@ export class Tab1Page {
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = 8; // 8
-  distanceFilter: number = .05; // 5
+  distanceFilter: number = .05; // .05 / 5
   filtered: number = -1;
   currentColor: string = 'orange';
   archivedColor: string = 'green';
@@ -91,20 +90,22 @@ export class Tab1Page {
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
   currentFeature: any; 
-  isTracking: boolean = false;
+  // isTracking: boolean = false;
   archived: string = 'visible';
   threshDist: number = 0.00000016; // 0.0004 ** 2;
   lastN: number = 0;
   onRouteColor: string = 'black';
   archivedCanvasVisible: boolean = false;
   currentCanvasVisible: boolean = false;
+  currentLayer: any;
+  archivedLayer: any;
 
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-    private platform: Platform,
+    private zone: NgZone
   ) { }
 
   // ON INIT ////////////////////////////////
@@ -124,7 +125,7 @@ export class Tab1Page {
     await this.storage.set('archived', 'visible');
     // create canvas
     await this.createCanvas();
-    // plot map
+    // create map
     await this.createFeatures();
     await this.createMap();
   }
@@ -133,32 +134,27 @@ export class Tab1Page {
   async ionViewDidEnter() {
     // change color for current and archived tracks
     await this.changeColor();
+    // retrieve archived track
+    this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
+    // update canvas and display track on map
+    if (this.archivedTrack) {
+      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      await this.displayArchivedTrack();
+    }
+    // Make archivedTrack visible or not
+    this.archived = await this.check(this.archived, 'archived');
+    if (this.archived == 'invisible') {
+      await this.archivedLayer.setVisible(false);
+      this.show('ac0','none');
+      this.show('ac1','none');
+    } 
+    else await this.archivedLayer.setVisible(true); 
     // center map and update canvas 
     if (this.currentTrack) {
       await this.setMapView(this.currentTrack);
       this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
     }
-    // check whether or not archived track shall be visible
-    this.archived = await this.check(this.archived, 'archived')
-    // in case archived track shall be invisible
-    if (this.archived == 'invisible') {
-      await this.archivedFeature.setStyle(undefined);
-      await this.archivedInitialMarker.setStyle(undefined);
-      await this.archivedFinalMarker.setStyle(undefined);
-      this.show('ac0','none');
-      this.show('ac1','none');
-      return;
-    }  
-    // retrieve archived track
-    this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
-    // if there is not archived track or it will be invisible.. return 
-    if (!this.archivedTrack) return;
-    // update canvas
-    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    // display track on map
-    await this.displayArchivedTrack();
-    // center map
-    if (!(this.currentTrack) && (this.archivedTrack)) await this.setMapView(this.archivedTrack); 
+    else if (this.archivedTrack) await this.setMapView(this.archivedTrack);
   }
 
   // DISPLAY CURRENT TRACK
@@ -185,12 +181,9 @@ export class Tab1Page {
   async startTracking() {
     // if there was a track, remove it
     this.currentTrack = undefined;
-    await this.currentFeature.setStyle(undefined);
-    await this.currentInitialMarker.setStyle(undefined);
-    await this.currentFinalMarker.setStyle(undefined);
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    await this.currentLayer.setVisible(false);
     // initialize
-    this.isTracking = true;
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentAverageCorrSpeed = undefined;
@@ -204,10 +197,13 @@ export class Tab1Page {
       distanceFilter: this.distanceFilter
     }, async (location: Location, error: Error) => {
       if (location) {
-        await this.buildGeoJson(location);
-        await this.displayCurrentTrack();
-        let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-        if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+        // Run calculations outside Angular's zone to prevent background issues
+        this.zone.runOutsideAngular(async () => {
+          await this.buildGeoJson(location);
+          await this.displayCurrentTrack();
+          let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+          if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+        });  
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide elements
@@ -226,20 +222,17 @@ export class Tab1Page {
     this.show('trash', 'none');
     // new track: initialize all variables and plots
     this.currentTrack = undefined;
-    await this.currentFeature.setStyle(undefined);
-    await this.currentInitialMarker.setStyle(undefined);
-    await this.currentFinalMarker.setStyle(undefined);
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    await this.currentLayer.setVisible(false);
   }
 
   // STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    // elements visibility
+    // show / hide elements
     this.show('start', 'none');
     this.show('stop', 'none');
     this.show('save', 'block');
     this.show('trash', 'block');
-    this.isTracking = false;
     // red marker
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     if (num > 0) {
@@ -257,18 +250,41 @@ export class Tab1Page {
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
     // filter remaining values
-    for (var i = this.filtered + 1; i < num; i++) {
-      await this.altitudeFilter(i)
-    };
+    for (var i = this.filtered + 1; i < num; i++) await this.altitudeFilter(i);
     // set map view
     await this.setMapView(this.currentTrack);
     // update canvas
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
+  // CONFIRM DELETION
+  async confirmDeletion() {
+    const alert = await this.alertController.create({
+      cssClass: 'alert yellowAlert',
+      header: 'Track deletion',
+      message: 'Are you sure you want to permanently delete the track?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'alert-cancel-button',
+          handler: () => {
+          }
+        },
+        {
+          text: 'Yes',
+          cssClass: 'alert-button',
+          handler: () => {
+            this.removeTrack();
+          }
+        }
+      ]
+    })
+    alert.present();
+  } 
+
   // SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
-    console.log('set track details')
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
       header: 'Track Details',
@@ -338,7 +354,6 @@ export class Tab1Page {
 
   // GO TO PAGE ... //////////////////////////////
   async gotoPage(option: string) {
-    console.log(option)
     this.router.navigate([option]);
   }
 
@@ -432,6 +447,7 @@ export class Tab1Page {
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
     this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
     // update canvas and check route
+    var previousColor = this.onRouteColor;
     if (num % 20 == 0) {
       // check route
       if (this.archivedTrack) {
@@ -439,6 +455,8 @@ export class Tab1Page {
       }
       else this.onRouteColor = 'black'
     }
+    if (previousColor == 'green' && this.onRouteColor == 'red' ) this.playBeep(0.5, 300);
+    if (previousColor == 'red' && this.onRouteColor == 'green' ) this.playBeep(0.2, 600);
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -477,30 +495,33 @@ export class Tab1Page {
     await this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
-    this.currentInitialMarker.setGeometry(new Point(
+    await this.currentInitialMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[0]
     ));
-    this.currentInitialMarker.setStyle(new Style({
+    await this.currentInitialMarker.setStyle(new Style({
       image: new CircleStyle({
         radius: 10,
         fill: new Fill({ color: 'green' })
       })
     }))
     let num = this.currentTrack.features[0].geometry.coordinates.length;
-    this.currentMarker.setGeometry(new Point(
+    await this.currentMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num-1]
     ));
-    this.currentMarker.setStyle(new Style({
+    await this.currentMarker.setStyle(new Style({
       image: new CircleStyle({
         radius: 10,
         fill: new Fill({ color: 'blue' })
       })
     }))
+    await this.currentFinalMarker.setStyle(undefined);
+    await this.currentLayer.setVisible(true);
   }
 
   async onRoute() {
     if (!this.currentTrack) return 'black';
     if (!this.archivedTrack) return 'black';
+    if (this.archived != 'visible') return 'bleck';
     const num: number = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     const num2: number = this.archivedTrack.features[0].geometry.coordinates.length ?? 0;
     if (num == 0) return 'black';
@@ -519,7 +540,7 @@ export class Tab1Page {
       let dist = (Math.abs(point[0]-point2[0]))**2 + (Math.abs(point[1]-point2[1]))**2;
        if (dist < this.threshDist) {
         this.lastN = i;
-        return 'orange';
+        return 'green'; // it is orange, that is, inverse direction 
       }
     } 
     return 'red';
@@ -615,7 +636,7 @@ export class Tab1Page {
     if (!this.map) return;
     // no archived track
     if (!this.archivedTrack) return;
-    // remove old stuff and create new layer 123 and markers
+    // remove old stuff and create new layer and markers
     this.archivedFeature.setGeometry(new LineString(
       this.archivedTrack.features[0].geometry.coordinates
     ))
@@ -642,12 +663,8 @@ export class Tab1Page {
   }
   
   async changeColor() {
-    var preArchived = this.archivedColor;
     this.archivedColor = await this.check(this.archivedColor, 'archivedColor')
-    var preCurrent = this.currentColor;
     this.currentColor = await this.check(this.currentColor, 'currentColor')
-    if (this.archivedColor == preArchived && this.currentColor == preCurrent) return;
-    // change of color for current feature
     if (this.currentFeature) await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 })}));
     if (this.archivedFeature) await this.archivedFeature.setStyle(new Style({stroke: new Stroke({ color: this.archivedColor, width: 5 })}));
   }
@@ -685,7 +702,6 @@ export class Tab1Page {
     await this.storage.set('collection', collection);
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
-    console.log(track)
     return track
   }
   
@@ -716,8 +732,8 @@ export class Tab1Page {
     var csource = new VectorSource({ features: [this.currentFeature, this.currentInitialMarker, this.currentMarker, this.currentFinalMarker] });
     var asource = new VectorSource({ features: [this.archivedFeature, this.archivedInitialMarker, this.archivedFinalMarker] });
     // layers for current and archived track
-    var currentLayer = new VectorLayer({source: csource});
-    var archivedLayer = new VectorLayer({source: asource});
+    this.currentLayer = new VectorLayer({source: csource});
+    this.archivedLayer = new VectorLayer({source: asource});
     // Create the map layer
     var olLayer: any;
     olLayer = new TileLayer({ source: new OSM() })
@@ -731,7 +747,7 @@ export class Tab1Page {
     // Create the map
     this.map = new Map({
       target: 'map',
-      layers: [olLayer, currentLayer, archivedLayer],
+      layers: [olLayer, this.currentLayer, this.archivedLayer],
       view: view,
       controls: controls
     });
@@ -781,7 +797,6 @@ export class Tab1Page {
  
   async updateAllCanvas(context: any, track: any) {
     // hide canvas
-    console.log('canvasupdate', track)
     if (track == this.currentTrack) {
       this.show('cc0','none');
       this.show('cc1','none'); }
@@ -800,14 +815,12 @@ export class Tab1Page {
 
   // UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: CanvasRenderingContext2D | undefined, track: any, propertyName: keyof Data, xParam: string) {
-    console.log('canvasupdate222', track)
     var tUnit: string = ''
     if (!ctx) return tUnit;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return tUnit;
     // show canvas
-    console.log('canvasupdate333', track)
     if (track == this.currentTrack) {
       this.show('cc0','block');
       this.show('cc1','block'); }
@@ -926,5 +939,14 @@ export class Tab1Page {
   /////////////////////////////////////////////////////
   /////////////////////////////////////////////////////
 
+  async playBeep(time: number, freq: number) {
+    const audioCtx = new (window.AudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime); // 440Hz beep
+    oscillator.connect(audioCtx.destination);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + time); 
+  }
 }
 

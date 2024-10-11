@@ -210,7 +210,7 @@ export class Tab2Page {
     console.log(track)
     var gpxText = await this.geoJsonToGpx(track.features[0])
     console.log(gpxText)
-    var file: string = track.features[0].properties.name.replaceAll(' ', '_') +'.gpx' ?? 'sample.gpx' 
+    var file: string = track.features[0].properties.name.replaceAll(' ', '_') +'.gpx' 
     try {
       // Write the file to the Data directory
       const result = await Filesystem.writeFile({
