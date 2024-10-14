@@ -12,7 +12,7 @@ import { registerPlugin } from "@capacitor/core";
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
 import Map from 'ol/Map';
@@ -40,6 +40,8 @@ import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
 import { Dialog } from '@capacitor/dialog';
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+import { App } from '@capacitor/app';
 
 useGeographic();
 
@@ -77,7 +79,7 @@ export class Tab1Page {
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
   lag: number = 8; // 8
-  distanceFilter: number = .05; // .05 / 5
+  distanceFilter: number = 5; // .05 / 5
   filtered: number = -1;
   currentColor: string = 'orange';
   archivedColor: string = 'green';
@@ -99,14 +101,35 @@ export class Tab1Page {
   currentCanvasVisible: boolean = false;
   currentLayer: any;
   archivedLayer: any;
+  foreground: boolean = true;
+  //lastForeground: boolean = true;
+  minX: number = Infinity;
+  maxX: number = -Infinity;
+  minY: number = Infinity;
+  maxY: number = -Infinity;
 
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
     public storage: Storage,
-    private zone: NgZone
-  ) { }
+    private zone: NgZone,
+    private cd: ChangeDetectorRef
+  ) {
+    this.listenToAppStateChanges();
+  }
+
+  listenToAppStateChanges() {
+    App.addListener('appStateChange', (state) => {
+      this.foreground = state.isActive;  // true if in foreground, false if in background
+      if (state.isActive && this.currentTrack) {
+        this.zone.runOutsideAngular(async () => {
+          await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+          await this.displayCurrentTrack();
+        });  
+      }
+    });
+  }
 
   // ON INIT ////////////////////////////////
   async ngOnInit() {
@@ -157,6 +180,22 @@ export class Tab1Page {
     else if (this.archivedTrack) await this.setMapView(this.archivedTrack);
   }
 
+  async computeExtremes() {
+    this.minX = Infinity;
+    this.minY = Infinity;
+    this.maxX = -Infinity;
+    this.maxY = -Infinity;
+    // Iterate over each element of the array
+    for (const [x, y] of this.archivedTrack.features[0].geometry.coordinates) {
+      // Check for the minimum and maximum of the first component (x)
+      if (x < this.minX) this.minX = x;
+      if (x > this.maxX) this.maxX = x;
+      // Check for the minimum and maximum of the second component (y)
+      if (y < this.minY) this.minY = y;
+      if (y > this.maxY) this.maxY = y;
+    }
+  } 
+
   // DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
     // no map
@@ -197,13 +236,27 @@ export class Tab1Page {
       distanceFilter: this.distanceFilter
     }, async (location: Location, error: Error) => {
       if (location) {
-        // Run calculations outside Angular's zone to prevent background issues
-        this.zone.runOutsideAngular(async () => {
-          await this.buildGeoJson(location);
-          await this.displayCurrentTrack();
+        await this.buildGeoJson(location);
+        if (this.foreground) {
+          // foreground
           let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
           if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-        });  
+          await this.displayCurrentTrack();
+          this.cd.detectChanges();
+        }
+        //else {
+        // background
+        //  await ForegroundService.startForegroundService({
+        //    title: 'Background Calculation',
+        //    body: 'Calculating in the background...',
+        //    id: 1,
+        //    smallIcon: "splash"
+        //  });
+//          this.zone.runOutsideAngular(async () => {
+        //  await this.buildGeoJson(location);
+        //  await ForegroundService.stopForegroundService();
+//          });  
+        //}
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide elements
@@ -446,17 +499,14 @@ export class Tab1Page {
     this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
     if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
     this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
-    // update canvas and check route
+    // check route
     var previousColor = this.onRouteColor;
-    if (num % 20 == 0) {
-      // check route
-      if (this.archivedTrack) {
-        this.onRouteColor = await this.onRoute() ?? 'black';
-      }
-      else this.onRouteColor = 'black'
+    if ((num % 10 == 0) && (this.archivedTrack)) {
+      this.onRouteColor = await this.onRoute() ?? 'black';
+      console.log(this.onRouteColor);
     }
-    if (previousColor == 'green' && this.onRouteColor == 'red' ) this.playBeep(0.5, 300);
-    if (previousColor == 'red' && this.onRouteColor == 'green' ) this.playBeep(0.2, 600);
+    if (previousColor == 'green' && this.onRouteColor == 'red' ) await this.playBeep(0.5, 250, 1);
+    if (previousColor == 'red' && this.onRouteColor == 'green' ) await this.playBeep(0.5, 900, 1);
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -519,30 +569,57 @@ export class Tab1Page {
   }
 
   async onRoute() {
+    // no current or archived track
     if (!this.currentTrack) return 'black';
     if (!this.archivedTrack) return 'black';
-    if (this.archived != 'visible') return 'bleck';
+    if (this.archived != 'visible') return 'black';
     const num: number = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     const num2: number = this.archivedTrack.features[0].geometry.coordinates.length ?? 0;
     if (num == 0) return 'black';
     if (num2 == 0) return 'black';
+    // definitions
+    const thres = 10;
+    const skip = 5;
+    const sq = Math.sqrt(this.threshDist);
+    var reduction = Math.min(Math.round(num2 / 1000),1); // reduction of archived track's length
+    // point to check
     const point = this.currentTrack.features[0].geometry.coordinates[num - 1];
-    for (var i = this.lastN; i < num2; i++) {
+    // is it out of the square? 
+    if (point[0] < this.minX - sq) return 'red';
+    if (point[0] > this.maxX + sq) return 'red';
+    if (point[1] < this.minY - sq) return 'red';
+    if (point[1] > this.maxY + sq) return 'red';
+    // go ahead
+    for (var i = this.lastN; i < num2; i+=reduction) {
       let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
       let dist = (Math.abs(point[0]-point2[0]))**2 + (Math.abs(point[1]-point2[1]))**2;
+      // match
       if (dist < this.threshDist) {
         this.lastN = i;
         return 'green'
       }
-    } 
-    for (var i = this.lastN; i >= 0; i--) {
+      // too far
+      if (dist > thres * this.threshDist) {
+        i += skip * (reduction - 1);
+        continue;
+      }
+    }
+    // go back 
+    for (var i = this.lastN; i >= 0; i-=reduction) {
       let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
       let dist = (Math.abs(point[0]-point2[0]))**2 + (Math.abs(point[1]-point2[1]))**2;
-       if (dist < this.threshDist) {
+      // match
+      if (dist < this.threshDist) {
         this.lastN = i;
         return 'green'; // it is orange, that is, inverse direction 
       }
+      // too far
+      if (dist > thres * this.threshDist) {
+        i -= skip * (reduction - 1);
+        continue;
+      }
     } 
+    // no match
     return 'red';
   }
 
@@ -702,7 +779,10 @@ export class Tab1Page {
     await this.storage.set('collection', collection);
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
-    return track
+    // compute extremes
+    if (this.archivedTrack) await this.computeExtremes()
+    // return  
+    return track;
   }
   
   /////////////////////////////////////////////////////
@@ -939,12 +1019,16 @@ export class Tab1Page {
   /////////////////////////////////////////////////////
   /////////////////////////////////////////////////////
 
-  async playBeep(time: number, freq: number) {
+  async playBeep(time: number, freq: number, volume: number) {
+    // remove next line
     const audioCtx = new (window.AudioContext)();
     const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();  // Create a gain node
     oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
     oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime); // 440Hz beep
-    oscillator.connect(audioCtx.destination);
+    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); // Range: 0 (silent) to 1 (full volume)
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + time); 
   }
