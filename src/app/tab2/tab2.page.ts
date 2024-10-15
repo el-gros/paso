@@ -23,6 +23,7 @@ export class Tab2Page {
   numChecked: number = 0;
   info: string | undefined = undefined;
   archived: string = '';
+  num: number = 0;
 
   constructor(
     private alertController: AlertController,
@@ -43,6 +44,7 @@ export class Tab2Page {
     // retrieve tracks definition
     this.collection = await this.storage.get('collection');
     if (!this.collection) this.collection = [];
+    this.num = this.collection.length;
     // uncheck all items
     for (var item of this.collection) item.isChecked = false;
     await this.storage.set('collection', this.collection);
@@ -273,6 +275,16 @@ export class Tab2Page {
       } else { }
     } catch { }
     return variable
+  }
+
+  async displayAllTracks() {
+    await this.storage.set('all', true);
+    this.collection = await this.storage.get('collection');
+    if (!this.collection) this.collection = [];
+    // uncheck all items
+    await this.uncheckAll();
+    await this.storage.set('collection', this.collection);
+    this.router.navigate(['tab1']);
   }
 
 }

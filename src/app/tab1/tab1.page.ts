@@ -25,7 +25,7 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import GeoJSON from 'ol/format/GeoJSON';
 import LineString from 'ol/geom/LineString';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { Circle as CircleStyle, Fill, Stroke, Icon, Style } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import { useGeographic } from 'ol/proj.js';
@@ -42,6 +42,9 @@ import { TileGrid, createXYZ } from 'ol/tilegrid';
 import { Dialog } from '@capacitor/dialog';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import { App } from '@capacitor/app';
+import { MultiLineString, MultiPoint } from 'ol/geom';
+import LayerRenderer from 'ol/renderer/Layer';
+
 
 useGeographic();
 
@@ -78,6 +81,7 @@ export class Tab1Page {
   archivedInitialMarker: any | undefined = undefined;
   archivedFinalMarker: any | undefined = undefined;
   currentMarker: any | undefined = undefined;
+  multiMarker: any | undefined = undefined;
   lag: number = 8; // 8
   distanceFilter: number = 5; // .05 / 5
   filtered: number = -1;
@@ -91,22 +95,25 @@ export class Tab1Page {
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
-  currentFeature: any; 
+  currentFeature: any;
+  multiFeature: any; 
   // isTracking: boolean = false;
   archived: string = 'visible';
-  threshDist: number = 0.00000016; // 0.0004 ** 2;
+  threshDist: number = 0.00000025; // 0.0005 ** 2;
   lastN: number = 0;
   onRouteColor: string = 'black';
   archivedCanvasVisible: boolean = false;
   currentCanvasVisible: boolean = false;
   currentLayer: any;
   archivedLayer: any;
+  multiLayer: any;
   foreground: boolean = true;
   //lastForeground: boolean = true;
   minX: number = Infinity;
   maxX: number = -Infinity;
   minY: number = Infinity;
   maxY: number = -Infinity;
+  multiPoint: any = [];        
 
   constructor(
     public fs: FunctionsService,
@@ -119,11 +126,14 @@ export class Tab1Page {
     this.listenToAppStateChanges();
   }
 
+  // LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   listenToAppStateChanges() {
     App.addListener('appStateChange', (state) => {
       this.foreground = state.isActive;  // true if in foreground, false if in background
+      // if app changes to foreground  
       if (state.isActive && this.currentTrack) {
         this.zone.runOutsideAngular(async () => {
+          // update canvas and display current track
           await this.updateAllCanvas(this.currentCtx, this.currentTrack);
           await this.displayCurrentTrack();
         });  
@@ -164,6 +174,22 @@ export class Tab1Page {
       this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
       await this.displayArchivedTrack();
     }
+    // display all tracks
+    var allVisible: boolean = false;
+    await this.multiLayer.setVisible(false);
+    allVisible = await this.check(allVisible, 'all');
+    console.log(allVisible)
+    if (allVisible) {
+      await this.displayAllTracks();
+      await this.multiLayer.setVisible(true);
+      this.archivedTrack = undefined;
+      await this.archivedLayer.setVisible(false);
+      this.show('ac0','none');
+      this.show('ac1','none');
+      this.archived = 'invisible';
+      await this.storage.set(this.archived,'archived');
+      await this.storage.set('all', false)
+    }
     // Make archivedTrack visible or not
     this.archived = await this.check(this.archived, 'archived');
     if (this.archived == 'invisible') {
@@ -180,7 +206,9 @@ export class Tab1Page {
     else if (this.archivedTrack) await this.setMapView(this.archivedTrack);
   }
 
+  // COMPUTE EXTREMES OF ARCHIVED TRACK
   async computeExtremes() {
+    // initiate variables
     this.minX = Infinity;
     this.minY = Infinity;
     this.maxX = -Infinity;
@@ -236,27 +264,15 @@ export class Tab1Page {
       distanceFilter: this.distanceFilter
     }, async (location: Location, error: Error) => {
       if (location) {
+        // build geojson always
         await this.buildGeoJson(location);
+        // in foreground update canvas and display current track
         if (this.foreground) {
-          // foreground
           let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
           if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
           await this.displayCurrentTrack();
           this.cd.detectChanges();
         }
-        //else {
-        // background
-        //  await ForegroundService.startForegroundService({
-        //    title: 'Background Calculation',
-        //    body: 'Calculating in the background...',
-        //    id: 1,
-        //    smallIcon: "splash"
-        //  });
-//          this.zone.runOutsideAngular(async () => {
-        //  await this.buildGeoJson(location);
-        //  await ForegroundService.stopForegroundService();
-//          });  
-        //}
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide elements
@@ -294,8 +310,7 @@ export class Tab1Page {
       ))
       this.currentFinalMarker.setStyle(new Style({
         image: new CircleStyle({
-          radius: 10,
-          fill: new Fill({ color: 'red' })
+          radius: 10, fill: new Fill({ color: 'red' })
         })
       }))
       this.currentMarker.setStyle(undefined)
@@ -550,8 +565,7 @@ export class Tab1Page {
     ));
     await this.currentInitialMarker.setStyle(new Style({
       image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: 'green' })
+        radius: 10, fill: new Fill({ color: 'green' })
       })
     }))
     let num = this.currentTrack.features[0].geometry.coordinates.length;
@@ -560,8 +574,7 @@ export class Tab1Page {
     ));
     await this.currentMarker.setStyle(new Style({
       image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: 'blue' })
+        radius: 10, fill: new Fill({ color: 'blue' })
       })
     }))
     await this.currentFinalMarker.setStyle(undefined);
@@ -581,7 +594,7 @@ export class Tab1Page {
     const thres = 10;
     const skip = 5;
     const sq = Math.sqrt(this.threshDist);
-    var reduction = Math.min(Math.round(num2 / 1000),1); // reduction of archived track's length
+    var reduction = Math.max(Math.round(num2 / 2000),1); // reduction of archived track's length
     // point to check
     const point = this.currentTrack.features[0].geometry.coordinates[num - 1];
     // is it out of the square? 
@@ -724,8 +737,7 @@ export class Tab1Page {
     ));
     this.archivedInitialMarker.setStyle(new Style({
       image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: 'green' })
+        radius: 10, fill: new Fill({ color: 'green' })
       })
     }))
     this.archivedFinalMarker.setGeometry(new Point(
@@ -733,8 +745,7 @@ export class Tab1Page {
     ));
     this.archivedFinalMarker.setStyle(new Style({
       image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: 'red' })
+        radius: 10, fill: new Fill({ color: 'red' })
       })
     }))
   }
@@ -800,6 +811,9 @@ export class Tab1Page {
     this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
     this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
     this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
+    // create features to hold multiple track and markers
+    this.multiFeature = new Feature({ geometry: new MultiLineString([[[0, 40], [0, 40]]]) });
+    this.multiMarker = new Feature({ geometry: new MultiPoint([0, 40]) });
     // create features to hold archived track and markers
     this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
     this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
@@ -808,12 +822,14 @@ export class Tab1Page {
 
   // CREATE MAP /////////////////////////////
   async createMap() {
-    // sources for current and archived tracks
+    // sources for current and archived tracks and multilines
     var csource = new VectorSource({ features: [this.currentFeature, this.currentInitialMarker, this.currentMarker, this.currentFinalMarker] });
     var asource = new VectorSource({ features: [this.archivedFeature, this.archivedInitialMarker, this.archivedFinalMarker] });
-    // layers for current and archived track
+    var msource = new VectorSource({ features: [this.multiFeature, this.multiMarker] });
+    // layers for current and archived track and multiple tracks
     this.currentLayer = new VectorLayer({source: csource});
     this.archivedLayer = new VectorLayer({source: asource});
+    this.multiLayer = new VectorLayer({source: msource});
     // Create the map layer
     var olLayer: any;
     olLayer = new TileLayer({ source: new OSM() })
@@ -827,9 +843,37 @@ export class Tab1Page {
     // Create the map
     this.map = new Map({
       target: 'map',
-      layers: [olLayer, this.currentLayer, this.archivedLayer],
+      layers: [olLayer, this.currentLayer, this.archivedLayer, this.multiLayer],
       view: view,
       controls: controls
+    });
+    this.map.on('click', (event: {
+      coordinate: any; pixel: any; 
+    }) => {
+      this.map.forEachFeatureAtPixel(event.pixel, async (feature: any, layer: any) => {
+        if (feature === this.multiMarker) {
+          const clickedCoordinate = await feature.getGeometry().getClosestPoint(event.coordinate);
+          const multiPointCoordinates = await feature.getGeometry().getCoordinates();
+          const index = await multiPointCoordinates.findIndex((coord: any[]) =>
+            coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
+          );
+          var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+          var key = collection[index].date;
+          this.archivedTrack = await this.storage.get(JSON.stringify(key));
+          if (this.archivedTrack) {
+            await this.computeExtremes()
+            this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+            await this.displayArchivedTrack();
+            await this.multiLayer.setVisible(false);
+            this.archived = 'visible';
+            await this.storage.set(this.archived,'archived');
+            await this.archivedLayer.setVisible(true);
+            this.show('ac0','block');
+            this.show('ac1','block');
+            await this.setMapView(this.archivedTrack);
+          }
+        }  
+      });        
     });
   }
 
@@ -1032,5 +1076,38 @@ export class Tab1Page {
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + time); 
   }
+
+  async displayAllTracks() {
+    var key: any;
+    var track: any;
+    var multiLine: any = [];
+    var multiPoint: any = [];        
+    // get collection
+    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    // find key
+    for (var item of collection) {
+      key = item.date;
+      track = await this.storage.get(JSON.stringify(key));
+      const coord: any = await track.features[0].geometry.coordinates
+      multiLine.push(coord);
+      multiPoint.push(coord[0]);
+    }
+    this.multiFeature.setGeometry(new MultiLineString(multiLine));
+    this.multiMarker.setGeometry(new MultiPoint(multiPoint));      
+    this.multiFeature.setStyle(new Style({ stroke: new Stroke({ color: 'black', width: 5 }) }));
+    this.multiMarker.setStyle(new Style({
+      /*
+      image: new Icon({
+        src: 'assets/icon.png',  // Path to the icon image
+        scale: 0.1,              // Adjust the icon size as needed
+        anchor: [0.5, 1]         // Set the anchor of the icon
+      })
+      */  
+      image: new CircleStyle({
+        radius: 10, fill: new Fill({ color: 'green' })
+      })
+    }))
+  }
+
 }
 

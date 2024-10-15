@@ -36,8 +36,14 @@
           <div>EXPORT<br>TRACK</div>
         </ion-button>
       </ion-col>
-      <ion-col size="8">
+      <ion-col size="4">
         {{info}}
+      </ion-col>
+      <ion-col size="4">
+        <ion-button [ngClass]="(num == 0) ? 'greenDisabled' : 'greenEnabled'" (click)="displayAllTracks()" expand="block"
+          [disabled]='(num == 0)'>
+          <div>DIISPLAY<br>ALL</div>
+        </ion-button>
       </ion-col>
     </ion-row>
     <ion-row>
