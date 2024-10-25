@@ -44,7 +44,7 @@ import { ForegroundService } from '@capawesome-team/capacitor-android-foreground
 import { App } from '@capacitor/app';
 import { MultiLineString, MultiPoint } from 'ol/geom';
 import LayerRenderer from 'ol/renderer/Layer';
-
+import { Geolocation } from '@capacitor/geolocation';
 
 useGeographic();
 
@@ -83,8 +83,10 @@ export class Tab1Page {
   currentMarker: any | undefined = undefined;
   multiMarker: any | undefined = undefined;
   lag: number = 8; // 8
-  distanceFilter: number = 5; // .05 / 5
-  filtered: number = -1;
+  distanceFilter: number =.05; // .05 / 5
+  altitudeFiltered: number = 0;
+  speedFiltered: number = 0;
+  averagedSpeed: number = 0;
   currentColor: string = 'orange';
   archivedColor: string = 'green';
   stopped: any = 0;
@@ -113,7 +115,8 @@ export class Tab1Page {
   maxX: number = -Infinity;
   minY: number = Infinity;
   maxY: number = -Infinity;
-  multiPoint: any = [];        
+  multiPoint: any = [];
+  allVisible: boolean = false;         
 
   constructor(
     public fs: FunctionsService,
@@ -170,51 +173,52 @@ export class Tab1Page {
     // retrieve archived track
     this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
     // update canvas and display track on map
-    if (this.archivedTrack) {
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-      await this.displayArchivedTrack();
-    }
+    if (this.archivedTrack) await this.showArchivedTrack();
     // display all tracks
-    var allVisible: boolean = false;
-    await this.multiLayer.setVisible(false);
-    allVisible = await this.check(allVisible, 'all');
-    console.log(allVisible)
-    if (allVisible) {
+    this.allVisible = false;
+    this.allVisible = await this.check(this.allVisible, 'all');
+    if (this.allVisible) {
       await this.displayAllTracks();
       await this.multiLayer.setVisible(true);
       this.archivedTrack = undefined;
-      await this.archivedLayer.setVisible(false);
-      this.show('ac0','none');
-      this.show('ac1','none');
       this.archived = 'invisible';
       await this.storage.set(this.archived,'archived');
       await this.storage.set('all', false)
     }
+    else await this.multiLayer.setVisible(false);
     // Make archivedTrack visible or not
     this.archived = await this.check(this.archived, 'archived');
-    if (this.archived == 'invisible') {
-      await this.archivedLayer.setVisible(false);
-      this.show('ac0','none');
-      this.show('ac1','none');
-    } 
-    else await this.archivedLayer.setVisible(true); 
+    if (this.archived == 'invisible') await this.hideArchivedTrack();  
+    else this.showArchivedTrack()
     // center map and update canvas 
+    if (this.allVisible) {
+      var currentPosition: any | undefined = await this.getCurrentPosition();
+      if (!currentPosition) currentPosition = [1, 41.5];
+      var view = new View({
+        center: currentPosition,
+        zoom: 8,
+      });
+      this.map.setView(view);
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);      
+      return;
+    }
     if (this.currentTrack) {
       await this.setMapView(this.currentTrack);
       this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      return;
     }
-    else if (this.archivedTrack) await this.setMapView(this.archivedTrack);
+    if (this.archivedTrack) await this.setMapView(this.archivedTrack);
   }
 
   // COMPUTE EXTREMES OF ARCHIVED TRACK
-  async computeExtremes() {
+  async computeExtremes(track: any) {
     // initiate variables
     this.minX = Infinity;
     this.minY = Infinity;
     this.maxX = -Infinity;
     this.maxY = -Infinity;
     // Iterate over each element of the array
-    for (const [x, y] of this.archivedTrack.features[0].geometry.coordinates) {
+    for (var [x, y] of track.features[0].geometry.coordinates) {
       // Check for the minimum and maximum of the first component (x)
       if (x < this.minX) this.minX = x;
       if (x > this.maxX) this.maxX = x;
@@ -236,7 +240,7 @@ export class Tab1Page {
     this.currentFeature.setGeometry(new LineString(
       this.currentTrack.features[0].geometry.coordinates
     ))
-    this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 }) }));
+    this.currentFeature.setStyle(this.drawPoint(this.currentColor));
     this.currentMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num - 1]
     ))
@@ -255,6 +259,9 @@ export class Tab1Page {
     this.currentAverageSpeed = undefined;
     this.currentAverageCorrSpeed = undefined;
     this.timeCorr = undefined;
+    this.speedFiltered = 0;
+    this.altitudeFiltered = 0;
+    this.averagedSpeed = 0;
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -269,7 +276,15 @@ export class Tab1Page {
         // in foreground update canvas and display current track
         if (this.foreground) {
           let num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+          // filter altitude 
+          await this.filterAltitude(num - this.lag - 1)
+          // filter speed
+          await this.filterSpeed();
+          // average speed
+          await this.averageSpeed();
+          // update canvas
           if (num % 20 == 0) this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+          // display track
           await this.displayCurrentTrack();
           this.cd.detectChanges();
         }
@@ -308,29 +323,25 @@ export class Tab1Page {
       this.currentFinalMarker.setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ))
-      this.currentFinalMarker.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 10, fill: new Fill({ color: 'red' })
-        })
-      }))
+      this.currentFinalMarker.setStyle(this.drawCircle('red'))
       this.currentMarker.setStyle(undefined)
     }
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
     // filter remaining values
-    for (var i = this.filtered + 1; i < num; i++) await this.altitudeFilter(i);
+    await this.filterAltitude(num - 1);
     // set map view
     await this.setMapView(this.currentTrack);
     // update canvas
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
-  // CONFIRM DELETION
-  async confirmDeletion() {
+  // CONFIRM TRACK DELETION OR STOP TRACKING
+  async confirm(header: string, message: string, action: string) {
     const alert = await this.alertController.create({
       cssClass: 'alert yellowAlert',
-      header: 'Track deletion',
-      message: 'Are you sure you want to permanently delete the track?',
+      header: header,
+      message: 'Are you sure you want to ' + message,
       buttons: [
         {
           text: 'Cancel',
@@ -343,7 +354,8 @@ export class Tab1Page {
           text: 'Yes',
           cssClass: 'alert-button',
           handler: () => {
-            this.removeTrack();
+            if (action == 'remove') this.removeTrack();
+            else if (action == 'stop') this.stopTracking();
           }
         }
       ]
@@ -498,30 +510,17 @@ export class Tab1Page {
     this.currentTrack.features[0].properties.totalNumber = num;
     this.currentTrack.features[0].properties.currentAltitude = location.altitude;
     this.currentTrack.features[0].properties.currentSpeed = location.speed;
-    // altitude filter
-    if (num > this.lag) {
-      await this.altitudeFilter(num - this.lag - 1);
-      this.filtered = num - this.lag - 1;
-    }
-    // speed filter      
-    this.currentTrack.features[0].geometry.properties.data = await this.fs.speedFilter(this.currentTrack.features[0].geometry.properties.data, this.lag);
-    // average speed
-    if (this.currentTrack.features[0].geometry.properties.data[num - 1].compSpeed < this.vMin) {
-      this.stopped += (this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[num - 2].time)/1000
-    }
-    var tim = await this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[0].time
-    tim = tim / 1000
-    this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
-    if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
-    this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
     // check route
     var previousColor = this.onRouteColor;
     if ((num % 10 == 0) && (this.archivedTrack)) {
       this.onRouteColor = await this.onRoute() ?? 'black';
-      console.log(this.onRouteColor);
     }
-    if (previousColor == 'green' && this.onRouteColor == 'red' ) await this.playBeep(0.5, 250, 1);
-    if (previousColor == 'red' && this.onRouteColor == 'green' ) await this.playBeep(0.5, 900, 1);
+    if (previousColor == 'green' && this.onRouteColor == 'red' ) {
+      await this.playBeep(0.25, 250, 1);
+      await this.playBeep(0.25, 250, 0);
+      await this.playBeep(0.25, 250, 1);
+    }
+    else if (previousColor == 'red' && this.onRouteColor == 'green' ) await this.playBeep(0.5, 250, 1); 
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -563,20 +562,12 @@ export class Tab1Page {
     await this.currentInitialMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[0]
     ));
-    await this.currentInitialMarker.setStyle(new Style({
-      image: new CircleStyle({
-        radius: 10, fill: new Fill({ color: 'green' })
-      })
-    }))
+    await this.currentInitialMarker.setStyle(this.drawCircle('green'))
     let num = this.currentTrack.features[0].geometry.coordinates.length;
     await this.currentMarker.setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num-1]
     ));
-    await this.currentMarker.setStyle(new Style({
-      image: new CircleStyle({
-        radius: 10, fill: new Fill({ color: 'blue' })
-      })
-    }))
+    await this.currentMarker.setStyle(this.drawCircle('blue'));
     await this.currentFinalMarker.setStyle(undefined);
     await this.currentLayer.setVisible(true);
   }
@@ -585,7 +576,7 @@ export class Tab1Page {
     // no current or archived track
     if (!this.currentTrack) return 'black';
     if (!this.archivedTrack) return 'black';
-    if (this.archived != 'visible') return 'black';
+    if (this.allVisible) return 'black';
     const num: number = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     const num2: number = this.archivedTrack.features[0].geometry.coordinates.length ?? 0;
     if (num == 0) return 'black';
@@ -613,7 +604,7 @@ export class Tab1Page {
       }
       // too far
       if (dist > thres * this.threshDist) {
-        i += skip * (reduction - 1);
+        i += (skip-1) * reduction;
         continue;
       }
     }
@@ -628,7 +619,7 @@ export class Tab1Page {
       }
       // too far
       if (dist > thres * this.threshDist) {
-        i -= skip * (reduction - 1);
+        i -= (skip-1) * reduction;
         continue;
       }
     } 
@@ -647,7 +638,6 @@ export class Tab1Page {
   // 1. show()
   // 2. check()
   // 3. setMapView()
-  // 4. altitudeFilter()
   // 5. displayArchivedTrack()
   // 6. changeColor()
   // 7. retrieveTrack()
@@ -703,23 +693,6 @@ export class Tab1Page {
     })
   }
   
-  // ALTITUDE FILTER /////////////////////////////////
-  async altitudeFilter(i: number) {
-    var num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    const start = Math.max(0, i - this.lag);
-    const end = Math.min(i + this.lag, num - 1);
-    // average altitude
-    var sum: number = 0
-    for (var j = start; j <= end; j++) sum += this.currentTrack.features[0].geometry.properties.data[j].altitude;
-    this.currentTrack.features[0].geometry.properties.data[i].altitude = sum / (end - start + 1);
-    // re-calculate elevation gains / losses
-    if (i == 0) return;
-    var slope = await this.currentTrack.features[0].geometry.properties.data[i].altitude - this.currentTrack.features[0].geometry.properties.data[i - 1].altitude;
-    if (slope > 0) this.currentTrack.features[0].properties.totalElevationGain += slope;
-    else this.currentTrack.features[0].properties.totalElevationLoss -= slope;
-    this.currentTrack.features[0].properties.currentAltitude = await this.currentTrack.features[0].geometry.properties.data[i].altitude;
-  }
-
   // DISPLAY AN ARCHIVED TRACK /////////////////////////
   async displayArchivedTrack() {
     // no map
@@ -730,31 +703,23 @@ export class Tab1Page {
     this.archivedFeature.setGeometry(new LineString(
       this.archivedTrack.features[0].geometry.coordinates
     ))
-    this.archivedFeature.setStyle(new Style({ stroke: new Stroke({ color: this.archivedColor, width: 5 }) }))
+    this.archivedFeature.setStyle(this.drawPoint(this.archivedColor))
     const num = this.archivedTrack.features[0].geometry.coordinates.length;
     this.archivedInitialMarker.setGeometry(new Point(
       this.archivedTrack.features[0].geometry.coordinates[0]
     ));
-    this.archivedInitialMarker.setStyle(new Style({
-      image: new CircleStyle({
-        radius: 10, fill: new Fill({ color: 'green' })
-      })
-    }))
+    this.archivedInitialMarker.setStyle(this.drawCircle('green'))
     this.archivedFinalMarker.setGeometry(new Point(
       this.archivedTrack.features[0].geometry.coordinates[num - 1]
     ));
-    this.archivedFinalMarker.setStyle(new Style({
-      image: new CircleStyle({
-        radius: 10, fill: new Fill({ color: 'red' })
-      })
-    }))
+    this.archivedFinalMarker.setStyle(this.drawCircle('red'))
   }
   
   async changeColor() {
     this.archivedColor = await this.check(this.archivedColor, 'archivedColor')
     this.currentColor = await this.check(this.currentColor, 'currentColor')
-    if (this.currentFeature) await this.currentFeature.setStyle(new Style({ stroke: new Stroke({ color: this.currentColor, width: 5 })}));
-    if (this.archivedFeature) await this.archivedFeature.setStyle(new Style({stroke: new Stroke({ color: this.archivedColor, width: 5 })}));
+    if (this.currentFeature) await this.currentFeature.setStyle(this.drawPoint(this.currentColor));
+    if (this.archivedFeature) await this.archivedFeature.setStyle(this.drawPoint(this.archivedColor));
   }
 
   // RETRIEVE ARCHIVED TRACK //////////////////////////
@@ -791,7 +756,7 @@ export class Tab1Page {
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
     // compute extremes
-    if (this.archivedTrack) await this.computeExtremes()
+    if (track) await this.computeExtremes(track)
     // return  
     return track;
   }
@@ -834,9 +799,11 @@ export class Tab1Page {
     var olLayer: any;
     olLayer = new TileLayer({ source: new OSM() })
     // Create the map view
+    var currentPosition: any = await this.getCurrentPosition();
+    if (!currentPosition) currentPosition = [1, 41.5];
     var view = new View({
-      center: [1, 41.5],
-      zoom: 6,
+      center: currentPosition,
+      zoom: 8,
     });
     // Controls
     var controls = [ new Zoom(), new ScaleLine(), new Rotate() ]
@@ -861,15 +828,11 @@ export class Tab1Page {
           var key = collection[index].date;
           this.archivedTrack = await this.storage.get(JSON.stringify(key));
           if (this.archivedTrack) {
-            await this.computeExtremes()
-            this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-            await this.displayArchivedTrack();
+            await this.computeExtremes(this.archivedTrack)
             await this.multiLayer.setVisible(false);
             this.archived = 'visible';
             await this.storage.set(this.archived,'archived');
-            await this.archivedLayer.setVisible(true);
-            this.show('ac0','block');
-            this.show('ac1','block');
+            await this.showArchivedTrack()
             await this.setMapView(this.archivedTrack);
           }
         }  
@@ -1094,20 +1057,93 @@ export class Tab1Page {
     }
     this.multiFeature.setGeometry(new MultiLineString(multiLine));
     this.multiMarker.setGeometry(new MultiPoint(multiPoint));      
-    this.multiFeature.setStyle(new Style({ stroke: new Stroke({ color: 'black', width: 5 }) }));
-    this.multiMarker.setStyle(new Style({
-      /*
-      image: new Icon({
-        src: 'assets/icon.png',  // Path to the icon image
-        scale: 0.1,              // Adjust the icon size as needed
-        anchor: [0.5, 1]         // Set the anchor of the icon
-      })
-      */  
-      image: new CircleStyle({
-        radius: 10, fill: new Fill({ color: 'green' })
-      })
-    }))
+    this.multiFeature.setStyle(this.drawPoint('black'));
+    this.multiMarker.setStyle(this.drawCircle('green'));
+    //if (this.currentTrack) return;
   }
+
+  async hideArchivedTrack() {
+    await this.archivedLayer.setVisible(false);
+    this.show('ac0','none');
+    this.show('ac1','none');
+  }
+
+  async showArchivedTrack() {
+    await this.archivedLayer.setVisible(true); 
+    this.show('ac0','block');
+    this.show('ac1','block');
+    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    await this.displayArchivedTrack();
+  }
+
+  drawCircle(color: string) {
+    var style: Style = new Style({
+      image: new CircleStyle({
+        radius: 10, fill: new Fill({ color: color })
+      })
+    });
+    return style
+  }
+
+  drawPoint(color: string) {
+    var style = new Style({ stroke: new Stroke({ color: color, width: 5 })})
+    return style;
+  } 
+
+  async getCurrentPosition() {
+    var currentPosition: any;
+    try {
+      const coordinates = await Geolocation.getCurrentPosition();
+      currentPosition = [coordinates.coords.longitude, coordinates.coords.latitude]
+    } 
+    catch (error) { currentPosition = undefined }
+    return currentPosition
+  }
+
+  async filterAltitude(final: number) {
+    const num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    if ((final != num - 1) && (num <= this.lag)) return
+    for (var i = this.altitudeFiltered + 1; i <=final; i++) {
+      const start = Math.max(0, i - this.lag);
+      const end = Math.min(i + this.lag, num - 1);
+      // average altitude
+      var sum: number = 0
+      for (var j = start; j <= end; j++) sum += this.currentTrack.features[0].geometry.properties.data[j].altitude;
+      this.currentTrack.features[0].geometry.properties.data[i].altitude = sum / (end - start + 1);
+      // re-calculate elevation gains / losses
+      var slope = await this.currentTrack.features[0].geometry.properties.data[i].altitude - this.currentTrack.features[0].geometry.properties.data[i - 1].altitude;
+      if (slope > 0) this.currentTrack.features[0].properties.totalElevationGain += slope;
+      else this.currentTrack.features[0].properties.totalElevationLoss -= slope;
+      this.currentTrack.features[0].properties.currentAltitude = await this.currentTrack.features[0].geometry.properties.data[i].altitude;
+    }
+    this.altitudeFiltered = final;
+  }
+
+  async filterSpeed() {
+    const num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    for (var i = this.speedFiltered + 1; i <= num-1; i++) {
+      var start: number = Math.max(i - this.lag, 0);
+      var distance: number = this.currentTrack.features[0].geometry.coordinates[i].distance - this.currentTrack.features[0].geometry.coordinates[start].distance;
+      var time: number = this.currentTrack.features[0].geometry.coordinates[i].time - this.currentTrack.features[0].geometry.coordinates[start].time;
+      this.currentTrack.features[0].geometry.coordinates[i].compSpeed = 3600000 * distance / time;
+    }
+    this.speedFiltered = num - 1;  
+  }
+
+  async averageSpeed() {
+    const num = await this.currentTrack.features[0].geometry.coordinates.length ?? 0;
+    for (var i = this.averagedSpeed + 1; i <= num-1; i++) {
+      if (this.currentTrack.features[0].geometry.properties.data[i].compSpeed < this.vMin) {
+        this.stopped += (this.currentTrack.features[0].geometry.properties.data[i].time - this.currentTrack.features[0].geometry.properties.data[i - 1].time)/1000
+      }
+    }  
+    this.averagedSpeed = num - 1;  
+    var tim = await this.currentTrack.features[0].geometry.properties.data[num - 1].time - this.currentTrack.features[0].geometry.properties.data[0].time
+    tim = tim / 1000
+    this.currentAverageSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / tim
+    if (tim - this.stopped > 5) this.currentAverageCorrSpeed = 3600 * this.currentTrack.features[0].properties.totalDistance / (tim - this.stopped)
+    this.timeCorr = this.fs.formatMillisecondsToUTC(1000 * (tim - this.stopped));
+  } 
 
 }
 
