@@ -30,7 +30,7 @@
    importedTrack: any;
    styleChecked: boolean = false;
    archivedChecked: boolean = true;
-   archivedVis: string = 'visible';
+   archivedVis: boolean = true;
    mapVisible: string = 'block';
    dataVisible: string = 'nome';
    style: string = 'basic';
@@ -48,9 +48,9 @@
  
    // CHANGE VISIBILITY OF ARCHIVED TRACK //////////////////////
    async archivedChanged() {
-     if (this.archivedChecked) this.archivedVis = 'visible';
-     else this.archivedVis = 'invisible'
-     await this.storage.set('archived', this.archivedVis)
+     if (this.archivedChecked) this.archivedVis = true;
+     else this.archivedVis = false
+     await this.storage.set('archivedVisible', this.archivedVis)
      this.goHome();
    } 
  
@@ -102,10 +102,10 @@
    async ionViewWillEnter() {
      await this.storage.create();
      // this.provider = await this.check(this.provider, 'provider') 
-     this.archivedVis = await this.check(this.archivedVis, 'archived') 
+     this.archivedVis = await this.check(this.archivedVis, 'archivedVisible') 
      this.archivedColor = await this.check(this.archivedColor, 'archivedColor') 
      this.currentColor = await this.check(this.currentColor, 'currentColor') 
-     if (this.archivedVis == 'visible') this.archivedChecked = true;
+     if (this.archivedVis) this.archivedChecked = true;
      else this.archivedChecked = false;    
    }
  

@@ -8,14 +8,8 @@ project(':capacitor-community-background-geolocation').projectDir = new File('..
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/@capacitor/app/android')
 
-include ':capacitor-dialog'
-project(':capacitor-dialog').projectDir = new File('../node_modules/@capacitor/dialog/android')
-
 include ':capacitor-filesystem'
 project(':capacitor-filesystem').projectDir = new File('../node_modules/@capacitor/filesystem/android')
 
 include ':capacitor-geolocation'
 project(':capacitor-geolocation').projectDir = new File('../node_modules/@capacitor/geolocation/android')
-
-include ':capawesome-team-capacitor-android-foreground-service'
-project(':capawesome-team-capacitor-android-foreground-service').projectDir = new File('../node_modules/@capawesome-team/capacitor-android-foreground-service/android')

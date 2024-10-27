@@ -28,24 +28,32 @@ export interface Track {
   features: [{
     type: string,
     properties: {
+      currentSpeed: any
+      currentAltitude: any
       name: string,
       place: string,
-      date: Date,
+      date: Date | undefined,
       description: string,
       totalDistance: number,
-      totalTime: string,
+      totalTime: any,
       totalElevationGain: number,
       totalElevationLoss: number,
       totalNumber: number,
     },
     geometry: {
       type: 'LineString',
-      coordinates: [],
+      coordinates: number[][],
       properties: {
-        data: [],
+        data: {
+          altitude: number,
+          speed: number,
+          time: number,
+          compSpeed: number,
+          distance: number
+        }[]
       }
-    }  
-  }]
+    }
+  }]  
 }
 
 export interface TrackDefinition {
