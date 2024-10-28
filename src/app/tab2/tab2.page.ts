@@ -22,7 +22,7 @@ export class Tab2Page {
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
   info: string | undefined = undefined;
-  archived: string = '';
+  archivedVisible: boolean = false;
   num: number = 0;
 
   constructor(
@@ -38,8 +38,8 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
-    this.archived = 'visible';
-    this.archived = await this.check(this.archived, 'archived')
+    this.archivedVisible = true;
+    this.archivedVisible = await this.check(this.archivedVisible, 'archivedVisible')
     this.info = undefined;
     // retrieve tracks definition
     this.collection = await this.storage.get('collection');
@@ -154,6 +154,7 @@ export class Tab2Page {
 
 
   async displayTrack() {
+    await this.storage.set('all', false)
     this.router.navigate(['tab1']);
   }
 
@@ -209,9 +210,7 @@ export class Tab2Page {
     var track: Track | undefined;
     track = await this.retrieveTrack();
     if (!track) return;
-    console.log(track)
     var gpxText = await this.geoJsonToGpx(track.features[0])
-    console.log(gpxText)
     var file: string = track.features[0].properties.name.replaceAll(' ', '_') +'.gpx' 
     try {
       // Write the file to the Data directory
@@ -222,10 +221,8 @@ export class Tab2Page {
         encoding: Encoding.UTF8,
       });
       this.info = file + ' is ready to export';
-      console.log('GPX file written successfully:', result);
     } catch (e) {
       this.info = 'exportation of ' + file + ' failed';
-      console.error('Unable to write file', e);
     }
   }
 
@@ -262,7 +259,6 @@ export class Tab2Page {
     await this.storage.set('collection', collection);
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
-    console.log(track)
     return track
   }
 

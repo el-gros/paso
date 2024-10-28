@@ -181,7 +181,6 @@
        const lon = await trackPoints[k].getAttribute('lon');
        const ele = await trackPoints[k].getElementsByTagName('ele')[0]?.textContent;
        const time = await trackPoints[k].getElementsByTagName('time')[0]?.textContent;
-       console.log(ele, time)
        if (!lat || !lon) continue;
        // lon, lat
        await this.importedTrack.features[0].geometry.coordinates.push([+lon, +lat]);
@@ -234,7 +233,6 @@
      if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
      else this.importedTrack.features[0].properties.date = new Date();
      await this.storage.set(JSON.stringify(this.importedTrack.features[0].properties.date), this.importedTrack);
-     console.log(this.importedTrack);
      const trackDef = {
        name: this.importedTrack.features[0].properties.name, 
        date: this.importedTrack.features[0].properties.date, 

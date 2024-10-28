@@ -5,7 +5,7 @@ import { FunctionsService } from '../functions.service';
 import { Component, NgZone, Injectable, OnInit } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
-//import { global } from '../../environments/environment';
+import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { registerPlugin } from "@capacitor/core";
@@ -76,14 +76,11 @@ export class Tab1Page {
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   gridsize: string = '-';
   map: any;
-  currentInitialMarker: any | undefined = undefined;
-  currentFinalMarker: any | undefined = undefined;
-  archivedInitialMarker: any | undefined = undefined;
-  archivedFinalMarker: any | undefined = undefined;
-  currentMarker: any | undefined = undefined;
+  currentMarkers: any = [null, null, null];
+  archivedMarkers: any = [null, null, null];
   multiMarker: any | undefined = undefined;
-  lag: number = 8; // 8
-  distanceFilter: number = 5; // .05 / 5
+  lag: number = global.lag; // 8
+  distanceFilter: number = .05; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
@@ -99,8 +96,6 @@ export class Tab1Page {
   archivedFeature: any;
   currentFeature: any;
   multiFeature: any; 
-  // isTracking: boolean = false;
-  archived: string = 'visible';
   archivedVisible: boolean = true;
   threshDist: number = 0.00000025; // 0.0005 ** 2;
   lastN: number = 0;
@@ -160,8 +155,9 @@ export class Tab1Page {
     this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
-    // on init archived map is always visible
+    // on init archived map is always visible and all visible is false
     await this.storage.set('archivedVisible', true);
+    await this.storage.set('all', false);
     // create canvas
     await this.createCanvas();
     // create map
@@ -248,7 +244,7 @@ export class Tab1Page {
       this.currentTrack.features[0].geometry.coordinates
     ))
     this.currentFeature.setStyle(this.drawPoint(this.currentColor));
-    this.currentMarker.setGeometry(new Point(
+    this.currentMarkers[1].setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num - 1]
     ))
     // set map view
@@ -269,6 +265,7 @@ export class Tab1Page {
     this.speedFiltered = 0;
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
+    this.onRouteColor = 'black'
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain.",
@@ -330,11 +327,11 @@ export class Tab1Page {
     // red marker
     let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     if (num > 0) {
-      if (this.currentTrack) this.currentFinalMarker.setGeometry(new Point(
+      if (this.currentTrack) this.currentMarkers[2].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ))
-      this.currentFinalMarker.setStyle(this.drawCircle('red'))
-      this.currentMarker.setStyle(undefined)
+      this.currentMarkers[2].setStyle(this.drawCircle('red'))
+      this.currentMarkers[1].setStyle(undefined)
     }
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
@@ -535,16 +532,16 @@ export class Tab1Page {
     this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
     )
-    await this.currentInitialMarker.setGeometry(new Point(
+    await this.currentMarkers[0].setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[0]
     ));
-    await this.currentInitialMarker.setStyle(this.drawCircle('green'))
+    await this.currentMarkers[0].setStyle(this.drawCircle('green'))
     let num = this.currentTrack.features[0].geometry.coordinates.length;
-    await this.currentMarker.setGeometry(new Point(
+    await this.currentMarkers[1].setGeometry(new Point(
       this.currentTrack.features[0].geometry.coordinates[num-1]
     ));
-    await this.currentMarker.setStyle(this.drawCircle('blue'));
-    await this.currentFinalMarker.setStyle(undefined);
+    await this.currentMarkers[1].setStyle(this.drawCircle('blue'));
+    await this.currentMarkers[2].setStyle(undefined);
     await this.currentLayer.setVisible(true);
   }
 
@@ -558,6 +555,7 @@ export class Tab1Page {
     if (num == 0) return 'black';
     if (num2 == 0) return 'black';
     // definitions
+    console.log('true check')
     const thres = 10;
     const skip = 5;
     const sq = Math.sqrt(this.threshDist);
@@ -569,6 +567,7 @@ export class Tab1Page {
     if (point[0] > this.maxX + sq) return 'red';
     if (point[1] < this.minY - sq) return 'red';
     if (point[1] > this.maxY + sq) return 'red';
+    console.log('not  outside rectangle')
     // go ahead
     for (var i = this.lastN; i < num2; i+=reduction) {
       let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
@@ -681,14 +680,14 @@ export class Tab1Page {
     ))
     this.archivedFeature.setStyle(this.drawPoint(this.archivedColor))
     const num = this.archivedTrack.features[0].geometry.coordinates.length;
-    this.archivedInitialMarker.setGeometry(new Point(
+    this.archivedMarkers[0].setGeometry(new Point(
       this.archivedTrack.features[0].geometry.coordinates[0]
     ));
-    this.archivedInitialMarker.setStyle(this.drawCircle('green'))
-    this.archivedFinalMarker.setGeometry(new Point(
+    this.archivedMarkers[0].setStyle(this.drawCircle('green'))
+    this.archivedMarkers[2].setGeometry(new Point(
       this.archivedTrack.features[0].geometry.coordinates[num - 1]
     ));
-    this.archivedFinalMarker.setStyle(this.drawCircle('red'))
+    this.archivedMarkers[2].setStyle(this.drawCircle('red'))
   }
   
   async changeColor() {
@@ -748,17 +747,18 @@ export class Tab1Page {
   // CREATE FEATURES /////////////////////////////
   async createFeatures() {
     // create features to hold current track and markers
-    this.currentFinalMarker = new Feature({ geometry: new Point([0, 40]) });
-    this.currentMarker = new Feature({ geometry: new Point([0, 40]) });
+    this.currentMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
+    this.currentMarkers[1] = new Feature({ geometry: new Point([0, 40]) });
+    this.currentMarkers[0] = new Feature({ geometry: new Point([0, 40]) });
     this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-    this.currentInitialMarker = new Feature({ geometry: new Point([0, 40]) });
     // create features to hold multiple track and markers
     this.multiFeature = new Feature({ geometry: new MultiLineString([[[0, 40], [0, 40]]]) });
     this.multiMarker = new Feature({ geometry: new MultiPoint([0, 40]) });
     // create features to hold archived track and markers
     this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-    this.archivedInitialMarker = new Feature({ geometry: new Point([0, 40]) });
-    this.archivedFinalMarker = new Feature({ geometry: new Point([0, 40]) });
+    this.archivedMarkers[0] = new Feature({ geometry: new Point([0, 40]) });
+    this.archivedMarkers[1] = new Feature({ geometry: new Point([0, 40]) });
+    this.archivedMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
   } 
 
   // CREATE MAP /////////////////////////////
@@ -766,8 +766,8 @@ export class Tab1Page {
     // create features
     await this.createFeatures();
     // sources for current and archived tracks and multilines
-    var csource = new VectorSource({ features: [this.currentFeature, this.currentInitialMarker, this.currentMarker, this.currentFinalMarker] });
-    var asource = new VectorSource({ features: [this.archivedFeature, this.archivedInitialMarker, this.archivedFinalMarker] });
+    var csource = new VectorSource({ features: [this.currentFeature, ...this.currentMarkers] });
+    var asource = new VectorSource({ features: [this.archivedFeature, ...this.archivedMarkers] });
     var msource = new VectorSource({ features: [this.multiFeature, this.multiMarker] });
     // layers for current and archived track and multiple tracks
     this.currentLayer = new VectorLayer({source: csource});
@@ -874,7 +874,6 @@ export class Tab1Page {
     }
     var tUnit: string = '';
     if (!context) return tUnit
-    console.log('i am in all canvas')
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(context[i], track, this.properties[i], 'x');
       else tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
@@ -900,7 +899,6 @@ export class Tab1Page {
     const num = await track.features[0].geometry.properties.data.length ?? 0;
     // time units
     var xDiv: number = 1; 
-    console.log('i am in canvas')
     if (xParam == 'x') {
       var xTot = track.features[0].geometry.properties.data[num - 1].distance;
     } 
@@ -931,7 +929,6 @@ export class Tab1Page {
     const d = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
     const e = this.margin;
     const f = this.margin - bounds.max * d;
-    console.log('to draw lines')
     // draw lines
     ctx.setTransform(a, 0, 0, d, e, f)
     ctx.beginPath();
@@ -1036,6 +1033,10 @@ export class Tab1Page {
     for (var item of collection) {
       key = item.date;
       track = await this.storage.get(JSON.stringify(key));
+      if (!track) {
+        await this.storage.remove(key);
+        continue;
+      }
       const coord: any = await track.features[0].geometry.coordinates
       multiLine.push(coord);
       multiPoint.push(coord[0]);
@@ -1044,7 +1045,6 @@ export class Tab1Page {
     this.multiMarker.setGeometry(new MultiPoint(multiPoint));      
     this.multiFeature.setStyle(this.drawPoint('black'));
     this.multiMarker.setStyle(this.drawCircle('green'));
-    //if (this.currentTrack) return;
   }
 
   async hideArchivedTrack() {
@@ -1152,7 +1152,7 @@ export class Tab1Page {
   }
 
   async checkWhetherOnRoute() {
-    this.onRouteColor = 'black'
+    //this.onRouteColor = 'black'
     if (!this.currentTrack) return;
     if (!this.archivedTrack) return;
     if (!this.archivedVisible) return;
@@ -1161,6 +1161,7 @@ export class Tab1Page {
     // check...    
     var previousColor = this.onRouteColor;
     if ((num % 10 == 0) && (this.archivedTrack)) {
+      console.log('check')
       this.onRouteColor = await this.onRoute() ?? 'black';
     }
     if (previousColor == 'green' && this.onRouteColor == 'red' ) {
