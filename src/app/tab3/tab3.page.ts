@@ -221,7 +221,10 @@
      this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - 
        this.importedTrack.features[0].geometry.properties.data[0].time);
      this.importedTrack.features[0].properties.totalNumber = num;
-     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
+     if (this.importedTrack.features[0].geometry.properties.data[num-1].time) 
+      this.importedTrack.features[0].geometry.properties.data = await this.fs.speedFilter(this.importedTrack.features[0].geometry.properties.data, this.lag, num - 1, num - 1);
+     //if (this.importedTrack.features[0].geometry.properties.data[num-1].time) 
+     // this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data);
      // filter
      if (altitudeOk) {
        for (var i = 1; i < num; i++) {
@@ -229,7 +232,8 @@
        };
      }
      // speed filter      
-     this.importedTrack.features[0].geometry.properties.data = await this.fs.speedFilterAll(this.importedTrack.features[0].geometry.properties.data, this.lag);
+     this.importedTrack.features[0].geometry.properties.data = await this.fs.speedFilter(this.importedTrack.features[0].geometry.properties.data, this.lag, 1, num - 1)
+     //this.importedTrack.features[0].geometry.properties.data = await this.fs.speedFilterAll(this.importedTrack.features[0].geometry.properties.data, this.lag);
      // save...
      if (this.importedTrack.features[0].geometry.properties.data[num-1].time) this.importedTrack.features[0].properties.date = this.importedTrack.features[0].geometry.properties.data[num-1].time
      else this.importedTrack.features[0].properties.date = new Date();
