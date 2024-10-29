@@ -28,6 +28,7 @@ export class FunctionsService {
   }
 
   formatMillisecondsToUTC(milliseconds: number): string {
+    if (milliseconds < 500) return '00:00:00'
     const seconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);

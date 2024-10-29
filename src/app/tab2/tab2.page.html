@@ -40,9 +40,13 @@
         {{info}}
       </ion-col>
       <ion-col size="4">
-        <ion-button [ngClass]="(num == 0) ? 'greenDisabled' : 'greenEnabled'" (click)="displayAllTracks()" expand="block"
+        <ion-button *ngIf="layerVisibility != 'multi'" class='greenEnabled' (click)="displayAllTracks(true)" expand="block"
           [disabled]='(num == 0)'>
           <div>DIISPLAY<br>ALL</div>
+        </ion-button>
+        <ion-button *ngIf="layerVisibility == 'multi'" class='redEnabled' (click)="displayAllTracks(false)" expand="block"
+          [disabled]='(num == 0)'>
+          <div>HIDE<br>ALL</div>
         </ion-button>
       </ion-col>
     </ion-row>
@@ -60,9 +64,13 @@
         </ion-button>
       </ion-col>
       <ion-col size="4">
-        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="displayTrack()"
-          expand="block" [disabled]='(numChecked != 1)'>
-          <div>DISPLAY<br>TRACK</div>
+        <ion-button *ngIf="(numChecked == 1)" class= 'greenEnabled' (click)="displayTrack(true)"
+          expand="block">
+          <div>DISPLAY<br>REFERENCE</div>
+        </ion-button>
+        <ion-button *ngIf="(numChecked != 1)" [ngClass]="(layerVisibility != 'archived') ? 'redDisabled' : 'redEnabled'" (click)="displayTrack(false)"
+          expand="block" [disabled]="layerVisibility != 'archived'">
+          <div>HIDE<br>REFERENCE</div>
         </ion-button>
       </ion-col>
     </ion-row>

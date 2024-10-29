@@ -29,8 +29,6 @@
    currentColor: string = 'orange'
    importedTrack: any;
    styleChecked: boolean = false;
-   archivedChecked: boolean = true;
-   archivedVis: boolean = true;
    mapVisible: string = 'block';
    dataVisible: string = 'nome';
    style: string = 'basic';
@@ -46,14 +44,7 @@
      private storage: Storage
    ) {}
  
-   // CHANGE VISIBILITY OF ARCHIVED TRACK //////////////////////
-   async archivedChanged() {
-     if (this.archivedChecked) this.archivedVis = true;
-     else this.archivedVis = false
-     await this.storage.set('archivedVisible', this.archivedVis)
-     this.goHome();
-   } 
- 
+
    goHome() {
      this.router.navigate(['tab1']);
    }
@@ -102,11 +93,8 @@
    async ionViewWillEnter() {
      await this.storage.create();
      // this.provider = await this.check(this.provider, 'provider') 
-     this.archivedVis = await this.check(this.archivedVis, 'archivedVisible') 
      this.archivedColor = await this.check(this.archivedColor, 'archivedColor') 
      this.currentColor = await this.check(this.currentColor, 'currentColor') 
-     if (this.archivedVis) this.archivedChecked = true;
-     else this.archivedChecked = false;    
    }
  
    async onFileSelected(event: Event) {

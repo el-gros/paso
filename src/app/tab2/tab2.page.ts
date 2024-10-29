@@ -22,7 +22,7 @@ export class Tab2Page {
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
   info: string | undefined = undefined;
-  archivedVisible: boolean = false;
+  layerVisibility: string = 'archived' 
   num: number = 0;
 
   constructor(
@@ -38,8 +38,7 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
-    this.archivedVisible = true;
-    this.archivedVisible = await this.check(this.archivedVisible, 'archivedVisible')
+    this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
     this.info = undefined;
     // retrieve tracks definition
     this.collection = await this.storage.get('collection');
@@ -153,8 +152,9 @@ export class Tab2Page {
   }
 
 
-  async displayTrack() {
-    await this.storage.set('all', false)
+  async displayTrack(active: boolean) {
+    if (active) await this.storage.set('layerVisibility', 'archived');
+    else await this.storage.set('layerVisibility', 'none');
     this.router.navigate(['tab1']);
   }
 
@@ -273,13 +273,9 @@ export class Tab2Page {
     return variable
   }
 
-  async displayAllTracks() {
-    await this.storage.set('all', true);
-    this.collection = await this.storage.get('collection');
-    if (!this.collection) this.collection = [];
-    // uncheck all items
-    await this.uncheckAll();
-    await this.storage.set('collection', this.collection);
+  async displayAllTracks(active: boolean) {
+    if (active) await this.storage.set('layerVisibility', 'multi');
+    else await this.storage.set('layerVisibility', 'none');
     this.router.navigate(['tab1']);
   }
 
