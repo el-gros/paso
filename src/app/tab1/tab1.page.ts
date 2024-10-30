@@ -145,6 +145,9 @@ export class Tab1Page {
           await this.averageSpeed();
           // update canvas
           await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+          // detect changes
+          this.cd.detectChanges();
+          console.log('transition',this.currentTrack?.features[0].geometry.coordinates.length)
         });  
       }
     });
@@ -164,7 +167,8 @@ export class Tab1Page {
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
     // on init layer visibility is set to archived
-    await this.storage.set('layerVisibility', 'archived');
+    this.layerVisibility = 'archived'
+    await this.storage.set('layerVisibility', this.layerVisibility);
     // create canvas
     await this.createCanvas();
     // create map
@@ -177,6 +181,9 @@ export class Tab1Page {
     await this.changeColor();
     // check layer visibility
     this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
+    // only visible for layerVisibility == 'archived' 
+    this.show('ac0','none');
+    this.show('ac1','none');
     // archived visible
     if (this.layerVisibility == 'archived') {
       // retrieve archived track
@@ -187,6 +194,8 @@ export class Tab1Page {
       if (this.archivedTrack) await this.showArchivedTrack();
       // set map view 
       if (this.archivedTrack && !this.currentTrack) await this.setMapView(this.archivedTrack);
+      this.show('ac0','block');
+      this.show('ac1','block');
     }
     else if (this.layerVisibility == 'multi') {
       await this.hideArchivedTrack();  
@@ -273,9 +282,10 @@ export class Tab1Page {
     }, async (location: Location, error: Error) => {
       if (location) {
         // build geojson always
-        await this.buildGeoJson(location);
+        const locationNew: boolean = await this.buildGeoJson(location);
+        if (!this.foreground && locationNew) console.log('background', this.currentTrack?.features[0].geometry.coordinates.length)
         // in foreground update canvas and display current track
-        if (this.foreground) {
+        if (this.foreground && locationNew) {
           let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
           // filter altitude 
           await this.filterAltitude(num - this.lag - 1)
@@ -293,6 +303,7 @@ export class Tab1Page {
           await this.displayCurrentTrack();
           // detect changes
           this.cd.detectChanges();
+          console.log('foreground', this.currentTrack?.features[0].geometry.coordinates.length)
         }
       }
     }).then((value: any) => this.watcherId = value);
@@ -476,21 +487,25 @@ export class Tab1Page {
   // BUILD GEOJSON ////////////////////////////////////
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
-    if (location.accuracy > this.threshold) return;
-    if (location.altitude == null || location.altitude == undefined) return;
+    if (location.accuracy > this.threshold) return false;
+    if (location.altitude == null || location.altitude == undefined) return false;
     // m/s to km/h
     location.speed = location.speed * 3.6
     // initial point
     if (!this.currentTrack) {
       await this.firstPoint(location);
-      return;
+      return false;
     }
     // check for the locations order...
     await this.fixWrongOrder(location);
     // add location
     await this.fillGeojson(location);
     // check whether on route...
-    await this.checkWhetherOnRoute();
+    let num = this.currentTrack.features[0].geometry.coordinates.length;
+    console.log(num, this.archivedTrack)
+    if ((num % 5 == 0) && (this.archivedTrack)) await this.checkWhetherOnRoute();
+    console.log(this.onRouteColor)
+    return true;
   }
 
   // FIRST POINT OF THE TRACK /////////////////////////////
@@ -554,7 +569,6 @@ export class Tab1Page {
     if (num == 0) return 'black';
     if (num2 == 0) return 'black';
     // definitions
-    console.log('true check')
     const thres = 10;
     const skip = 5;
     const sq = Math.sqrt(this.threshDist);
@@ -566,7 +580,6 @@ export class Tab1Page {
     if (point[0] > this.maxX + sq) return 'red';
     if (point[1] < this.minY - sq) return 'red';
     if (point[1] > this.maxY + sq) return 'red';
-    console.log('not  outside rectangle')
     // go ahead
     for (var i = this.lastN; i < num2; i+=reduction) {
       let point2 = this.archivedTrack.features[0].geometry.coordinates[i];
@@ -798,9 +811,7 @@ export class Tab1Page {
       coordinate: any; pixel: any; 
     }) => {
       this.map.forEachFeatureAtPixel(event.pixel, async (feature: any, layer: any) => {
-        console.log(feature)
         if (feature === this.multiMarker) {
-          console.log('yes')
           const clickedCoordinate = await feature.getGeometry().getClosestPoint(event.coordinate);
           const multiPointCoordinates = await feature.getGeometry().getCoordinates();
           const index = await multiPointCoordinates.findIndex((coord: any[]) =>
@@ -812,7 +823,10 @@ export class Tab1Page {
           if (this.archivedTrack) {
             await this.computeExtremes(this.archivedTrack)
             try{await this.multiLayer.setVisible(false);} catch{}
-            await this.storage.set('layerVisibility', 'archived');
+            this.layerVisibility = 'archived'
+            await this.storage.set('layerVisibility', this.layerVisibility);
+            this.show('ac0','block');
+            this.show('ac1','block');
             await this.showArchivedTrack()
             await this.setMapView(this.archivedTrack);
           }
@@ -1083,7 +1097,6 @@ export class Tab1Page {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       currentPosition = [coordinates.coords.longitude, coordinates.coords.latitude]
-      console.log(coordinates)
     } 
     catch (error) { currentPosition = undefined }
     return currentPosition
@@ -1170,17 +1183,15 @@ export class Tab1Page {
 
   async checkWhetherOnRoute() {
     //this.onRouteColor = 'black'
+    console.log(this.layerVisibility);
     if (!this.currentTrack) return;
     if (!this.archivedTrack) return;
     if (this.layerVisibility != 'archived') return;
-    // number of points
-    const num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     // check...    
     var previousColor = this.onRouteColor;
-    if ((num % 10 == 0) && (this.archivedTrack)) {
-      console.log('check')
-      this.onRouteColor = await this.onRoute() ?? 'black';
-    }
+    console.log('to check')
+    this.onRouteColor = await this.onRoute() ?? 'black';
+    console.log('checked', this.onRouteColor)
     if (previousColor == 'green' && this.onRouteColor == 'red' ) {
       await this.playBeep(0.4, 800, 1);
       await this.playBeep(0.4, 800, 0.01);
@@ -1199,6 +1210,10 @@ export class Tab1Page {
       if (previous > location.time) { 
         this.currentTrack.features[0].geometry.coordinates.pop();
         this.currentTrack.features[0].geometry.properties.data.pop();
+        this.altitudeFiltered = Math.max(0, this.altitudeFiltered - 1);
+        this.speedFiltered = Math.max(0, this.altitudeFiltered - 1);
+        this.averagedSpeed = Math.max(0, this.altitudeFiltered - 1);
+        this.computedDistances = Math.max(0, this.altitudeFiltered - 1);
       }
       else break;
     }
