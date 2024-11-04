@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Injectable } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { Track, TrackDefinition } from '../../globald';
@@ -6,9 +6,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage-angular';
-//import { global } from '../../environments/environment';
+import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 //import { FunctionsService } from '../functions.service';
+import { Share } from '@capacitor/share';
+//import { Capacitor, Plugins } from '@capacitor/core';
+//const { GmailSharePlugin } = Plugins;
 
 @Component({
   selector: 'app-tab2',
@@ -22,8 +25,10 @@ export class Tab2Page {
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
   info: string | undefined = undefined;
-  layerVisibility: string = 'archived' 
+  //layerVisibility: string = 'archived' 
+  layerVisibility: string = global.layerVisibility;
   num: number = 0;
+  archivedPresent: boolean = global.archivedPresent
 
   constructor(
     private alertController: AlertController,
@@ -38,7 +43,9 @@ export class Tab2Page {
 
   // ON VIEW WILL ENTER ////////////
   async ionViewDidEnter() {
-    this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
+    //this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
+    this.layerVisibility = global.layerVisibility;
+    this.archivedPresent = global.archivedPresent
     this.info = undefined;
     // retrieve tracks definition
     this.collection = await this.storage.get('collection');
@@ -153,8 +160,10 @@ export class Tab2Page {
 
 
   async displayTrack(active: boolean) {
-    if (active) await this.storage.set('layerVisibility', 'archived');
-    else await this.storage.set('layerVisibility', 'none');
+    //if (active) await this.storage.set('layerVisibility', 'archived');
+    //else await this.storage.set('layerVisibility', 'none');
+    if (active) this.layerVisibility = 'archived'
+    else this.layerVisibility = 'none' 
     this.router.navigate(['tab1']);
   }
 
@@ -208,6 +217,7 @@ export class Tab2Page {
 
   async exportTrack() {
     var track: Track | undefined;
+    this.info = '';
     track = await this.retrieveTrack();
     if (!track) return;
     var gpxText = await this.geoJsonToGpx(track.features[0])
@@ -220,9 +230,21 @@ export class Tab2Page {
         directory: Directory.External, // Use Directory.Documents for cross-platform compatibility
         encoding: Encoding.UTF8,
       });
-      this.info = file + ' is ready to export';
+      console.log(result)
+      // find file uri
+      const fileUri = await Filesystem.getUri({
+        path: file,
+        directory: Directory.External,
+      });
+      console.log(fileUri)
+      await Share.share({
+        title: 'Share a track',
+        text: 'Here is the file you requested',
+        url: fileUri.uri,  // Use the file URI for sharing
+        dialogTitle: 'Share with gmail only',
+      });
     } catch (e) {
-      this.info = 'exportation of ' + file + ' failed';
+      this.info = 'exportation failed';
     }
   }
 
@@ -274,9 +296,15 @@ export class Tab2Page {
   }
 
   async displayAllTracks(active: boolean) {
-    if (active) await this.storage.set('layerVisibility', 'multi');
-    else await this.storage.set('layerVisibility', 'none');
+    //if (active) await this.storage.set('layerVisibility', 'multi');
+    //else await this.storage.set('layerVisibility', 'none');
+    if (active) this.layerVisibility = 'multi'
+    else this.layerVisibility = 'none'
     this.router.navigate(['tab1']);
+  }
+
+  ionViewWillLeave() {
+    global.layerVisibility = this.layerVisibility
   }
 
 }

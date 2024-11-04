@@ -40,29 +40,10 @@ export class FunctionsService {
     return value.toString().padStart(2, '0');
   }
 
-  async filterSpeed(abb: any) {
+  async filterSpeed(abb: any, initial: number) {
     var num: number = abb.length;
-    var start: number = Math.max(num - this.lag - 1, 0);
-    var distance: number = abb[num - 1].distance - abb[start].distance;
-    var time: number = abb[num - 1].time - abb[start].time;
-    abb[num - 1].compSpeed = 3600000 * distance / time;
-    return abb;
-  }
-
-  async speedFilter(abb: any, lag: number) {
-    var num: number = abb.length;
-    var start: number = Math.max(num - lag - 1, 0);
-    var distance: number = abb[num - 1].distance - abb[start].distance;
-    var time: number = abb[num - 1].time - abb[start].time;
-    abb[num - 1].compSpeed = 3600000 * distance / time;
-    return abb;
-  }
-
-  async speedFilterAll(abb: any, lag: number) {
-    var num: number = abb.length;
-    abb[0].compSpeed = 0;
-    for (var i = 1; i < num; i++) {
-      var start: number = Math.max(i - lag, 0);
+    for (var i = initial; i <= num - 1; i++) {
+      var start: number = Math.max(i - this.lag, 0);
       var distance: number = await abb[i].distance - abb[start].distance;
       var time: number = await abb[i].time - abb[start].time;
       abb[i].compSpeed = 3600000 * distance / time;

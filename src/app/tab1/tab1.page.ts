@@ -38,12 +38,11 @@ import VectorTileSource from 'ol/source/VectorTile';
 import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
-//import { Dialog } from '@capacitor/dialog';
-//import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import { App } from '@capacitor/app';
 import { MultiLineString, MultiPoint } from 'ol/geom';
 import LayerRenderer from 'ol/renderer/Layer';
 import { Geolocation } from '@capacitor/geolocation';
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 
 useGeographic();
 
@@ -113,7 +112,7 @@ export class Tab1Page {
   multiPoint: any = [];
   openCanvas: boolean = true;
   layerVisibility: string = 'archived' // archived, multi or none 
-
+  
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
@@ -140,13 +139,15 @@ export class Tab1Page {
           // compute distances
           await this.computeDistances();
           // filter speed
-          await this.filterSpeed();
+          // await this.filterSpeed();
+          if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.currentTrack.features[0].geometry.properties.data, this.speedFiltered + 1);
+          this.speedFiltered = num - 1;
           // average speed
           await this.averageSpeed();
-          // update canvas
-          await this.updateAllCanvas(this.currentCtx, this.currentTrack);
           // detect changes
           this.cd.detectChanges();
+          // update canvas
+          await this.updateAllCanvas(this.currentCtx, this.currentTrack);
           console.log('transition',this.currentTrack?.features[0].geometry.coordinates.length)
         });  
       }
@@ -167,8 +168,10 @@ export class Tab1Page {
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
     // on init layer visibility is set to archived
-    this.layerVisibility = 'archived'
-    await this.storage.set('layerVisibility', this.layerVisibility);
+    //this.layerVisibility = 'archived'
+    //await this.storage.set('layerVisibility', this.layerVisibility);
+    // uncheck all
+    await this.uncheckAll();
     // create canvas
     await this.createCanvas();
     // create map
@@ -177,13 +180,13 @@ export class Tab1Page {
 
   // ION VIEW DID ENTER
   async ionViewDidEnter() {
+    this.layerVisibility = global.layerVisibility
     // change color for current and archived tracks
     await this.changeColor();
     // check layer visibility
-    this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
+    //this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
     // only visible for layerVisibility == 'archived' 
-    this.show('ac0','none');
-    this.show('ac1','none');
+    await this.showCanvas('a','none')
     // archived visible
     if (this.layerVisibility == 'archived') {
       // retrieve archived track
@@ -194,8 +197,8 @@ export class Tab1Page {
       if (this.archivedTrack) await this.showArchivedTrack();
       // set map view 
       if (this.archivedTrack && !this.currentTrack) await this.setMapView(this.archivedTrack);
-      this.show('ac0','block');
-      this.show('ac1','block');
+      // show canvas
+      if (this.archivedTrack) await this.showCanvas('a','block')
     }
     else if (this.layerVisibility == 'multi') {
       await this.hideArchivedTrack();  
@@ -213,6 +216,7 @@ export class Tab1Page {
       try {await this.multiLayer.setVisible(false);} catch{}
     }
     if (this.currentTrack) await this.setMapView(this.currentTrack);
+    console.log('ion view - go to update all canvas')
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
@@ -258,6 +262,13 @@ export class Tab1Page {
 
   // START TRACKING /////////////////////////////////
   async startTracking() {
+    // start foreground service
+    await ForegroundService.startForegroundService({
+      id: 1234,
+      title: 'Tracking Your Location.',
+      body: 'Location tracking in progress.',
+      smallIcon: 'splash.png', // icon in `res/drawable` or default
+    });
     // if there was a track, remove it
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
@@ -274,8 +285,8 @@ export class Tab1Page {
     this.onRouteColor = 'black'
     // start tracking
     BackgroundGeolocation.addWatcher({
-      backgroundMessage: "Cancel to prevent battery drain.",
-      backgroundTitle: "Tracking You.",
+      backgroundMessage: "Cancel to prevent battery drain",
+      backgroundTitle: "Tracking Your Location.",
       requestPermissions: true,
       stale: false,
       distanceFilter: this.distanceFilter
@@ -292,7 +303,9 @@ export class Tab1Page {
           // compute distances
           await this.computeDistances();
           // filter speed
-          await this.filterSpeed();
+          // await this.filterSpeed();
+          if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.currentTrack.features[0].geometry.properties.data, this.speedFiltered + 1);
+          this.speedFiltered = num - 1;
           // average speed
           await this.averageSpeed();
           // html values
@@ -345,6 +358,8 @@ export class Tab1Page {
     }
     // remove watcher
     await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
+    // stop foreground service
+    await ForegroundService.stopForegroundService();
     // filter remaining values
     await this.filterAltitude(num - 1);
     // set map view
@@ -503,7 +518,7 @@ export class Tab1Page {
     // check whether on route...
     let num = this.currentTrack.features[0].geometry.coordinates.length;
     console.log(num, this.archivedTrack)
-    if ((num % 5 == 0) && (this.archivedTrack)) await this.checkWhetherOnRoute();
+    if ((num % 10 == 0) && (this.archivedTrack)) await this.checkWhetherOnRoute();
     console.log(this.onRouteColor)
     return true;
   }
@@ -630,7 +645,7 @@ export class Tab1Page {
   // 7. retrieveTrack()
 
   // SHOW / HIDE ELEMENTS ///////////////////////////////// 
-  show(id: string, action: string) {
+  async show(id: string, action: string) {
     var obj: HTMLElement | null = document.getElementById(id);
     if (!obj) return;
     obj.style.display = action
@@ -736,12 +751,13 @@ export class Tab1Page {
       }
     }
 /*
-    // uncheck all
+    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
     for (var item of collection) {
       item.isChecked = false;
     }
+    await this.storage.set('collection', collection);      
 */      
-    await this.storage.set('collection', collection);
+
     // retrieve track
     track = await this.storage.get(JSON.stringify(key));
     // compute extremes
@@ -824,9 +840,8 @@ export class Tab1Page {
             await this.computeExtremes(this.archivedTrack)
             try{await this.multiLayer.setVisible(false);} catch{}
             this.layerVisibility = 'archived'
-            await this.storage.set('layerVisibility', this.layerVisibility);
-            this.show('ac0','block');
-            this.show('ac1','block');
+            //await this.storage.set('layerVisibility', this.layerVisibility);
+            await this.showCanvas('a','block')
             await this.showArchivedTrack()
             await this.setMapView(this.archivedTrack);
           }
@@ -847,13 +862,12 @@ export class Tab1Page {
   // 2. updateAllCanvas()
 
   async createCanvas() {
+    this.openCanvas = true;
     var currentCanvas: any;
     var archivedCanvas: any;
     // show canvas
-    this.show('cc0','block');
-    this.show('cc1','block');
-    this.show('ac0','block');
-    this.show('ac1','block');
+    await this.showCanvas('c','block')
+    await this.showCanvas('a','block')
     // loop on canvas types
     var size = Math.min(window.innerWidth, window.innerHeight)
     for (var i in this.properties) {
@@ -872,28 +886,29 @@ export class Tab1Page {
     // define canvasNum as height and width
     this.canvasNum = size;
     // hide canvas
-    this.show('cc0','none');
-    this.show('cc1','none');
-    this.show('ac0','none');
-    this.show('ac1','none');
+    await this.showCanvas('c','none')
+    await this.showCanvas('a','none')
     this.openCanvas = false;
   }
  
   async updateAllCanvas(context: any, track: any) {
+    this.openCanvas = true;
+    console.log('update canvas?', track)
     // hide canvas
-    if (track == this.currentTrack) {
-      this.show('cc0','none');
-      this.show('cc1','none'); }
-    else if (track == this.archivedTrack) {
-      this.show('ac0','none');
-      this.show('ac1','none');
-    }
+    if (track == this.currentTrack) await this.showCanvas('c','none')
+    else if (track == this.archivedTrack) await this.showCanvas('a','none')
     var tUnit: string = '';
-    if (!context) return tUnit
+    if (!context) {
+      this.openCanvas = false;
+      console.log('updated canvas', track)
+      return tUnit
+    }
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(context[i], track, this.properties[i], 'x');
       else tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
     }
+    console.log('updated canvas', track)
+    this.openCanvas = false;
     return tUnit;
   }
 
@@ -905,13 +920,8 @@ export class Tab1Page {
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return tUnit;
     // show canvas
-    if (track == this.currentTrack) {
-      this.show('cc0','block');
-      this.show('cc1','block'); }
-    else if (track == this.archivedTrack) {
-      this.show('ac0','block');
-      this.show('ac1','block');
-    }
+    if (track == this.currentTrack) this.showCanvas('c','block')
+    else if (track == this.archivedTrack) this.showCanvas('a','block')
     const num = await track.features[0].geometry.properties.data.length ?? 0;
     // time units
     var xDiv: number = 1; 
@@ -964,7 +974,6 @@ export class Tab1Page {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // grid
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, a, d, e, f)
-    this.openCanvas = false;
     return tUnit;
   }
   
@@ -1066,15 +1075,13 @@ export class Tab1Page {
 
   async hideArchivedTrack() {
     try{await this.archivedLayer.setVisible(false);} catch{}
-    this.show('ac0','none');
-    this.show('ac1','none');
+    await this.showCanvas('a','none')
   }
 
   async showArchivedTrack() {
     try{await this.archivedLayer.setVisible(true);} catch{}
-    this.show('ac0','block');
-    this.show('ac1','block');
     this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+    await this.showCanvas('a','block')
     await this.displayArchivedTrack();
   }
 
@@ -1124,6 +1131,7 @@ export class Tab1Page {
     }
   }
 
+  /*
   async filterSpeed() {
     if (!this.currentTrack) return;
     // number of points
@@ -1137,6 +1145,7 @@ export class Tab1Page {
       this.speedFiltered = i;  
     }
   }
+  */  
 
   async averageSpeed() {
     if (!this.currentTrack) return;
@@ -1236,6 +1245,25 @@ export class Tab1Page {
     })
     // add coordinates
     this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
+  }
+
+  async showCanvas(track: string, visible: string) {
+    await this.show(track+'c0',visible);
+    await this.show(track+'c1',visible); 
+  }
+
+  async uncheckAll() {
+    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    for (var item of collection) {
+      item.isChecked = false;
+    }
+    await this.storage.set('collection', collection);      
+  }
+
+  ionViewWillLeave() {
+    global.layerVisibility = this.layerVisibility
+    if (this.archivedTrack) global.archivedPresent = true
+    else global.archivedPresent = false
   }
 
 }
