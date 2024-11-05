@@ -216,7 +216,6 @@ export class Tab1Page {
       try {await this.multiLayer.setVisible(false);} catch{}
     }
     if (this.currentTrack) await this.setMapView(this.currentTrack);
-    console.log('ion view - go to update all canvas')
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
@@ -283,6 +282,7 @@ export class Tab1Page {
     this.averagedSpeed = 0;
     this.computedDistances = 0;
     this.onRouteColor = 'black'
+    var oldAltitude: number = -1
     // start tracking
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain",
@@ -293,7 +293,7 @@ export class Tab1Page {
     }, async (location: Location, error: Error) => {
       if (location) {
         // build geojson always
-        const locationNew: boolean = await this.buildGeoJson(location);
+        const locationNew: boolean = await this.buildGeoJson(location, oldAltitude);
         if (!this.foreground && locationNew) console.log('background', this.currentTrack?.features[0].geometry.coordinates.length)
         // in foreground update canvas and display current track
         if (this.foreground && locationNew) {
@@ -500,12 +500,14 @@ export class Tab1Page {
   // 1. buildGeoJson()
 
   // BUILD GEOJSON ////////////////////////////////////
-  async buildGeoJson(location: Location) {
+  async buildGeoJson(location: Location, oldAltitude: number) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return false;
     if (location.altitude == null || location.altitude == undefined) return false;
+    if (Math.abs(location.altitude - oldAltitude) > 50 && oldAltitude >= 0) return false;
     // m/s to km/h
     location.speed = location.speed * 3.6
+    var oldAltitude = location.altitude
     // initial point
     if (!this.currentTrack) {
       await this.firstPoint(location);
@@ -517,9 +519,7 @@ export class Tab1Page {
     await this.fillGeojson(location);
     // check whether on route...
     let num = this.currentTrack.features[0].geometry.coordinates.length;
-    console.log(num, this.archivedTrack)
     if ((num % 10 == 0) && (this.archivedTrack)) await this.checkWhetherOnRoute();
-    console.log(this.onRouteColor)
     return true;
   }
 
