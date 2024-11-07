@@ -4,11 +4,12 @@
  import { IonicModule, AlertController, LoadingController } from '@ionic/angular';
  import { ExploreContainerComponent } from '../explore-container/explore-container.component';
  import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
- import { Router } from '@angular/router';
+ import { Router, ActivatedRoute } from '@angular/router';
  import { Storage } from '@ionic/storage-angular';
  import { FormsModule } from '@angular/forms'
  import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
  import { global } from '../../environments/environment';
+ import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
  import { register } from 'swiper/element/bundle';
  register();
  
@@ -35,15 +36,56 @@
    uploaded: string = ''; 
    lag: number = global.lag; // 8
    comChecked: boolean = false 
- 
+    
    constructor(
      public fs: FunctionsService,
      private alertController: AlertController,
      private loadingController: LoadingController,
      private router: Router,
-     private storage: Storage
+     private storage: Storage,
+     private route: ActivatedRoute
    ) {}
  
+  ionViewDidEnter() {
+    // Get the filePath parameter when the component initializes
+    this.route.queryParams.subscribe(async params => {
+      var uri: string | null = params['filePath'] || null;
+      if (uri) {
+        console.log('Received in tab3:', uri);
+        try {
+          const fileContent = await Filesystem.readFile({
+            path: uri,
+            encoding: Encoding.UTF8,
+          });
+          if (typeof fileContent.data === 'string') {
+            try {
+              await this.parseGpx(fileContent.data);
+              this.uploaded = 'File uploaded'
+            }
+            catch {this.uploaded = 'No file uploaded'}
+          }
+          else this.uploaded = 'No file uploaded'
+        } 
+        catch (error) {this.uploaded = 'No file uploaded'}
+      }
+      else {this.uploaded = ''}
+    });
+  }
+
+  async readFileFromUri(uri: string) {
+    try {
+      const fileContent = await Filesystem.readFile({
+        path: uri,
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
+      console.log('File content:', fileContent.data);
+      return fileContent;
+    } catch (error) {
+      console.error('Error reading file:', error);
+      return ''
+    }
+  }
 
    goHome() {
      this.router.navigate(['tab1']);
@@ -259,6 +301,10 @@
      if (slope > 0) { this.importedTrack.features[0].properties.totalElevationGain = await this.importedTrack.features[0].properties.totalElevationGain + slope; }
      else {this.importedTrack.features[0].properties.totalElevationLoss = await this.importedTrack.features[0].properties.totalElevationLoss - slope; }
    } 
+
+   ionViewWillLeave() {
+    this.uploaded = '';
+   }
  
  }
  

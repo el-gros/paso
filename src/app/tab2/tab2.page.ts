@@ -230,13 +230,13 @@ export class Tab2Page {
         directory: Directory.External, // Use Directory.Documents for cross-platform compatibility
         encoding: Encoding.UTF8,
       });
-      console.log(result)
       // find file uri
       const fileUri = await Filesystem.getUri({
         path: file,
         directory: Directory.External,
       });
-      console.log(fileUri)
+      console.log('I send',fileUri.uri)
+      console.log('also have', file,'and', fileUri)
       await Share.share({
         title: 'Share a track',
         text: 'Here is the file you requested',

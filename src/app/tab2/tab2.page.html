@@ -68,7 +68,7 @@
           expand="block">
           <div>DISPLAY<br>REFERENCE</div>
         </ion-button>
-        <ion-button *ngIf="(numChecked != 1)" [ngClass]="(layerVisibility != 'archived') ? 'redDisabled' : 'redEnabled'" (click)="displayTrack(false)"
+        <ion-button *ngIf="(numChecked != 1)" [ngClass]="((layerVisibility != 'archived') || !archivedPresent) ? 'redDisabled' : 'redEnabled'" (click)="displayTrack(false)"
           expand="block" [disabled]="(layerVisibility != 'archived') || !archivedPresent">
           <div>HIDE<br>REFERENCE</div>
         </ion-button>

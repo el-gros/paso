@@ -109,9 +109,11 @@ export class Tab1Page {
   maxX: number = -Infinity;
   minY: number = Infinity;
   maxY: number = -Infinity;
-  multiPoint: any = [];
   openCanvas: boolean = true;
   layerVisibility: string = 'archived' // archived, multi or none 
+  audioCtx: AudioContext | null = null;  // Declare outside of function to reuse the context
+  multiPoint: any = [];
+  multiKey: any = [];
   
   constructor(
     public fs: FunctionsService,
@@ -139,16 +141,17 @@ export class Tab1Page {
           // compute distances
           await this.computeDistances();
           // filter speed
-          // await this.filterSpeed();
           if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.currentTrack.features[0].geometry.properties.data, this.speedFiltered + 1);
           this.speedFiltered = num - 1;
           // average speed
           await this.averageSpeed();
+          // html values
+          await this.htmlValues();
           // detect changes
           this.cd.detectChanges();
           // update canvas
           await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-          console.log('transition',this.currentTrack?.features[0].geometry.coordinates.length)
+          console.log('Transition.',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
         });  
       }
     });
@@ -167,15 +170,22 @@ export class Tab1Page {
     this.show('trash', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
-    // on init layer visibility is set to archived
-    //this.layerVisibility = 'archived'
-    //await this.storage.set('layerVisibility', this.layerVisibility);
     // uncheck all
     await this.uncheckAll();
     // create canvas
     await this.createCanvas();
     // create map
     await this.createMap()
+    // Listen for app URL open events (e.g., file tap)
+    this.addFileListener();
+  }
+
+  addFileListener() {
+    App.addListener('appUrlOpen', (data: any) => {
+      console.log('I send to tab3: ', data.url, 'but have', data);
+      const filePath = data.url;
+      this.router.navigate(['tab3'], { queryParams: { filePath: data.url } });
+    });
   }
 
   // ION VIEW DID ENTER
@@ -183,8 +193,6 @@ export class Tab1Page {
     this.layerVisibility = global.layerVisibility
     // change color for current and archived tracks
     await this.changeColor();
-    // check layer visibility
-    //this.layerVisibility = await this.check(this.layerVisibility, 'layerVisibility');
     // only visible for layerVisibility == 'archived' 
     await this.showCanvas('a','none')
     // archived visible
@@ -294,7 +302,7 @@ export class Tab1Page {
       if (location) {
         // build geojson always
         const locationNew: boolean = await this.buildGeoJson(location, oldAltitude);
-        if (!this.foreground && locationNew) console.log('background', this.currentTrack?.features[0].geometry.coordinates.length)
+        if (!this.foreground && locationNew) console.log('Background', this.currentTrack?.features[0].geometry.coordinates.length, 'points. Geojson updated')
         // in foreground update canvas and display current track
         if (this.foreground && locationNew) {
           let num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
@@ -303,7 +311,6 @@ export class Tab1Page {
           // compute distances
           await this.computeDistances();
           // filter speed
-          // await this.filterSpeed();
           if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.currentTrack.features[0].geometry.properties.data, this.speedFiltered + 1);
           this.speedFiltered = num - 1;
           // average speed
@@ -316,7 +323,7 @@ export class Tab1Page {
           await this.displayCurrentTrack();
           // detect changes
           this.cd.detectChanges();
-          console.log('foreground', this.currentTrack?.features[0].geometry.coordinates.length)
+          console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
         }
       }
     }).then((value: any) => this.watcherId = value);
@@ -517,9 +524,13 @@ export class Tab1Page {
     await this.fixWrongOrder(location);
     // add location
     await this.fillGeojson(location);
+    console.log('geojson updated')
     // check whether on route...
     let num = this.currentTrack.features[0].geometry.coordinates.length;
-    if ((num % 10 == 0) && (this.archivedTrack)) await this.checkWhetherOnRoute();
+    if ((num % 5 == 0) && (this.archivedTrack)) {
+      await this.checkWhetherOnRoute();
+      console.log('checked whether on route...', this.onRouteColor, 'color')
+    }
     return true;
   }
 
@@ -833,8 +844,8 @@ export class Tab1Page {
           const index = await multiPointCoordinates.findIndex((coord: any[]) =>
             coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
           );
-          var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
-          var key = collection[index].date;
+          //var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+          var key = this.multiKey[index];
           this.archivedTrack = await this.storage.get(JSON.stringify(key));
           if (this.archivedTrack) {
             await this.computeExtremes(this.archivedTrack)
@@ -893,21 +904,18 @@ export class Tab1Page {
  
   async updateAllCanvas(context: any, track: any) {
     this.openCanvas = true;
-    console.log('update canvas?', track)
     // hide canvas
     if (track == this.currentTrack) await this.showCanvas('c','none')
     else if (track == this.archivedTrack) await this.showCanvas('a','none')
     var tUnit: string = '';
     if (!context) {
       this.openCanvas = false;
-      console.log('updated canvas', track)
       return tUnit
     }
     for (var i in this.properties) {
       if (this.properties[i] == 'altitude') await this.updateCanvas(context[i], track, this.properties[i], 'x');
       else tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
     }
-    console.log('updated canvas', track)
     this.openCanvas = false;
     return tUnit;
   }
@@ -1034,24 +1042,28 @@ export class Tab1Page {
   /////////////////////////////////////////////////////
 
   async playBeep(time: number, freq: number, volume: number) {
-    // remove next line
-    const audioCtx = new (window.AudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();  // Create a gain node
+    if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.AudioContext)();  // Initialize once
+    const oscillator = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();  // Create a gain node
     oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime); // 440Hz beep
-    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); // Range: 0 (silent) to 1 (full volume)
+    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
+    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);       // Set initial volume
     oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    gainNode.connect(this.audioCtx.destination);
     oscillator.start();
-    oscillator.stop(audioCtx.currentTime + time); 
+    oscillator.stop(this.audioCtx.currentTime + time); 
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
   }
 
   async displayAllTracks() {
     var key: any;
     var track: any;
     var multiLine: any = [];
-    var multiPoint: any = [];        
+    this.multiPoint = [];
+    this.multiKey = [];        
     // get collection
     var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
     // find key
@@ -1064,10 +1076,11 @@ export class Tab1Page {
       }
       const coord: any = await track.features[0].geometry.coordinates
       multiLine.push(coord);
-      multiPoint.push(coord[0]);
+      this.multiPoint.push(coord[0]);
+      this.multiKey.push(item.date);
     }
     this.multiFeature.setGeometry(new MultiLineString(multiLine));
-    this.multiMarker.setGeometry(new MultiPoint(multiPoint));      
+    this.multiMarker.setGeometry(new MultiPoint(this.multiPoint));      
     this.multiFeature.setStyle(this.drawPoint('black'));
     this.multiMarker.setStyle(this.drawCircle('green'));
     this.multiLayer.setVisible(true);
@@ -1131,22 +1144,6 @@ export class Tab1Page {
     }
   }
 
-  /*
-  async filterSpeed() {
-    if (!this.currentTrack) return;
-    // number of points
-    const num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    // speed filtering
-    for (var i = this.speedFiltered + 1; i <= num-1; i++) {
-      var start: number = Math.max(i - this.lag, 0);
-      var distance: number = this.currentTrack.features[0].geometry.properties.data[i].distance - this.currentTrack.features[0].geometry.properties.data[start].distance;
-      var time: number = this.currentTrack.features[0].geometry.properties.data[i].time - this.currentTrack.features[0].geometry.properties.data[start].time;
-      this.currentTrack.features[0].geometry.properties.data[i].compSpeed = 3600000 * distance / time;
-      this.speedFiltered = i;  
-    }
-  }
-  */  
-
   async averageSpeed() {
     if (!this.currentTrack) return;
     // number of points
@@ -1192,21 +1189,20 @@ export class Tab1Page {
 
   async checkWhetherOnRoute() {
     //this.onRouteColor = 'black'
-    console.log(this.layerVisibility);
     if (!this.currentTrack) return;
     if (!this.archivedTrack) return;
     if (this.layerVisibility != 'archived') return;
     // check...    
     var previousColor = this.onRouteColor;
-    console.log('to check')
     this.onRouteColor = await this.onRoute() ?? 'black';
-    console.log('checked', this.onRouteColor)
+    console.log('check if beep', previousColor, this.onRouteColor)
     if (previousColor == 'green' && this.onRouteColor == 'red' ) {
       await this.playBeep(0.4, 800, 1);
       await this.playBeep(0.4, 800, 0.01);
       await this.playBeep(0.4, 800, 1);
     }
     else if (previousColor == 'red' && this.onRouteColor == 'green' ) await this.playBeep(0.4, 800, 1); 
+    console.log('already checked if beep')
   }
 
   async fixWrongOrder(location:Location) {
