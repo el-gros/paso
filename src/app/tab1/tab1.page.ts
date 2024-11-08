@@ -78,7 +78,7 @@ export class Tab1Page {
   archivedMarkers: any = [null, null, null];
   multiMarker: any | undefined = undefined;
   lag: number = global.lag; // 8
-  distanceFilter: number = 5; // .05 / 5
+  distanceFilter: number = .05; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
@@ -111,7 +111,7 @@ export class Tab1Page {
   maxY: number = -Infinity;
   openCanvas: boolean = true;
   layerVisibility: string = 'archived' // archived, multi or none 
-  audioCtx: AudioContext | null = null;  // Declare outside of function to reuse the context
+  // audioCtx: AudioContext | null = null;  // Declare outside of function to reuse the context
   multiPoint: any = [];
   multiKey: any = [];
   
@@ -1042,20 +1042,25 @@ export class Tab1Page {
   /////////////////////////////////////////////////////
 
   async playBeep(time: number, freq: number, volume: number) {
-    if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.AudioContext)();  // Initialize once
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();  // Create a gain node
+    console.log('I am on playbeep')
+    var audioCtx = new (window.AudioContext || window.AudioContext)();  // Initialize once
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();  // Create a gain node
     oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
-    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);       // Set initial volume
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);  // Set frequency
+    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);       // Set initial volume
     oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
+    gainNode.connect(audioCtx.destination);
     oscillator.start();
-    oscillator.stop(this.audioCtx.currentTime + time); 
-    oscillator.onended = () => {
+    console.log('beeping')
+    oscillator.stop(audioCtx.currentTime + time); 
+    oscillator.onended = async () => {
       oscillator.disconnect();
       gainNode.disconnect();
+      await audioCtx.close()
     };
+    // audioCtx.close();
+    console.log('playbeep finished')
   }
 
   async displayAllTracks() {
