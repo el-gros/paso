@@ -63,3 +63,10 @@ export interface TrackDefinition {
   description: string,
   isChecked: boolean
 }
+
+export interface Extremes {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} 
