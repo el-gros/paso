@@ -1,5 +1,5 @@
 import { global } from 'src/environments/environment';
-import { Data, Bounds, Track, TrackDefinition  } from 'src/globald';
+import { Track, Location  } from 'src/globald';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -14,41 +14,70 @@ export class FunctionsService {
 
   ) { }
 
-  async computeDistance(lon1: number, lat1: number, lon2: number, lat2: number) {
-    const toRadians = (degrees: number) => degrees * (Math.PI / 180);
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
+  /* FUNCTIONS
+    computeDistance
+    formatMillisecondsToUTC
+    filterSpeed
+    fillGeojson
+  */
+
+  // COMPUTES DISTANCES ///////////////////////////////////// 
+  async computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): Promise<number> {
+    // differences in latitude and longitude in radians
+    const DEG_TO_RAD = Math.PI / 180;
+    const dLat = (lat2 - lat1) * DEG_TO_RAD;
+    const dLon = (lon2 - lon1) * DEG_TO_RAD;
+    // Haversine formula
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(lat1 * DEG_TO_RAD) * Math.cos(lat2 * DEG_TO_RAD) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);   
+    // angular distance in radians
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    // distance in km
     const earthRadiusKm = 6371;
-    return earthRadiusKm * c;
+    return earthRadiusKm * c;  
   }
 
+  // FORMAT MILISECONDS TO HH:MM:SS
   formatMillisecondsToUTC(milliseconds: number): string {
-    if (milliseconds < 500) return '00:00:00'
+    const padZero = (num: number) => num.toString().padStart(2, '0');
+    // convert ms to hours, minutes and seconds
     const seconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    return `${this.padZero(hours)}:${this.padZero(minutes)}:${this.padZero(remainingSeconds)}`;
+    // format
+    return `${padZero(hours)}:${padZero(minutes)}:${padZero(remainingSeconds)}`;
   }
 
-  padZero(value: number): string {
-    return value.toString().padStart(2, '0');
-  }
-
-  async filterSpeed(abb: any, initial: number) {
-    var num: number = abb.length;
-    for (var i = initial; i <= num - 1; i++) {
-      var start: number = Math.max(i - this.lag, 0);
-      var distance: number = await abb[i].distance - abb[start].distance;
-      var time: number = await abb[i].time - abb[start].time;
-      abb[i].compSpeed = 3600000 * distance / time;
+  // FILTER SPEED ///////////////////////////////////////
+  async filterSpeed(data: { altitude: number; speed: number; time: number; compSpeed: number; distance: number }[], initial: number): Promise<typeof data> {
+    const num = data.length;
+    // loop for points
+    for (let i = initial; i < num; i++) {
+        const start = Math.max(i - this.lag, 0);
+        const distance = data[i].distance - data[start].distance;
+        const time = data[i].time - data[start].time;
+        // Check to avoid division by zero
+        data[i].compSpeed = time > 0 ? (3600000 * distance) / time : 0;
     }
-    return abb;
+    return data;
+  }
+
+  // ADD POINT TO TRACK //////////////////////////////// 
+  async fillGeojson(track: Track | undefined, location: Location): Promise<void> {
+    if (!track) return;
+    // Add minimal data
+    track.features[0].geometry.properties.data.push({
+        altitude: location.altitude,
+        speed: location.speed,
+        time: location.time,
+        compSpeed: location.speed,  // Initial value; further processing can adjust it
+        distance: 0  // Placeholder, will be computed later
+    });
+    // Add coordinates
+    track.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
   }
 
 }

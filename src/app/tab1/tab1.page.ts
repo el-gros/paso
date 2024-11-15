@@ -21,26 +21,27 @@ import VectorSource from 'ol/source/Vector';
 import OSM from 'ol/source/OSM';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import GeoJSON from 'ol/format/GeoJSON';
 import LineString from 'ol/geom/LineString';
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style } from 'ol/style';
+import { useGeographic } from 'ol/proj.js';
+import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
+import { App } from '@capacitor/app';
+import { MultiLineString, MultiPoint } from 'ol/geom';
+import { Geolocation } from '@capacitor/geolocation';
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
-import { useGeographic } from 'ol/proj.js';
 import Polyline from 'ol/format/Polyline.js';
 import { Source } from 'ol/source';
-import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
 import XYZ from 'ol/source/XYZ';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
 import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
-import { App } from '@capacitor/app';
-import { MultiLineString, MultiPoint } from 'ol/geom';
 import LayerRenderer from 'ol/renderer/Layer';
-import { Geolocation } from '@capacitor/geolocation';
-import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 
 useGeographic();
 
@@ -62,10 +63,11 @@ export class Tab1Page {
 
   watcherId: any = 0;
   currentTrack: Track | undefined = undefined;
-  archivedTrack: any;
+  archivedTrack: Track | undefined = undefined;
+  importedTrack: any;
   vMax: number = 400;
-  currentCtx: { [key: string]: CanvasRenderingContext2D | null } = {};
-  archivedCtx: { [key: string]: CanvasRenderingContext2D | null } = {};
+  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
+  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
@@ -108,6 +110,7 @@ export class Tab1Page {
   multiPoint: any = [];
   multiKey: any = [];
   audioCtx : AudioContext | undefined = new (window.AudioContext || window.AudioContext)()
+  uploaded: any;
   
   constructor(
     public fs: FunctionsService,
@@ -144,6 +147,12 @@ export class Tab1Page {
   show
   check
   displayArchivedTrack
+  changeColor
+  updateAllCanvas
+  drawPoint
+  computeMinMaxProperty
+  retrieveTrack
+  setMapView
   */
 
   // LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
@@ -214,9 +223,25 @@ export class Tab1Page {
   // LISTENING FOR OPEN EVENTS 
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
-    App.addListener('appUrlOpen', (data: any) => {
-      // go to tab3 to import data.url
-      this.router.navigate(['tab3'], { queryParams: { filePath: data.url } });
+    App.addListener('appUrlOpen', async (data: any) => {
+      this.gotoPage('tab1');
+      await this.processUrl(data);
+      this.layerVisibility = 'archived'
+      // retrieve archived track
+      this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
+      // assign visibility
+      if (this.multiLayer) await this.multiLayer.setVisible(false);
+      // iF archived track is available...
+      if (this.archivedTrack) {
+        // show archived track
+        await this.showArchivedTrack();
+        // Set map view for archived track if no current track
+        if (!this.currentTrack) {
+          await this.setMapView(this.archivedTrack);
+        }
+        // Show canvas for archived track
+        await this.showCanvas('a', 'block');
+      }  
     });
   }
 
@@ -260,10 +285,14 @@ export class Tab1Page {
         if (this.archivedLayer) await this.archivedLayer.setVisible(false);
         if (this.multiLayer) await this.multiLayer.setVisible(false);
       }
-      // center current track
-      if (this.currentTrack) await this.setMapView(this.currentTrack);
       // update canvas
       this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      // center current track and show canvas
+      if (this.currentTrack) {
+        await this.setMapView(this.currentTrack);
+        await this.showCanvas('c','block');        
+      }
+
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
     }  
@@ -566,8 +595,9 @@ export class Tab1Page {
     };
     // Add new track definition to the collection and save it
     collection.push(trackDef);
-    await this.storage.set('collection', collection);    this.show('start', 'block');
+    await this.storage.set('collection', collection);    
     // Update UI elements
+    this.show('start', 'block');
     this.show('stop', 'none');
     this.show('save', 'none');
     this.show('trash', 'block');
@@ -624,7 +654,7 @@ export class Tab1Page {
     // check for the locations order...
     await this.fixWrongOrder(location);
     // add location
-    await this.fillGeojson(location);
+    await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
     let num = this.currentTrack.features[0].geometry.coordinates.length;
     if ((num % 10 == 0) && (this.archivedTrack)) {
@@ -637,8 +667,6 @@ export class Tab1Page {
   async onRoute() {
     // Return 'black' if conditions aren't met
     if (!this.currentTrack || !this.archivedTrack || this.layerVisibility != 'archived') return 'black';
-    const num: number = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    const num2: number = this.archivedTrack.features[0].geometry.coordinates.length ?? 0;
     // Define current and archived coordinates
     const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
@@ -668,6 +696,7 @@ export class Tab1Page {
         i += (skip - 1) * reduction;
       }
     }
+    console.log('checked forward')
     // Reverse search
     for (let i = this.lastN; i >= 0; i -= reduction) {
       const point2 = archivedCoordinates[i];
@@ -679,6 +708,7 @@ export class Tab1Page {
         i -= (skip - 1) * reduction;
       }
     }
+    console.log('checked backward')
     // No match found
     return 'red';
   }
@@ -734,7 +764,7 @@ export class Tab1Page {
     }
   }
 
-  async updateAllCanvas(context: any, track: any) {
+  async updateAllCanvas(context: any, track: Track | undefined) {
     this.openCanvas = true;
     // Hide canvas for the current or archived track
     if (track == this.currentTrack) await this.showCanvas('c','none')
@@ -746,11 +776,11 @@ export class Tab1Page {
     }
     // update canvas
     let tUnit = '';
-    for (const property of this.properties) {
-      if (property === 'altitude') {
-        await this.updateCanvas(context[property], track, property, 'x');
+    for (var i in this.properties) {
+      if (this.properties[i] === 'altitude') {
+        await this.updateCanvas(context[i], track, this.properties[i], 'x');
       } else {
-        tUnit = await this.updateCanvas(context[property], track, property, 't');
+        tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
       }
     }
     // Return
@@ -783,7 +813,7 @@ export class Tab1Page {
     // Return
     return bounds;
   }
-  
+
   // RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
@@ -900,6 +930,8 @@ export class Tab1Page {
     try {
       await this.currentLayer.setVisible(true);
     } catch (error) {}
+    // show current canvas
+    await this.showCanvas('c','block')  
   }
   
   // CREATE MAP /////////////////////////////
@@ -931,8 +963,8 @@ export class Tab1Page {
   // CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     this.openCanvas = true;
-    let currentCanvas: HTMLCanvasElement | null;
-    let archivedCanvas: HTMLCanvasElement | null;
+    let currentCanvas: HTMLCanvasElement | undefined;
+    let archivedCanvas: HTMLCanvasElement | undefined;
     // show canvases
     await this.showCanvas('c','block')
     await this.showCanvas('a','block')
@@ -945,7 +977,8 @@ export class Tab1Page {
       if (currentCanvas) {
         currentCanvas.width = size;
         currentCanvas.height = size;
-        this.currentCtx[i] = currentCanvas.getContext("2d");
+        const ctx = currentCanvas.getContext("2d");
+        if (ctx) this.currentCtx[i] = ctx
       } else {
         console.error(`Canvas with ID currentCanvas${i} not found.`);
       }
@@ -954,17 +987,11 @@ export class Tab1Page {
       if (archivedCanvas) {
         archivedCanvas.width = size;
         archivedCanvas.height = size;
-        this.archivedCtx[i] = archivedCanvas.getContext("2d"); // Type is now CanvasRenderingContext2D | null
+        const ctx = archivedCanvas.getContext("2d");
+        if (ctx) this.archivedCtx[i] = ctx
       } else {
         console.error(`Canvas with ID archivedCanvas${i} not found.`);
       }
-      // get canvas to plot archived track and define their height and width
-      archivedCanvas = document.getElementById('archivedCanvas' + i) as HTMLCanvasElement;
-      archivedCanvas.width = size;
-      archivedCanvas.height = size;
-      // define their contexts
-      this.currentCtx[i] = currentCanvas.getContext("2d");
-      this.archivedCtx[i] = archivedCanvas.getContext("2d");
     }
     // Define canvasNum as height and width
     this.canvasNum = size;
@@ -1076,32 +1103,6 @@ export class Tab1Page {
     }
   }
 
-  async playBeep(freq: number, time: number) {
-    // Initialize audio context if not already created
-    if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext || window.AudioContext)();
-    }
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();  // Create a gain node
-    // Configure oscillator
-    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
-    // Set initial gain (volume)
-    gainNode.gain.setValueAtTime(1, this.audioCtx.currentTime);       // Set initial volume
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    // Start and stop the oscillator after the specified duration
-    oscillator.start();
-    console.log('beeping')
-    oscillator.stop(this.audioCtx.currentTime + time); 
-    // Clean up after the sound has finished
-    oscillator.onended = async () => {
-      oscillator.disconnect();
-      gainNode.disconnect();
-    };
-  }
-
   // CREATE FEATURES /////////////////////////////
   async createLayers() {
     // create features to hold current track and markers
@@ -1128,7 +1129,7 @@ export class Tab1Page {
   } 
 
   // UPDATE CANVAS ///////////////////////////////////
-  async updateCanvas(ctx: CanvasRenderingContext2D | undefined, track: any, propertyName: keyof Data, xParam: string) {
+  async updateCanvas(ctx: any, track: Track | undefined, propertyName: keyof Data, xParam: string) {
     var tUnit: string = ''
     if (!ctx) return tUnit;
     // Reset and clear the canvas
@@ -1350,7 +1351,6 @@ export class Tab1Page {
     const previousColor = this.onRouteColor;
     // Determine the current route color based on `onRoute` function
     this.onRouteColor = await this.onRoute() || 'black';
-    console.log('check if beep', previousColor, this.onRouteColor)
     // Play beep based on route status change
     if (previousColor === 'green' && this.onRouteColor === 'red') {
       await this.playBeep(600, 0.8); // Beep for off-route transition
@@ -1380,26 +1380,11 @@ export class Tab1Page {
     }
   }
 
-  // ADD POINT TO TRACK //////////////////////////////// 
-  async fillGeojson(location: Location) {
-    if (!this.currentTrack) return;
-    this.currentTrack.features[0].geometry.properties.data.push({
-      altitude: location.altitude,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: location.speed,
-      distance: 0,
-    })
-    // add coordinates
-    this.currentTrack.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
-  }
-
   // SHOW / HIDE CANVAS OF CURRENT TRACK
   async showCanvas(track: string, visible: 'block' | 'none' | 'inline' | 'flex') {
     await this.show(track+'c0',visible);
     await this.show(track+'c1',visible); 
   }
-
 
   // UNCHECK ALL ///////////////////////////////////////////
   async uncheckAll() {
@@ -1413,10 +1398,180 @@ export class Tab1Page {
   }
 
   // ON LEAVE ////////////////////////////
-  ionViewWillLeave() {
+  async ionViewWillLeave() {
     global.layerVisibility = this.layerVisibility;
     global.archivedPresent = !!this.archivedTrack;
   }
 
+  // PLAY A BEEP /////////////////////////////////////
+  async playBeep(freq: number, time: number) {
+    // Initialize audio context if not already created
+    if (!this.audioCtx) {
+      this.audioCtx = new (window.AudioContext || window.AudioContext)();
+    }
+    const oscillator = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();  // Create a gain node
+    // Configure oscillator
+    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
+    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
+    // Set initial gain (volume)
+    gainNode.gain.setValueAtTime(1, this.audioCtx.currentTime);       // Set initial volume
+    // Connect nodes
+    oscillator.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+    // Start and stop the oscillator after the specified duration
+    oscillator.start();
+    console.log('beeping')
+    oscillator.stop(this.audioCtx.currentTime + time); 
+    // Clean up after the sound has finished
+    oscillator.onended = async () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
+  }
+  
+  // PARSE CONTENT OF A GPX FILE ////////////////////////
+  async parseGpx(gpxText: string) {
+    this.importedTrack = {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {
+          name: undefined,
+          place: undefined,
+          date: undefined,
+          description: undefined,
+          totalDistance: '',
+          totalElevationGain: 0,
+          totalElevationLoss: 0,
+          totalTime: '',
+          totalNumber: ''
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [],
+          properties: {
+            data: [],
+          }
+        }  
+      }]
+    }
+    // Parse GPX data
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
+    // Extract tracks
+    const tracks = xmlDoc.getElementsByTagName('trk');
+    if (tracks.length === 0) return;
+    // Extract track segments
+    const trackSegments = tracks[0].getElementsByTagName('trkseg');
+    if (trackSegments.length === 0) return;
+    const trackSegment = trackSegments[0];
+    // Extract points
+    const trackPoints = trackSegment.getElementsByTagName('trkpt');
+    // Track name
+    this.importedTrack.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
+    // Initialize variable
+    let altitudeOk = true;
+    let distance = 0;
+    // Loopo on points
+    for (let k = 0; k < trackPoints.length; k++) {
+      const lat = parseFloat(trackPoints[k].getAttribute('lat') || '');
+      const lon = parseFloat(trackPoints[k].getAttribute('lon') || '');
+      const ele = parseFloat(trackPoints[k].getElementsByTagName('ele')[0]?.textContent || '0');
+      const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
+      if (isNaN(lat) || isNaN(lon)) continue;
+      // Add coordinates
+      this.importedTrack.features[0].geometry.coordinates.push([lon, lat]);
+      const num = this.importedTrack.features[0].geometry.coordinates.length;
+      // Handle distance
+      if (k > 0) {
+        const prevCoord = this.importedTrack.features[0].geometry.coordinates[k - 1];
+        distance += await this.fs.computeDistance(prevCoord[0], prevCoord[1], lon, lat);
+      }
+      // Handle altitude
+      if (alt === undefined) altitudeOk = false;
+      if (isNaN(ele)) {
+        altitudeOk = false;
+      }
+      if (ele) var alt: number | undefined = +ele;
+      else {
+        alt = undefined;
+        altitudeOk = false;
+      }
+      if (alt == 0 && num > 1) alt = await this.importedTrack.features[0].geometry.properties.data[num-2].altitude; 
+      // Handle time
+      const locTime = time ? new Date(time) : undefined;
+      // Add data
+      this.importedTrack.features[0].geometry.properties.data.push({
+        altitude: alt,
+        speed: undefined,
+        time: locTime,
+        compSpeed: 0,
+        distance: distance,
+      });
+    }
+    // Fill values
+    var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
+    this.importedTrack.features[0].properties.totalDistance = distance;
+    this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - 
+      this.importedTrack.features[0].geometry.properties.data[0].time);
+    this.importedTrack.features[0].properties.totalNumber = num;
+    // Speed filter
+    try {
+      this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data, num - 1);
+    }
+    catch {}  
+    // Altitude filter
+    try{
+      this.importedTrack.features[0].properties.totalElevationGain = 0;
+      this.importedTrack.features[0].properties.totalElevationLoss = 0;
+      await this.filterAltitude(this.importedTrack)
+      this.altitudeFiltered = 0;
+    }
+    catch {}
+    // speed filter      
+    this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data, 1);
+    // Save imported track
+    const date = new Date(this.importedTrack.features[0].geometry.properties.data[num - 1]?.time || Date.now());
+    this.importedTrack.features[0].properties.date = date;
+    await this.storage.set(JSON.stringify(date), this.importedTrack);
+    // Update collection
+    const trackDef = {
+      name: this.importedTrack.features[0].properties.name, 
+      date: this.importedTrack.features[0].properties.date, 
+      place: this.importedTrack.features[0].properties.place, 
+      description: this.importedTrack.features[0].properties.description, 
+      isChecked: true
+    };
+    // add new track definition and save collection and    
+    // uncheck all tracks except the new one
+    const collection: any = await this.storage. get('collection');
+    for (const item of collection) {
+      if ('isChecked' in item) {
+        item.isChecked = false;
+      }
+    }
+    collection.push(trackDef);
+    await this.storage.set('collection', collection);
+  }
+
+  // PROCESS FILE AFTER TAPPING ON IT /////////////
+  async processUrl(data: any) {
+    if (data.url) {
+      try {
+        const fileContent = await Filesystem.readFile({
+          path: data.url,
+          encoding: Encoding.UTF8,
+        });
+        if (typeof fileContent.data === 'string') {
+            await this.parseGpx(fileContent.data);
+            this.uploaded = 'File uploaded'
+        }
+        else this.uploaded = 'No file uploaded'
+      } 
+      catch (error) {this.uploaded = 'No file uploaded'}
+    }
+    else {this.uploaded = ''}
+  }
 }
 
