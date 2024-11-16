@@ -181,6 +181,7 @@ export class Tab2Page {
     for (var element of remove) {
       await this.storage.remove(JSON.stringify(element.date));
     }
+    this.numChecked = 0;
   }
 
   async geoJsonToGpx(feature: any) {

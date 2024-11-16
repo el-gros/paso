@@ -27,7 +27,6 @@ export class Tab3Page {
   //@ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
   archivedColor: string = 'green';
   currentColor: string = 'orange'
-  importedTrack: any;
   styleChecked: boolean = false;
   uploaded: string = ''; 
   lag: number = global.lag; // 8

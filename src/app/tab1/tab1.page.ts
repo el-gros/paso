@@ -64,7 +64,7 @@ export class Tab1Page {
   watcherId: any = 0;
   currentTrack: Track | undefined = undefined;
   archivedTrack: Track | undefined = undefined;
-  importedTrack: any;
+  track: any;
   vMax: number = 400;
   currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
@@ -168,7 +168,7 @@ export class Tab1Page {
           await this.displayCurrentTrack();
           // Filter altitude data
           const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-          await this.filterAltitude(num - this.lag - 1);
+          await this.filterAltitude(this.currentTrack, num - this.lag - 1);
           // compute distances
           await this.computeDistances();
           // Filter speed data
@@ -394,7 +394,7 @@ export class Tab1Page {
         if (this.foreground && locationNew) {
           const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
           // filter altitude 
-          await this.filterAltitude(num - this.lag - 1)
+          await this.filterAltitude(this.currentTrack, num - this.lag - 1)
           // compute distances
           await this.computeDistances();
           // filter speed
@@ -468,7 +468,7 @@ export class Tab1Page {
       await ForegroundService.stopForegroundService();
     } catch (error) {}
     // filter remaining values
-    await this.filterAltitude(num - 1);
+    await this.filterAltitude(this.currentTrack, num - 1);
     // set map view
     await this.setMapView(this.currentTrack);
     // update canvas
@@ -1073,31 +1073,31 @@ export class Tab1Page {
   }
 
   // FI8LTER ALTITUDE /////////////////////////////
-  async filterAltitude(final: number) {
-    if (!this.currentTrack) return;
+  async filterAltitude(track: any, final: number) {
+    if (!track) return;
     // number of points
-    const num = this.currentTrack.features[0].geometry.properties.data.length ?? 0;
+    const num = track.features[0].geometry.properties.data.length ?? 0;
     // Skip processing if final index is not the last point, or if points are fewer than lag
     if ((final != num - 1) && (num <= this.lag)) return
     // Get the track data once to simplify access
-    const data = this.currentTrack.features[0].geometry.properties.data;
+    const data = track.features[0].geometry.properties.data;
     // Loop through each point to filter altitude
     for (let i = this.altitudeFiltered + 1; i <=final; i++) {
       const start = Math.max(0, i - this.lag);
       const end = Math.min(i + this.lag, num - 1);
       // Calculate the average altitude in the window
       const sum = data.slice(start, end + 1)
-        .reduce((acc, point) => acc + point.altitude, 0);
+        .reduce((acc: any, point: { altitude: any; }) => acc + point.altitude, 0);
       data[i].altitude = sum / (end - start + 1);
       // Calculate elevation gains/losses
       const slope = data[i].altitude - data[i - 1].altitude;
       if (slope > 0) {
-        this.currentTrack.features[0].properties.totalElevationGain += slope;
+        track.features[0].properties.totalElevationGain += slope;
       } else {
-        this.currentTrack.features[0].properties.totalElevationLoss -= slope;
+        track.features[0].properties.totalElevationLoss -= slope;
       }
       // Update current altitude
-      this.currentTrack.features[0].properties.currentAltitude = data[i].altitude;
+      track.features[0].properties.currentAltitude = data[i].altitude;
       // Update the last processed index
       this.altitudeFiltered = i;
     }
@@ -1432,20 +1432,23 @@ export class Tab1Page {
   
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
-    this.importedTrack = {
+
+    let track: Track = {
       type: 'FeatureCollection',
       features: [{
         type: 'Feature',
         properties: {
-          name: undefined,
-          place: undefined,
+          name: '',
+          place: '',
           date: undefined,
-          description: undefined,
-          totalDistance: '',
+          description: '',
+          totalDistance: 0,
           totalElevationGain: 0,
           totalElevationLoss: 0,
           totalTime: '',
-          totalNumber: ''
+          totalNumber: 0,
+          currentAltitude: undefined, 
+          currentSpeed: undefined
         },
         geometry: {
           type: 'LineString',
@@ -1469,7 +1472,7 @@ export class Tab1Page {
     // Extract points
     const trackPoints = trackSegment.getElementsByTagName('trkpt');
     // Track name
-    this.importedTrack.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
+    track.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
     // Initialize variable
     let altitudeOk = true;
     let distance = 0;
@@ -1479,13 +1482,14 @@ export class Tab1Page {
       const lon = parseFloat(trackPoints[k].getAttribute('lon') || '');
       const ele = parseFloat(trackPoints[k].getElementsByTagName('ele')[0]?.textContent || '0');
       const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
+      console.log(time)
       if (isNaN(lat) || isNaN(lon)) continue;
       // Add coordinates
-      this.importedTrack.features[0].geometry.coordinates.push([lon, lat]);
-      const num = this.importedTrack.features[0].geometry.coordinates.length;
+      track.features[0].geometry.coordinates.push([lon, lat]);
+      const num = track.features[0].geometry.coordinates.length;
       // Handle distance
       if (k > 0) {
-        const prevCoord = this.importedTrack.features[0].geometry.coordinates[k - 1];
+        const prevCoord = track.features[0].geometry.coordinates[k - 1];
         distance += await this.fs.computeDistance(prevCoord[0], prevCoord[1], lon, lat);
       }
       // Handle altitude
@@ -1498,49 +1502,50 @@ export class Tab1Page {
         alt = undefined;
         altitudeOk = false;
       }
-      if (alt == 0 && num > 1) alt = await this.importedTrack.features[0].geometry.properties.data[num-2].altitude; 
+      if (alt == 0 && num > 1) alt = track.features[0].geometry.properties.data[num-2].altitude; 
       // Handle time
-      const locTime = time ? new Date(time) : undefined;
+      const locTime = time ? new Date(time).getTime() : 0;
       // Add data
-      this.importedTrack.features[0].geometry.properties.data.push({
+      if (!alt) alt = 0;
+      track.features[0].geometry.properties.data.push({
         altitude: alt,
-        speed: undefined,
+        speed: 0,
         time: locTime,
         compSpeed: 0,
         distance: distance,
       });
     }
     // Fill values
-    var num: number = this.importedTrack.features[0].geometry.properties.data.length ?? 0;
-    this.importedTrack.features[0].properties.totalDistance = distance;
-    this.importedTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(this.importedTrack.features[0].geometry.properties.data[num - 1].time - 
-      this.importedTrack.features[0].geometry.properties.data[0].time);
-    this.importedTrack.features[0].properties.totalNumber = num;
+    var num: number = track.features[0].geometry.properties.data.length ?? 0;
+    track.features[0].properties.totalDistance = distance;
+    track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(track.features[0].geometry.properties.data[num - 1].time - 
+      track.features[0].geometry.properties.data[0].time);
+    track.features[0].properties.totalNumber = num;
     // Speed filter
     try {
-      this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data, num - 1);
+      this.fs.filterSpeed(track.features[0].geometry.properties.data, num - 1);
     }
     catch {}  
     // Altitude filter
     try{
-      this.importedTrack.features[0].properties.totalElevationGain = 0;
-      this.importedTrack.features[0].properties.totalElevationLoss = 0;
-      await this.filterAltitude(this.importedTrack)
+      track.features[0].properties.totalElevationGain = 0;
+      track.features[0].properties.totalElevationLoss = 0;
+      await this.filterAltitude(track, num-1)
       this.altitudeFiltered = 0;
     }
     catch {}
     // speed filter      
-    this.importedTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(this.importedTrack.features[0].geometry.properties.data, 1);
+    track.features[0].geometry.properties.data = await this.fs.filterSpeed(track.features[0].geometry.properties.data, 1);
     // Save imported track
-    const date = new Date(this.importedTrack.features[0].geometry.properties.data[num - 1]?.time || Date.now());
-    this.importedTrack.features[0].properties.date = date;
-    await this.storage.set(JSON.stringify(date), this.importedTrack);
+    const date = new Date(track.features[0].geometry.properties.data[num - 1]?.time || Date.now());
+    track.features[0].properties.date = date;
+    await this.storage.set(JSON.stringify(date), track);
     // Update collection
     const trackDef = {
-      name: this.importedTrack.features[0].properties.name, 
-      date: this.importedTrack.features[0].properties.date, 
-      place: this.importedTrack.features[0].properties.place, 
-      description: this.importedTrack.features[0].properties.description, 
+      name: track.features[0].properties.name, 
+      date: track.features[0].properties.date, 
+      place: track.features[0].properties.place, 
+      description: track.features[0].properties.description, 
       isChecked: true
     };
     // add new track definition and save collection and    
