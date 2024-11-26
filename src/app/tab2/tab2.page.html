@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-label id="title">Name, date and place</ion-label>
     <div class="fab-container">
-      <ion-fab-button (click)="goHome()">
+      <ion-fab-button (click)="fs.goHome()">
         <ion-icon name="home"></ion-icon>
       </ion-fab-button>
     </div>
@@ -40,12 +40,10 @@
         {{info}}
       </ion-col>
       <ion-col size="4">
-        <ion-button *ngIf="layerVisibility != 'multi'" class='greenEnabled' (click)="displayAllTracks(true)" expand="block"
-          [disabled]='(num == 0)'>
+        <ion-button *ngIf="layerVisibility != 'multi'" class='greenEnabled' (click)="displayAllTracks(true)" expand="block">
           <div>DIISPLAY<br>ALL</div>
         </ion-button>
-        <ion-button *ngIf="layerVisibility == 'multi'" class='redEnabled' (click)="displayAllTracks(false)" expand="block"
-          [disabled]='(num == 0)'>
+        <ion-button *ngIf="layerVisibility == 'multi'" class='redEnabled' (click)="displayAllTracks(false)" expand="block">
           <div>HIDE<br>ALL</div>
         </ion-button>
       </ion-col>

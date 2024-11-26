@@ -51,10 +51,10 @@
       Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h</ng-container><br>
       Average speed: <ng-container *ngIf="currentAverageSpeed != undefined">{{currentAverageSpeed | number:'1.1-1'}} km/h</ng-container><br>
       In-motion average speed: <ng-container *ngIf="currentMotionSpeed != undefined">{{currentMotionSpeed | number:'1.1-1'}} km/h</ng-container><br>
-      Correct way?  <ng-container *ngIf="onRouteColor != 'black'">{{onRouteColor}}</ng-container>
+      <div *ngIf="archivedTrack" [style.color]="statusMessage.color">{{ statusMessage.text }}</div>
     </div>
     <div class = 'element card' *ngIf="archivedTrack && layerVisibility=='archived'">
-      ARCHIVED ROUTE<br>
+      REFERENCE ROUTE<br>
       {{archivedTrack.features[0].properties.name}}<br>
       Distance: <ng-container *ngIf="archivedTrack.features[0].properties.totalDistance !== undefined">
         {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</ng-container><br>

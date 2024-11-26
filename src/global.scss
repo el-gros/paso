@@ -25,10 +25,9 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
-
+// ALERT ////////////////////////////////////
 .alert {
     --backdrop-opacity: 0.6;
-//    --background: #ffffbb;
     --min-width: 400px !important;
     .alert-title {
       font-size: 20;
@@ -38,11 +37,20 @@
       width: 200px;
       border-radius: 2px;
       color: green;
-      font-size: 20px;
+      font-size: 18px;
     }
     .alert-message {
       color: black;
       font-size: 16px;
+    }
+    .alert-label {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;  
+    }
+    .alert-wrapper ion-input,
+    .alert-wrapper ion-textarea {
+      --padding-start: 0;      /* Remove extra padding inside Ionic inputs */
     }
     .alert-input-group {
       color: black;
@@ -56,37 +64,90 @@
         font-size: 16px;
       }
     }
-    .alert-radio-label {
-      color: black;
-    }
-    .alert-radio-icon {
-      border-color: black;
-    }
-    .alert-radio-inner {
-      background-color: white;
-    }
-    [aria-checked=true] .alert-radio-label {
-      color: white;
-    }     
-    [aria-checked=true] .alert-radio-icon {
-      border-color: white !important;
-    }
     .alert-cancel-button{  
         width: 200px;
         border-radius: 2px;
         color: red;
-        font-size: 20px;
+        font-size: 18px;
       }
-  }
+      .alert-edit {
+        color: black;
+        background-color: white; /* Set the background to white */
+        border: none;            /* Remove borders */
+        outline: none;           /* Remove focus outline */
+        padding: 8px;            /* Add some padding for a better look */
+        font-size: 16px;         /* Adjust font size */
+        border-radius: 4px;      /* Optional: Add rounded corners */
+        box-shadow: none;        /* Remove any default shadow */
+      }
+      /* General styles for all radio buttons */
+      [aria-checked="true"] .alert-radio-label {
+        font-weight: bold; /* Make the label bold */
+        background-color: rgba(255, 255, 255, 0.5) !important; /* Apply semi-transparent background */
+        border-radius: 4px; /* Add rounded corners */
+        //padding: 4px; /* Optional spacing */
+      }
+    
+      [aria-checked="true"] .alert-radio-icon {
+        border-color: inherit !important;
+        background: inherit !important;
+      }
+    
+      [aria-checked="true"] .alert-radio-inner {
+        background-color: var(--radio-color) !important;
+        transition: none !important; /* Remove transition to avoid flicker */
+      }
+    
+      /* Ensure default state has no blue */
+      .alert-radio-inner {
+        background-color: transparent !important; /* Transparent background for unselected */
+        transition: none !important; /* Prevent transition to blue */
+      }    
+      /* Divider lines for the radio group */
+      .alert-radio-group {
+        border-top: 1px solid black !important; /* Top divider line */
+        border-bottom: 1px solid black !important; /* Bottom divider line */
+      }
+      /* Dynamic styling based on color class */
+      [class*="color-option-"] .alert-radio-label,
+      [class*="color-option-"] .alert-radio-icon {
+        color: var(--radio-color) !important;
+        border-color: var(--radio-color) !important;
+      }
+      /* Individual color definitions */
+      .color-option-crimson { --radio-color: crimson; }
+      .color-option-red { --radio-color: red; }
+      .color-option-orange { --radio-color: orange; }
+      .color-option-gold { --radio-color: gold; }
+      .color-option-yellow { --radio-color: yellow; }
+      .color-option-magenta { --radio-color: magenta; }
+      .color-option-purple { --radio-color: purple; }
+      .color-option-lime { --radio-color: lime; }
+      .color-option-green { --radio-color: green; }
+      .color-option-cyan { --radio-color: cyan; }
+      .color-option-blue { --radio-color: blue; }
 
-  .yellowAlert{
-    --background: #ffffbb !important;
-  }
+    }
 
-  .primaryAlert {
-    --background: #aac6f7 !important;
-  }
+// YELLOWALERT ////////////////////////////////////
+    .yellowAlert{
+      --background: #ffffbb !important;
+    }
 
-  .greenAlert{
-    --background: #ddffdd !important;
-  }
+ // GREENALERT ////////////////////////////////////
+    .greenAlert{
+      --background: #ddffdd !important;
+    }
+
+// PRIMARY ALERT //////////////////////////////////    
+    .primaryAlert {
+      --background: #aac6f7 !important;
+    }
+
+// TOAST //////////////////////////
+.toast {
+  text-align: center !important; /* Center the text */
+  font-size: 16px !important; /* Increase the font size */
+}
+
+

@@ -1,7 +1,7 @@
 import { Location, Extremes, Bounds, Track, TrackDefinition, Data } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, NgZone, Injectable, OnInit } from '@angular/core';
-import { IonicModule, AlertController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
@@ -22,12 +22,11 @@ import OSM from 'ol/source/OSM';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { Circle as CircleStyle, Fill, Stroke, Icon, Style } from 'ol/style';
+import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
 import { App } from '@capacitor/app';
 import { MultiLineString, MultiPoint } from 'ol/geom';
-import { Geolocation } from '@capacitor/geolocation';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
@@ -42,6 +41,7 @@ import MVT from 'ol/format/MVT';
 import { TileGrid, createXYZ } from 'ol/tilegrid';
 import LayerRenderer from 'ol/renderer/Layer';
 import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
+import { BackgroundTask } from '@capawesome/capacitor-background-task';
 
 useGeographic();
 
@@ -97,7 +97,6 @@ export class Tab1Page {
   multiFeature: any; 
   threshDist: number = 0.00000036; // 0.0006 ** 2;
   lastN: number = 0;
-  onRouteColor: string = 'black';
   archivedCanvasVisible: boolean = false;
   currentCanvasVisible: boolean = false;
   currentLayer: any;
@@ -109,12 +108,11 @@ export class Tab1Page {
   layerVisibility: string = 'archived' // archived, multi or none 
   multiPoint: any = [];
   multiKey: any = [];
-  audioCtx : AudioContext | undefined = new (window.AudioContext || window.AudioContext)()
-  uploaded: any;
-  
+  statusMessage: { text: string; color: string; } = {text: '', color: 'black'};
+  audioCtx: AudioContext | null = null;
+
   constructor(
     public fs: FunctionsService,
-    private alertController: AlertController,
     private router: Router,
     public storage: Storage,
     private zone: NgZone,
@@ -125,29 +123,27 @@ export class Tab1Page {
 
   /* FUNCTIONS
 
-  listenToAppStateChanges
-  ngOnInit
-  addFileListener
-  ionViewDidEnter
-  centerAllTracks
-  computeExtremes
-  displayCurrentTrack
-  startTracking
-  removeTrack
-  stopTracking
-  confirm
-  setTrackDetails
-  showValidationAlert
-  saveFile
-  gotoPage
-  gotoMap
-  gotoData
-  buildGeoJson
-  onRoute
-  show
-  check
-  displayArchivedTrack
-  changeColor
+  1. listenToAppStateChanges
+  2. ngOnInit
+  3. addFileListener
+  4. ionViewDidEnter
+  5. centerAllTracks
+  6. displayCurrentTrack
+  7. startTracking
+  8. removeTrack
+  9. stopTracking
+  10. confirm
+  11. setTrackDetails
+  12. showValidationAlert
+  13. saveFile
+  14. gotoPage
+  15. gotoMap
+  16. gotoData
+  17. buildGeoJson
+  18. onRoute
+  19. show
+  20. displayArchivedTrack
+  21. changeColor
   updateAllCanvas
   drawPoint
   computeMinMaxProperty
@@ -155,7 +151,7 @@ export class Tab1Page {
   setMapView
   */
 
-  // LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
+  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   listenToAppStateChanges() {
     App.addListener('appStateChange', (state) => {
       this.foreground = state.isActive;  // true if in foreground, false if in background
@@ -193,7 +189,7 @@ export class Tab1Page {
     });
   }
 
-  // ON INIT ////////////////////////////////
+  // 2. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
       // create storage 
@@ -208,7 +204,7 @@ export class Tab1Page {
       this.show('mapbutton', 'none');
       this.show('databutton', 'block');
       // uncheck all
-      await this.uncheckAll();
+      await this.fs.uncheckAll();
       // create canvas
       await this.createCanvas();
       // create map
@@ -220,7 +216,7 @@ export class Tab1Page {
     }  
   }
 
-  // LISTENING FOR OPEN EVENTS 
+  // 3. LISTENING FOR OPEN EVENTS 
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
@@ -228,7 +224,8 @@ export class Tab1Page {
       await this.processUrl(data);
       this.layerVisibility = 'archived'
       // retrieve archived track
-      this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
+      this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
+      if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
       // assign visibility
       if (this.multiLayer) await this.multiLayer.setVisible(false);
       // iF archived track is available...
@@ -245,7 +242,7 @@ export class Tab1Page {
     });
   }
 
-  // ION VIEW DID ENTER
+  // 4. ION VIEW DID ENTER
   async ionViewDidEnter() {
     try {
       // initialize layerVisibility
@@ -257,7 +254,8 @@ export class Tab1Page {
       // archived visible
       if (this.layerVisibility == 'archived') {
         // retrieve archived track
-        this.archivedTrack = await this.retrieveTrack() ?? this.archivedTrack;
+        this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
+        if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
         // assign visibility
         if (this.multiLayer) await this.multiLayer.setVisible(false);
         // iF archived track is available...
@@ -275,12 +273,14 @@ export class Tab1Page {
       else if (this.layerVisibility == 'multi') {
         // hide archived track
         await this.hideArchivedTrack();  
+        this.statusMessage = {text: '', color: ''}
         // display all tracks
         await this.displayAllTracks();
         // center all tracks
         if (!this.currentTrack) await this.centerAllTracks();
       }
       else {
+        this.statusMessage = {text: '', color: ''}
         // Hide archived and multi layers
         if (this.archivedLayer) await this.archivedLayer.setVisible(false);
         if (this.multiLayer) await this.multiLayer.setVisible(false);
@@ -292,45 +292,21 @@ export class Tab1Page {
         await this.setMapView(this.currentTrack);
         await this.showCanvas('c','block');        
       }
-
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
     }  
   }
 
-  // CENTER ALL TRACKS
+  // 5. CENTER ALL TRACKS
   async centerAllTracks() {
     // get current position
-    let currentPosition: [number, number] | undefined = await this.getCurrentPosition();
+    let currentPosition: [number, number] | undefined = await this.fs.getCurrentPosition();
     // center map
     await this.map.getView().setCenter(currentPosition);
     await this.map.getView().setZoom(8);
   }
 
-  // COMPUTE EXTREMES OF ARCHIVED TRACK
-  async computeExtremes(track: any): Promise<{ minX: number; minY: number; maxX: number; maxY: number } | undefined> {
-    // initiate variables
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    // Ensure track data exists and has coordinates
-    const coordinates = track?.features?.[0]?.geometry?.coordinates;
-    if (!coordinates || !Array.isArray(coordinates)) return undefined;
-    // Iterate over each coordinate pair in the array
-    for (const [x, y] of coordinates) {
-      // Update min and max values for x
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      // Update min and max values for y
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;    
-    }
-    // Return the computed extremes
-    return { minX, minY, maxX, maxY };
-  } 
-
-  // DISPLAY CURRENT TRACK
+  // 6. DISPLAY CURRENT TRACK
   async displayCurrentTrack() {
     // Ensure current track and map exist
     if (!this.currentTrack || !this.map) return;
@@ -341,7 +317,7 @@ export class Tab1Page {
     if (num < 2) return;
     // Set line geometry and style
     this.currentFeature.setGeometry(new LineString(coordinates));
-    this.currentFeature.setStyle(this.drawPoint(this.currentColor));
+    this.currentFeature.setStyle(this.fs.setStrokeStyle(this.currentColor));
     // Set the last point as the marker geometry  
     this.currentMarkers[1].setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
@@ -350,14 +326,14 @@ export class Tab1Page {
     }
   }
 
-  // START TRACKING /////////////////////////////////
+  // 7. START TRACKING /////////////////////////////////
   async startTracking() {
     // start foreground service
     await ForegroundService.startForegroundService({
       id: 1234,
       title: 'Tracking Your Location.',
       body: 'Location tracking in progress.',
-      smallIcon: 'splash.png', // icon in `res/drawable` or default
+      smallIcon: 'splash.png',     
     });
     // Reset current track and related variables
     this.currentTrack = undefined;
@@ -376,7 +352,7 @@ export class Tab1Page {
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
     this.computedDistances = 0;
-    this.onRouteColor = 'black'
+    this.audioCtx = new window.AudioContext
     // Start Background Geolocation watcher
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain",
@@ -387,38 +363,8 @@ export class Tab1Page {
     }, async (location: Location, error: Error) => {
       if (error) return;
       if (location) {
-        // build geojson
-        const locationNew: boolean = await this.buildGeoJson(location);
-        if (!this.foreground && locationNew) console.log('Background', this.currentTrack?.features[0].geometry.coordinates.length, 'points. Geojson updated')
-       // Update the current track when in the foreground
-        if (this.foreground && locationNew) {
-          const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-          // filter altitude 
-          await this.filterAltitude(this.currentTrack, num - this.lag - 1)
-          // compute distances
-          await this.computeDistances();
-          // filter speed
-          if (this.currentTrack) {
-            this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
-              this.currentTrack.features[0].geometry.properties.data,
-              this.speedFiltered + 1
-            );
-          }
-          this.speedFiltered = num - 1;
-          // average speed
-          await this.averageSpeed();
-          // html values
-          await this.htmlValues();
-          // update canvas
-          if (num % 20 == 0) {
-            this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-          }
-          // display the current track
-          await this.displayCurrentTrack();
-          // detect changes for Angular
-          this.cd.detectChanges();
-          console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
-        }
+        if (this.foreground) await this.foregroundTask(location)
+        else await this.backgroundTask(location)
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide UI elements
@@ -428,7 +374,7 @@ export class Tab1Page {
     this.show('save', 'none');
   }
 
-  // REMOVE TRACK ///////////////////////////////////
+  // 8. REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
     // show / hide elements
     this.show('start', 'block');
@@ -436,12 +382,14 @@ export class Tab1Page {
     this.show('save', 'none');
     this.show('trash', 'none');
     // Reset current track and corresponding canvases
+    this.statusMessage = {text: '', color: ''}
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.fs.displayToast('The current track has been removed');
     try{if (this.currentLayer) await this.currentLayer.setVisible(false);} catch{}
   }
 
-  // STOP TRACKING //////////////////////////////////
+  // 9. STOP TRACKING //////////////////////////////////
   async stopTracking() {
     // show / hide elements
     this.show('start', 'none');
@@ -471,110 +419,97 @@ export class Tab1Page {
     await this.filterAltitude(this.currentTrack, num - 1);
     // set map view
     await this.setMapView(this.currentTrack);
+    this.fs.displayToast('The current track is now finished');
     // update canvas
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
-  // CONFIRM TRACK DELETION OR STOP TRACKING
-  async confirm(header: string, message: string, action: string) {
-    const alert = await this.alertController.create({
-      cssClass: 'alert yellowAlert',
-      header: header,
-      message: 'Are you sure you want to ' + message,
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          cssClass: 'alert-cancel-button',
-          handler: () => {
-          }
-        },
-        {
-          text: 'Yes',
-          cssClass: 'alert-button',
-          handler: async () => {
-            if (action === 'remove') {
-              await this.removeTrack();
-            } else if (action === 'stop') {
-              await this.stopTracking();
-            }
+  // 10. CONFIRM TRACK DELETION OR STOP TRACKING
+  async confirm(header: string, mess: string, action: string) {
+    const cssClass = 'alert yellowAlert';
+    const message = 'Are you sure you want to ' + mess;
+    const inputs: never[] = [];
+    const buttons =  [
+      global.cancelButton,
+      {
+        text: 'Yes',
+        cssClass: 'alert-button',
+        handler: async () => {
+          if (action === 'remove') {
+            await this.removeTrack();
+          } else if (action === 'stop') {
+            await this.stopTracking();
           }
         }
-      ]
-    })
-    alert.present();
+      }
+    ]
+    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
   } 
 
-  // SET TRACK NAME, TIME, DESCRIPTION, ... 
+  // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
-    const alert = await this.alertController.create({
-      cssClass: 'alert yellowAlert',
-      header: 'Track Details',
-      message: 'Kindly set the track details',
-      inputs: [
-        {
-          name: 'name',
-          type: 'text',
-          id: 'name-id',
-          value: '',
-          placeholder: 'Name',
-        },
-        {
-          name: 'place',
-          type: 'text',
-          id: 'place-id',
-          value: '',
-          placeholder: 'Place',
-        },
-        {
-          name: 'description',
-          type: 'textarea',
-          id: 'description-id',
-          value: '',
-          placeholder: 'Description',
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          cssClass: 'alert-cancel-button',
-          handler: () => {
+    const cssClass = 'alert yellowAlert';
+    const header = 'Track Details';
+    const message = 'Kindly set the track details';
+    const inputs = [
+      this.fs.createReadonlyLabel('Name','Name:'),
+      {
+        name: 'name',
+        type: 'text',
+        value: '',
+        cssClass: 'alert-edit'
+      },
+      this.fs.createReadonlyLabel('Place','Place:'),
+      {
+        name: 'place',
+        type: 'text',
+        value: '',
+        cssClass: 'alert-edit'
+      },
+      this.fs.createReadonlyLabel('Description','Description:'),
+      {
+        name: 'description',
+        type: 'textarea',
+        value: '',
+        cssClass: 'alert-edit'
+      }
+    ];
+    const buttons = [
+      global.cancelButton,
+      {
+        text: 'Ok',
+        cssClass: 'alert-button',
+        handler: (data: any) => {
+          if (!data.name.trim()) {
+            this.showValidationAlert();
+            return false;
           }
-        },
-        {
-          text: 'Ok',
-          cssClass: 'alert-button',
-          handler: (data) => {
-            if (!data.name.trim()) {
-              this.showValidationAlert();
-              return false;
-            }
-            this.saveFile(data.name, data.place, data.description);
-            return true;
-          }
+          this.saveFile(data.name, data.place, data.description);
+          return true;
         }
-      ]
-    });
-    alert.present();
+      }
+    ];
+    const action = ''
+    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
   }
   
-  // NO NAME TO SAVE ////////////////////////////////////
+  // 12. NO NAME TO SAVE ////////////////////////////////////
   async showValidationAlert() {
-    const validationAlert = await this.alertController.create({
-      cssClass: 'alert redAlert',
-      header: 'Validation Error',
-      message: 'Please enter a name for the track.',
-      buttons: ['OK']
-    });
-    await validationAlert.present();
+    const cssClass = 'alert yellowAlert'
+    const header = 'Validation Error'
+    const message = 'Please enter a name for the track.'
+    const buttons = ['OK']
+    const inputs: never[] = []
+    const action = ''
+    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
   }
 
-  // SAVE FILE ////////////////////////////////////////
+  // 13. SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
     // retrieve tracks definition
-    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    await this.storage.get('collection') ?? [];
+    var collection: TrackDefinition[] = await this.fs.storeGet('collection') ?? [];
     // build new track definition
     const currentProperties = this.currentTrack.features[0].properties;
     currentProperties.name = name;
@@ -583,8 +518,8 @@ export class Tab1Page {
     currentProperties.date = new Date();
     // Save the current track to storage with date as key
     const dateKey = JSON.stringify(currentProperties.date);
-    await this.storage.set(dateKey, this.currentTrack);
-    await this.storage.set(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
+    await this.fs.storeSet(dateKey, this.currentTrack);
+    await this.fs.storeSet(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
     // Create a new track definition
     const trackDef: TrackDefinition = { 
       name, 
@@ -595,7 +530,8 @@ export class Tab1Page {
     };
     // Add new track definition to the collection and save it
     collection.push(trackDef);
-    await this.storage.set('collection', collection);    
+    await this.fs.storeSet('collection', collection);
+    this.fs.displayToast('File saved successfully');
     // Update UI elements
     this.show('start', 'block');
     this.show('stop', 'none');
@@ -603,12 +539,12 @@ export class Tab1Page {
     this.show('trash', 'block');
   }
 
-  // GO TO PAGE ... //////////////////////////////
+  // 14. GO TO PAGE ... //////////////////////////////
   async gotoPage(option: string) {
     this.router.navigate([option]);
   }
 
-  // GO TO MAP ////////////////////////////
+  // 15. GO TO MAP ////////////////////////////
   async gotoMap() {
     // Show map and adjust buttons
     this.show('map', 'block');
@@ -623,7 +559,7 @@ export class Tab1Page {
     }
   }
 
-  // GO TO DATA ////////////////////////////
+  // 16. GO TO DATA ////////////////////////////
   async gotoData() {
     // Show data and adjust buttons
     this.show('map', 'none');
@@ -638,7 +574,7 @@ export class Tab1Page {
     }, 200);
   }
 
-  // BUILD GEOJSON ////////////////////////////////////
+  // 17. BUILD GEOJSON ////////////////////////////////////
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return false;
@@ -663,16 +599,16 @@ export class Tab1Page {
     return true;
   }
 
-  // CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
-  async onRoute() {
+  // 18. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
+  async onRoute(): Promise<{ text: string; color: string }> {
     // Return 'black' if conditions aren't met
-    if (!this.currentTrack || !this.archivedTrack || this.layerVisibility != 'archived') return 'black';
+    if (!this.currentTrack || !this.archivedTrack || this.layerVisibility != 'archived') return {text: '', color:'black'};
     // Define current and archived coordinates
     const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
-    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
+    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return {text: '', color:'black'};
     // Define parameters
-    const bounding = (this.onRouteColor === 'red' ? 0.5 : 1) * Math.sqrt(this.threshDist);
+    const bounding = (this.statusMessage.color === 'red' ? 0.5 : 1) * Math.sqrt(this.threshDist);
     const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
     const multiplier = 10;
     const skip = 5;
@@ -682,7 +618,7 @@ export class Tab1Page {
     if (this.extremes) {
       if (point[0] < this.extremes.minX - bounding || point[0] > this.extremes.maxX + bounding ||
           point[1] < this.extremes.minY - bounding || point[1] > this.extremes.maxY + bounding) {
-        return 'red';
+        return {text: 'Wrong way', color:'red'};
       }
     }
     // Forward search
@@ -691,7 +627,7 @@ export class Tab1Page {
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         this.lastN = i;
-        return 'green';
+        return {text: 'Correct way', color: 'green'};
       } else if (distSq > multiplier * this.threshDist) {
         i += (skip - 1) * reduction;
       }
@@ -703,17 +639,17 @@ export class Tab1Page {
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         this.lastN = i;
-        return 'green';
+        return {text: 'Correct way', color: 'green'};
       } else if (distSq > multiplier * this.threshDist) {
         i -= (skip - 1) * reduction;
       }
     }
     console.log('checked backward')
     // No match found
-    return 'red';
+    return {text: 'Wrong way', color:'red'};
   }
   
-  // SHOW / HIDE ELEMENTS ///////////////////////////////// 
+  // 19. SHOW / HIDE ELEMENTS ///////////////////////////////// 
   async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
     const obj = document.getElementById(id);
     if (obj) {
@@ -721,17 +657,7 @@ export class Tab1Page {
     }
   }
 
-  // CHECK IN STORAGE //////////////////////////
-  async check<T>(variable: T, key: string): Promise<T> {
-    try {
-      const result = await this.storage.get(key);
-      return result !== null && result !== undefined ? result : variable;
-    } catch {
-      return variable;
-    }
-  }
-
-  // DISPLAY AN ARCHIVED TRACK /////////////////////////
+  // 20. DISPLAY AN ARCHIVED TRACK /////////////////////////
   async displayArchivedTrack() {
     // Ensure the map and archived track exist
     if (!this.map || !this.archivedTrack) return;
@@ -742,7 +668,7 @@ export class Tab1Page {
     if (num === 0) return;
     // Update archived feature with a new geometry and style
     this.archivedFeature.setGeometry(new LineString(coordinates));
-    this.archivedFeature.setStyle(this.drawPoint(this.archivedColor));
+    this.archivedFeature.setStyle(this.fs.setStrokeStyle(this.archivedColor));
     if (this.archivedMarkers.length >= 3) {
       this.archivedMarkers[0].setGeometry(new Point(coordinates[0]));
       this.archivedMarkers[0].setStyle(this.drawCircle('green'));
@@ -751,98 +677,52 @@ export class Tab1Page {
     }
   }
 
-  // CHANGE THE TRACK COLORS /////////////////////////////////
+  // 21. CHANGE THE TRACK COLORS /////////////////////////////////
   async changeColor() {
     try {
-      this.archivedColor = await this.check(this.archivedColor, 'archivedColor');
-      this.currentColor = await this.check(this.currentColor, 'currentColor');
+      this.archivedColor = await this.fs.check(this.archivedColor, 'archivedColor');
+      this.currentColor = await this.fs.check(this.currentColor, 'currentColor');
       // Apply new styles if features exist
-      this.currentFeature && this.currentFeature.setStyle(this.drawPoint(this.currentColor));
-      this.archivedFeature && this.archivedFeature.setStyle(this.drawPoint(this.archivedColor));
+      this.currentFeature && this.currentFeature.setStyle(this.fs.setStrokeStyle(this.currentColor));
+      this.archivedFeature && this.archivedFeature.setStyle(this.fs.setStrokeStyle(this.archivedColor));
     } catch (error) {
       console.error("Error updating colors:", error);
     }
   }
 
-  async updateAllCanvas(context: any, track: Track | undefined) {
-    this.openCanvas = true;
-    // Hide canvas for the current or archived track
-    if (track == this.currentTrack) await this.showCanvas('c','none')
-    else if (track == this.archivedTrack) await this.showCanvas('a','none')
-    // Exit if context is not provided
+  // 22. UPDATE ALL CANVAS ////////////////////////////////
+  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
+    // Validate context
     if (!context) {
       this.openCanvas = false;
       return '';
     }
-    // update canvas
-    let tUnit = '';
-    for (var i in this.properties) {
-      if (this.properties[i] === 'altitude') {
-        await this.updateCanvas(context[i], track, this.properties[i], 'x');
-      } else {
-        tUnit = await this.updateCanvas(context[i], track, this.properties[i], 't');
+    // Open canvas
+    this.openCanvas = true;
+    try {
+      // Hide canvas for the current or archived track
+      if (track === this.currentTrack || track === this.archivedTrack) {
+        const type = track === this.currentTrack ? 'c' : 'a';
+        await this.showCanvas(type, 'none');
       }
-    }
-    // Return
-    this.openCanvas = false;
-    return tUnit;
-  }
-
-  // DRAW A POINT /////////////////////////////////////////
-  drawPoint(color: string) {
-    var style = new Style({ stroke: new Stroke({ color: color, width: 5 })})
-    return style;
-  } 
-
-  // COMPUTE MINIMUM AND MAXIMUM OF A PROPERTY ////////////////////////
-  async computeMinMaxProperty<T extends Record<string, number>>(data: T[], propertyName: keyof T) {
-    // Initialize
-    let bounds: Bounds = {
-      min: Number.POSITIVE_INFINITY,
-      max: Number.NEGATIVE_INFINITY
-    }
-    // Loop
-    for (const datum of data) {
-      const value = datum[propertyName];
-      if (typeof value !== 'number') {
-        throw new Error(`Property ${String(propertyName)} is not a number.`);
+      // Update canvas
+      let lastUnit = '';
+      for (const [index, property] of Object.entries(this.properties)) {
+        const mode = property === 'altitude' ? 'x' : 't';
+        lastUnit = await this.updateCanvas(context[index], track, property, mode);
       }
-      if (value < bounds.min) bounds.min = value;
-      if (value > bounds.max) bounds.max = value;
+      return lastUnit;
+    } finally {
+      // Close canvas
+      this.openCanvas = false;
     }
-    // Return
-    return bounds;
   }
-
-  // RETRIEVE ARCHIVED TRACK //////////////////////////
-  async retrieveTrack() {
-    var track: Track | undefined;
-    // get collection
-    const collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
-    // Filter checked tracks and count them
-    const checkedTracks = collection.filter(item => item.isChecked);
-    // If more than one track is checked, uncheck all
-    if (checkedTracks.length > 1) {
-      collection.forEach(item => item.isChecked = false);
-    }
-    // If no tracks are checked, return undefined
-    if (checkedTracks.length === 0) return undefined;
-    // Retrieve the track associated with the checked item
-    const key = checkedTracks[0].date; // Assuming `date` is the key
-    track = await this.storage.get(JSON.stringify(key));
-    // Compute extremes if track exists
-    if (track) {
-      this.extremes = await this.computeExtremes(track);
-    }
-    // Return the retrieved track
-    return track;
-  }
-
+  
   // SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     var boundaries: Extremes | undefined;
     if (track == this.archivedTrack) boundaries = this.extremes
-    else boundaries = await this.computeExtremes(track)
+    else boundaries = await this.fs.computeExtremes(track)
     if (!boundaries) return;
     // Set a minimum area
     const minVal = 0.002;
@@ -937,7 +817,7 @@ export class Tab1Page {
   // CREATE MAP /////////////////////////////
   async createMap() {
     // current position
-    const currentPosition = await this.getCurrentPosition();
+    const currentPosition = await this.fs.getCurrentPosition();
     // create layers
     await this.createLayers();
     // Create the map layer
@@ -1166,7 +1046,7 @@ export class Tab1Page {
       xTot /= xDiv;
     }
     // Compute min and max bounds
-    const bounds = await this.computeMinMaxProperty(data, propertyName);
+    const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
     if (bounds.max === bounds.min) {
       bounds.max += 2;
       bounds.min -= 2;
@@ -1205,14 +1085,14 @@ export class Tab1Page {
     this.multiPoint = [];
     this.multiKey = [];        
     // get collection
-    var collection: TrackDefinition[] = await this.storage.get('collection') ?? [];
+    var collection: TrackDefinition[] = await this.fs.storeGet('collection') ?? [];
     // Loop through each item in the collection
     for (const item of collection) {
       key = item.date;
-      track = await this.storage.get(JSON.stringify(key));
+      track = await this.fs.storeGet(JSON.stringify(key));
       // If the track does not exist, remove the key and skip this iteration
       if (!track) {
-        await this.storage.remove(key);
+        await this.fs.storeRem(key);
         continue;
       }
       // Extract coordinates and add to multiLine and multiPoint
@@ -1227,7 +1107,7 @@ export class Tab1Page {
     this.multiFeature.setGeometry(new MultiLineString(multiLine));
     this.multiMarker.setGeometry(new MultiPoint(this.multiPoint));
     // Apply styles to the features
-    this.multiFeature.setStyle(this.drawPoint('black'));
+    this.multiFeature.setStyle(this.fs.setStrokeStyle('black'));
     this.multiMarker.setStyle(this.drawCircle('green'));
     // Set visibility of multiLayer
     this.multiLayer.setVisible(true);
@@ -1245,10 +1125,10 @@ export class Tab1Page {
         );
         // Retrieve the archived track based on the index key
         const key = this.multiKey[index];
-        this.archivedTrack = await this.storage.get(JSON.stringify(key));
+        this.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
         // Display archived track details if it exists
         if (this.archivedTrack) {
-          this.extremes = await this.computeExtremes(this.archivedTrack);
+          this.extremes = await this.fs.computeExtremes(this.archivedTrack);
           this.multiLayer.setVisible(false);
           this.layerVisibility = 'archived';
           await this.showCanvas('a', 'block');
@@ -1267,15 +1147,6 @@ export class Tab1Page {
         fill: new Fill({ color: color })
       })
     });
-  }
-
-  // GET CURRENT POSITION ////////////////////////////////// 
-  async getCurrentPosition(): Promise<[number, number]> {
-    try {
-      const coordinates = await Geolocation.getCurrentPosition();
-      return [coordinates.coords.longitude, coordinates.coords.latitude];
-    } 
-    catch (error) { return [1, 41.5]; } // Default coordinates 
   }
 
   // COMPUTE AVERAGE SPEEDS AND TIMES
@@ -1348,14 +1219,16 @@ export class Tab1Page {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.archivedTrack || this.layerVisibility !== 'archived') return;
     // Store previous color for comparison
-    const previousColor = this.onRouteColor;
+    const previousMessage = this.statusMessage;
     // Determine the current route color based on `onRoute` function
-    this.onRouteColor = await this.onRoute() || 'black';
-    // Play beep based on route status change
-    if (previousColor === 'green' && this.onRouteColor === 'red') {
-      await this.playBeep(600, 0.8); // Beep for off-route transition
-    } else if (previousColor === 'red' && this.onRouteColor === 'green') {
-      await this.playBeep(1800, 0.4); // Beep for on-route transition
+    this.statusMessage = await this.onRoute() || {text: '', color: 'black'};
+    // Beep for off-route transition
+    if (previousMessage.color === 'green' && this.statusMessage.color === 'red') {
+      this.playBeep(600, .8)
+    }  
+    // Beep for on-route transition  
+    else if (previousMessage.color === 'red' && this.statusMessage.color === 'green') {
+      this.playBeep(1800, .4)
     }
   }
 
@@ -1386,17 +1259,6 @@ export class Tab1Page {
     await this.show(track+'c1',visible); 
   }
 
-  // UNCHECK ALL ///////////////////////////////////////////
-  async uncheckAll() {
-    const collection: TrackDefinition[] = (await this.storage.get('collection')) ?? [];
-    for (const item of collection) {
-      if ('isChecked' in item) {
-        item.isChecked = false;
-      }
-    }
-    await this.storage.set('collection', collection);
-  }
-
   // ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
     global.layerVisibility = this.layerVisibility;
@@ -1407,10 +1269,10 @@ export class Tab1Page {
   async playBeep(freq: number, time: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext || window.AudioContext)();
+      this.audioCtx = new window.AudioContext;
     }
     const oscillator = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();  // Create a gain node
+    const gainNode =this.audioCtx.createGain();  // Create a gain node
     // Configure oscillator
     oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
     oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
@@ -1428,11 +1290,10 @@ export class Tab1Page {
       oscillator.disconnect();
       gainNode.disconnect();
     };
-  }
-  
+  } 
+
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
-
     let track: Track = {
       type: 'FeatureCollection',
       features: [{
@@ -1539,7 +1400,7 @@ export class Tab1Page {
     // Save imported track
     const date = new Date(track.features[0].geometry.properties.data[num - 1]?.time || Date.now());
     track.features[0].properties.date = date;
-    await this.storage.set(JSON.stringify(date), track);
+    await this.fs.storeSet(JSON.stringify(date), track);
     // Update collection
     const trackDef = {
       name: track.features[0].properties.name, 
@@ -1550,14 +1411,14 @@ export class Tab1Page {
     };
     // add new track definition and save collection and    
     // uncheck all tracks except the new one
-    const collection: any = await this.storage. get('collection');
+    const collection: any = await this.fs.storeGet('collection');
     for (const item of collection) {
       if ('isChecked' in item) {
         item.isChecked = false;
       }
     }
     collection.push(trackDef);
-    await this.storage.set('collection', collection);
+    await this.fs.storeSet('collection', collection);
   }
 
   // PROCESS FILE AFTER TAPPING ON IT /////////////
@@ -1570,13 +1431,67 @@ export class Tab1Page {
         });
         if (typeof fileContent.data === 'string') {
             await this.parseGpx(fileContent.data);
-            this.uploaded = 'File uploaded'
+            this.fs.displayToast('File uploaded successfully');
         }
-        else this.uploaded = 'No file uploaded'
+        else {
+          this.fs.displayToast('No file uploaded');
+        }
+      } catch (error) {
+        this.fs.displayToast('Failed to upload file');
       } 
-      catch (error) {this.uploaded = 'No file uploaded'}
+    } else {
+      this.fs.displayToast('No file selected');
     }
-    else {this.uploaded = ''}
   }
-}
 
+  async foregroundTask(location:Location) {
+    // fill the track
+    const locationNew: boolean = await this.buildGeoJson(location);
+    // no new point..
+    if (!locationNew) return;
+    // new point..
+    const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+    // filter altitude 
+    await this.filterAltitude(this.currentTrack, num - this.lag - 1)
+    // compute distances
+    await this.computeDistances();
+    // filter speed
+    if (this.currentTrack) {
+      this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
+        this.currentTrack.features[0].geometry.properties.data,
+        this.speedFiltered + 1
+      );
+    }
+    this.speedFiltered = num - 1;
+    // average speed
+    await this.averageSpeed();
+    // html values
+    await this.htmlValues();
+    // update canvas
+    if (num % 20 == 0) {
+      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    }
+    // display the current track
+    await this.displayCurrentTrack();
+    // detect changes for Angular
+    this.cd.detectChanges();
+    console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
+  }
+
+  async backgroundTask(location: Location) {
+    const taskId = await BackgroundTask.beforeExit(async () => {
+      try {
+        // Perform the task
+        console.log('Background task starts')
+        const locationNew: boolean = await this.buildGeoJson(location);
+        console.log('geojson should be filled')
+      } catch (error) {
+        console.error('Error in background task:', error);
+      } finally {
+        // Always call finish
+        BackgroundTask.finish({ taskId });
+      }
+    });
+  }
+
+}  

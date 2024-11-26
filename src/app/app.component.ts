@@ -1,8 +1,7 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Storage } from '@ionic/storage-angular';
-//import { SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 
 @Component({
   selector: 'app-root',
@@ -10,18 +9,15 @@ import { Storage } from '@ionic/storage-angular';
   styleUrls: ['app.component.scss'],
   standalone: true,
   imports: [IonicModule, CommonModule ],
-  providers: [Storage,
+  providers: [ SocialSharing
 //    SQLiteConnection, SQLiteDBConnection
   ]
 })
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
 
-  constructor(
-
-  ) { 
+  constructor() {      
    }
-
 
 
 }

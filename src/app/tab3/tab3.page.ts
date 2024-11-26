@@ -4,13 +4,10 @@ import { IonicModule, AlertController, LoadingController, AlertInput } from '@io
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms'
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { global } from '../../environments/environment';
-import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 import { register } from 'swiper/element/bundle';
-import { App } from '@capacitor/app';
 register();
 
 @Component({      
@@ -24,116 +21,65 @@ register();
 })
 
 export class Tab3Page {
-  //@ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
   archivedColor: string = 'green';
   currentColor: string = 'orange'
   styleChecked: boolean = false;
-  uploaded: string = ''; 
   lag: number = global.lag; // 8
     
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
-    //private loadingController: LoadingController,
     private router: Router,
-    private storage: Storage,
-    private route: ActivatedRoute
   ) {}
 
   /*
-  goHome
-  selectColor
-  confirm
-  ionViewWillEnter
+  1. selectColor
+  2. ionViewWillEnter
   */
 
-
-  // GO HOME ///////////////////////////////
-  goHome() {
-    this.router.navigate(['tab1']);
-  }
- 
-  // SELECT COLOR ////////////////////////////////////////
+  // 2. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
     const colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue'];
     const inputs: AlertInput[] = colors.map(color => ({
       name: color,
       type: 'radio' as const,  // Explicitly specify "radio" as the type
-      label: color,
+      label: `${color}`, // Use a colored block character with the name
       value: color,
-      checked: currArch === 'Current' ? this.currentColor === color : this.archivedColor === color
+      checked: currArch === 'Current' ? this.currentColor === color : this.archivedColor === color,
+      cssClass: `color-option-${color}` // Assign a class to style the label
     }));
-    const alert = await this.alertController.create({
-      cssClass: 'alert primaryAlert',
-      header: `${currArch} Track`,
-      message: 'Kindly set the track color',
-      inputs,
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          cssClass: 'alert-cancel-button',
-        },
-        {
-          text: 'Ok',
-          cssClass: 'alert-button',
-          handler: (data) => {
-            if (currArch === 'Current') {
-              this.currentColor = data;
-            } else if (currArch === 'Archived') {
-              this.archivedColor = data;
-            }
+    const cssClass = 'alert primaryAlert';
+    const header = `${currArch} Track`;
+    const message = 'Kindly set the track color';
+    const buttons = [
+      global.cancelButton,
+      {
+        text: 'Ok',
+        cssClass: 'alert-button',
+        handler: async (data: string) => {
+          if (currArch === 'Current') {
+            this.currentColor = data;
+            await this.fs.storeSet('currentColor', this.currentColor);
+          } else if (currArch === 'Archived') {
+            this.archivedColor = data;
+            await this.fs.storeSet('archivedColor', this.archivedColor);
           }
         }
-      ]
-    });
-    await alert.present();
-  }    
-
-  // CONFIRM COLOR SELECTION /////////////////////////////
-  async confirm(curArch: string) {
-    switch (curArch) {
-      case 'Archived':
-        await this.storage.set('archivedColor', this.archivedColor);
-        break;
-      case 'Current':
-        await this.storage.set('currentColor', this.currentColor);
-        break;
-      default:
-        console.warn(`Unexpected value for curArch: ${curArch}`);
-        break;
-    }
-    this.goHome(); // Ensure goHome only runs after storage has been set
+      }
+    ];
+    await this.fs.showAlert(cssClass, header, message, inputs, buttons, '');
   }
-  
-  // IONVIEWWILLENTER
+
+  // 2. IONVIEWWILLENTER /////////////////////////////
   async ionViewWillEnter() {
     try {
-      // Initialize storage
-      await this.storage.create();
       // Check the colors
-      this.archivedColor = await this.check(this.archivedColor ?? 'defaultArchivedColor', 'archivedColor');
-      this.currentColor = await this.check(this.currentColor ?? 'defaultCurrentColor', 'currentColor');
+      this.archivedColor = await this.fs.check(this.archivedColor ?? 'defaultArchivedColor', 'archivedColor');
+      this.currentColor = await this.fs.check(this.currentColor ?? 'defaultCurrentColor', 'currentColor');
     } catch (error) {
       console.error("Failed to initialize storage:", error);
     }
   }
-
-   // CHECK IN STORAGE //////////////////////////
-   async check(variable: any, key: string) {
-     try {
-       const result = await this.storage.get(key);
-       if (result !== null && result !== undefined) {
-         variable = result;
-       } else {}
-     } catch {}
-     return variable
-   }
- 
-   ionViewWillLeave() {
-    this.uploaded = '';
-   }
- 
 
  }
  
