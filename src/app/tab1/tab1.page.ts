@@ -85,6 +85,7 @@ export class Tab1Page {
   computedDistances: number = 0; 
   currentColor: string = 'orange';
   archivedColor: string = 'green';
+  mapProvider: string = 'OpenStreetMap'
   stopped: any = 0;
   vMin: number = 1; 
   currentAverageSpeed: number | undefined = undefined;
@@ -110,6 +111,7 @@ export class Tab1Page {
   multiKey: any = [];
   statusMessage: { text: string; color: string; } = {text: '', color: 'black'};
   audioCtx: AudioContext | null = null;
+  beepInterval: any;
 
   constructor(
     public fs: FunctionsService,
@@ -155,6 +157,10 @@ export class Tab1Page {
   listenToAppStateChanges() {
     App.addListener('appStateChange', (state) => {
       this.foreground = state.isActive;  // true if in foreground, false if in background
+      // Went to background
+      if (!this.foreground) this.startBeepInterval();
+      // Went to background
+      else this.stopBeepInterval();
       // Exit early if the app is going to the background or there is no current track
       if (!state.isActive || !this.currentTrack) return;
       // Run updates outside of Angular's zone to avoid change detection overhead
@@ -247,6 +253,8 @@ export class Tab1Page {
     try {
       // initialize layerVisibility
       this.layerVisibility = global.layerVisibility
+      // change map provider
+      await this.changeMapProvider();
       // change color for current and archived tracks
       await this.changeColor();
       // only visible for layerVisibility == 'archived' 
@@ -364,7 +372,10 @@ export class Tab1Page {
       if (error) return;
       if (location) {
         if (this.foreground) await this.foregroundTask(location)
-        else await this.backgroundTask(location)
+        else {
+          // Performs background task
+          await this.backgroundTask(location)  
+        }
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide UI elements
@@ -821,7 +832,26 @@ export class Tab1Page {
     // create layers
     await this.createLayers();
     // Create the map layer
-    const olLayer = new TileLayer({ source: new OSM() })
+    var olLayer: any;
+    var credits: string = '';
+    if (this.mapProvider == 'OpenStreetMap') {
+      credits = '© OpenStreetMap contributors'
+      olLayer = new TileLayer({ source: new OSM() })
+    }
+    else if (this.mapProvider == 'OpenTopoMap') {
+      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
+      olLayer = new TileLayer({
+        source: new XYZ({
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        })
+      })
+    }
+    else if (this.mapProvider == 'Institut Cartografic de Catalunya') {
+      credits = 'Institut Cartogràfic i Geològic de Catalunya'
+      olLayer.setAt(0, new TileLayer({  source: new XYZ({
+        url: 'https://tiles.icgc.cat/mapaBaseICGC/{z}/{x}/{y}.png',
+      }),}))
+    }
     // Create the map view
     var view = new View({
       center: currentPosition,
@@ -836,6 +866,8 @@ export class Tab1Page {
       view: view,
       controls: controls
     });
+    // Report
+    this.fs.displayToast(`${credits}`) 
     // Set up click event
     this.map.on('click', this.handleMapClick.bind(this));
   }
@@ -1224,11 +1256,11 @@ export class Tab1Page {
     this.statusMessage = await this.onRoute() || {text: '', color: 'black'};
     // Beep for off-route transition
     if (previousMessage.color === 'green' && this.statusMessage.color === 'red') {
-      this.playBeep(600, .8)
+      this.playBeep(600, .8, 1)
     }  
     // Beep for on-route transition  
     else if (previousMessage.color === 'red' && this.statusMessage.color === 'green') {
-      this.playBeep(1800, .4)
+      this.playBeep(1800, .4, 1)
     }
   }
 
@@ -1266,7 +1298,7 @@ export class Tab1Page {
   }
 
   // PLAY A BEEP /////////////////////////////////////
-  async playBeep(freq: number, time: number) {
+  async playBeep(freq: number, time: number, volume: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
       this.audioCtx = new window.AudioContext;
@@ -1277,7 +1309,7 @@ export class Tab1Page {
     oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
     oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
     // Set initial gain (volume)
-    gainNode.gain.setValueAtTime(1, this.audioCtx.currentTime);       // Set initial volume
+    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);       // Set initial volume
     // Connect nodes
     oscillator.connect(gainNode);
     gainNode.connect(this.audioCtx.destination);
@@ -1482,16 +1514,75 @@ export class Tab1Page {
     const taskId = await BackgroundTask.beforeExit(async () => {
       try {
         // Perform the task
-        console.log('Background task starts')
         const locationNew: boolean = await this.buildGeoJson(location);
-        console.log('geojson should be filled')
       } catch (error) {
         console.error('Error in background task:', error);
-      } finally {
-        // Always call finish
-        BackgroundTask.finish({ taskId });
+      } 
+      finally {
+        //Always call finish
+      BackgroundTask.finish({ taskId });
       }
     });
   }
 
+  startBeepInterval() {
+    // Clear any existing interval to avoid duplicates
+    if (this.beepInterval) {
+      clearInterval(this.beepInterval);
+    }
+    // Set an interval to play the beep every 120 seconds
+    this.beepInterval = setInterval(() => {
+      this.playBeep(600, .001, .001);
+    }, 120000); // 120000 milliseconds = 120 seconds
+  }
+  
+  
+  stopBeepInterval() {
+    if (this.beepInterval) {
+      clearInterval(this.beepInterval);
+      this.beepInterval = null; // Reset the interval reference
+    }
+  }
+
+  async changeMapProvider() {
+    const previousProvider: any = this.mapProvider;
+    var credits: string = '';
+    try {
+      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+    }
+    catch {
+      console.log('Could not check the map provider yhat had been selected')
+    }
+    if (previousProvider == this.mapProvider) return;
+    // Find map layers
+    const olLayer = this.map.getLayers();
+    const baseLayer = olLayer.getArray()[0]; // Assume the first layer is the base map
+    // Replace the base layer with the selected one
+    if (this.mapProvider == 'OpenStreetMap') {
+      credits = '© OpenStreetMap contributors'
+      olLayer.setAt(0, new TileLayer({
+        source: new OSM()
+      }));
+    }
+    else if (this.mapProvider == 'OpenTopoMap') {
+      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+      olLayer.setAt(0, new TileLayer({source: new XYZ({
+        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      })}))
+    }
+    else if (this.mapProvider == 'Institut Cartografic de Catalunya') {
+      credits = 'Institut Cartogràfic i Geològic de Catalunya'
+      olLayer.setAt(0, new TileLayer({  source: new XYZ({
+        url: 'https://tiles.icgc.cat/mapaBaseICGC/{z}/{x}/{y}.png',
+      }),}))
+    }
+    // Apply the fade-in effect
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      mapContainer.classList.add('fade-in');
+      setTimeout(() => mapContainer.classList.remove('fade-in'), 500); // Match animation duration
+    }
+    // Report
+    this.fs.displayToast(`${credits}`) 
+  }
 }  

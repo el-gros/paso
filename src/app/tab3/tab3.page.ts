@@ -25,7 +25,21 @@ export class Tab3Page {
   currentColor: string = 'orange'
   styleChecked: boolean = false;
   lag: number = global.lag; // 8
-    
+  baseMaps = [
+    {
+      name: 'OpenStreetMap',
+      image: '/assets/maps/osm.jpg',
+    },
+    {
+      name: 'OpenTopoMap',
+      image: '/assets/maps/otm.jpg',
+    },
+  //  {
+  //    name: 'Institut Cartografic de Catalunya',
+  //    image: '',
+  //  },
+  ];
+  
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
@@ -35,6 +49,7 @@ export class Tab3Page {
   /*
   1. selectColor
   2. ionViewWillEnter
+  3. selectBaseMap
   */
 
   // 2. SELECT COLOR ////////////////////////////////////////
@@ -79,6 +94,16 @@ export class Tab3Page {
     } catch (error) {
       console.error("Failed to initialize storage:", error);
     }
+  }
+
+  // 3. SELECT MAP
+  async selectBaseMap(baseMap: any) {
+    console.log(baseMap)
+    const mapProvider = baseMap.name;
+    // Store the map provider
+    await this.fs.storeSet('mapProvider', mapProvider);
+    // Go to map
+    this.fs.goHome();
   }
 
  }

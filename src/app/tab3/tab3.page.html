@@ -35,27 +35,19 @@
         <div class="line" [ngStyle]="{'background-color': archivedColor}"></div>
       </ion-col>  
     </ion-row>
-    <!--
-    <ion-row>
-      <ion-col size="4">
-        <ion-button class="bigButton" expand="block" (click)="triggerFileInput()">
-          <div class="pick">UPLOAD<br />TRACK</div>
-        </ion-button>
-        <input
-          type="file"
-          #fileInput
-          (change)="onFileSelected($event)"
-          accept=".gpx"
-          style="display: block"
-        />
-      </ion-col>  
-      <ion-col size="8">
-        <div>
-          {{ uploaded }}
-        </div>
-      </ion-col>  
+    <ion-row class="centered-content">
+      <div><strong>Base map</strong></div>
     </ion-row>
-    -->
+    <ion-row>
+      <ion-col size="6" *ngFor="let baseMap of baseMaps">
+        <ion-card button (click)="selectBaseMap(baseMap)">
+          <img [src]="baseMap.image" alt="{{ baseMap.name }} Example"  class="map-image">
+          <ion-card-header>
+            <ion-card-title>{{ baseMap.name }}</ion-card-title>
+          </ion-card-header>
+        </ion-card>
+      </ion-col>
+    </ion-row>
   </ion-grid>
   
 </ion-content>

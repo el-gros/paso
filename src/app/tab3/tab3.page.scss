@@ -40,4 +40,25 @@ ion-grid {
   width: 100%; /* Full width */
   border: none;
 }
+  .map-image {
+    height: 100px; /* Set the strip height */
+    width: 100%; /* Set the desired width (or keep auto) */
+    object-fit: cover; /* Ensures the image fills the height while maintaining aspect ratio */
+    object-position: center; /* Adjusts which part of the image is shown */
+    display: block; /* Ensures proper rendering as a block-level element */
+  }
+
+  ion-card {
+    margin-top: 0;
+    margin-bottom: 0
+  }
+
+  ion-card-header {
+    ion-card-title {
+      font-size: 15px;
+    }
+    padding: 5px !important;
+  }
+
+
 
