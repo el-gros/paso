@@ -23,10 +23,27 @@ export class Tab2Page {
 
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
-  info: string | undefined = undefined;
   layerVisibility: string = global.layerVisibility;
   num: number = 0;
   archivedPresent: boolean = global.archivedPresent
+  translations = {
+    title: ['Trajectes','Trayectos', 'Tracks'],
+    export: ['EXPORTAR TRAJECTE','EXPORTAR TRAYECTO','EXPORT TRACK'],
+    all: ['MOSTRAR TOTS','MOSTRAR TODOS','DISPLAY ALL'],
+    hideAll: ['AMAGAR TOTS','ESCONDER TODOS','HIDE ALL'],
+    remove: ['ESBORRAR TRAJECTES','ELIMINAR TRAYECTOS','REMOVE TRACKS'],
+    edit: ['EDITAR TRAJECTE','EDITAR TRAYECTO','EDIT TRACK'],
+    hide: ['AMAGAR REFERÈNCIA','ESCONDER REFERENCIA','HIDE REFERENCE'],
+    display: ['MOSTRAR REFERÈNCIA','MOSTRAR REFERENCIA','SHOW REFERENCE'],
+  }
+  get title(): string { return this.translations.title[global.languageIndex]; }
+  get export(): string { return this.translations.export[global.languageIndex]; }
+  get all(): string { return this.translations.all[global.languageIndex]; }
+  get hideAll(): string { return this.translations.hideAll[global.languageIndex]; }
+  get remove(): string { return this.translations.remove[global.languageIndex]; }
+  get edit(): string { return this.translations.edit[global.languageIndex]; }
+  get hide(): string { return this.translations.hide[global.languageIndex]; }
+  get display(): string { return this.translations.display[global.languageIndex]; }
 
   constructor(
     public fs: FunctionsService,
@@ -54,7 +71,6 @@ export class Tab2Page {
     // Initialize variables
     this.layerVisibility = global.layerVisibility;
     this.archivedPresent = global.archivedPresent
-    this.info = undefined;
     // retrieve collection and uncheck all tracks
     this.collection = await this.fs.storeGet('collection') ?? [];
     for (const item of this.collection) item.isChecked = false;
@@ -75,27 +91,30 @@ export class Tab2Page {
     if (index === -1) return; // Exit if no track is selected
     // Define the custom class, header, and message for the alert
     const cssClass = 'alert greenAlert';
-    const header = 'Edit Track Details';
-    const message = 'Modify the fields below:';
+    const headers = ['Edita les dades del trajecte', 'Edita los datos del trayecto', 'Edit Track Details'];
+    const messages = ['Modifica els següents camps','Modifica los siguientes campos','Modify the fields below:'];
     // Prepare inputs with field labels and existing values
+    const names = ['Nom','Nombre','Name']
+    const places = ['Lloc','Lugar','Place']
+    const descriptions = ['Descripció','Descripción','Description']
     const inputs = [
-      this.fs.createReadonlyLabel('Name','Name:'),
+      this.fs.createReadonlyLabel('Name',names[global.languageIndex]),
       {
-        name: 'name',
+        name: names[global.languageIndex],
         type: 'text',
         value: this.collection[index].name,
         cssClass: 'alert-edit'
       },
-      this.fs.createReadonlyLabel('Place','Place:'),
+      this.fs.createReadonlyLabel('Place',places[global.languageIndex]),
       {
-        name: 'place',
+        name: places[global.languageIndex],
         type: 'text',
         value: this.collection[index].place,
         cssClass: 'alert-edit'
       },
-      this.fs.createReadonlyLabel('Description','Description:'),
+      this.fs.createReadonlyLabel('Description',descriptions[global.languageIndex]),
       {
-        name: 'description',
+        name: descriptions[global.languageIndex],
         type: 'textarea',
         value: this.collection[index].description,
         cssClass: 'alert-edit'
@@ -114,7 +133,7 @@ export class Tab2Page {
       }
     ];
     // Show the alert with the customized inputs
-    await this.fs.showAlert(cssClass, header, message, inputs, buttons, '');
+    await this.fs.showAlert(cssClass, headers[global.languageIndex], messages[global.languageIndex], inputs, buttons, '');
   }
 
   // 4. SAVE FILE ////////////////////////////////////////////
@@ -145,16 +164,20 @@ export class Tab2Page {
 
   // 5. DELETE TRACK(S) //////////////////////////
   async deleteTracks() {
+    const cancel = ['Cancel.lar', 'Cancelar', 'Cancel']; 
+    const headers = ["Confirma l'esborrat", "Confirma el borrado","Confirm deletion"];
+    const messages = ["S'esborraran definitivament els trajectes marcats", "Se borrarán definitivamente los trayectos marcados",
+      "The selected track(s) will be definitely removed"];
     // create alert control
     const alert = await this.alertController.create({
       cssClass: 'alert greenAlert',
       // header and message
-      header: 'Confirm deletion',
-      message: 'The checked track(s) will be definitely removed',
+      header: headers[global.languageIndex],
+      message: messages[global.languageIndex],
       // buttons
       buttons: [{
         // cancel button
-        text: 'Cancel',
+        text: cancel[global.languageIndex],
         role: 'cancel',
         cssClass: 'alert-cancel-button',
         handler: async () => { 
@@ -200,7 +223,8 @@ export class Tab2Page {
     // Reset the count of checked items
     this.numChecked = 0;
     // inform
-    await this.fs.displayToast('The selected tracks have been removed');
+    const toast = ["S'han esborrat els trajectes seleccionats",'Se han borrado los trayectos seleccionados','The selected tracks have been removed'];
+    await this.fs.displayToast(toast[global.languageIndex]);
   }
 
   // 8. GEOJSON TO GPX //////////////////////
@@ -243,6 +267,7 @@ export class Tab2Page {
   // 9. EXPORT TRACK //////////////////////////
   async exportTrack() {
     var track: Track | undefined;
+    const titles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
     track = await this.fs.retrieveTrack();
     if (!track) return;
     await this.fs.uncheckAll();
@@ -265,13 +290,15 @@ export class Tab2Page {
         title: 'Share a track',
         text: 'Here is the file you requested',
         url: fileUri.uri,
-        dialogTitle: 'Share with Gmail only',
+        dialogTitle: titles[global.languageIndex],
       });
       // Show success toast
-      await this.fs.displayToast('Track exported and shared successfully!');
+      const toast = ["S'ha compartit correctament el trajecte",'El trayecto se ha compartido correctamente','Track exported and shared successfully!']
+      await this.fs.displayToast(toast[global.languageIndex]);
     } catch (e) {
       // Show error toast
-      await this.fs.displayToast('Exportation failed.');
+      const toast = ["L'exportació ha fallat", 'Ha fallado la exportación','Exportation failed']
+      await this.fs.displayToast(toast[global.languageIndex]);
     }
   }
 

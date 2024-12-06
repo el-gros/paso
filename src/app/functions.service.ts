@@ -202,7 +202,8 @@ export class FunctionsService {
     const key = checkedTracks[0].date; // Assuming `date` is the key
     track = await this.storeGet(JSON.stringify(key));
     // If track can not be retrieved
-    if (!track) this.displayToast('The selected track could not be retrieved');
+    const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
+    if (!track) this.displayToast(toast[global.languageIndex]);
     // Return the retrieved track
     return track;
   }

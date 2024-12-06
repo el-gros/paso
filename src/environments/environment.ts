@@ -2,31 +2,27 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-export var global = {
+export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
+  language: 'other' as 'ca' | 'es' | 'other',
+  languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
-  cancelButton: {
-    text: 'Cancel',
-    role: 'cancel',
-    cssClass: 'alert-cancel-button',
-    handler: () => {
-    }
-  },
-} 
+  cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
 
-export var environment = {
-  production: true,
-}
+  // Dynamic getter for the cancel button
+  get cancelButton() {
+    return {
+      text: this.cancel[this.languageIndex], // Dynamically fetch the text
+      role: 'cancel',
+      cssClass: 'alert-cancel-button',
+      handler: () => {
+        // Optional handler logic can go here
+      }
+    };
+  }
+};
 
-
-
-
-/*
- * For easier debugging in development mode, you can import the following file
- * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
- *
- * This import should be commented out in production mode because it will have a negative impact
- * on performance if an error is thrown.
- */
-// import 'zone.js/plugins/zone-error';  // Included with Angular CLI.
+export const environment = {
+  production: false,
+};

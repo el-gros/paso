@@ -10,13 +10,13 @@
       <ion-fab-button id='start' (click)="startTracking()">
         <ion-icon name="play"></ion-icon>
       </ion-fab-button>  
-      <ion-fab-button id='stop' (click)="confirm('Stop track', ' stop the track?', 'stop')">
+      <ion-fab-button id='stop' (click)="confirm('stop')">
         <ion-icon name="stop"></ion-icon>
       </ion-fab-button>  
       <ion-fab-button id='save' (click)="setTrackDetails()">
         <ion-icon name="save"></ion-icon>
       </ion-fab-button>  
-      <ion-fab-button id='trash' (click)="confirm('Delete track', ' permanently delete the track?', 'remove')">
+      <ion-fab-button id='trash' (click)="confirm('delete')">
         <ion-icon name="trash-outline"></ion-icon>
       </ion-fab-button>  
       <ion-fab-button id='databutton' (click)="gotoData()">
@@ -40,52 +40,108 @@
   <swiper-slide>
     <div class = 'empty'></div>  
     <div class = 'element card' *ngIf="currentTrack">
-      CURRENT ROUTE<br>
-      Distance: {{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km<br>
-      Elevation gain: {{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m<br>
-      Elevation loss: {{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m<br>
-      Time: {{ currentTrack.features[0].properties.totalTime }}<br>
-      Time in motion: {{ currentMotionTime }}<br> 
-      {{ currentTrack.features[0].properties.totalNumber}} points recorded<br><br>
-      Current elevation: <ng-container *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">{{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</ng-container><br>
-      Current speed: <ng-container *ngIf="currentTrack.features[0].properties.currentSpeed !== undefined">{{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h</ng-container><br>
-      Average speed: <ng-container *ngIf="currentAverageSpeed != undefined">{{currentAverageSpeed | number:'1.1-1'}} km/h</ng-container><br>
-      In-motion average speed: <ng-container *ngIf="currentMotionSpeed != undefined">{{currentMotionSpeed | number:'1.1-1'}} km/h</ng-container><br>
-      <div *ngIf="archivedTrack" [style.color]="statusMessage.color">{{ statusMessage.text }}</div>
+      <table>
+        <tr [ngClass]="status">           
+          <td colspan='2'>{{curTitle}}</td>
+        </tr>
+        <tr>
+          <td>{{distance}}</td>
+          <td>{{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+        </tr>
+        <tr>
+          <td>{{eGain}}</td>
+          <td>{{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{eLoss}}</td>
+          <td>{{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{time}}</td>
+          <td>{{currentTrack.features[0].properties.totalTime}}</td>
+        </tr>
+        <tr>
+          <td>{{motionTime}}</td>
+          <td>{{ currentMotionTime }}</td>
+        </tr>
+        <tr>
+          <td>{{points}}</td>
+          <td>{{currentTrack.features[0].properties.totalNumber}}</td>
+        </tr>
+        <tr>
+          <td>{{altitude}}</td>
+          <td  *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+            {{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{speed}}</td>
+          <td><div *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+            {{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h</div></td>
+        </tr>
+        <tr>
+          <td>{{avgSpeed}}</td>
+          <td><div *ngIf="currentAverageSpeed != undefined">{{currentAverageSpeed | number:'1.1-1'}} km/h</div></td>
+        </tr>
+        <tr>
+          <td>{{motionAvgSpeed}}</td>
+          <td><div *ngIf="currentMotionSpeed != undefined">{{currentMotionSpeed | number:'1.1-1'}} km/h</div></td>
+        </tr>
+      </table>
     </div>
     <div class = 'element card' *ngIf="archivedTrack && layerVisibility=='archived'">
-      REFERENCE ROUTE<br>
-      {{archivedTrack.features[0].properties.name}}<br>
-      Distance: <ng-container *ngIf="archivedTrack.features[0].properties.totalDistance !== undefined">
-        {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</ng-container><br>
-      Elevation gain: <ng-container *ngIf="archivedTrack.features[0].properties.totalElevationGain !== undefined">
-        {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</ng-container><br>
-      Elevation loss: <ng-container *ngIf="archivedTrack.features[0].properties.totalElevationLoss !== undefined">
-        {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</ng-container><br>
-      Time: <ng-container *ngIf="archivedTrack.features[0].properties.totalTime !== undefined">
-        {{ archivedTrack.features[0].properties.totalTime }}</ng-container><br>
-      {{ archivedTrack.features[0].properties.totalNumber}} points recorded<br>
+      <table>
+        <tr>           
+          <td colspan='2'>{{arcTitle}}</td>
+        </tr>
+        <tr>           
+          <td colspan='2'>{{archivedTrack.features[0].properties.name}}</td>
+        </tr>
+        <tr>
+          <td>{{distance}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalDistance !== undefined">
+            {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+        </tr>
+        <tr>
+          <td>{{eGain}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalElevationGain !== undefined">
+            {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{eLoss}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalElevationLoss !== undefined">
+            {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{time}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalTime !== undefined">
+            {{archivedTrack.features[0].properties.totalTime}}</td>
+        </tr>
+        <tr>
+          <td>{{points}}</td>
+          <td>{{archivedTrack.features[0].properties.totalNumber}}</td>
+        </tr>
+      </table>
     </div>  
   </swiper-slide>
   <swiper-slide>
     <div class = 'empty'></div>  
     <div class = 'element' id ='cc0'>
-      <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+      <h1 class = 'title'>{{canvasAltitude}}</h1>
       <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = 'element' id="ac0">
-      <h1 class = 'title'>ALTITUDE (m) vs distance (km)</h1>
+      <h1 class = 'title'>{{canvasAltitude}}</h1>
       <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>  
   </swiper-slide>  
   <swiper-slide>
     <div class = 'empty'></div>
     <div class = 'element' id="cc1">  
-      <h1 class = 'title'>SPEED (km/h) vs time ({{currentUnit}})</h1>
+      <h1 class = 'title'>{{canvasSpeed}} ({{currentUnit}})</h1>
       <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
     <div class = 'element' id="ac1">  
-      <h1 class = 'title'>SPEED (km/h) vs time ({{archivedUnit}})</h1>
+      <h1 class = 'title'>{{canvasSpeed}} ({{archivedUnit}})</h1>
       <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
     </div>
   </swiper-slide> 

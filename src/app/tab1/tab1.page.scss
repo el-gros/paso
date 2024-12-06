@@ -32,11 +32,11 @@ ion-fab-button {
   }
 
   .card {
-    margin-left: 20px;
+    margin-left: 0px;
     margin-top: 0px;
     font-size: 15px;
     font-family: 'Arial, sans-serif';
-    font-weight: bold;
+    font-weight: bold
   }
   
   .empty {
@@ -60,4 +60,41 @@ ion-fab-button {
   
   .fade-in {
     animation: fadeIn 0.5s ease-in-out;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td {
+    border: 1px solid #ddd;
+    padding-left: 8px;
+    padding-top: 2px;
+    text-align: left;
+  }
+
+  td:first-child {
+    width: 66.67%; 
+  }
+
+  td:last-child {
+    width: 33.33%; 
+  }
+
+  tr td[colspan] {
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .green {
+    background-color: rgb(192, 255, 192);
+  }
+
+  .red {
+    background-color: rgb(255, 192, 192);
+  }
+
+  .black {
+    background-color: white;
   }

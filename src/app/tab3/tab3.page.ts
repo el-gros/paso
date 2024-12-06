@@ -34,17 +34,27 @@ export class Tab3Page {
       name: 'OpenTopoMap',
       image: '/assets/maps/otm.jpg',
     },
-  //  {
+    //  {
   //    name: 'Institut Cartografic de Catalunya',
   //    image: '',
   //  },
   ];
-  
+  selectedLanguage: 'ca' | 'es' | 'other' = global.language;  
+  title: any = [
+    ['Trajecte actual', 'Trayecto actual', 'Current track'],
+    ['Trajecte de referència', 'Trayecto de referencia','Reference track'],
+    ['Mapa base','Mapa base', 'Base map'],
+    ['Idioma','Idioma', 'Language'],
+    ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR']
+  ]
+  language: 'ca' | 'es' | 'other' = global.language;  
+  languageIndex: 0 | 1 | 2 = global.languageIndex
+
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-  ) {}
+  ) {  }
 
   /*
   1. selectColor
@@ -54,18 +64,26 @@ export class Tab3Page {
 
   // 2. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
-    const colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue'];
-    const inputs: AlertInput[] = colors.map(color => ({
+    // Define variables
+    const messages = ['Tria el color del trajecte','Elige el color del trayecto', 'Set the track color']
+    const currHeader = ['Trajecte actual','Trayecto actual', 'Current Track']
+    const archHeader = ['Trajecte de referència','Trayecto de referencia', 'Reference Track']
+    const colors: string[][] = [
+      ['carmesí', 'vermell', 'taronja', 'daurat', 'groc', 'magenta', 'morat', 'llima', 'verd', 'cian', 'blau'],
+      ['carmesí', 'rojo', 'naranja', 'oro', 'amarillo', 'magenta', 'púrpura', 'lima', 'verde', 'cian', 'azul'],
+      ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
+    ]
+    const inputs: AlertInput[] = colors[2].map((color, index) => ({
       name: color,
-      type: 'radio' as const,  // Explicitly specify "radio" as the type
-      label: `${color}`, // Use a colored block character with the name
-      value: color,
+      type: 'radio' as const,
+      label: colors[global.languageIndex][index], // Use the label from the selected language
+      value: color, // Value comes from colors2[2]
       checked: currArch === 'Current' ? this.currentColor === color : this.archivedColor === color,
-      cssClass: `color-option-${color}` // Assign a class to style the label
+      cssClass: `color-option-${color}` // Style based on the value from colors2[2]
     }));
     const cssClass = 'alert primaryAlert';
-    const header = `${currArch} Track`;
-    const message = 'Kindly set the track color';
+    const header = currArch === 'Current' ? currHeader[global.languageIndex] : archHeader[global.languageIndex]
+    const message = messages[global.languageIndex]
     const buttons = [
       global.cancelButton,
       {
@@ -88,6 +106,11 @@ export class Tab3Page {
   // 2. IONVIEWWILLENTER /////////////////////////////
   async ionViewWillEnter() {
     try {
+      // Set language in radio group
+      this.language = global.language;
+      this.languageIndex = global.languageIndex;
+      // Translate
+      //this.title = await this.translate(this.title) 
       // Check the colors
       this.archivedColor = await this.fs.check(this.archivedColor ?? 'defaultArchivedColor', 'archivedColor');
       this.currentColor = await this.fs.check(this.currentColor ?? 'defaultCurrentColor', 'currentColor');
@@ -106,7 +129,41 @@ export class Tab3Page {
     this.fs.goHome();
   }
 
- }
+  async onLanguageChange() {
+    global.language = this.language;
+    // Map the selected language to an index
+    switch (this.language) {
+      case 'ca':
+        this.languageIndex = 0;
+        break;
+      case 'es':
+        this.languageIndex = 1;
+        break;
+      default:
+        this.languageIndex = 2;
+    }
+    global.language = this.language;
+    global.languageIndex = this.languageIndex
+    console.log('Language:', global.language);
+    console.log('Language Index:', global.languageIndex);
+    // translate
+    //this.title = await this.translate(this.title) 
+  }
+
+  /*
+  async translate(variable: string[][]) {
+    for (let i in variable) {
+      variable[i][0] = variable[i][global.languageIndex+1]
+    }
+    return variable
+  }
+  */  
+ 
+  async ionViewWillLeave() {
+    await this.fs.storeSet('language', global.language) 
+  } 
+
+}
  
  
  

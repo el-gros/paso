@@ -42,6 +42,7 @@ import { TileGrid, createXYZ } from 'ol/tilegrid';
 import LayerRenderer from 'ol/renderer/Layer';
 import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
+import { Device } from '@capacitor/device';
 
 useGeographic();
 
@@ -71,6 +72,7 @@ export class Tab1Page {
   canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
+  altitudeThreshold: number = 20;
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   gridsize: string = '-';
   map: any;
@@ -78,7 +80,7 @@ export class Tab1Page {
   archivedMarkers: any = [null, null, null];
   multiMarker: any | undefined = undefined;
   lag: number = global.lag; // 8
-  distanceFilter: number = 5; // .05 / 5
+  distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
@@ -90,7 +92,7 @@ export class Tab1Page {
   vMin: number = 1; 
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: any = undefined;
+  currentMotionTime: any = '00:00:00';
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
@@ -109,9 +111,41 @@ export class Tab1Page {
   layerVisibility: string = 'archived' // archived, multi or none 
   multiPoint: any = [];
   multiKey: any = [];
-  statusMessage: { text: string; color: string; } = {text: '', color: 'black'};
+  status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
+  language: 'ca' | 'es' | 'other' = 'other';
+  languageIndex: 0 | 1 | 2 = 2; // Default to 'other'
+  translations = {
+    arcTitle: ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'],
+    curTitle: ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'],
+    distance: ['Distància','Distancia','Distance'],
+    eGain: ['Desnivell positiu','Desnivel positivo','Elevation gain'],
+    eLoss: ['Desnivell negatiu','Desnivel negativo','Elevation loss'],
+    time: ['Temps', 'Tiempo','Time'],
+    motionTime: ['Temps en moviment','Tiempo en movimiento','In-motion time'],
+    points: ['Punts gravats','Puntos grabados','Recorded points'],
+    altitude: ['Altitud actual','Altitud actual','Current altitude'],
+    speed: ['Velocitat actual','Velocidad actual','Current speed'], 
+    avgSpeed: ['Velocitat mitjana','Velocidad nedia','Average speed'],
+    motionAvgSpeed: ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'],
+    canvasAltitude: ['ALTITUD (m) vs DISTÀNCIA (km)','ALTITUD (m) vs DISTANCIA (km)','ALTITUDE (m) vs DISTANCE (km)'],
+    canvasSpeed: ['VELOCITAT (km/h) vs TEMPS','VELOCIDAD (km/h) vs TIEMPO','SPEED (km/h) vs TIME']
+  }
+  get arcTitle(): string { return this.translations.arcTitle[global.languageIndex]; }
+  get curTitle(): string { return this.translations.curTitle[global.languageIndex]; }
+  get distance(): string { return this.translations.distance[global.languageIndex]; }
+  get eGain(): string { return this.translations.eGain[global.languageIndex]; }
+  get eLoss(): string { return this.translations.eLoss[global.languageIndex]; }
+  get time(): string { return this.translations.time[global.languageIndex]; }
+  get motionTime(): string { return this.translations.motionTime[global.languageIndex]; }
+  get points(): string { return this.translations.points[global.languageIndex]; }
+  get altitude(): string { return this.translations.altitude[global.languageIndex]; }
+  get speed(): string { return this.translations.speed[global.languageIndex]; }
+  get avgSpeed(): string { return this.translations.avgSpeed[global.languageIndex]; }
+  get motionAvgSpeed(): string { return this.translations.motionAvgSpeed[global.languageIndex]; }
+  get canvasAltitude(): string { return this.translations.canvasAltitude[global.languageIndex]; }
+  get canvasSpeed(): string { return this.translations.canvasSpeed[global.languageIndex]; }
 
   constructor(
     public fs: FunctionsService,
@@ -200,6 +234,8 @@ export class Tab1Page {
     try {
       // create storage 
       await this.storage.create();
+      // Determine device language
+      this.determineLanguage();
       // elements shown, elements hidden
       this.show('map', 'block');
       this.show('data', 'none');
@@ -280,15 +316,17 @@ export class Tab1Page {
       }
       else if (this.layerVisibility == 'multi') {
         // hide archived track
-        await this.hideArchivedTrack();  
-        this.statusMessage = {text: '', color: ''}
+        try {
+          this.archivedLayer.setVisible(false); 
+        } catch (error) {}
+        this.status = 'black'
         // display all tracks
         await this.displayAllTracks();
         // center all tracks
         if (!this.currentTrack) await this.centerAllTracks();
       }
       else {
-        this.statusMessage = {text: '', color: ''}
+        this.status = 'black'
         // Hide archived and multi layers
         if (this.archivedLayer) await this.archivedLayer.setVisible(false);
         if (this.multiLayer) await this.multiLayer.setVisible(false);
@@ -355,7 +393,7 @@ export class Tab1Page {
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentMotionSpeed = undefined;
-    this.currentMotionTime = undefined;
+    this.currentMotionTime = '00:00:00';
     this.speedFiltered = 0;
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
@@ -393,10 +431,12 @@ export class Tab1Page {
     this.show('save', 'none');
     this.show('trash', 'none');
     // Reset current track and corresponding canvases
-    this.statusMessage = {text: '', color: ''}
+    this.status = 'black'
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    this.fs.displayToast('The current track has been removed');
+    // Toast
+    const toast = ["El trajecte actual s'ha esborrat",'El trayecto actual se ha eliminado','The current track has been removed']
+    this.fs.displayToast(toast[global.languageIndex]);
     try{if (this.currentLayer) await this.currentLayer.setVisible(false);} catch{}
   }
 
@@ -430,54 +470,73 @@ export class Tab1Page {
     await this.filterAltitude(this.currentTrack, num - 1);
     // set map view
     await this.setMapView(this.currentTrack);
-    this.fs.displayToast('The current track is now finished');
+    // Toast
+    const toast = ['El trajecte actual ha finalitzat','El trayecto actual ha finalizado','The current track is now finished']
+    this.fs.displayToast(toast[global.languageIndex]);
     // update canvas
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // 10. CONFIRM TRACK DELETION OR STOP TRACKING
-  async confirm(header: string, mess: string, action: string) {
+  async confirm(which: string) {
+    const stopHeader = ['Finalitzar el trajecte', 'Finalizar el trayecto', 'Stop the track']
+    const delHeader = ['Esborrar el trajecte', 'Borrar el trayecto', 'Delete the track']
+    const stopMessage = [
+      'Esteu segur que voleu finalitzar el trajecte?',
+      '¿Estás seguro de que quieres finalizar el trayecto?',
+      'Are you sure you want to stop the track'
+    ] 
+    const delMessage = [
+      'Esteu segur que voleu eliminar el trajecte?',
+      '¿Estás seguro de que quieres eliminar el trayecto?',
+      'Are you sure you want to delete the track'
+    ] 
+    const header = which === 'stop' ? stopHeader[global.languageIndex] : delHeader[global.languageIndex]
+    const message = which === 'stop' ? stopMessage[global.languageIndex] : delMessage[global.languageIndex]
+    const text = ['Si','Si','Yes']
     const cssClass = 'alert yellowAlert';
-    const message = 'Are you sure you want to ' + mess;
     const inputs: never[] = [];
     const buttons =  [
       global.cancelButton,
       {
-        text: 'Yes',
+        text: text[global.languageIndex],
         cssClass: 'alert-button',
         handler: async () => {
-          if (action === 'remove') {
+          if (which === 'delete') {
             await this.removeTrack();
-          } else if (action === 'stop') {
+          } else if (which === 'stop') {
             await this.stopTracking();
           }
         }
       }
     ]
-    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
+    await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
   } 
 
   // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
     const cssClass = 'alert yellowAlert';
-    const header = 'Track Details';
-    const message = 'Kindly set the track details';
+    const header = ['Informació del trajecte', 'Información del trayecto', 'Track information'];
+    const message = ['Omple els detalls del trajecte', 'Rellena los detalles del trayecto','Fill in the track details'];
+    const name = ['Nom:','Nombre:','Name:']
+    const place = ['Lloc:', 'Lugar:', 'Place:']
+    const description = ['Descripció:','Descripción:','Description:']
     const inputs = [
-      this.fs.createReadonlyLabel('Name','Name:'),
+      this.fs.createReadonlyLabel('Name',name[global.languageIndex]),
       {
         name: 'name',
         type: 'text',
         value: '',
         cssClass: 'alert-edit'
       },
-      this.fs.createReadonlyLabel('Place','Place:'),
+      this.fs.createReadonlyLabel('Place',place[global.languageIndex]),
       {
         name: 'place',
         type: 'text',
         value: '',
         cssClass: 'alert-edit'
       },
-      this.fs.createReadonlyLabel('Description','Description:'),
+      this.fs.createReadonlyLabel('Description',description[global.languageIndex]),
       {
         name: 'description',
         type: 'textarea',
@@ -501,7 +560,7 @@ export class Tab1Page {
       }
     ];
     const action = ''
-    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
+    await this.fs.showAlert(cssClass, header[global.languageIndex], message[global.languageIndex], inputs, buttons, action)
   }
   
   // 12. NO NAME TO SAVE ////////////////////////////////////
@@ -542,7 +601,9 @@ export class Tab1Page {
     // Add new track definition to the collection and save it
     collection.push(trackDef);
     await this.fs.storeSet('collection', collection);
-    this.fs.displayToast('File saved successfully');
+    // Toast
+    const toast = ['Fitxer guardat correctament', 'Fichero guardado correctamente','File saved successfully']
+    this.fs.displayToast(toast[global.languageIndex]);
     // Update UI elements
     this.show('start', 'block');
     this.show('stop', 'none');
@@ -591,6 +652,7 @@ export class Tab1Page {
     if (location.accuracy > this.threshold) return false;
     if (location.altitude == null || location.altitude == undefined) return false;
     if (location.altitude == 0) return false;
+    if (location.altitudeAccuracy > this.altitudeThreshold) return false;
     // m/s to km/h
     location.speed = location.speed * 3.6
     // initial point
@@ -604,22 +666,22 @@ export class Tab1Page {
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
     let num = this.currentTrack.features[0].geometry.coordinates.length;
-    if ((num % 10 == 0) && (this.archivedTrack)) {
+    if ((num % 3 == 0) && (this.archivedTrack)) {
       await this.checkWhetherOnRoute();
     }
     return true;
   }
 
   // 18. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
-  async onRoute(): Promise<{ text: string; color: string }> {
+  async onRoute() {
     // Return 'black' if conditions aren't met
-    if (!this.currentTrack || !this.archivedTrack || this.layerVisibility != 'archived') return {text: '', color:'black'};
+    if (!this.currentTrack || !this.archivedTrack || this.layerVisibility != 'archived') return 'black';
     // Define current and archived coordinates
     const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
-    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return {text: '', color:'black'};
+    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
-    const bounding = (this.statusMessage.color === 'red' ? 0.5 : 1) * Math.sqrt(this.threshDist);
+    const bounding = (this.status === 'red' ? 0.3 : 1) * Math.sqrt(this.threshDist);
     const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
     const multiplier = 10;
     const skip = 5;
@@ -629,7 +691,7 @@ export class Tab1Page {
     if (this.extremes) {
       if (point[0] < this.extremes.minX - bounding || point[0] > this.extremes.maxX + bounding ||
           point[1] < this.extremes.minY - bounding || point[1] > this.extremes.maxY + bounding) {
-        return {text: 'Wrong way', color:'red'};
+        return 'red';
       }
     }
     // Forward search
@@ -638,7 +700,7 @@ export class Tab1Page {
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         this.lastN = i;
-        return {text: 'Correct way', color: 'green'};
+        return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i += (skip - 1) * reduction;
       }
@@ -650,14 +712,14 @@ export class Tab1Page {
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         this.lastN = i;
-        return {text: 'Correct way', color: 'green'};
+        return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i -= (skip - 1) * reduction;
       }
     }
     console.log('checked backward')
     // No match found
-    return {text: 'Wrong way', color:'red'};
+    return 'red';
   }
   
   // 19. SHOW / HIDE ELEMENTS ///////////////////////////////// 
@@ -772,7 +834,7 @@ export class Tab1Page {
           totalDistance: 0,
           totalElevationGain: 0,
           totalElevationLoss: 0,
-          totalTime: 0,
+          totalTime: '00:00:00',
           totalNumber: 0,
           currentAltitude: undefined, 
           currentSpeed: undefined
@@ -964,14 +1026,6 @@ export class Tab1Page {
     if (x < 2.5) return 0.5 * (10 ** nx);
     else if (x < 5) return 10 ** nx;
     else return 2 * (10 ** nx);
-  }
-  
-  // HIDE ARCHIVED TRACK
-  async hideArchivedTrack() {
-    try {
-      this.archivedLayer.setVisible(false);  // No need for await
-    } catch (error) {}
-    await this.showCanvas('a', 'none');
   }
 
   // SHOW ARCHIVED TRACK ///////////////////////////
@@ -1251,16 +1305,16 @@ export class Tab1Page {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.archivedTrack || this.layerVisibility !== 'archived') return;
     // Store previous color for comparison
-    const previousMessage = this.statusMessage;
+    const previousStatus = this.status;
     // Determine the current route color based on `onRoute` function
-    this.statusMessage = await this.onRoute() || {text: '', color: 'black'};
+    this.status = await this.onRoute() || 'black';
     // Beep for off-route transition
-    if (previousMessage.color === 'green' && this.statusMessage.color === 'red') {
-      this.playBeep(600, .8, 1)
+    if (previousStatus === 'green' && this.status === 'red') {
+      this.playBeep(600, .8, 1);
     }  
     // Beep for on-route transition  
-    else if (previousMessage.color === 'red' && this.statusMessage.color === 'green') {
-      this.playBeep(1800, .4, 1)
+    else if (previousStatus === 'red' && this.status === 'green') {
+      this.playBeep(2000, .4, 1);
     }
   }
 
@@ -1338,7 +1392,7 @@ export class Tab1Page {
           totalDistance: 0,
           totalElevationGain: 0,
           totalElevationLoss: 0,
-          totalTime: '',
+          totalTime: '00:00:00',
           totalNumber: 0,
           currentAltitude: undefined, 
           currentSpeed: undefined
@@ -1463,16 +1517,20 @@ export class Tab1Page {
         });
         if (typeof fileContent.data === 'string') {
             await this.parseGpx(fileContent.data);
-            this.fs.displayToast('File uploaded successfully');
+            const toast = ["El fitxer s'ha importat correctament","El fichero se ha importado correctamente",'File uploaded successfully']
+            this.fs.displayToast(toast[global.languageIndex]);
         }
         else {
-          this.fs.displayToast('No file uploaded');
+          const toast = ["No s'ha importat cap fitxer","No se ha importado ningún fichero", 'No file uploaded']
+          this.fs.displayToast(toast[global.languageIndex]);
         }
       } catch (error) {
-        this.fs.displayToast('Failed to upload file');
+        const toast = ["No s'ha pogut importar el fitxer", 'No se ha podido importar el fichero','Failed to upload file']
+        this.fs.displayToast(toast[global.languageIndex]);
       } 
     } else {
-      this.fs.displayToast('No file selected');
+      const toast = ["No s'ha seleccionat cap fitxer", 'No se ha seleccionado ningún fichero','No file selected']
+      this.fs.displayToast(toast[global.languageIndex]);
     }
   }
 
@@ -1585,4 +1643,28 @@ export class Tab1Page {
     // Report
     this.fs.displayToast(`${credits}`) 
   }
+
+  async determineLanguage() {
+    try {
+      const info = await Device.getLanguageCode();
+      let deviceLanguage = info.value.split('-')[0]; // Extract the base language code
+      console.log('Device Language:', deviceLanguage);
+      // Check if there is a replacement
+      deviceLanguage = await this.fs.check(global.language, 'language');
+      // Map the device language and assign index
+      if (deviceLanguage === 'ca') {
+        global.language = 'ca';
+        global.languageIndex = 0;
+      } else if (deviceLanguage === 'es') {
+        global.language = 'es';
+        global.languageIndex = 1;
+      } else {
+        global.language = 'other';
+        global.languageIndex = 2;
+      }
+    } catch (error) {
+      console.error('Error determining language:', error);
+    }
+  }
+
 }  

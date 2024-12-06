@@ -10,12 +10,12 @@
   <ion-grid>
     <!-- archived track -->
     <ion-row class="centered-content">
-      <div><strong>Current track</strong></div>
+      <div><strong>{{title[0][languageIndex]}}</strong></div>
     </ion-row>
     <ion-row>
       <ion-col size="5" offset="2">
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Current')">
-          <div class="pick" >CHANGE COLOR</div>
+          <div class="pick" >{{title[4][languageIndex]}}</div>
         </ion-button>
       </ion-col>  
       <ion-col size="2" offset="1">
@@ -23,12 +23,12 @@
       </ion-col>  
     </ion-row>
     <ion-row class="centered-content">
-      <div><strong>Reference track</strong></div>
+      <div><strong>{{title[1][languageIndex]}}</strong></div>
     </ion-row>
     <ion-row>
       <ion-col size="5" offset="2">
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Archived')">
-          <div class="pick" >CHANGE COLOR</div>
+          <div class="pick" >{{title[4][languageIndex]}}</div>
         </ion-button>
       </ion-col>  
       <ion-col size="2" offset="1">
@@ -36,7 +36,7 @@
       </ion-col>  
     </ion-row>
     <ion-row class="centered-content">
-      <div><strong>Base map</strong></div>
+      <div><strong>{{title[2][languageIndex]}}</strong></div>
     </ion-row>
     <ion-row>
       <ion-col size="6" *ngFor="let baseMap of baseMaps">
@@ -48,6 +48,43 @@
         </ion-card>
       </ion-col>
     </ion-row>
-  </ion-grid>
+    <ion-row class="centered-content">
+      <div><strong>{{title[3][languageIndex]}}</strong></div>
+    </ion-row>
+      <ion-list>
+        <ion-radio-group [(ngModel)]="language" (ionChange)="onLanguageChange()">
+          <ion-row class="centered-content">
+          <ion-col size="4">
+          <ion-item>
+            <ion-label>
+              <img src="assets/flags/ca.png" alt="Catalan Flag" width="24" height="24" />
+            </ion-label>
+            <ion-radio slot="start" value="ca"></ion-radio>
+          </ion-item>
+          </ion-col>
+          <ion-col size="4">
+          <ion-item>
+            <ion-label>
+              <img src="assets/flags/es.png" alt="Spanish Flag" width="24" height="24" />
+            </ion-label>
+            <ion-radio slot="start" value="es"></ion-radio>
+          </ion-item>
+          </ion-col>
+          <ion-col size="4">
+          <ion-item>
+            <ion-label>
+              <img src="assets/flags/us.png" alt="US Flag" width="24" height="24" />
+            </ion-label>
+            <ion-radio slot="start" value="other"></ion-radio>
+          </ion-item>
+          </ion-col>
+        </ion-row>
+        </ion-radio-group>
+      </ion-list>
+    </ion-grid>
+
   
+
+
+
 </ion-content>

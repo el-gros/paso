@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-label id="title">Name, date and place</ion-label>
+    <ion-label id="title">{{title}}</ion-label>
     <div class="fab-container">
       <ion-fab-button (click)="fs.goHome()">
         <ion-icon name="home"></ion-icon>
@@ -31,20 +31,19 @@
   <ion-grid>
     <ion-row>
       <ion-col size="4">
-        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="exportTrack()"
-          expand="block" [disabled]='(numChecked != 1)'>
-          <div>EXPORT<br>TRACK</div>
-        </ion-button>
       </ion-col>
       <ion-col size="4">
-        {{info}}
+        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="exportTrack()"
+          expand="block" [disabled]='(numChecked != 1)'>
+          <div>{{export}}</div>
+        </ion-button>
       </ion-col>
       <ion-col size="4">
         <ion-button *ngIf="layerVisibility != 'multi'" class='greenEnabled' (click)="displayAllTracks(true)" expand="block">
-          <div>DIISPLAY<br>ALL</div>
+          <div>{{all}}</div>
         </ion-button>
         <ion-button *ngIf="layerVisibility == 'multi'" class='redEnabled' (click)="displayAllTracks(false)" expand="block">
-          <div>HIDE<br>ALL</div>
+          <div>{{hideAll}}</div>
         </ion-button>
       </ion-col>
     </ion-row>
@@ -52,23 +51,23 @@
       <ion-col size="4">
         <ion-button [ngClass]="(numChecked == 0) ? 'redDisabled' : 'redEnabled'" (click)="deleteTracks()" expand="block"
           [disabled]='(numChecked == 0)'>
-          <div>REMOVE<br>TRACKS</div>
+          <div>{{remove}}</div>
         </ion-button>
       </ion-col>
       <ion-col size="4">
         <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="editTrack()"
           expand="block" [disabled]='(numChecked != 1)'>
-          <div>EDIT<br>TRACK</div>
+          <div>{{edit}}</div>
         </ion-button>
       </ion-col>
       <ion-col size="4">
         <ion-button *ngIf="(numChecked == 1)" class= 'greenEnabled' (click)="displayTrack(true)"
           expand="block">
-          <div>DISPLAY<br>REFERENCE</div>
+          <div>{{display}}</div>
         </ion-button>
         <ion-button *ngIf="(numChecked != 1)" [ngClass]="((layerVisibility != 'archived') || !archivedPresent) ? 'redDisabled' : 'redEnabled'" (click)="displayTrack(false)"
           expand="block" [disabled]="(layerVisibility != 'archived') || !archivedPresent">
-          <div>HIDE<br>REFERENCE</div>
+          <div>{{hide}}</div>
         </ion-button>
       </ion-col>
     </ion-row>
