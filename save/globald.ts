@@ -53,14 +53,12 @@ export interface Track {
         }[]
       }
     }
-//add     
     waypoints?: {
       point: number[],
       altitude: number,
       name: string,
       comment: string 
     } []
-// /add    
   }]  
 }
 

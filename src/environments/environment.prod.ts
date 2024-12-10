@@ -5,6 +5,10 @@ export var global: any = {
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
   cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
+  // add
+  currentColor: 'orange' as string, 
+  archivedColor: 'green' as string,
+  // /add
 
   // Dynamic getter for the cancel button
   get cancelButton() {

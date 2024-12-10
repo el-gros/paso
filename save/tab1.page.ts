@@ -951,7 +951,7 @@ export class Tab1Page {
     // Report
     this.fs.displayToast(`${credits}`) 
     // Set up click events
-    this.map.on('click', this.handleMapClick.bind(this));
+    //this.map.on('click', this.handleMapClick.bind(this));
   }
   
   // CREATE CANVASES //////////////////////////////////////////

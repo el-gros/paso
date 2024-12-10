@@ -1,18 +1,12 @@
-// This file can be replaced during build by using the `fileReplacements` array.
-// `ng build` replaces `environment.ts` with `environment.prod.ts`.
-// The list of file replacements can be found in `angular.json`.
-
 export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
   language: 'other' as 'ca' | 'es' | 'other',
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
-  cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
-  // add
+  cancel: ['Cancel.lar', 'Cancelar', 'Cancel'] as string[],
   currentColor: 'orange' as string, 
   archivedColor: 'green' as string,
-  // /add
 
   // Dynamic getter for the cancel button
   get cancelButton() {
@@ -28,5 +22,5 @@ export var global: any = {
 };
 
 export const environment = {
-  production: false,
+  production: true,
 };

@@ -54,10 +54,7 @@ export class Tab3Page {
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-  ) {
-      this.archivedColor = global.archivedColor;
-      this.currentColor = global.currentColor
-    }
+  ) {  }
 
   /*
   1. selectColor
@@ -81,7 +78,7 @@ export class Tab3Page {
       type: 'radio' as const,
       label: colors[global.languageIndex][index], // Use the label from the selected language
       value: color, // Value comes from colors2[2]
-      checked: currArch === 'Current' ? global.currentColor === color : global.archivedColor === color,
+      checked: currArch === 'Current' ? this.currentColor === color : this.archivedColor === color,
       cssClass: `color-option-${color}` // Style based on the value from colors2[2]
     }));
     const cssClass = 'alert primaryAlert';
@@ -95,14 +92,12 @@ export class Tab3Page {
         handler: async (data: string) => {
           if (currArch === 'Current') {
             this.currentColor = data;
-            //global.currentColor = this.currentColor
-            global.currentColor = data;
-            await this.fs.storeSet('currentColor', global.currentColor);
+            global.currentColor = this.currentColor
+            await this.fs.storeSet('currentColor', this.currentColor);
           } else if (currArch === 'Archived') {
             this.archivedColor = data;
-            //global.archivedColor = this.archivedColor;
-            global.archivedColor = data;
-            await this.fs.storeSet('archivedColor', global.archivedColor);
+            global.archivedColor = this.archivedColor;
+            await this.fs.storeSet('archivedColor', this.archivedColor);
           }
         }
       }
@@ -117,8 +112,8 @@ export class Tab3Page {
       this.language = global.language;
       this.languageIndex = global.languageIndex;
       // Set line colors
-      //this.currentColor = global.currentColor;
-      //this.archivedColor = global.archivedColor
+      this.currentColor = global.currentColor;
+      this.archivedColor = global.archivedColor
       // Translate
       //this.title = await this.translate(this.title) 
       // Check the colors
