@@ -65,7 +65,7 @@ export class Tab3Page {
   3. selectBaseMap
   */
 
-  // 2. SELECT COLOR ////////////////////////////////////////
+  // 1. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
     // Define variables
     const messages = ['Tria el color del trajecte','Elige el color del trayecto', 'Set the track color']
@@ -112,21 +112,9 @@ export class Tab3Page {
 
   // 2. IONVIEWWILLENTER /////////////////////////////
   async ionViewWillEnter() {
-    try {
-      // Set language in radio group
-      this.language = global.language;
-      this.languageIndex = global.languageIndex;
-      // Set line colors
-      //this.currentColor = global.currentColor;
-      //this.archivedColor = global.archivedColor
-      // Translate
-      //this.title = await this.translate(this.title) 
-      // Check the colors
-      //this.archivedColor = await this.fs.check(this.archivedColor ?? 'defaultArchivedColor', 'archivedColor');
-      //this.currentColor = await this.fs.check(this.currentColor ?? 'defaultCurrentColor', 'currentColor');
-    } catch (error) {
-      console.error("Failed to initialize storage:", error);
-    }
+    // Set language in radio group
+    this.language = global.language;
+    this.languageIndex = global.languageIndex;
   }
 
   // 3. SELECT MAP

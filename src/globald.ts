@@ -13,10 +13,18 @@ export interface Location {
 export interface Data {
   altitude: number,
   speed: number,
+  time: number,
   compSpeed: number,
   distance: number,
 }
 
+export interface Waypoint {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  name?: string;
+  comment?: string;
+}
 
 export interface Bounds {
   min: number,
@@ -44,22 +52,11 @@ export interface Track {
       type: 'LineString',
       coordinates: number[][],
       properties: {
-        data: {
-          altitude: number,
-          speed: number,
-          time: number,
-          compSpeed: number,
-          distance: number
-        }[]
+        data: Data[]
       }
     }
 //add     
-    waypoints?: {
-      point: number[],
-      altitude: number,
-      name: string,
-      comment: string 
-    } []
+    waypoints?: Waypoint []
 // /add    
   }]  
 }

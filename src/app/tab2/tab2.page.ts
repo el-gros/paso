@@ -23,7 +23,6 @@ export class Tab2Page {
 
   collection: TrackDefinition[] = [];
   numChecked: number = 0;
-  //layerVisibility: string = global.layerVisibility;
   num: number = 0;
   archivedPresent: boolean = global.archivedPresent
   translations = {
@@ -64,7 +63,6 @@ export class Tab2Page {
     8. geoJsonToGpx
     9.  exportTrack
     10. displayAllTracks
-    11. ionViewWillLeave
   */
 
   // 1. ON VIEW DID ENTER ////////////
@@ -72,7 +70,6 @@ export class Tab2Page {
     // Initialize variables
     //this.layerVisibility = global.layerVisibility;
     this.archivedPresent = global.archivedPresent
-    console.log(this.archivedPresent, global.layerVisibility)
     // retrieve collection and uncheck all tracks
     this.collection = await this.fs.storeGet('collection') ?? [];
     for (const item of this.collection) item.isChecked = false;
@@ -269,7 +266,7 @@ export class Tab2Page {
   // 9. EXPORT TRACK //////////////////////////
   async exportTrack() {
     var track: Track | undefined;
-    const titles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
+    const dialogTitles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
     track = await this.fs.retrieveTrack();
     if (!track) return;
     await this.fs.uncheckAll();
@@ -288,11 +285,13 @@ export class Tab2Page {
         path: file,
         directory: Directory.External,
       });
+      const titles = ['Compartir un trajecte', 'Compartir un trayexto', 'Share a track'];
+      const texts = ['Aquí teniu el trajecte sol.licitat', 'Este es el trayecto solicitado', 'Here is the file you requested']
       await Share.share({
-        title: 'Share a track',
-        text: 'Here is the file you requested',
+        title: titles[global.languageIndex],
+        text: texts[global.languageIndex],
         url: fileUri.uri,
-        dialogTitle: titles[global.languageIndex],
+        dialogTitle: dialogTitles[global.languageIndex],
       });
       // Show success toast
       const toast = ["S'ha compartit correctament el trajecte",'El trayecto se ha compartido correctamente','Track exported and shared successfully!']
@@ -310,12 +309,5 @@ export class Tab2Page {
     else global.layerVisibility = 'none'
     this.router.navigate(['tab1']);
   }
-
-  // 11. ION VIEW WILL LEAVE
-  /*
-  ionViewWillLeave() {
-    global.layerVisibility = this.layerVisibility
-  }
-  */  
 
   }

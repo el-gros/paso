@@ -1,5 +1,5 @@
 import { global } from 'src/environments/environment';
-import { Track, Location , TrackDefinition, Bounds } from 'src/globald';
+import { Track, Location, Data, TrackDefinition, Bounds } from 'src/globald';
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -239,7 +239,7 @@ export class FunctionsService {
   }
 
   // 17. COMPUTE MAXIMUM AND MINIMUM OF A PROPERTY /////
-  async computeMinMaxProperty<T extends Record<string, number>>(data: T[], propertyName: keyof T): Promise<Bounds> {
+  async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
     if (data.length === 0) {
       throw new Error('Data array is empty.');
     }
@@ -255,7 +255,7 @@ export class FunctionsService {
     };
   }
 
-  // 23. SET STROKE STYLE /////////////////////////////////////////
+  // 18. SET STROKE STYLE /////////////////////////////////////////
   setStrokeStyle(color: string): Style {
     return new Style({ stroke: new Stroke({ 
       color: color, 

@@ -1,4 +1,4 @@
-import { Location, Extremes, Bounds, Track, TrackDefinition, Data } from '../../globald';
+import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../functions.service';
 import { Component, NgZone, Injectable, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
@@ -83,15 +83,12 @@ export class Tab1Page {
   archivedMarkers: any = [null, null, null];
   multiMarker: any | undefined = undefined;
   archivedWaypoints: any | undefined = undefined; 
-  archivedWpNames: [string, string, number][] = [];
   lag: number = global.lag; // 8
   distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
   computedDistances: number = 0; 
-  //currentColor: string = 'orange';
-  //archivedColor: string = 'green';
   mapProvider: string = 'OpenStreetMap'
   stopped: any = 0;
   vMin: number = 1; 
@@ -113,8 +110,6 @@ export class Tab1Page {
   foreground: boolean = true;
   extremes: Extremes | undefined
   openCanvas: boolean = true;
-  multiPoint: any = [];
-  multiKey: any = [];
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
@@ -187,12 +182,21 @@ export class Tab1Page {
   18. onRoute
   19. show
   20. displayArchivedTrack
-  21. changeColor
-  updateAllCanvas
+  21. updateAllCanvas
+  22. setMapView
+  23. firstPoint
+  24. createMap 
+  25. createCanvas
+  26. grid
+  27. gridValue
+  28. filterAltitude
+  29. createLayers
+  20. updateCanvas
+
   drawPoint
   computeMinMaxProperty
   retrieveTrack
-  setMapView
+
   */
 
   // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
@@ -758,32 +762,13 @@ export class Tab1Page {
     }
     // Display waypoints
     const waypoints = this.archivedTrack.features[0].waypoints || []
-    const multiPoint = []
-    for (var item of waypoints) {
-      multiPoint.push(item.point);
-      this.archivedWpNames.push([item.name, item.comment, Math.round(item.altitude) ]); 
-    }
-    console.log(multiPoint)
+    const multiPoint = waypoints.map(point => [point.longitude, point.latitude]);
     this.archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
+    this.archivedWaypoints.set('waypoints', waypoints);
     this.archivedWaypoints.setStyle(this.drawCircle('yellow'));
   }
 
-  /*
-  // 21. CHANGE THE TRACK COLORS /////////////////////////////////
-  async changeColor() {
-    try {
-      this.archivedColor = await this.fs.check(this.archivedColor, 'archivedColor');
-      this.currentColor = await this.fs.check(this.currentColor, 'currentColor');
-      // Apply new styles if features exist
-      this.currentFeature && this.currentFeature.setStyle(this.fs.setStrokeStyle(this.currentColor));
-      this.archivedFeature && this.archivedFeature.setStyle(this.fs.setStrokeStyle(this.archivedColor));
-    } catch (error) {
-      console.error("Error updating colors:", error);
-    }
-  }
-  */  
-
-  // 22. UPDATE ALL CANVAS ////////////////////////////////
+  // 21. UPDATE ALL CANVAS ////////////////////////////////
   async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
     // Validate context
     if (!context) {
@@ -811,7 +796,7 @@ export class Tab1Page {
     }
   }
   
-  // SET MAP VIEW /////////////////////////////////////////
+  // 22. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     var boundaries: Extremes | undefined;
     if (track == this.archivedTrack) boundaries = this.extremes
@@ -839,7 +824,7 @@ export class Tab1Page {
     })
   }
     
-  // FIRST POINT OF THE TRACK /////////////////////////////
+  // 23. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
     // Initialize current track
     this.currentTrack = {
@@ -907,7 +892,7 @@ export class Tab1Page {
     await this.showCanvas('c','block')  
   }
   
-  // CREATE MAP /////////////////////////////
+  // 24. CREATE MAP /////////////////////////////
   async createMap() {
     // current position
     const currentPosition = await this.fs.getCurrentPosition();
@@ -954,7 +939,7 @@ export class Tab1Page {
     this.map.on('click', this.handleMapClick.bind(this));
   }
   
-  // CREATE CANVASES //////////////////////////////////////////
+  // 25. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     this.openCanvas = true;
     let currentCanvas: HTMLCanvasElement | undefined;
@@ -995,7 +980,7 @@ export class Tab1Page {
     this.openCanvas = false;
   }
 
-  // GRID /////////////////////////////////////////////////////
+  // 26. GRID /////////////////////////////////////////////////////
   async grid(  ctx: CanvasRenderingContext2D | undefined,
     xMin: number,
     xMax: number,
@@ -1039,7 +1024,7 @@ export class Tab1Page {
       ctx.setLineDash([]);
   }
 
-  // DETERMINATION OF GRID STEP //////////////////////
+  // 27. DETERMINATION OF GRID STEP //////////////////////
   gridValue(dx: number) {
     const nx = Math.floor(Math.log10(dx));
     const x = dx / (10 ** nx);
@@ -1058,7 +1043,7 @@ export class Tab1Page {
     await this.displayArchivedTrack();
   }
 
-  // FI8LTER ALTITUDE /////////////////////////////
+  // 28. FI8LTER ALTITUDE /////////////////////////////
   async filterAltitude(track: any, final: number) {
     if (!track) return;
     // number of points
@@ -1089,7 +1074,7 @@ export class Tab1Page {
     }
   }
 
-  // CREATE FEATURES /////////////////////////////
+  // 29. CREATE FEATURES /////////////////////////////
   async createLayers() {
     // create features to hold current track and markers
     this.currentMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
@@ -1115,7 +1100,7 @@ export class Tab1Page {
     this.multiLayer = new VectorLayer({source: msource});
   } 
 
-  // UPDATE CANVAS ///////////////////////////////////
+  // 30. UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: any, track: Track | undefined, propertyName: keyof Data, xParam: string) {
     var tUnit: string = ''
     if (!ctx) return tUnit;
@@ -1189,8 +1174,8 @@ export class Tab1Page {
     var key: any;
     var track: any;
     var multiLine: any = [];
-    this.multiPoint = [];
-    this.multiKey = [];        
+    let multiPoint = [];
+    let multiKey = [];        
     // get collection
     var collection: TrackDefinition[] = await this.fs.storeGet('collection') ?? [];
     // Loop through each item in the collection
@@ -1206,13 +1191,14 @@ export class Tab1Page {
       const coord = track.features[0]?.geometry?.coordinates;
       if (coord) {
         multiLine.push(coord);
-        this.multiPoint.push(coord[0]);
-        this.multiKey.push(item.date);
+        multiPoint.push(coord[0]);
+        multiKey.push(item.date);
       }
     }
-    // Set geometries for multiLine and multiPoint layers
+    // Set geometries for multiFeature and multiMarker
     this.multiFeature.setGeometry(new MultiLineString(multiLine));
-    this.multiMarker.setGeometry(new MultiPoint(this.multiPoint));
+    this.multiMarker.setGeometry(new MultiPoint(multiPoint));
+    this.multiMarker.set('multikey', multiKey) 
     // Apply styles to the features
     this.multiFeature.setStyle(this.fs.setStrokeStyle('black'));
     this.multiMarker.setStyle(this.drawCircle('green'));
@@ -1233,7 +1219,8 @@ export class Tab1Page {
               coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
             );
             // Retrieve the archived track based on the index key
-            const key = this.multiKey[index];
+            const multiKey = feature.get('multikey'); // Retrieve stored waypoints
+            const key = multiKey[index];
             this.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
             // Display archived track details if it exists
             if (this.archivedTrack) {
@@ -1249,16 +1236,26 @@ export class Tab1Page {
         break;
       case 'archived':
         this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-          this.popText = undefined
           if (feature === this.archivedWaypoints) {
+            this.popText = undefined
             // Retrieve clicked coordinate and find its index
             const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
             const multiPointCoordinates = feature.getGeometry().getCoordinates();
             const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
               coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
             );
-            // Retrieve the WP name based on the index
-            this.popText = this.archivedWpNames[index]        
+            if (index !== -1) {
+              // Retrieve the waypoint data using the index
+              const waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
+              const clickedWaypoint: Waypoint = waypoints[index];
+              // Retrieve the WP name, comment and altitude based on its index
+              this.popText = [
+                clickedWaypoint?.name ?? '',
+                clickedWaypoint?.comment ?? '',
+                clickedWaypoint?.altitude !== undefined 
+                  ? Math.round(clickedWaypoint.altitude) : NaN
+              ]  
+            }
           }
           const popover = await this.popoverController.create({
             component: PopOverComponent,
@@ -1429,6 +1426,7 @@ export class Tab1Page {
 
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
+    let waypoints: Waypoint[] = [];
     let track: Track = {
       type: 'FeatureCollection',
       features: [{
@@ -1459,24 +1457,19 @@ export class Tab1Page {
     // Parse GPX data
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
-    // extract waypoints
-    const waypoints = xmlDoc.getElementsByTagName('wpt') || [];
-    for (let k = 0; k < waypoints.length; k++) {
-      const lat = parseFloat(waypoints[k].getAttribute('lat') || '');
-      const lon = parseFloat(waypoints[k].getAttribute('lon') || '');
-      const ele = parseFloat(waypoints[k].getElementsByTagName('ele')[0]?.textContent || '0');
-      const name = waypoints[k].getElementsByTagName('name')[0]?.textContent || '';
-      let comment = waypoints[k].getElementsByTagName('cmt')[0]?.textContent || '';
-      if (name == comment) comment = ''
-      if (track.features[0] && track.features[0].waypoints) {
-        if (name != '' || comment != '') track.features[0].waypoints.push({
-          point: [lon, lat],
-          altitude: ele,
-          name: name,
-          comment: comment
-        });
-      }
-    }  
+    // Parse waypoints
+    const wptNodes = xmlDoc.getElementsByTagName("wpt");
+    for (const wpt of Array.from(wptNodes)) {
+      const latitude = parseFloat(wpt.getAttribute("lat") || "0");
+      const longitude = parseFloat(wpt.getAttribute("lon") || "0");
+      const altitude = parseFloat(wpt.getElementsByTagName("ele")[0]?.textContent || "0");
+      const name = wpt.getElementsByTagName("name")[0]?.textContent || undefined;
+      let comment = wpt.getElementsByTagName("cmt")[0]?.textContent || undefined;
+      if (name == comment) comment = undefined
+      if (!name && !comment) continue
+      waypoints.push({ latitude, longitude, altitude, name, comment });
+    }
+    if (track.features[0] && track.features[0].waypoints) track.features[0].waypoints = waypoints;
     // Extract tracks
     const tracks = xmlDoc.getElementsByTagName('trk');
     if (tracks.length === 0) return;
@@ -1488,8 +1481,8 @@ export class Tab1Page {
     const trackPoints = trackSegment.getElementsByTagName('trkpt');
     // Track name
     track.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
-    // Initialize variable
-    //let altitudeOk = true;
+    // Track comment
+    track.features[0].properties.description = tracks[0].getElementsByTagName('cmt')[0]?.textContent || '';
     let distance = 0;
     // Loopo on points
     for (let k = 0; k < trackPoints.length; k++) {
@@ -1497,7 +1490,6 @@ export class Tab1Page {
       const lon = parseFloat(trackPoints[k].getAttribute('lon') || '');
       const ele = parseFloat(trackPoints[k].getElementsByTagName('ele')[0]?.textContent || '0');
       const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
-//      console.log(time)
       if (isNaN(lat) || isNaN(lon)) continue;
       // Add coordinates
       track.features[0].geometry.coordinates.push([lon, lat]);
@@ -1507,15 +1499,9 @@ export class Tab1Page {
         const prevCoord = track.features[0].geometry.coordinates[k - 1];
         distance += await this.fs.computeDistance(prevCoord[0], prevCoord[1], lon, lat);
       }
-      // Handle altitude
-      //if (alt === undefined) altitudeOk = false;
-      //if (isNaN(ele)) {
-      //  altitudeOk = false;
-      //}
       if (ele) var alt: number | undefined = +ele;
       else {
         alt = undefined;
-        //altitudeOk = false;
       }
       if (alt == 0 && num > 1) alt = track.features[0].geometry.properties.data[num-2].altitude; 
       // Handle time
@@ -1574,6 +1560,53 @@ export class Tab1Page {
     collection.push(trackDef);
     await this.fs.storeSet('collection', collection);
   }
+
+/*
+
+  export interface TrackSegment {
+    points: Waypoint[];
+  }
+  
+  export interface Track {
+    name?: string;
+    segments: TrackSegment[];
+  }
+  
+  export interface ParsedGPX {
+    waypoints: Waypoint[];
+    tracks: Track[];
+  }
+
+  async parseGPX(gpxContent: string): ParsedGPX {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(gpxContent, "application/xml");
+    const tracks: Track[] = [];
+    // Parse waypoints (<wpt>)
+    // Parse tracks (<trk>)
+    const trkNodes = xmlDoc.getElementsByTagName("trk");
+    for (const trk of Array.from(trkNodes)) {
+      const name = trk.getElementsByTagName("name")[0]?.textContent || undefined;
+      const segments: TrackSegment[] = [];
+      // Parse track segments (<trkseg>)
+      const trksegNodes = trk.getElementsByTagName("trkseg");
+      for (const trkseg of Array.from(trksegNodes)) {
+        const points: Waypoint[] = [];
+        const trkptNodes = trkseg.getElementsByTagName("trkpt");
+        for (const trkpt of Array.from(trkptNodes)) {
+          const lat = parseFloat(trkpt.getAttribute("lat") || "0");
+          const lon = parseFloat(trkpt.getAttribute("lon") || "0");
+          const ele = parseFloat(trkpt.getElementsByTagName("ele")[0]?.textContent || "0");
+          const time = trkpt.getElementsByTagName("time")[0]?.textContent || undefined;
+          points.push({ lat, lon, ele, cmt: time });
+        }
+        segments.push({ points });
+      }
+      tracks.push({ name, segments });
+    }
+    return { waypoints, tracks };
+  }
+
+*/
 
   // PROCESS FILE AFTER TAPPING ON IT /////////////
   async processUrl(data: any) {

@@ -17,6 +17,13 @@ buildscript {
 
 apply from: "variables.gradle"
 
+
+// Add the `ext` block here
+ext {
+    androidxAppCompatVersion = "1.6.1" // Define the version for AndroidX AppCompat
+    // You can add other shared dependency versions here if needed
+}
+
 allprojects {
     repositories {
         google()

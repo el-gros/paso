@@ -80,6 +80,8 @@
         border-radius: 4px;      /* Optional: Add rounded corners */
         box-shadow: none;        /* Remove any default shadow */
       }
+
+
       /* General styles for all radio buttons */
       [aria-checked="true"] .alert-radio-label {
         font-weight: bold; /* Make the label bold */
