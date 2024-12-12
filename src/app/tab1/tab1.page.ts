@@ -1235,7 +1235,17 @@ export class Tab1Page {
         });
         break;
       case 'archived':
+        let hit: boolean = false
         this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
+          if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
+            hit = true;
+            const header =  this.archivedTrack?.features[0].properties.name || '';
+            const message = this.archivedTrack?.features[0].properties.description || '';
+            await this.fs.showAlert('alert yellowAlert', header, message, [], [], '')
+          }
+        });
+        this.popText = undefined
+        if (!hit) this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {  
           if (feature === this.archivedWaypoints) {
             this.popText = undefined
             // Retrieve clicked coordinate and find its index
