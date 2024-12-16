@@ -1,0 +1,27 @@
+<body class="custom-modal-wrapper">
+  <div class="backdrop" (click)="dismiss()"></div>
+  <ion-content class="custom-modal">
+    <!-- Header Section -->
+    <div class="track-name">
+      <strong>{{ modalText.header }}</strong>
+    </div>
+
+    <!-- Divider -->
+    <hr class="track-divider" />
+
+    <!-- Editable Message Section -->
+    <div
+      class="track-description"
+      contenteditable="true"
+      aria-label="Editable message section"
+      [innerHTML]="modalText.message"
+      (input)="onMessageChange($event)">
+    </div>
+
+    <!-- Action Buttons -->
+    <ion-buttons class="modal-buttons">
+      <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
+      <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancelText}}</ion-button>
+    </ion-buttons>
+  </ion-content>
+</body>

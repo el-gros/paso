@@ -27,6 +27,7 @@
 
 // ALERT ////////////////////////////////////
 .alert {
+    --margin: auto; /* Center the modal */
     --backdrop-opacity: 0.6;
     --min-width: 400px !important;
     .alert-title {
@@ -150,6 +151,20 @@
 .toast {
   text-align: center !important; /* Center the text */
   font-size: 16px !important; /* Increase the font size */
+}
+
+
+.custom-modal-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%; 
+
+  position: fixed; /* Make sure it stays in place */
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0); /* Semi-transparent backdrop */
+  z-index: 1000; /* Ensure it's above other content */
 }
 
 

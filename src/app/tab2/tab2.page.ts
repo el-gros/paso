@@ -111,13 +111,15 @@ export class Tab2Page {
         value: this.collection[index].place,
         cssClass: 'alert-edit'
       },
+      /*
       this.fs.createReadonlyLabel('Description',descriptions[global.languageIndex]),
       {
         name: 'description',
         type: 'textarea',
-        value: this.collection[index].description,
+        value: this.collection[index].description.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>'),
         cssClass: 'alert-edit'
       }
+      */  
     ];
     // Buttons for the alert dialog
     const buttons = [

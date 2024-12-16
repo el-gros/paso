@@ -46,6 +46,9 @@ import { Device } from '@capacitor/device';
 //import { toNamespacedPath } from 'path';
 import { PopoverController } from '@ionic/angular';
 import { PopOverComponent } from '../pop-over/pop-over.component';
+import { TrackModalComponent } from '../track-modal/track-modal.component';
+import { ModalController } from '@ionic/angular';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 useGeographic();
 
@@ -155,7 +158,8 @@ export class Tab1Page {
     public storage: Storage,
     private zone: NgZone,
     private cd: ChangeDetectorRef,
-    public popoverController: PopoverController
+    public popoverController: PopoverController,
+    private modalController: ModalController,
   ) {
     this.listenToAppStateChanges();
   }
@@ -385,6 +389,17 @@ export class Tab1Page {
 
   // 7. START TRACKING /////////////////////////////////
   async startTracking() {
+    const permissionGranted = await ForegroundService.checkPermissions();
+    if (!permissionGranted) {
+      // If not, request the necessary permissions
+      await ForegroundService.requestPermissions();
+    }
+    // Check if overlay permission is needed and granted
+    const overlayPermissionGranted = await ForegroundService.checkManageOverlayPermission();
+    if (!overlayPermissionGranted) {
+      // If not, request the overlay permission
+      await ForegroundService.requestManageOverlayPermission();
+    }
     // start foreground service
     await ForegroundService.startForegroundService({
       id: 1234,
@@ -392,6 +407,7 @@ export class Tab1Page {
       body: 'Location tracking in progress.',
       smallIcon: 'splash.png',     
     });
+    console.log ('Foreground service started successfully')
     // Reset current track and related variables
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
@@ -410,6 +426,18 @@ export class Tab1Page {
     this.averagedSpeed = 0;
     this.computedDistances = 0;
     this.audioCtx = new window.AudioContext
+    // request permission
+    const { display } = await LocalNotifications.checkPermissions();
+    if (display !== 'granted') {
+      const permissionResult = await LocalNotifications.requestPermissions();
+      if (permissionResult.display === 'granted') {
+        console.log('Notification permission granted.');
+      } else {
+        console.log('Notification permission denied.');
+      }
+    } else {
+      console.log('Notification permission already granted.');
+    }
     // Start Background Geolocation watcher
     BackgroundGeolocation.addWatcher({
       backgroundMessage: "Cancel to prevent battery drain",
@@ -547,6 +575,7 @@ export class Tab1Page {
         value: '',
         cssClass: 'alert-edit'
       },
+
       this.fs.createReadonlyLabel('Description',description[global.languageIndex]),
       {
         name: 'description',
@@ -554,6 +583,7 @@ export class Tab1Page {
         value: '',
         cssClass: 'alert-edit'
       }
+        
     ];
     const buttons = [
       global.cancelButton,
@@ -1240,8 +1270,26 @@ export class Tab1Page {
           if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
             hit = true;
             const header =  this.archivedTrack?.features[0].properties.name || '';
-            const message = this.archivedTrack?.features[0].properties.description || '';
-            await this.fs.showAlert('alert yellowAlert', header, message, [], [], '')
+            let message = this.archivedTrack?.features[0].properties.description || '';
+            message = message.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>');
+            const modalText = {header: header, message: message}
+            //await this.fs.showAlert('alert yellowAlert', header, message, [], [], '')
+            const modal = await this.modalController.create({
+              component: TrackModalComponent,
+              cssClass: 'custom-modal-class', // Add custom class here
+              componentProps: { modalText },
+            });
+            modal.onDidDismiss().then(async (result) => {
+              if (result.data) {
+                const { action, message } = result.data;
+                if (action === 'ok' && (this.archivedTrack)) {
+                  this.archivedTrack.features[0].properties.description = result.data.message; // Update the description in Tab1
+                  const date = this.archivedTrack.features[0].properties.date;
+                  await this.fs.storeSet(JSON.stringify(date), this.archivedTrack);
+                }
+              }
+            });
+            await modal.present();
           }
         });
         this.popText = undefined
@@ -1492,7 +1540,8 @@ export class Tab1Page {
     // Track name
     track.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
     // Track comment
-    track.features[0].properties.description = tracks[0].getElementsByTagName('cmt')[0]?.textContent || '';
+    track.features[0].properties.description = tracks[0].getElementsByTagName('cmt')[0]?.innerHTML || '';
+    // Initialize distance
     let distance = 0;
     // Loopo on points
     for (let k = 0; k < trackPoints.length; k++) {
