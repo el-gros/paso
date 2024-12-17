@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { IonicModule } from '@ionic/angular';
 
-import { TrackModalComponent } from './track-modal.component';
+import { DescriptionModalComponent } from './description-modal.component';
 
-describe('TrackModalComponent', () => {
-  let component: TrackModalComponent;
-  let fixture: ComponentFixture<TrackModalComponent>;
+describe('DescriptionModalComponent', () => {
+  let component: DescriptionModalComponent;
+  let fixture: ComponentFixture<DescriptionModalComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TrackModalComponent ],
+      declarations: [ DescriptionModalComponent ],
       imports: [IonicModule.forRoot()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TrackModalComponent);
+    fixture = TestBed.createComponent(DescriptionModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }));

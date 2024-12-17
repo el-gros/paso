@@ -1,0 +1,55 @@
+// modal content
+.track-content {
+    --background: #ffffbb !important;  
+}
+
+// name
+.track-name {
+    font-size: 20px;
+    text-align: center;
+    margin: 10px;
+}
+
+// divider
+.track-divider {
+    border: none;
+    border-top: 2px solid black; /* Thickness and color of the line */
+    margin: 10px;
+}
+
+// description
+.track-description {
+    text-align: justify;
+    margin: 10px;
+    color: black;
+    background-color: white;  
+    border: none;             
+    outline: none;           /* Remove focus outline */
+    padding: 10px;            /* Add some padding for a better look */
+    font-size: 16px;         /* Adjust font size */
+    border-radius: 4px;      /* Optional: Add rounded corners */
+    box-shadow: none;        /* Remove any default shadow */
+  }
+
+// buttons
+.modal-buttons {
+    display: flex;
+    margin: 10px;
+    padding: 10px;
+    display: flex; 
+    justify-content: center; /* Center horizontally */
+    align-items: center;     /* Center vertically if needed */
+    width: 100%;             /* Ensure it spans the full width of the container */
+  }
+
+// cancel button  
+.modal-cancel-button{  
+    color: red;
+    font-size: 20px;
+}
+
+// OK button
+.modal-confirm-button{  
+    color: green;
+    font-size: 20px;
+}

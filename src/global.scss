@@ -153,18 +153,12 @@
   font-size: 16px !important; /* Increase the font size */
 }
 
-
-.custom-modal-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%; 
-
-  position: fixed; /* Make sure it stays in place */
-  top: 0;
-  left: 0;
-  background: rgba(0, 0, 0, 0); /* Semi-transparent backdrop */
-  z-index: 1000; /* Ensure it's above other content */
+.description-modal-class {
+  --width: 100%; /* Adjust width as needed */
+  --height: 70%; /* Set modal height */
+  --border-radius: 12px; /* Rounded corners */
+//  --margin: auto; /* Center modal horizontally */
+  --background: #ffffbb; /* Light yellow background */
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add shadow for better visual */
 }
-
 

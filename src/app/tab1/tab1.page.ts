@@ -43,10 +43,9 @@ import LayerRenderer from 'ol/renderer/Layer';
 import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { Device } from '@capacitor/device';
-//import { toNamespacedPath } from 'path';
 import { PopoverController } from '@ionic/angular';
 import { PopOverComponent } from '../pop-over/pop-over.component';
-import { TrackModalComponent } from '../track-modal/track-modal.component';
+import { DescriptionModalComponent } from '../description-modal/description-modal.component';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
@@ -259,6 +258,7 @@ export class Tab1Page {
       this.show('data', 'none');
       this.show('start', 'block');
       this.show('stop', 'none');
+      this.show('alert', 'none');
       this.show('save', 'none');
       this.show('trash', 'none');
       this.show('mapbutton', 'none');
@@ -467,6 +467,7 @@ export class Tab1Page {
     // show / hide elements
     this.show('start', 'block');
     this.show('stop', 'none');
+    this.show('alert', 'none');
     this.show('save', 'none');
     this.show('trash', 'none');
     // Reset current track and corresponding canvases
@@ -484,6 +485,7 @@ export class Tab1Page {
     // show / hide elements
     this.show('start', 'none');
     this.show('stop', 'none');
+    this.show('alert', 'none');
     this.show('save', 'block');
     this.show('trash', 'block');
     // Set the red marker at the last coordinate
@@ -507,6 +509,8 @@ export class Tab1Page {
     } catch (error) {}
     // filter remaining values
     await this.filterAltitude(this.currentTrack, num - 1);
+    // Set waypoint altitude
+    await this.setWaypointAltitude()    
     // set map view
     await this.setMapView(this.currentTrack);
     // Toast
@@ -648,6 +652,7 @@ export class Tab1Page {
     // Update UI elements
     this.show('start', 'block');
     this.show('stop', 'none');
+    this.show('alert', 'none');
     this.show('save', 'none');
     this.show('trash', 'block');
   }
@@ -880,7 +885,8 @@ export class Tab1Page {
           properties: {
             data: [],
           }
-        }
+        },
+        waypoints: []
       }]
     }
     // Add location data to the track
@@ -891,6 +897,8 @@ export class Tab1Page {
       compSpeed: 0,
       distance: 0,
     });
+    // Display waypoint button
+    this.show('alert', 'block');
     // Add coordinates for the first point
     this.currentTrack.features[0].geometry.coordinates.push(
       [location.longitude, location.latitude]
@@ -1273,12 +1281,13 @@ export class Tab1Page {
             let message = this.archivedTrack?.features[0].properties.description || '';
             message = message.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>');
             const modalText = {header: header, message: message}
-            //await this.fs.showAlert('alert yellowAlert', header, message, [], [], '')
             const modal = await this.modalController.create({
-              component: TrackModalComponent,
-              cssClass: 'custom-modal-class', // Add custom class here
+              component: DescriptionModalComponent,
               componentProps: { modalText },
+              cssClass: 'description-modal-class',
+              backdropDismiss: true, // Allows dismissal by tapping the backdrop
             });
+            await modal.present();
             modal.onDidDismiss().then(async (result) => {
               if (result.data) {
                 const { action, message } = result.data;
@@ -1524,7 +1533,7 @@ export class Tab1Page {
       const name = wpt.getElementsByTagName("name")[0]?.textContent || undefined;
       let comment = wpt.getElementsByTagName("cmt")[0]?.textContent || undefined;
       if (name == comment) comment = undefined
-      if (!name && !comment) continue
+      //if (!name && !comment) continue
       waypoints.push({ latitude, longitude, altitude, name, comment });
     }
     if (track.features[0] && track.features[0].waypoints) track.features[0].waypoints = waypoints;
@@ -1836,4 +1845,63 @@ export class Tab1Page {
     }
   }
 
+  async waypoint() {
+    if (!this.currentTrack) return;
+    const num: number = this.currentTrack.features[0].geometry.coordinates.length
+    const point = this.currentTrack.features[0].geometry.coordinates[num-1]
+    const name = ['Nom:','Nombre:','Name:']
+    const comment = ['Comentari:','Comentario:','Comment:']
+    const inputs = [
+      this.fs.createReadonlyLabel('Name',name[global.languageIndex]),
+      {
+        name: 'name',
+        type: 'text',
+        value: '',
+        cssClass: 'alert-edit'
+      },
+      this.fs.createReadonlyLabel('Comment',comment[global.languageIndex]),
+      {
+        name: 'comment',
+        type: 'textarea',
+        value: '',
+        cssClass: 'alert-edit'
+      }
+    ];
+    const buttons =  [
+      global.cancelButton,
+      {
+        text: 'OK',
+        cssClass: 'alert-button',
+        handler: async (data: any) => {
+          const waypoint: Waypoint = {
+            longitude: point[0],
+            latitude: point[1],
+            altitude: num - 1, // At this moment, this value is the position of the point in the track
+            name: data.name,
+            comment: data.comment  
+          }
+          this.currentTrack?.features[0].waypoints?.push(waypoint);
+          // Toast
+          const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
+          this.fs.displayToast(toast[global.languageIndex]);
+        }
+      }
+    ];
+    const header = ['Punt de pas', 'Punto de paso', 'Waypoint'];
+    await this.fs.showAlert('alert yellowAlert', header[global.languageIndex], '', inputs, buttons, '') 
+    console.log(this.currentTrack)
+  }
+
+  async setWaypointAltitude() {
+    if (!this.currentTrack) return;
+    // Retrieve waypoints
+    const waypoints: Waypoint[] = this.currentTrack.features[0].waypoints || [];
+    for (const wp of waypoints) {
+      if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
+    }
+    console.log(this.currentTrack)
+  }
+
+
 }  
+
