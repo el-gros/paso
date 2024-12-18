@@ -16,7 +16,11 @@ export class DescriptionModalComponent  implements OnInit {
   @Input() modalText = {header: '', message: ''};
   editableMessage: string = '';
   cancelText: string = '';
- 
+  translations = {
+    cancels: ['Cancel.lar', 'Cancelar', 'Cancel'],   
+  }
+  get cancel(): string { return this.translations.cancels[global.languageIndex]; }
+
   constructor(
     private sanitizer: DomSanitizer,
     private modalController: ModalController
@@ -24,8 +28,6 @@ export class DescriptionModalComponent  implements OnInit {
  
   ngOnInit(): void {
     this.editableMessage = this.modalText.message; // Initialize the editable message
-    const cancel = ['Cancel.lar', 'Cancelar', 'Cancel'];   
-    this.cancelText = cancel[global.languageIndex]
   }
   
   dismissWithAction(action: 'ok' | 'cancel'): void {
@@ -35,9 +37,9 @@ export class DescriptionModalComponent  implements OnInit {
     });
   }
 
-  dismiss() {
+/*  dismiss() {
     this.modalController.dismiss();    
-  }
+  } */
   
   onMessageChange(event: Event): void {
     const element = event.target as HTMLElement;

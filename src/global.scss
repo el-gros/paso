@@ -29,7 +29,9 @@
 .alert {
     --margin: auto; /* Center the modal */
     --backdrop-opacity: 0.6;
-    --min-width: 400px !important;
+    --width: 100%;
+    --border-radius: 12px; /* Rounded corners */
+    //--min-width: 400px !important;
     .alert-title {
       font-size: 20;
       color: black;
@@ -155,7 +157,7 @@
 
 .description-modal-class {
   --width: 100%; /* Adjust width as needed */
-  --height: 70%; /* Set modal height */
+  --height: 80%; /* Set modal height */
   --border-radius: 12px; /* Rounded corners */
 //  --margin: auto; /* Center modal horizontally */
   --background: #ffffbb; /* Light yellow background */

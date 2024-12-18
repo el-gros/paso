@@ -11,6 +11,8 @@ import { Share } from '@capacitor/share';
 import { FunctionsService } from '../functions.service';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { Capacitor } from '@capacitor/core';
+import { EditModalComponent } from '../edit-modal/edit-modal.component';
+import { ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-tab2',
@@ -49,7 +51,8 @@ export class Tab2Page {
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-    private socialSharing: SocialSharing
+    private socialSharing: SocialSharing,
+    private modalController: ModalController,
   ) { }
 
   /* FUNCTIONS
@@ -88,53 +91,37 @@ export class Tab2Page {
     // Find the index of the selected track
     const index = this.collection.findIndex(item => item.isChecked);
     if (index === -1) return; // Exit if no track is selected
-    // Define the custom class, header, and message for the alert
-    const cssClass = 'alert greenAlert';
-    const headers = ['Edita les dades del trajecte', 'Edita los datos del trayecto', 'Edit Track Details'];
-    const messages = ['Modifica els següents camps','Modifica los siguientes campos','Modify the fields below:'];
-    // Prepare inputs with field labels and existing values
-    const names = ['Nom','Nombre','Name']
-    const places = ['Lloc','Lugar','Place']
-    const descriptions = ['Descripció','Descripción','Description']
-    const inputs = [
-      this.fs.createReadonlyLabel('Name',names[global.languageIndex]),
-      {
-        name: 'name',
-        type: 'text',
-        value: this.collection[index].name,
-        cssClass: 'alert-edit'
-      },
-      this.fs.createReadonlyLabel('Place',places[global.languageIndex]),
-      {
-        name: 'place',
-        type: 'text',
-        value: this.collection[index].place,
-        cssClass: 'alert-edit'
-      },
-      /*
-      this.fs.createReadonlyLabel('Description',descriptions[global.languageIndex]),
-      {
-        name: 'description',
-        type: 'textarea',
-        value: this.collection[index].description.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>'),
-        cssClass: 'alert-edit'
-      }
-      */  
-    ];
-    // Buttons for the alert dialog
-    const buttons = [
-      global.cancelButton,
-      {
-        text: 'OK',
-        cssClass: 'alert-button',
-        handler: async (data: any) => {
-          if (!data.name) return; // Ensure the 'name' field is not empty
-          await this.saveFile(index, data.name, data.place, data.description);
+    const name = this.collection[index].name || ''
+    const place = this.collection[index].place || ''
+    let description = this.collection[index].description || ''
+    description = description.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>');
+    const modalEdit = {name: name, place: place, description: description}
+    const modal = await this.modalController.create({
+      component: EditModalComponent,
+      componentProps: { modalEdit },
+      cssClass: 'description-modal-class',
+      backdropDismiss: true, // Allows dismissal by tapping the backdrop
+    });
+    await modal.present();
+    modal.onDidDismiss().then(async (result) => {
+      if (result.data) {
+        const { action, name, place, description } = result.data;
+        if (action === 'ok' ) {
+          this.collection[index].name = result.data.name;
+          this.collection[index].place = result.data.place;
+          this.collection[index].description = result.data.description;
+          const key = this.collection[index].date
+          await this.fs.storeSet('collection', this.collection)
+          const track = await this.fs.storeGet(JSON.stringify(key));
+          if (track) {
+            track.features[0].properties.name = result.data.name;
+            track.features[0].properties.place = result.data.place;
+            track.features[0].properties.descriprion = result.data.description;
+            await this.fs.storeSet(JSON.stringify(key), track);
+          }
         }
       }
-    ];
-    // Show the alert with the customized inputs
-    await this.fs.showAlert(cssClass, headers[global.languageIndex], messages[global.languageIndex], inputs, buttons, '');
+    });
   }
 
   // 4. SAVE FILE ////////////////////////////////////////////

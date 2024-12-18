@@ -1,6 +1,6 @@
 /* Global styles */
 :root {
-    --background-color: #ffffbb;
+    --background-color: #ddffdd !important;
   }
   
   /* Header */
@@ -12,30 +12,59 @@
   }
   
   /* Name in header */
-  .track-name {
+  .edit-title {
     font-size: 20px;
     text-align: center;
     margin: 10px;
   }
   
   /* Divider */
-  .track-divider {
+  .edit-divider {
     border: none;
     border-top: 2px solid black;
     margin: 10px;
   }
-  
+  .edit-message {
+    color: black;
+    font-size: 16px;
+    margin: 10px;
+    padding: 10px;
+  }
+
   /* Content section */
-  .track-content {
+  .edit-content {
     display: flex;
     flex-direction: column;
     height: 100%; /* Use full available height */
     padding: 0; /* No additional padding */
     --background: var(--background-color);
   }
-  
-  /* Editable description */
-  .track-description {
+
+  /* Divider */
+  .edit-divider {
+    border: none;
+    border-top: 2px solid black;
+    margin: 10px;
+  }
+
+  .edit-name {
+    overflow: hidden; /* Avoid text overflow */
+    text-align: left;
+    margin: 10px;
+    padding: 10px;
+    color: black;
+    background-color: white;
+    border: none; /* Optional: Add a subtle border */
+    outline: none; /* Remove the focus outline */
+    font-size: 16px;
+    border-radius: 4px;
+    white-space: pre-wrap; /* Preserve line breaks and spaces */
+    word-wrap: break-word; /* Break long words */
+    overflow-y: auto; /* Make it scrollable */
+  }
+
+/* Editable description */
+.edit-description {
     flex: 1; /* Allow it to take up all available space */
     text-align: justify;
     margin: 10px;
@@ -47,18 +76,18 @@
     font-size: 16px;
     border-radius: 4px;
     overflow-y: auto; /* Make it scrollable */
-  }
+    }
   
-  /* Footer */
-  ion-footer {
-    width: 100%;
-    --background: var(--background-color);
-    box-shadow: none; /* Remove shadow */
-    border: none; /* Remove borders */
-  }
-  
+    /* Footer */
+    ion-footer {
+        width: 100%;
+        --background: var(--background-color);
+        box-shadow: none; /* Remove shadow */
+        border: none; /* Remove borders */
+      }  
+
   /* Modal buttons */
-  .modal-buttons {
+  .edit-buttons {
     display: flex;
     margin: 10px;
     padding: 10px;
@@ -68,14 +97,13 @@
   }
   
   /* Cancel button */
-  .modal-cancel-button {
+  .edit-cancel-button {
     color: red;
     font-size: 20px;
   }
   
   /* OK button */
-  .modal-confirm-button {
+  .edit-confirm-button {
     color: green;
     font-size: 20px;
   }
-  

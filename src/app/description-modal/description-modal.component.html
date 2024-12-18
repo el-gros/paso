@@ -1,23 +1,26 @@
-<ion-content class="track-content">
-
+<ion-header>
   <div class="track-name">
     <strong>{{ modalText.header }}</strong>
   </div>
 
   <!-- Divider -->
   <hr class="track-divider" />
+</ion-header>
 
-    <!-- Editable Message Section -->
-    <div
-      class="track-description"
-      overFlow="hidden"
-      contenteditable="true"
-      aria-label="Editable message section"
-      [innerHTML]="modalText.message"
-      (input)="onMessageChange($event)">
-    </div>
+<ion-content class="track-content">
+  <!-- Editable Message Section -->
+  <div
+    class="track-description"
+    overFlow="hidden"
+    contenteditable="true"
+    aria-label="Editable message section"
+    [innerHTML]="modalText.message"
+    (input)="onMessageChange($event)">
+  </div>
+</ion-content>
+  <ion-footer>
     <ion-buttons class="modal-buttons">
       <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
-      <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancelText}}</ion-button>
+      <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
     </ion-buttons>
-  </ion-content>
+  </ion-footer>

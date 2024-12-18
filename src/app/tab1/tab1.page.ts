@@ -926,6 +926,8 @@ export class Tab1Page {
     try {
       await this.currentLayer.setVisible(true);
     } catch (error) {}
+    // display number of points (1)
+    this.currentTrack.features[0].properties.totalNumber = 1;
     // show current canvas
     await this.showCanvas('c','block')  
   }

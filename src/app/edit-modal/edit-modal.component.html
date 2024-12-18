@@ -1,0 +1,51 @@
+<ion-header>
+  <div class="edit-title">
+    <strong>{{ header }}</strong>
+  </div>
+
+  <!-- Divider -->
+  <hr class="edit-divider" />
+</ion-header>
+
+<ion-content class="edit-content">
+  <div class="edit-message">
+    <strong>{{ name }}:</strong>
+  </div>
+  <div
+    class="edit-name"
+    contenteditable="true"
+    aria-label="Editable message section"
+    (input)="onNameChange($event)">
+    {{modalEdit.name}}
+  </div>
+
+  <div class="edit-message">
+    <strong>{{ place }}:</strong>
+  </div>
+  <div
+    class="edit-name"
+    contenteditable="true"
+    aria-label="Editable message section"
+    (input)="onPlaceChange($event)">
+    {{modalEdit.place}}
+  </div>
+
+  <div class="edit-message">
+    <strong>{{ description }}:</strong>
+  </div>
+  <div
+    class="edit-description"
+    overFlow="hidden"
+    contenteditable="true"
+    aria-label="Editable message section"
+    [innerHTML]="modalEdit.description"
+    (input)="onDescriptionChange($event)">
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-buttons class="edit-buttons">
+    <ion-button slot:end class="edit-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
+    <ion-button slot:end class="edit-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
+  </ion-buttons>
+</ion-footer>
