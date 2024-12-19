@@ -6,6 +6,8 @@ import { ToastController, AlertController } from '@ionic/angular';
 import { Geolocation } from '@capacitor/geolocation';
 import { Router } from '@angular/router';
 import { Stroke, Style } from 'ol/style';
+import { ModalController } from '@ionic/angular';
+import { EditModalComponent } from './edit-modal/edit-modal.component';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +22,7 @@ export class FunctionsService {
     private toastController: ToastController,
     private alertController: AlertController,
     private router: Router,
+    private modalController: ModalController,
   ) {
   }
 
@@ -42,6 +45,7 @@ export class FunctionsService {
     16. goHome
     17. computeMinMaxProperty
     18. setStrokeStyle
+    19. editTrack
   */
 
   // 1. COMPUTES DISTANCES ///////////////////////////////////// 
@@ -167,13 +171,13 @@ export class FunctionsService {
 
   // 11. UNCHECK ALL ///////////////////////////////////////////
   async uncheckAll() {
-    const collection: TrackDefinition[] = (await this.storeGet('collection')) ?? [];
-    for (const item of collection) {
+    //const collection: TrackDefinition[] = (await this.storeGet('collection')) ?? [];
+    for (const item of global.collection) {
       if ('isChecked' in item) {
         item.isChecked = false;
       }
     }
-    await this.storeSet('collection', collection);
+    await this.storeSet('collection', global.collection);
   }
 
   // 12. GET CURRENT POSITION ////////////////////////////////// 
@@ -189,12 +193,12 @@ export class FunctionsService {
   async retrieveTrack() {
     var track: Track | undefined;
     // get collection
-    const collection: TrackDefinition[] = await this.storeGet('collection') ?? [];
+    //const collection: TrackDefinition[] = await this.storeGet('collection') ?? [];
     // Filter checked tracks and count them
-    const checkedTracks = collection.filter(item => item.isChecked);
+    const checkedTracks = global.collection.filter((item: { isChecked: any; }) => item.isChecked);
     // If more than one track is checked, uncheck all
     if (checkedTracks.length > 1) {
-      collection.forEach(item => item.isChecked = false);
+      global.collection.forEach((item: { isChecked: boolean; }) => item.isChecked = false);
     }
     // If no tracks are checked, return undefined
     if (checkedTracks.length === 0) return undefined;
@@ -261,6 +265,47 @@ export class FunctionsService {
       color: color, 
       width: 5 })
     });
+  }
+
+  // 19. EDIT TRACK DETAILS //////////////////////////////
+  async editTrack(selectedIndex: number) {
+    // Extract selected track details
+    const selectedTrack = global.collection[selectedIndex];
+    const modalEdit = {
+      name: selectedTrack.name || '',
+      place: selectedTrack.place || '',
+      description: (selectedTrack.description || '')
+        .replace("<![CDATA[", "")
+        .replace("]]>", "")
+        .replace(/\n/g, '<br>'),
+    };
+    // Open the modal for editing
+    const modal = await this.modalController.create({
+      component: EditModalComponent,
+      componentProps: { modalEdit },
+      cssClass: 'description-modal-class',
+      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+    });
+    await modal.present();
+    // Handle the modal's dismissal
+    const { data } = await modal.onDidDismiss();
+    if (data) {
+      let { action, name, place, description } = data;
+      if (action === 'ok') {
+        // Update the global collection
+        if (!name) name = 'No name'
+        Object.assign(selectedTrack, { name, place, description });
+        // Persist the updated collection
+        await this.storeSet('collection', global.collection);
+        // Update the specific track if it exists
+        const trackKey = selectedTrack.date;
+        const track = await this.storeGet(JSON.stringify(trackKey));
+        if (track) {
+          Object.assign(track.features[0].properties, { name, place, description });
+          await this.storeSet(JSON.stringify(trackKey), track);
+        }
+      }
+    }
   }
 
 }

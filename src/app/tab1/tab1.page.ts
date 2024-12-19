@@ -48,6 +48,7 @@ import { PopOverComponent } from '../pop-over/pop-over.component';
 import { DescriptionModalComponent } from '../description-modal/description-modal.component';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { EditModalComponent } from '../edit-modal/edit-modal.component';
 
 useGeographic();
 
@@ -306,6 +307,8 @@ export class Tab1Page {
   // 4. ION VIEW DID ENTER
   async ionViewDidEnter() {
     try {
+      // retrieve collection
+      global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
       // only visible for layerVisibility == 'archived' 
@@ -557,7 +560,7 @@ export class Tab1Page {
   } 
 
   // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
-  async setTrackDetails() {
+/*  async setTrackDetails() {
     const cssClass = 'alert yellowAlert';
     const header = ['Informació del trajecte', 'Información del trayecto', 'Track information'];
     const message = ['Omple els detalls del trajecte', 'Rellena los detalles del trayecto','Fill in the track details'];
@@ -607,6 +610,34 @@ export class Tab1Page {
     const action = ''
     await this.fs.showAlert(cssClass, header[global.languageIndex], message[global.languageIndex], inputs, buttons, action)
   }
+*/
+
+  // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
+  async setTrackDetails() {
+    const modalEdit = {
+      name: '',
+      place: '',
+      description: ''
+    };
+    // Open the modal for editing
+    const modal = await this.modalController.create({
+      component: EditModalComponent,
+      componentProps: { modalEdit },
+      cssClass: 'description-modal-class',
+      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+    });
+    await modal.present();
+    // Handle the modal's dismissal
+    const { data } = await modal.onDidDismiss();
+    if (data) {
+      let { action, name, place, description } = data;
+      if (action === 'ok') {
+        // Update the global collection
+        if (!name) name = 'No name'
+        this.saveFile(name, place, description)
+      }
+    }
+  }
   
   // 12. NO NAME TO SAVE ////////////////////////////////////
   async showValidationAlert() {
@@ -622,9 +653,6 @@ export class Tab1Page {
   // 13. SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
-    // retrieve tracks definition
-    await this.storage.get('collection') ?? [];
-    var collection: TrackDefinition[] = await this.fs.storeGet('collection') ?? [];
     // build new track definition
     const currentProperties = this.currentTrack.features[0].properties;
     currentProperties.name = name;
@@ -644,8 +672,8 @@ export class Tab1Page {
       isChecked: false 
     };
     // Add new track definition to the collection and save it
-    collection.push(trackDef);
-    await this.fs.storeSet('collection', collection);
+    global.collection.push(trackDef);
+    await this.fs.storeSet('collection', global.collection);
     // Toast
     const toast = ['Fitxer guardat correctament', 'Fichero guardado correctamente','File saved successfully']
     this.fs.displayToast(toast[global.languageIndex]);
@@ -1216,10 +1244,8 @@ export class Tab1Page {
     var multiLine: any = [];
     let multiPoint = [];
     let multiKey = [];        
-    // get collection
-    var collection: TrackDefinition[] = await this.fs.storeGet('collection') ?? [];
     // Loop through each item in the collection
-    for (const item of collection) {
+    for (const item of global.collection) {
       key = item.date;
       track = await this.fs.storeGet(JSON.stringify(key));
       // If the track does not exist, remove the key and skip this iteration
@@ -1279,28 +1305,12 @@ export class Tab1Page {
         this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
           if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
             hit = true;
-            const header =  this.archivedTrack?.features[0].properties.name || '';
-            let message = this.archivedTrack?.features[0].properties.description || '';
-            message = message.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>');
-            const modalText = {header: header, message: message}
-            const modal = await this.modalController.create({
-              component: DescriptionModalComponent,
-              componentProps: { modalText },
-              cssClass: 'description-modal-class',
-              backdropDismiss: true, // Allows dismissal by tapping the backdrop
-            });
-            await modal.present();
-            modal.onDidDismiss().then(async (result) => {
-              if (result.data) {
-                const { action, message } = result.data;
-                if (action === 'ok' && (this.archivedTrack)) {
-                  this.archivedTrack.features[0].properties.description = result.data.message; // Update the description in Tab1
-                  const date = this.archivedTrack.features[0].properties.date;
-                  await this.fs.storeSet(JSON.stringify(date), this.archivedTrack);
-                }
-              }
-            });
-            await modal.present();
+            const index = global.collection.findIndex((item: { date: { getTime: () => number; }; }) => 
+              item.date instanceof Date &&
+              this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
+              item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
+            );
+            if (index >= 0) await this.fs.editTrack(index)
           }
         });
         this.popText = undefined
@@ -1621,14 +1631,13 @@ export class Tab1Page {
     };
     // add new track definition and save collection and    
     // uncheck all tracks except the new one
-    const collection: any = await this.fs.storeGet('collection');
-    for (const item of collection) {
+    for (const item of global.collection) {
       if ('isChecked' in item) {
         item.isChecked = false;
       }
     }
-    collection.push(trackDef);
-    await this.fs.storeSet('collection', collection);
+    global.collection.push(trackDef);
+    await this.fs.storeSet('collection', global.collection);
   }
 
 /*
@@ -1903,7 +1912,6 @@ export class Tab1Page {
     }
     console.log(this.currentTrack)
   }
-
 
 }  
 

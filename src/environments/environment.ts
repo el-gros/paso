@@ -2,6 +2,8 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+import { TrackDefinition } from "src/globald";
+
 export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
@@ -9,10 +11,9 @@ export var global: any = {
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
   cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
-  // add
   currentColor: 'orange' as string, 
   archivedColor: 'green' as string,
-  // /add
+  collection: [] as TrackDefinition [],
 
   // Dynamic getter for the cancel button
   get cancelButton() {

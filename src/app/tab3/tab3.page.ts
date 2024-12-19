@@ -58,7 +58,7 @@ export class Tab3Page {
       this.archivedColor = global.archivedColor;
       this.currentColor = global.currentColor
     }
-
+    
   /*
   1. selectColor
   2. ionViewWillEnter

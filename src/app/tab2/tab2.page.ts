@@ -23,7 +23,7 @@ import { ModalController } from '@ionic/angular';
 })
 export class Tab2Page {
 
-  collection: TrackDefinition[] = [];
+  collection: TrackDefinition[] = global.collection;
   numChecked: number = 0;
   num: number = 0;
   archivedPresent: boolean = global.archivedPresent
@@ -53,7 +53,9 @@ export class Tab2Page {
     private router: Router,
     private socialSharing: SocialSharing,
     private modalController: ModalController,
-  ) { }
+  ) { 
+    this.collection = global.collection;
+  }
 
   /* FUNCTIONS
     1. ionViewDidEnter
@@ -74,64 +76,32 @@ export class Tab2Page {
     //this.layerVisibility = global.layerVisibility;
     this.archivedPresent = global.archivedPresent
     // retrieve collection and uncheck all tracks
-    this.collection = await this.fs.storeGet('collection') ?? [];
-    for (const item of this.collection) item.isChecked = false;
-    await this.fs.storeSet('collection', this.collection);
+    for (const item of global.collection) item.isChecked = false;
+    await this.fs.storeSet('collection', global.collection);
     this.numChecked = 0;
   }
 
   // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
   async onChange() {
-    this.numChecked = this.collection.filter(item => item.isChecked).length;
-    await this.fs.storeSet('collection', this.collection)
+    this.numChecked = global.collection.filter((item: { isChecked: any; }) => item.isChecked).length;
+    await this.fs.storeSet('collection', global.collection)
   }
   
   // 3. EDIT TRACK DETAILS //////////////////////////////
   async editTrack() {
     // Find the index of the selected track
-    const index = this.collection.findIndex(item => item.isChecked);
-    if (index === -1) return; // Exit if no track is selected
-    const name = this.collection[index].name || ''
-    const place = this.collection[index].place || ''
-    let description = this.collection[index].description || ''
-    description = description.replace("<![CDATA[", "").replace("]]>", "").replace(/\n/g, '<br>');
-    const modalEdit = {name: name, place: place, description: description}
-    const modal = await this.modalController.create({
-      component: EditModalComponent,
-      componentProps: { modalEdit },
-      cssClass: 'description-modal-class',
-      backdropDismiss: true, // Allows dismissal by tapping the backdrop
-    });
-    await modal.present();
-    modal.onDidDismiss().then(async (result) => {
-      if (result.data) {
-        const { action, name, place, description } = result.data;
-        if (action === 'ok' ) {
-          this.collection[index].name = result.data.name;
-          this.collection[index].place = result.data.place;
-          this.collection[index].description = result.data.description;
-          const key = this.collection[index].date
-          await this.fs.storeSet('collection', this.collection)
-          const track = await this.fs.storeGet(JSON.stringify(key));
-          if (track) {
-            track.features[0].properties.name = result.data.name;
-            track.features[0].properties.place = result.data.place;
-            track.features[0].properties.descriprion = result.data.description;
-            await this.fs.storeSet(JSON.stringify(key), track);
-          }
-        }
-      }
-    });
+    const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
+    if (selectedIndex >= 0) this.fs.editTrack(selectedIndex);
   }
 
   // 4. SAVE FILE ////////////////////////////////////////////
   async saveFile(i: number, name: string, place: string, description: string) {
     try {
       // Update the collection item with the new details
-      const updatedTrack = { ...this.collection[i], name, place, description };
+      const updatedTrack = { ...global.collection[i], name, place, description };
       // Update the collection in storage
-      this.collection[i] = updatedTrack;
-      await this.fs.storeSet('collection', this.collection);
+      global.collection[i] = updatedTrack;
+      await this.fs.storeSet('collection', global.collection);
       // Retrieve the corresponding track
       const track = await this.fs.storeGet(JSON.stringify(updatedTrack.date));
       if (!track) {
@@ -169,7 +139,7 @@ export class Tab2Page {
         role: 'cancel',
         cssClass: 'alert-cancel-button',
         handler: async () => { 
-          for (var item of this.collection) {
+          for (var item of global.collection) {
             item.isChecked = false;
           }
           this.numChecked = 0;
@@ -194,16 +164,16 @@ export class Tab2Page {
   // 7. CONFIRM, YES, DELETE TRACKS ////////////////////////
   async yesDeleteTracks() {
     // Separate items into "to-remove" and "to-keep" categories
-    const { toRemove, toKeep } = this.collection.reduce(
-      (acc, item) => {
+    const { toRemove, toKeep } = global.collection.reduce(
+      (acc: { toRemove: any[]; toKeep: any[]; }, item: { isChecked: any; }) => {
         item.isChecked ? acc.toRemove.push(item) : acc.toKeep.push(item);
         return acc;
       },
-      { toRemove: [] as typeof this.collection, toKeep: [] as typeof this.collection }
+      { toRemove: [] as typeof global.collection, toKeep: [] as typeof global.collection }
     );
     // Update the collection and save the updated list
-    this.collection = toKeep;
-    await this.fs.storeSet('collection', this.collection);
+    global.collection = toKeep;
+    await this.fs.storeSet('collection', global.collection);
     // Remove the selected items (batch operation if supported)
     for (const item of toRemove) {
       await this.fs.storeRem(JSON.stringify(item.date));
