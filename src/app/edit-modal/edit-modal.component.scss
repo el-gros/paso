@@ -1,12 +1,12 @@
 /* Global styles */
-:root {
-    --background-color: #ddffdd !important;
-  }
+//:root {
+    //--background-color: #ddffdd !important;
+//  }
   
   /* Header */
   ion-header {
-    width: 100%; /* Full width */
-    --background: var(--background-color);
+    width: 90%; /* Full width */
+   // --background: var(--background-color);
     box-shadow: none; /* Remove any shadow */
     border: none; /* Remove borders */
   }
@@ -36,8 +36,9 @@
     display: flex;
     flex-direction: column;
     height: 100%; /* Use full available height */
+    width: 90%;
     padding: 0; /* No additional padding */
-    --background: var(--background-color);
+  //  --background: var(--background-color);
   }
 
   /* Divider */
@@ -80,8 +81,8 @@
   
     /* Footer */
     ion-footer {
-        width: 100%;
-        --background: var(--background-color);
+        width: 90%;
+    //    --background: var(--background-color);
         box-shadow: none; /* Remove shadow */
         border: none; /* Remove borders */
       }  

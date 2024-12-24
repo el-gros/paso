@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header [ngStyle]="{'--background': backgroundColor}">
   <div class="edit-title">
     <strong>{{ header }}</strong>
   </div>
@@ -7,7 +7,7 @@
   <hr class="edit-divider" />
 </ion-header>
 
-<ion-content class="edit-content">
+<ion-content class="edit-content" [ngStyle]="{'--background': backgroundColor}">
   <div class="edit-message">
     <strong>{{ name }}:</strong>
   </div>
@@ -43,7 +43,7 @@
   </div>
 </ion-content>
 
-<ion-footer>
+<ion-footer [ngStyle]="{'--background': backgroundColor}">
   <ion-buttons class="edit-buttons">
     <ion-button slot:end class="edit-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
     <ion-button slot:end class="edit-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>

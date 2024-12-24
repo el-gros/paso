@@ -1,14 +1,14 @@
 import { Component, Injectable } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
-import { Track, TrackDefinition } from '../../globald';
+import { Track, TrackDefinition, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { FunctionsService } from '../functions.service';
+import { FunctionsService } from '../services/functions.service';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { Capacitor } from '@capacitor/core';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
@@ -72,18 +72,27 @@ export class Tab2Page {
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
+    // retrieve collection (just in case)
+    if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
     // Initialize variables
-    //this.layerVisibility = global.layerVisibility;
     this.archivedPresent = global.archivedPresent
     // retrieve collection and uncheck all tracks
     for (const item of global.collection) item.isChecked = false;
     await this.fs.storeSet('collection', global.collection);
     this.numChecked = 0;
+    global.key = "null"
   }
 
   // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
   async onChange() {
+    // Copute numChecked
     this.numChecked = global.collection.filter((item: { isChecked: any; }) => item.isChecked).length;
+    // Find the first checked item
+    const firstCheckedItem = global.collection.find((item: { isChecked: any; }) => item.isChecked);
+    // Extract the date, or set to null if no checked item is found
+    const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
+    global.key = JSON.stringify(firstCheckedDate)
+    // Save collection
     await this.fs.storeSet('collection', global.collection)
   }
   
@@ -91,7 +100,7 @@ export class Tab2Page {
   async editTrack() {
     // Find the index of the selected track
     const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
-    if (selectedIndex >= 0) this.fs.editTrack(selectedIndex);
+    if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffffbb');
   }
 
   // 4. SAVE FILE ////////////////////////////////////////////
@@ -143,6 +152,7 @@ export class Tab2Page {
             item.isChecked = false;
           }
           this.numChecked = 0;
+          global.key = "null"
         }
       }, {
         // proceed button
@@ -173,6 +183,7 @@ export class Tab2Page {
     );
     // Update the collection and save the updated list
     global.collection = toKeep;
+    this.collection = global.collection;
     await this.fs.storeSet('collection', global.collection);
     // Remove the selected items (batch operation if supported)
     for (const item of toRemove) {
@@ -180,14 +191,15 @@ export class Tab2Page {
     }
     // Reset the count of checked items
     this.numChecked = 0;
-    // inform
+    global.key = "null"
+    // informretrievetrack
     const toast = ["S'han esborrat els trajectes seleccionats",'Se han borrado los trayectos seleccionados','The selected tracks have been removed'];
     await this.fs.displayToast(toast[global.languageIndex]);
   }
 
   // 8. GEOJSON TO GPX //////////////////////
   async geoJsonToGpx(feature: any): Promise<string> {
-    const formatDate = (timestamp: number): string => {
+/*    const formatDate = (timestamp: number): string => {
       const date = new Date(timestamp);
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -196,29 +208,40 @@ export class Tab2Page {
       const minutes = String(date.getUTCMinutes()).padStart(2, '0');
       const seconds = String(date.getUTCSeconds()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+    };*/
+    // Format timestamp into ISO 8601 format
+    const formatDate = (timestamp: number): string => {
+      const date = new Date(timestamp);
+      return date.toISOString();
     };
+    // Initialize GPX text
     let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
       <gpx version="1.1" creator="elGros" 
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xmlns="http://www.topografix.com/GPX/1/1" 
         xsi:schemaLocation="http://www.topografix.com/GPX/1/1 
-        http://www.topografix.com/GPX/1/1/gpx.xsd">
-      <trk>
-      <name>${feature.properties.name}</name>
-      <trkseg>`;
+        http://www.topografix.com/GPX/1/1/gpx.xsd">`
+    // Add waypoints
+    if (feature.waypoints && feature.waypoints.length > 0) {
+      feature.waypoints.forEach((wp: Waypoint) => {
+        const { latitude, longitude, altitude = '', name = '', comment = '' } = wp;
+        gpxText += `
+          <wpt lat="${latitude}" lon="${longitude}">
+            <ele>${altitude}</ele>
+            <name><![CDATA[${name}]]></name>
+            <cmt><![CDATA[${comment}]]></cmt>
+          </wpt>`;
+      });
+    }
+    gpxText += `
+      <trk><name>${feature.properties.name}</name><trkseg>`;
     feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
       const time = feature.geometry.properties.data[index]?.time || Date.now();
       const altitude = feature.geometry.properties.data[index]?.altitude || 0;
-      gpxText += `
-        <trkpt lat="${coordinate[1]}" lon="${coordinate[0]}">
-        <ele>${altitude}</ele>
-        <time>${formatDate(time)}</time>
-        </trkpt>`;
+      gpxText += `<trkpt lat="${coordinate[1]}" lon="${coordinate[0]}">
+        <ele>${altitude}</ele><time>${formatDate(time)}</time></trkpt>`;
     });
-    gpxText += `
-      </trkseg>
-      </trk>
-      </gpx>`;
+    gpxText += `</trkseg></trk></gpx>`;
     return gpxText;
   }
 

@@ -3,11 +3,13 @@ import { Track, Location, Data, TrackDefinition, Bounds } from 'src/globald';
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
-import { Geolocation } from '@capacitor/geolocation';
 import { Router } from '@angular/router';
 import { Stroke, Style } from 'ol/style';
 import { ModalController } from '@ionic/angular';
-import { EditModalComponent } from './edit-modal/edit-modal.component';
+import { EditModalComponent } from '../edit-modal/edit-modal.component';
+import { registerPlugin } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
 
 @Injectable({
   providedIn: 'root'
@@ -187,24 +189,45 @@ export class FunctionsService {
       return [coordinates.coords.longitude, coordinates.coords.latitude];
     } 
     catch (error) { return [1, 41.5]; } // Default coordinates 
+  } 
+
+  /*
+    async getCurrentPosition() {
+    try {
+      const watcherId = await BackgroundGeolocation.addWatcher(
+        {
+          requestPermissions: true,
+          stale: false,
+        },
+        (location: any, error: any) => {
+          console.log('Current Position:', location);
+          // Optionally stop the watcher after getting the first location
+          BackgroundGeolocation.removeWatcher({ id: watcherId });
+          return [location.longitude, location.latitude];
+        }
+      );
+    } catch (error) {
+      console.error('Error starting watcher:', error);
+      return undefined;
+    }
   }
+*/
 
   // 13. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
-    // get collection
-    //const collection: TrackDefinition[] = await this.storeGet('collection') ?? [];
     // Filter checked tracks and count them
-    const checkedTracks = global.collection.filter((item: { isChecked: any; }) => item.isChecked);
+    //const checkedTracks = global.collection.filter((item: { isChecked: any; }) => item.isChecked);
     // If more than one track is checked, uncheck all
-    if (checkedTracks.length > 1) {
-      global.collection.forEach((item: { isChecked: boolean; }) => item.isChecked = false);
-    }
+    //if (checkedTracks.length > 1) {
+    //  global.collection.forEach((item: { isChecked: boolean; }) => item.isChecked = false);
+    //}
     // If no tracks are checked, return undefined
-    if (checkedTracks.length === 0) return undefined;
+    //if (checkedTracks.length === 0) return undefined;
     // Retrieve the track associated with the checked item
-    const key = checkedTracks[0].date; // Assuming `date` is the key
-    track = await this.storeGet(JSON.stringify(key));
+    //const key = checkedTracks[0].date; // Assuming `date` is the key
+    //track = await this.storeGet(JSON.stringify(key));
+    if (global.key != "null") track = await this.storeGet(global.key)
     // If track can not be retrieved
     const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
     if (!track) this.displayToast(toast[global.languageIndex]);
@@ -268,7 +291,7 @@ export class FunctionsService {
   }
 
   // 19. EDIT TRACK DETAILS //////////////////////////////
-  async editTrack(selectedIndex: number) {
+  async editTrack(selectedIndex: number, backgroundColor: string) {
     // Extract selected track details
     const selectedTrack = global.collection[selectedIndex];
     const modalEdit = {
@@ -282,7 +305,7 @@ export class FunctionsService {
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: EditModalComponent,
-      componentProps: { modalEdit },
+      componentProps: { modalEdit, backgroundColor },
       cssClass: 'description-modal-class',
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });

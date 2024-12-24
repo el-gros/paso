@@ -12,10 +12,14 @@ import { global } from '../../environments/environment';
 })
 
 export class EditModalComponent  implements OnInit {
-  @Input() modalEdit = {name: '', place: '', description: ''};
+  // Input for modal content
+  @Input() modalEdit = { name: '', place: '', description: '' };
+  // Input for background color, with a default value
+  @Input() backgroundColor: string = ''; // Default color
   editableName: string = '';
   editablePlace: string = '';
   editableDescription: string = '';
+
   translations = {
     headers:  ['Editeu les dades del trajecte', 'Editar datos del trayecto', 'Edit Track Details'],
     names: ['Nom','Nombre','Name'],

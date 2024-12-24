@@ -1,5 +1,5 @@
 import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
-import { FunctionsService } from '../functions.service';
+import { FunctionsService } from '../services/functions.service';
 import { Component, NgZone, Injectable, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';
@@ -45,10 +45,12 @@ import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { Device } from '@capacitor/device';
 import { PopoverController } from '@ionic/angular';
 import { PopOverComponent } from '../pop-over/pop-over.component';
-import { DescriptionModalComponent } from '../description-modal/description-modal.component';
+//import { DescriptionModalComponent } from '../description-modal/description-modal.component';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
+import { NominatimService } from '../services/nominatim.service';
+import { lastValueFrom } from 'rxjs';
 
 useGeographic();
 
@@ -62,7 +64,7 @@ useGeographic();
   styleUrls: ['tab1.page.scss'],
   standalone: true,
   imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule ],
-  providers: [DecimalPipe, DatePipe],
+  providers: [DecimalPipe, DatePipe ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
   
@@ -160,6 +162,7 @@ export class Tab1Page {
     private cd: ChangeDetectorRef,
     public popoverController: PopoverController,
     private modalController: ModalController,
+    private nominatimService: NominatimService
   ) {
     this.listenToAppStateChanges();
   }
@@ -250,6 +253,8 @@ export class Tab1Page {
     try {
       // create storage 
       await this.storage.create();
+      // retrieve collection
+      global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
       this.determineLanguage();
       // Determine line color
@@ -265,7 +270,6 @@ export class Tab1Page {
       this.show('mapbutton', 'none');
       this.show('databutton', 'block');
       // uncheck all
-      console.log('1')
       await this.fs.uncheckAll();
       // create canvas
       await this.createCanvas();
@@ -308,7 +312,7 @@ export class Tab1Page {
   async ionViewDidEnter() {
     try {
       // retrieve collection
-      global.collection = await this.fs.storeGet('collection') || [];
+      if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
       // only visible for layerVisibility == 'archived' 
@@ -619,10 +623,11 @@ export class Tab1Page {
       place: '',
       description: ''
     };
+    const backgroundColor = '#ffffbb'
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: EditModalComponent,
-      componentProps: { modalEdit },
+      componentProps: { modalEdit, backgroundColor },
       cssClass: 'description-modal-class',
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
@@ -1310,7 +1315,7 @@ export class Tab1Page {
               this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
               item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
             );
-            if (index >= 0) await this.fs.editTrack(index)
+            if (index >= 0) await this.fs.editTrack(index, '#ffffbb')
           }
         });
         this.popText = undefined
@@ -1859,7 +1864,10 @@ export class Tab1Page {
   async waypoint() {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
-    const point = this.currentTrack.features[0].geometry.coordinates[num-1]
+    let point = this.currentTrack.features[0].geometry.coordinates[num-1];
+    console.log(point)
+    const address = await this.nominatimService.reverseGeocode(point[1],point[0]) || {name:'',address_name:''};
+    console.log(address)
     const name = ['Nom:','Nombre:','Name:']
     const comment = ['Comentari:','Comentario:','Comment:']
     const inputs = [
@@ -1867,14 +1875,14 @@ export class Tab1Page {
       {
         name: 'name',
         type: 'text',
-        value: '',
+        value: address.name,
         cssClass: 'alert-edit'
       },
       this.fs.createReadonlyLabel('Comment',comment[global.languageIndex]),
       {
         name: 'comment',
         type: 'textarea',
-        value: '',
+        value: address.display_name,
         cssClass: 'alert-edit'
       }
     ];
@@ -1912,6 +1920,26 @@ export class Tab1Page {
     }
     console.log(this.currentTrack)
   }
+
+  /*
+  async searchLocation(query: string) {
+    try {
+      const result = await this.nominatimService.search(query);
+      console.log('Search result:', result);
+    } catch (error) {
+      console.error('Error searching location:', error);
+    }
+  }
+
+  async reverseGeocodeLocation(lat: number, lon: number) {
+    try {
+      let result = await this.nominatimService.reverseGeocode(lat, lon);
+      console.log('Reverse geocoding result:', result);
+    } catch (error) {
+      console.error('Error with reverse geocoding:', error);
+    }
+  }
+  */
 
 }  
 

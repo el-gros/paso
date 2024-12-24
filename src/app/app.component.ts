@@ -3,6 +3,7 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+//import { HttpClientModule} from '@angular/common/http';
 
 @Component({
   selector: 'app-root',

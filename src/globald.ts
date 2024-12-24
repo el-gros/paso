@@ -55,9 +55,7 @@ export interface Track {
         data: Data[]
       }
     }
-//add     
     waypoints?: Waypoint []
-// /add    
   }]  
 }
 

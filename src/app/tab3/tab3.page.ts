@@ -1,4 +1,4 @@
-import { FunctionsService } from '../functions.service';
+import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
 import { ExploreContainerComponent } from '../explore-container/explore-container.component';

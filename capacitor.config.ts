@@ -21,7 +21,10 @@ const config: CapacitorConfig = {
       splashImmersive: true,
       layoutName: "launch_screen",
       useDialog: true,
-    }
+    },
+    Http: {
+      allowClearText: true, // Enable HTTP (non-HTTPS) requests
+    },
   },
 };
 
