@@ -1,7 +1,7 @@
 import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
-import { ExploreContainerComponent } from '../explore-container/explore-container.component';
+//import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms'
@@ -15,7 +15,7 @@ register();
   templateUrl: 'tab3.page.html',
   styleUrls: ['tab3.page.scss'],
   standalone: true,
-  imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule], 
+  imports: [IonicModule, CommonModule, FormsModule], 
   providers: [DecimalPipe, DatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

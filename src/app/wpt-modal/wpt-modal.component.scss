@@ -7,19 +7,19 @@
   }
   
   /* Name in header */
-  .edit-title {
+  .wpt-title {
     font-size: 20px;
     text-align: center;
     margin: 10px;
   }
   
   /* Divider */
-  .edit-divider {
+  .wpt-divider {
     border: none;
     border-top: 2px solid black;
     margin: 10px;
   }
-  .edit-message {
+  .wpt-message {
     color: black;
     font-size: 16px;
     margin: 10px;
@@ -27,7 +27,7 @@
   }
 
   /* Content section */
-  .edit-content {
+  .wpt-content {
     display: flex;
     flex-direction: column;
     height: 100%; /* Use full available height */
@@ -37,13 +37,13 @@
   }
 
   /* Divider */
-  .edit-divider {
+  .wpt-divider {
     border: none;
     border-top: 2px solid black;
     margin: 10px;
   }
 
-  .edit-name {
+  .wpt-name {
     overflow: hidden; /* Avoid text overflow */
     text-align: left;
     margin: 10px;
@@ -64,7 +64,7 @@
   }
 
 /* Editable description */
-.edit-description {
+.wpt-comment {
     flex: 1; /* Allow it to take up all available space */
     text-align: justify;
     margin: 10px;
@@ -76,8 +76,9 @@
     border-radius: 4px;
     overflow-y: auto; /* Make it scrollable */
     }
-  
-    /* Footer */
+
+
+  /* Footer */
     ion-footer {
         width: 100%;
     //    --background: var(--background-color);
@@ -86,7 +87,7 @@
       }  
 
   /* Modal buttons */
-  .edit-buttons {
+  .wpt-buttons {
     display: flex;
     margin: 10px;
     padding: 10px;
@@ -96,13 +97,13 @@
   }
   
   /* Cancel button */
-  .edit-cancel-button {
+  .wpt-cancel-button {
     color: red;
     font-size: 20px;
   }
   
   /* OK button */
-  .edit-confirm-button {
+  .wpt-confirm-button {
     color: green;
     font-size: 20px;
   }

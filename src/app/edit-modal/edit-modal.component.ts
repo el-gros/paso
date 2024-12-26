@@ -14,24 +14,16 @@ import { global } from '../../environments/environment';
 export class EditModalComponent  implements OnInit {
   // Input for modal content
   @Input() modalEdit = { name: '', place: '', description: '' };
-  // Input for background color, with a default value
-  @Input() backgroundColor: string = ''; // Default color
+  // Input for editable or non-editable content
+  @Input() edit: boolean = false;
   editableName: string = '';
   editablePlace: string = '';
   editableDescription: string = '';
-
-  translations = {
-    headers:  ['Editeu les dades del trajecte', 'Editar datos del trayecto', 'Edit Track Details'],
-    names: ['Nom','Nombre','Name'],
-    places: ['Lloc','Lugar','Place'],
-    descriptions: ['Descripció','Descripción','Description'],
-    cancels: ['Cancel.lar', 'Cancelar', 'Cancel'],   
-  }
-  get header(): string { return this.translations.headers[global.languageIndex]; }
-  get name(): string { return this.translations.names[global.languageIndex]; }
-  get place(): string { return this.translations.places[global.languageIndex]; }
-  get description(): string { return this.translations.descriptions[global.languageIndex]; }
-  get cancel(): string { return this.translations.cancels[global.languageIndex]; }
+  header: string = '';
+  name: string = '';
+  place: string = '';
+  description: string = '';
+  cancel: string = '';
 
   constructor(
     private modalController: ModalController
@@ -41,6 +33,19 @@ export class EditModalComponent  implements OnInit {
     this.editableName = this.modalEdit.name; 
     this.editablePlace = this.modalEdit.place; 
     this.editableDescription = this.modalEdit.description; 
+  }
+
+  ionViewWillEnter() {
+    const headers =  ['Editeu les dades del trajecte', 'Editar datos del trayecto', 'Edit Track Details'];
+    const names = ['Nom','Nombre','Name'];
+    const places = ['Lloc','Lugar','Place'];
+    const descriptions = ['Descripció','Descripción','Description'];
+    const cancels = ['Cancel.lar', 'Cancelar', 'Cancel'];   
+    this.header = headers[global.languageIndex];
+    this.name = names[global.languageIndex];
+    this.place = places[global.languageIndex]; 
+    this.description = descriptions[global.languageIndex];
+    this.cancel = cancels[global.languageIndex]; 
   }
 
   onNameChange(event: Event): void {
@@ -65,6 +70,11 @@ export class EditModalComponent  implements OnInit {
       place: this.editablePlace,
       description: this.editableDescription
     });
+  }
+
+  toggleEdit() {
+    this.edit = !this.edit;
+    console.log('Edit mode:', this.edit);
   }
 
 }

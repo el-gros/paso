@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { IonicModule } from '@ionic/angular';
 
-import { PopOverComponent } from './pop-over.component';
+import { WptModalComponent } from './wpt-modal.component';
 
-describe('PopOverComponent', () => {
-  let component: PopOverComponent;
-  let fixture: ComponentFixture<PopOverComponent>;
+describe('WptModalComponent', () => {
+  let component: WptModalComponent;
+  let fixture: ComponentFixture<WptModalComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PopOverComponent ],
+      declarations: [ WptModalComponent ],
       imports: [IonicModule.forRoot()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PopOverComponent);
+    fixture = TestBed.createComponent(WptModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }));

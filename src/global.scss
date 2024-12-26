@@ -155,12 +155,29 @@
   font-size: 16px !important; /* Increase the font size */
 }
 
-.description-modal-class {
-  --width: 100%; /* Adjust width as needed */
+.edit-modal-class {
+  --width: 90%; /* Adjust width as needed */
   --height: 80%; /* Set modal height */
   --border-radius: 12px; /* Rounded corners */
 //  --margin: auto; /* Center modal horizontally */
   --background: #ffffbb; /* Light yellow background */
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add shadow for better visual */
+  ion-content {
+    --background: #ffffbb; /* Ensure content has the same background */
+  }
+}
+
+.edit-yellow-class{
+  --background: #ffffbb; /* Light yellow background */
+  ion-content {
+    --background: #ffffbb; /* Ensure content has the same background */
+  }
+}
+
+.edit-red-class {
+  --background: rgb(255, 221, 221)b; /* Light yellow background */
+  ion-content {
+    --background: rgb(255, 221, 221)b; /* Ensure content has the same background */
+  }
 }
 

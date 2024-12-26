@@ -1,0 +1,69 @@
+<ion-header>
+  <div class="wpt-title" *ngIf="edit">
+    <strong>{{ header }}</strong>
+  </div>
+
+  <div class="wpt-title" *ngIf="!edit">
+    <strong>{{ wptEdit.name }}</strong>
+  </div>
+
+  <!-- Divider -->
+  <hr class="wpt-divider"/>
+</ion-header>
+
+<ion-content class="wpt-content">
+  <div class="wpt-message" *ngIf="showAltitude">
+    <strong>{{ altitude }}: </strong>{{ wptEdit.altitude | number: '1.1-1' }} m
+  </div>
+
+  <div class="wpt-message" *ngIf="edit">
+    <strong>{{ name }}:</strong>
+  </div>
+  
+  <div *ngIf="edit"
+    class="wpt-name white"
+    contenteditable="true"
+    aria-label="Editable message section"
+    (input)="onNameChange($event)">
+    {{wptEdit.name}}
+  </div>
+
+  <div class="wpt-message">
+    <strong>{{ comment }}:</strong>
+  </div>
+  
+  <div *ngIf="edit"
+    class="wpt-comment white"
+    overFlow="hidden"
+    contenteditable="true"
+    aria-label="Editable message section"
+    [innerHTML]="wptEdit.comment"
+    (input)="onCommentChange($event)">
+  </div>
+
+  <div *ngIf="!edit"
+    class="wpt-comment"
+    overFlow="hidden"
+    contenteditable="false"
+    aria-label="Non-editable message section"
+    [innerHTML]="wptEdit.comment">    
+  </div>
+
+</ion-content>
+
+<ion-footer>
+
+  <ion-buttons class="wpt-buttons" *ngIf="edit">
+    <ion-button slot:end class="wpt-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
+    <ion-button slot:end class="wpt-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
+  </ion-buttons>
+
+  <ion-button 
+  (click)="toggleEdit()" 
+  *ngIf="!edit" 
+  fill="clear" 
+  class="custom-button">
+  <ion-icon name="create" class="custom-icon"></ion-icon>
+</ion-button>
+
+</ion-footer>

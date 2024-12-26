@@ -1,18 +1,23 @@
-<ion-header [ngStyle]="{'--background': backgroundColor}">
-  <div class="edit-title">
+<ion-header>
+  <div class="edit-title" *ngIf="edit">
     <strong>{{ header }}</strong>
   </div>
 
+  <div class="edit-title" *ngIf="!edit">
+    <strong>{{ modalEdit.name }}</strong>
+  </div>
+
   <!-- Divider -->
-  <hr class="edit-divider" />
+  <hr class="edit-divider"/>
 </ion-header>
 
-<ion-content class="edit-content" [ngStyle]="{'--background': backgroundColor}">
-  <div class="edit-message">
+<ion-content class="edit-content">
+  <div class="edit-message" *ngIf="edit">
     <strong>{{ name }}:</strong>
   </div>
-  <div
-    class="edit-name"
+  
+  <div *ngIf="edit"
+    class="edit-name white"
     contenteditable="true"
     aria-label="Editable message section"
     (input)="onNameChange($event)">
@@ -22,30 +27,58 @@
   <div class="edit-message">
     <strong>{{ place }}:</strong>
   </div>
-  <div
-    class="edit-name"
+
+  <div *ngIf="edit"
+    class="edit-name white"
     contenteditable="true"
     aria-label="Editable message section"
     (input)="onPlaceChange($event)">
     {{modalEdit.place}}
   </div>
 
+  <div *ngIf="!edit"
+    class="edit-name"
+    contenteditable="false"
+    aria-label="Non-editable message section">
+    {{modalEdit.place}}
+  </div>
+
   <div class="edit-message">
     <strong>{{ description }}:</strong>
   </div>
-  <div
-    class="edit-description"
+  
+  <div *ngIf="edit"
+    class="edit-description white"
     overFlow="hidden"
     contenteditable="true"
     aria-label="Editable message section"
     [innerHTML]="modalEdit.description"
     (input)="onDescriptionChange($event)">
   </div>
+
+  <div *ngIf="!edit"
+    class="edit-description"
+    overFlow="hidden"
+    contenteditable="false"
+    aria-label="Non-editable message section"
+    [innerHTML]="modalEdit.description">    
+  </div>
+
 </ion-content>
 
-<ion-footer [ngStyle]="{'--background': backgroundColor}">
-  <ion-buttons class="edit-buttons">
+<ion-footer>
+
+  <ion-buttons class="edit-buttons" *ngIf="edit">
     <ion-button slot:end class="edit-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
     <ion-button slot:end class="edit-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
   </ion-buttons>
+
+  <ion-button 
+  (click)="toggleEdit()" 
+  *ngIf="!edit" 
+  fill="clear" 
+  class="custom-button">
+  <ion-icon name="create" class="custom-icon"></ion-icon>
+</ion-button>
+
 </ion-footer>

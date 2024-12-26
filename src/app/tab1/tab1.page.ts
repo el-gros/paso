@@ -2,7 +2,7 @@ import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } fr
 import { FunctionsService } from '../services/functions.service';
 import { Component, NgZone, Injectable, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-import { ExploreContainerComponent } from '../explore-container/explore-container.component';
+//import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -43,9 +43,6 @@ import LayerRenderer from 'ol/renderer/Layer';
 import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { Device } from '@capacitor/device';
-import { PopoverController } from '@ionic/angular';
-import { PopOverComponent } from '../pop-over/pop-over.component';
-//import { DescriptionModalComponent } from '../description-modal/description-modal.component';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
@@ -63,7 +60,7 @@ useGeographic();
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss'],
   standalone: true,
-  imports: [IonicModule, ExploreContainerComponent, CommonModule, FormsModule ],
+  imports: [IonicModule, CommonModule, FormsModule ],
   providers: [DecimalPipe, DatePipe ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -160,7 +157,7 @@ export class Tab1Page {
     public storage: Storage,
     private zone: NgZone,
     private cd: ChangeDetectorRef,
-    public popoverController: PopoverController,
+    //public popoverController: PopoverController,
     private modalController: ModalController,
     private nominatimService: NominatimService
   ) {
@@ -198,7 +195,11 @@ export class Tab1Page {
   27. gridValue
   28. filterAltitude
   29. createLayers
-  20. updateCanvas
+  30. updateCanvas
+  31. displayAllTracks
+  32. handleMapClick()
+  33. drawCircle()
+  34. averageSpeed()
 
   drawPoint
   computeMinMaxProperty
@@ -564,71 +565,18 @@ export class Tab1Page {
   } 
 
   // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
-/*  async setTrackDetails() {
-    const cssClass = 'alert yellowAlert';
-    const header = ['Informació del trajecte', 'Información del trayecto', 'Track information'];
-    const message = ['Omple els detalls del trajecte', 'Rellena los detalles del trayecto','Fill in the track details'];
-    const name = ['Nom:','Nombre:','Name:']
-    const place = ['Lloc:', 'Lugar:', 'Place:']
-    const description = ['Descripció:','Descripción:','Description:']
-    const inputs = [
-      this.fs.createReadonlyLabel('Name',name[global.languageIndex]),
-      {
-        name: 'name',
-        type: 'text',
-        value: '',
-        cssClass: 'alert-edit'
-      },
-      this.fs.createReadonlyLabel('Place',place[global.languageIndex]),
-      {
-        name: 'place',
-        type: 'text',
-        value: '',
-        cssClass: 'alert-edit'
-      },
-
-      this.fs.createReadonlyLabel('Description',description[global.languageIndex]),
-      {
-        name: 'description',
-        type: 'textarea',
-        value: '',
-        cssClass: 'alert-edit'
-      }
-        
-    ];
-    const buttons = [
-      global.cancelButton,
-      {
-        text: 'Ok',
-        cssClass: 'alert-button',
-        handler: (data: any) => {
-          if (!data.name.trim()) {
-            this.showValidationAlert();
-            return false;
-          }
-          this.saveFile(data.name, data.place, data.description);
-          return true;
-        }
-      }
-    ];
-    const action = ''
-    await this.fs.showAlert(cssClass, header[global.languageIndex], message[global.languageIndex], inputs, buttons, action)
-  }
-*/
-
-  // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
   async setTrackDetails() {
     const modalEdit = {
       name: '',
       place: '',
       description: ''
     };
-    const backgroundColor = '#ffffbb'
+    const edit: boolean = true;
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: EditModalComponent,
-      componentProps: { modalEdit, backgroundColor },
-      cssClass: 'description-modal-class',
+      componentProps: { modalEdit, edit },
+      cssClass: ['edit-modal-class','edit-yellow-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
     await modal.present();
@@ -683,7 +631,7 @@ export class Tab1Page {
     const toast = ['Fitxer guardat correctament', 'Fichero guardado correctamente','File saved successfully']
     this.fs.displayToast(toast[global.languageIndex]);
     // Update UI elements
-    this.show('start', 'block');
+    this.show('start', 'none');
     this.show('stop', 'none');
     this.show('alert', 'none');
     this.show('save', 'none');
@@ -1242,7 +1190,7 @@ export class Tab1Page {
     return tUnit;
   }
   
-  // DISPLAY ALL ARCHIVED TRACKS
+  // 31. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
     var track: any;
@@ -1277,7 +1225,7 @@ export class Tab1Page {
     this.multiLayer.setVisible(true);
   }
 
-  // HANDLE MAP CLICK //////////////////////////////
+  // 32. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     switch(global.layerVisibility) {
       case 'multi':
@@ -1315,13 +1263,11 @@ export class Tab1Page {
               this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
               item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
             );
-            if (index >= 0) await this.fs.editTrack(index, '#ffffbb')
+            if (index >= 0) await this.fs.editTrack(index, '#ffffbb', false)
           }
         });
-        this.popText = undefined
         if (!hit) this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {  
           if (feature === this.archivedWaypoints) {
-            this.popText = undefined
             // Retrieve clicked coordinate and find its index
             const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
             const multiPointCoordinates = feature.getGeometry().getCoordinates();
@@ -1330,32 +1276,27 @@ export class Tab1Page {
             );
             if (index !== -1) {
               // Retrieve the waypoint data using the index
-              const waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
+              let waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
               const clickedWaypoint: Waypoint = waypoints[index];
-              // Retrieve the WP name, comment and altitude based on its index
-              this.popText = [
-                clickedWaypoint?.name ?? '',
-                clickedWaypoint?.comment ?? '',
-                clickedWaypoint?.altitude !== undefined 
-                  ? Math.round(clickedWaypoint.altitude) : NaN
-              ]  
-            }
-          }
-          const popover = await this.popoverController.create({
-            component: PopOverComponent,
-            componentProps: { text: this.popText, }, // Pass text to PopOverComponent
-            cssClass: 'custom-popover',
-            translucent: true,
-          });
-          if (popover) await popover.present();
+              const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(clickedWaypoint, true, false)
+              if (response.action == 'ok') {
+                waypoints[index].name = response.name;
+                waypoints[index].comment = response.comment;
+                if (this.archivedTrack) {
+                  this.archivedTrack.features[0].waypoints = waypoints;
+                  await this.fs.storeSet(global.key,this.archivedTrack)
+                }                  
+              }
+            }  
+          };
         });
-        break;
+        break;  
       case 'none':
         break;
     }    
   }
 
-  // DRAW A CIRCLE //////////////////////////////////////
+  // 33. DRAW A CIRCLE //////////////////////////////////////
   drawCircle(color: string): Style {
     return new Style({
       image: new CircleStyle({
@@ -1365,7 +1306,7 @@ export class Tab1Page {
     });
   }
 
-  // COMPUTE AVERAGE SPEEDS AND TIMES
+  // 34. COMPUTE AVERAGE SPEEDS AND TIMES
   async averageSpeed() {
     if (!this.currentTrack) return;
     // get data array
@@ -1440,11 +1381,11 @@ export class Tab1Page {
     this.status = await this.onRoute() || 'black';
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
-      this.playBeep(600, .8, 1);
+      this.playDoubleBeep(1800, .3, 1, .15);
     }  
     // Beep for on-route transition  
     else if (previousStatus === 'red' && this.status === 'green') {
-      this.playBeep(2000, .4, 1);
+      this.playBeep(1800, .4, 1);
     }
   }
 
@@ -1508,6 +1449,38 @@ export class Tab1Page {
     };
   } 
 
+  // PLAY A DOUBLE BEEP
+  async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
+    // Initialize audio context if not already created
+    if (!this.audioCtx) {
+      this.audioCtx = new window.AudioContext();
+    }
+    const oscillator = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+    // Configure oscillator
+    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
+    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime); // Set frequency
+    // Connect nodes
+    oscillator.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+    const now = this.audioCtx.currentTime;
+    // Double beep timing
+    gainNode.gain.setValueAtTime(0, now); // Start with volume off
+    gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // Ramp up quickly for first beep
+    gainNode.gain.linearRampToValueAtTime(0, now + time); // Ramp down after first beep
+    gainNode.gain.setValueAtTime(0, now + time + gap); // Silence for gap
+    gainNode.gain.linearRampToValueAtTime(volume, now + time + gap + 0.01); // Ramp up for second beep
+    gainNode.gain.linearRampToValueAtTime(0, now + time + gap + time); // Ramp down after second beep
+    // Start and stop oscillator
+    oscillator.start(now);
+    oscillator.stop(now + time + gap + time); // Total duration: first beep + gap + second beep
+    // Clean up after the sound has finished
+    oscillator.onended = async () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
+  }
+  
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
     let waypoints: Waypoint[] = [];
@@ -1868,47 +1841,22 @@ export class Tab1Page {
     console.log(point)
     const address = await this.nominatimService.reverseGeocode(point[1],point[0]) || {name:'',address_name:''};
     console.log(address)
-    const name = ['Nom:','Nombre:','Name:']
-    const comment = ['Comentari:','Comentario:','Comment:']
-    const inputs = [
-      this.fs.createReadonlyLabel('Name',name[global.languageIndex]),
-      {
-        name: 'name',
-        type: 'text',
-        value: address.name,
-        cssClass: 'alert-edit'
-      },
-      this.fs.createReadonlyLabel('Comment',comment[global.languageIndex]),
-      {
-        name: 'comment',
-        type: 'textarea',
-        value: address.display_name,
-        cssClass: 'alert-edit'
-      }
-    ];
-    const buttons =  [
-      global.cancelButton,
-      {
-        text: 'OK',
-        cssClass: 'alert-button',
-        handler: async (data: any) => {
-          const waypoint: Waypoint = {
-            longitude: point[0],
-            latitude: point[1],
-            altitude: num - 1, // At this moment, this value is the position of the point in the track
-            name: data.name,
-            comment: data.comment  
-          }
-          this.currentTrack?.features[0].waypoints?.push(waypoint);
-          // Toast
-          const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
-          this.fs.displayToast(toast[global.languageIndex]);
-        }
-      }
-    ];
-    const header = ['Punt de pas', 'Punto de paso', 'Waypoint'];
-    await this.fs.showAlert('alert yellowAlert', header[global.languageIndex], '', inputs, buttons, '') 
-    console.log(this.currentTrack)
+    let waypoint: Waypoint = {
+      longitude: point[0],
+      latitude: point[1],
+      altitude: num - 1, // At this moment, this value is the position of the point in the track
+      name: address.name,
+      comment: address.display_name
+    }
+    const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(waypoint, false, true)
+    if (response.action == 'ok') {
+      waypoint.name = response.name,
+      waypoint.comment = response.comment
+      this.currentTrack.features[0].waypoints?.push(waypoint); 
+      // Toast
+      const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
+      this.fs.displayToast(toast[global.languageIndex]);
+    }
   }
 
   async setWaypointAltitude() {
