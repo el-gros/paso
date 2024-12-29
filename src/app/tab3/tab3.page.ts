@@ -34,10 +34,10 @@ export class Tab3Page {
       name: 'OpenTopoMap',
       image: '/assets/maps/otm.jpg',
     },
-    //  {
-  //    name: 'Institut Cartografic de Catalunya',
-  //    image: '',
-  //  },
+    {
+      name: 'IGN',
+      image: '/assets/maps/ign.jpg',
+    },
   ];
   selectedLanguage: 'ca' | 'es' | 'other' = global.language;  
   title: any = [

@@ -22,14 +22,22 @@
       <ion-fab-button id='trash' (click)="confirm('delete')">
         <ion-icon name="trash"></ion-icon>
       </ion-fab-button>  
+      <!-- Spacer -->
+      <div style="width: 30px;"></div>
       <ion-fab-button id='databutton' (click)="gotoData()">
         <ion-icon name="analytics"></ion-icon>
       </ion-fab-button>  
       <ion-fab-button id='mapbutton' (click)="gotoMap()">
         <ion-icon name="earth"></ion-icon>
       </ion-fab-button>
-      <!-- Spacer -->
-      <div style="width: 20px;"></div>
+      <ion-fab-button id='search' (click)="search()">
+        <ion-icon name="search"></ion-icon>
+      </ion-fab-button>  
+    </ion-row>
+  </ion-fab>
+
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom">
+    <ion-row>
       <ion-fab-button id='list' (click)="gotoPage('tab2')">
         <ion-icon name="list"></ion-icon>
       </ion-fab-button>  
@@ -38,7 +46,7 @@
       </ion-fab-button>  
     </ion-row>
   </ion-fab>
-  
+
 <div id="map" class="map-container"></div>
 
 <swiper-container id="data">

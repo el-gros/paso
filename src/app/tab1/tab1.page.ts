@@ -46,6 +46,7 @@ import { Device } from '@capacitor/device';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
+import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
 
@@ -262,6 +263,7 @@ export class Tab1Page {
       this.determineColors();
       // elements shown, elements hidden
       this.show('map', 'block');
+      this.show('search', 'block');
       this.show('data', 'none');
       this.show('start', 'block');
       this.show('stop', 'none');
@@ -576,7 +578,7 @@ export class Tab1Page {
     const modal = await this.modalController.create({
       component: EditModalComponent,
       componentProps: { modalEdit, edit },
-      cssClass: ['edit-modal-class','edit-yellow-class'] ,
+      cssClass: ['modal-class','yellow-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
     await modal.present();
@@ -647,6 +649,7 @@ export class Tab1Page {
   async gotoMap() {
     // Show map and adjust buttons
     this.show('map', 'block');
+    this.show('search', 'block');
     this.show('data', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
@@ -663,6 +666,7 @@ export class Tab1Page {
     // Show data and adjust buttons
     global.mapVisible = false
     this.show('map', 'none');
+    this.show('search', 'none');
     this.show('data', 'block');
     this.show('mapbutton', 'block');
     this.show('databutton', 'none');
@@ -934,11 +938,21 @@ export class Tab1Page {
         })
       })
     }
-    else if (this.mapProvider == 'Institut Cartografic de Catalunya') {
+    else if (this.mapProvider == 'ICGC') {
       credits = 'Institut Cartogràfic i Geològic de Catalunya'
-      olLayer.setAt(0, new TileLayer({  source: new XYZ({
-        url: 'https://tiles.icgc.cat/mapaBaseICGC/{z}/{x}/{y}.png',
-      }),}))
+      olLayer = new TileLayer({ 
+        source: new XYZ({
+          url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg'
+        })
+      })
+    }
+    else if (this.mapProvider == 'IGN') {
+      credits = 'Instituto Geográfico Nacional (IGN)'
+      olLayer = new TileLayer({ 
+        source: new XYZ({
+          url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+        }),
+      });
     }
     // Create the map view
     var view = new View({
@@ -1786,11 +1800,17 @@ export class Tab1Page {
         url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
       })}))
     }
-    else if (this.mapProvider == 'Institut Cartografic de Catalunya') {
+    else if (this.mapProvider == 'ICGC') {
       credits = 'Institut Cartogràfic i Geològic de Catalunya'
-      olLayer.setAt(0, new TileLayer({  source: new XYZ({
-        url: 'https://tiles.icgc.cat/mapaBaseICGC/{z}/{x}/{y}.png',
-      }),}))
+      olLayer.setAt(0, new TileLayer({source: new XYZ({
+        url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg',
+      })}))
+    }
+    else if (this.mapProvider == 'IGN') {
+      credits = 'Instituto Geográfico Nacional (IGN)'
+      olLayer.setAt(0, new TileLayer({source: new XYZ({
+        url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+      })}))
     }
     // Apply the fade-in effect
     const mapContainer = document.getElementById('map');
@@ -1869,25 +1889,30 @@ export class Tab1Page {
     console.log(this.currentTrack)
   }
 
-  /*
-  async searchLocation(query: string) {
-    try {
-      const result = await this.nominatimService.search(query);
-      console.log('Search result:', result);
-    } catch (error) {
-      console.error('Error searching location:', error);
+  async search() {
+    const modal = await this.modalController.create({
+      component: SearchModalComponent,
+      cssClass: ['modal-class','yellow-class'] ,
+      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+    });
+    await modal.present();
+    const padding = 0.005
+    const { data } = await modal.onDidDismiss();
+    if (data) {
+      const { bbox } = data;
+      let [minLat, maxLat, minLon, maxLon] = bbox.map((coord: string | number) => +coord);
+      // Apply padding
+      minLat -= padding;
+      maxLat += padding;
+      minLon -= padding;
+      maxLon += padding;
+      const extent = [minLon, minLat, maxLon, maxLat]; // OpenLayers extent
+      this.map.getView().fit(extent);
+    };
     }
   }
 
-  async reverseGeocodeLocation(lat: number, lon: number) {
-    try {
-      let result = await this.nominatimService.reverseGeocode(lat, lon);
-      console.log('Reverse geocoding result:', result);
-    } catch (error) {
-      console.error('Error with reverse geocoding:', error);
-    }
-  }
-  */
+   
 
-}  
+  
 

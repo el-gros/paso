@@ -155,11 +155,12 @@
   font-size: 16px !important; /* Increase the font size */
 }
 
-.edit-modal-class {
+// MODAL //////////////////////////////
+
+.modal-class {
   --width: 90%; /* Adjust width as needed */
   --height: 80%; /* Set modal height */
   --border-radius: 12px; /* Rounded corners */
-//  --margin: auto; /* Center modal horizontally */
   --background: #ffffbb; /* Light yellow background */
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add shadow for better visual */
   ion-content {
@@ -167,7 +168,7 @@
   }
 }
 
-.edit-yellow-class{
+.yellow-class{
   --background: #ffffbb; /* Light yellow background */
   ion-content {
     --background: #ffffbb; /* Ensure content has the same background */
@@ -181,3 +182,123 @@
   }
 }
 
+/* Header */
+.modal-header {
+  width: 100%; /* Full width */
+  // --background: var(--background-color);
+  box-shadow: none; /* Remove any shadow */
+  border: none; /* Remove borders */
+}
+
+/* Name in header */
+.modal-title {
+  font-size: 20px;
+  text-align: center;
+  margin: 10px;
+}
+
+/* Divider */
+.modal-divider {
+  border: none;
+  border-top: 2px solid black;
+  margin: 10px;
+}
+
+/* Content section */
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Use full available height */
+  width: 100%;
+  padding: 0; /* No additional padding */
+}
+
+.modal-message {
+  color: black;
+  font-size: 16px;
+  margin: 10px;
+  padding: 10px;
+}
+
+.modal-name {
+  overflow: hidden; /* Avoid text overflow */
+  text-align: left;
+  margin: 10px;
+  padding: 10px;
+  color: black;
+  border: none; /* Optional: Add a subtle border */
+  outline: none; /* Remove the focus outline */
+  font-size: 16px;
+  border-radius: 4px;
+  white-space: pre-wrap; /* Preserve line breaks and spaces */
+  word-wrap: break-word; /* Break long words */
+  overflow-y: auto; /* Make it scrollable */
+}
+
+/* Description */
+.modal-description {
+  flex: 1; /* Allow it to take up all available space */
+  text-align: justify;
+  margin: 10px;
+  color: black;
+  border: none;
+  outline: none;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 4px;
+  overflow-y: auto; /* Make it scrollable */
+}
+
+.white {
+  background-color: white;
+}
+
+/* Footer */
+.modal-footer {
+  width: 100%;
+  box-shadow: none; /* Remove shadow */
+  border: none; /* Remove borders */
+}  
+
+/* Modal buttons */
+.modal-buttons {
+  display: flex;
+  margin: 10px;
+  padding: 10px;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Optional: center vertically */
+  width: 100%; /* Full width */
+}
+
+/* OK button */
+.modal-confirm-button {
+  color: green;
+  font-size: 18px;
+}
+  
+/* Cancel button */
+.modal-cancel-button {
+  color: red;
+  font-size: 18px;
+}
+
+/* Edit button */
+.modal-edit-button {
+  display: flex; /* Ensures icon is centered within the button */
+  justify-content: center; /* Horizontally center the content */
+  align-items: center; /* Vertically center the content */
+  margin: 8px; /* Ensures the button is 10px away from all borders */
+  width: 100%; /* Full width to make centering easier */
+  height: auto; /* Adjust height as needed */
+}
+
+/* icon */
+.modal-large-icon {
+  color: black; /* Set the icon color to black */
+  font-size: 40px; /* Adjust icon size (optional) */
+}
+
+.modal-small-icon {
+  color: black; /* Set the icon color to black */
+  font-size: 20px; /* Adjust icon size (optional) */
+}

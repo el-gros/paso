@@ -1,39 +1,39 @@
-<ion-header>
-  <div class="wpt-title" *ngIf="edit">
+<ion-header class="modal-header">
+  <div class="modal-title" *ngIf="edit">
     <strong>{{ header }}</strong>
   </div>
 
-  <div class="wpt-title" *ngIf="!edit">
+  <div class="modal-title" *ngIf="!edit">
     <strong>{{ wptEdit.name }}</strong>
   </div>
 
   <!-- Divider -->
-  <hr class="wpt-divider"/>
+  <hr class="modal-divider"/>
 </ion-header>
 
-<ion-content class="wpt-content">
-  <div class="wpt-message" *ngIf="showAltitude">
+<ion-content class="modal-content">
+  <div class="modal-message" *ngIf="showAltitude">
     <strong>{{ altitude }}: </strong>{{ wptEdit.altitude | number: '1.1-1' }} m
   </div>
 
-  <div class="wpt-message" *ngIf="edit">
+  <div class="modal-message" *ngIf="edit">
     <strong>{{ name }}:</strong>
   </div>
   
   <div *ngIf="edit"
-    class="wpt-name white"
+    class="modal-name white"
     contenteditable="true"
     aria-label="Editable message section"
     (input)="onNameChange($event)">
     {{wptEdit.name}}
   </div>
 
-  <div class="wpt-message">
+  <div class="modal-message">
     <strong>{{ comment }}:</strong>
   </div>
   
   <div *ngIf="edit"
-    class="wpt-comment white"
+    class="modal-description white"
     overFlow="hidden"
     contenteditable="true"
     aria-label="Editable message section"
@@ -42,7 +42,7 @@
   </div>
 
   <div *ngIf="!edit"
-    class="wpt-comment"
+    class="modal-description"
     overFlow="hidden"
     contenteditable="false"
     aria-label="Non-editable message section"
@@ -51,19 +51,19 @@
 
 </ion-content>
 
-<ion-footer>
+<ion-footer class="modal-footer">
 
-  <ion-buttons class="wpt-buttons" *ngIf="edit">
-    <ion-button slot:end class="wpt-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
-    <ion-button slot:end class="wpt-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
+  <ion-buttons class="modal-buttons" *ngIf="edit">
+    <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
+    <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
   </ion-buttons>
 
   <ion-button 
   (click)="toggleEdit()" 
   *ngIf="!edit" 
   fill="clear" 
-  class="custom-button">
-  <ion-icon name="create" class="custom-icon"></ion-icon>
+  class="modal-edit-button">
+  <ion-icon name="create" class="modal-large-icon"></ion-icon>
 </ion-button>
 
 </ion-footer>

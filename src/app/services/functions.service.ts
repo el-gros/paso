@@ -192,36 +192,16 @@ export class FunctionsService {
     catch (error) { return [1, 41.5]; } // Default coordinates 
   } 
 
-  /*
-    async getCurrentPosition() {
-    try {
-      const watcherId = await BackgroundGeolocation.addWatcher(
-        {
-          requestPermissions: true,
-          stale: false,
-        },
-        (location: any, error: any) => {
-          console.log('Current Position:', location);
-          // Optionally stop the watcher after getting the first location
-          BackgroundGeolocation.removeWatcher({ id: watcherId });
-          return [location.longitude, location.latitude];
-        }
-      );
-    } catch (error) {
-      console.error('Error starting watcher:', error);
-      return undefined;
-    }
-  }
-*/
-
   // 13. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
     // Retrieve track
-    if (global.key != "null") track = await this.storeGet(global.key)
-    // If track can not be retrieved
-    const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
-    if (!track) this.displayToast(toast[global.languageIndex]);
+    if (global.key != "null") {
+      track = await this.storeGet(global.key)
+      // If track can not be retrieved
+      const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
+      if (!track) this.displayToast(toast[global.languageIndex]);
+    }  
     // Return the retrieved track
     return track;
   }
@@ -295,8 +275,8 @@ export class FunctionsService {
     };
     // Select cssClass
     let cssClass: string[] = []
-    if (backgroundColor == '#ffbbbb') cssClass = ['edit-modal-class','edit-red-class']
-    else cssClass = ['edit-modal-class','edit-yellow-class'] 
+    if (backgroundColor == '#ffbbbb') cssClass = ['modal-class','red-class']
+    else cssClass = ['modal-class','yellow-class'] 
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: EditModalComponent,
@@ -344,7 +324,7 @@ export class FunctionsService {
     const modal = await this.modalController.create({
       component: WptModalComponent,
       componentProps: { wptEdit, edit, showAltitude },
-      cssClass: ['edit-modal-class','edit-yellow-class'] ,
+      cssClass: ['modal-class','yellow-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
     await modal.present();

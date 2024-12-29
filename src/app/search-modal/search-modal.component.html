@@ -1,0 +1,38 @@
+<ion-header class="modal-header">
+  <div class="modal-title">
+    <strong>{{title}}</strong>
+  </div>
+
+  <!-- Divider -->
+  <hr class="modal-divider"/>
+</ion-header>
+
+<ion-content class="nodal-content">
+  <ion-row>
+    <ion-col size="10">
+      <ion-item>
+        <ion-input 
+          [(ngModel)]="query" 
+          placeholder={{placeholder}}></ion-input>
+      </ion-item>
+    </ion-col>
+    <ion-col size="2">
+        <ion-button 
+        (click)="searchLocation()" 
+        fill="clear" 
+        class="modal-edit-button">
+        <ion-icon name="search" class="modal-small-icon"></ion-icon>
+      </ion-button>
+    </ion-col>
+  </ion-row>
+
+  <ion-list *ngIf="results.length > 0">
+    <ion-item 
+      *ngFor="let result of results" 
+      (click)="selectLocation(result)">
+      {{ result.display_name }}
+    </ion-item>
+  </ion-list>
+
+  <ion-spinner *ngIf="loading"></ion-spinner>
+</ion-content>
