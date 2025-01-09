@@ -137,7 +137,7 @@ export class Tab2Page {
       "The selected track(s) will be definitely removed"];
     // create alert control
     const alert = await this.alertController.create({
-      cssClass: 'alert greenAlert',
+      cssClass: 'alert redAlert',
       // header and message
       header: headers[global.languageIndex],
       message: messages[global.languageIndex],

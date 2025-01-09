@@ -8,7 +8,7 @@
 </ion-header>
 
 <ion-content class="nodal-content">
-  <ion-row>
+  <ion-row *ngIf="showSelection">
     <ion-col size="10">
       <ion-item>
         <ion-input 
@@ -33,6 +33,35 @@
       {{ result.display_name }}
     </ion-item>
   </ion-list>
-
+  <!-- means of transportation --> 
+  <ion-list id="transportation" *ngIf="showTransportation">
+    <ion-radio-group [(ngModel)]="selectedTransportation">
+      <!-- other options: driving-hgv, cycling-mountain, 
+       cycling-road, cycling-electric -->
+      <ion-item>
+        <ion-label>{{transportation[0]}}</ion-label>
+        <ion-radio slot="start" color="warning" value="driving-car"></ion-radio>
+      </ion-item>
+      <ion-item>
+        <ion-label>{{transportation[1]}}</ion-label>
+        <ion-radio slot="start" color="warning" value="cycling-regular"></ion-radio>
+      </ion-item>
+      <ion-item>
+        <ion-label>{{transportation[2]}}</ion-label>
+        <ion-radio slot="start" color="warning" value="foot-walking"></ion-radio>
+      </ion-item>
+      <ion-item>
+        <ion-label>{{transportation[3]}}</ion-label>
+        <ion-radio slot="start" color="warning" value="foot-hiking"></ion-radio>
+      </ion-item>
+      <ion-item>
+        <ion-label>{{transportation[4]}}</ion-label>
+        <ion-radio slot="start" color="warning" value="wheelchair"></ion-radio>
+      </ion-item>
+    </ion-radio-group>
+  </ion-list>
+  <ion-buttons class="modal-buttons" *ngIf="showTransportation">
+    <ion-button class="modal-confirm-button" (click)="confirmSelection()">OK</ion-button>
+  </ion-buttons>  
   <ion-spinner *ngIf="loading"></ion-spinner>
 </ion-content>

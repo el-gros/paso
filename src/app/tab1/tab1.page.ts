@@ -1,8 +1,7 @@
 import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
-import { Component, NgZone, Injectable, OnInit } from '@angular/core';
+import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-//import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -103,7 +102,7 @@ export class Tab1Page {
   archivedFeature: any;
   currentFeature: any;
   multiFeature: any; 
-  threshDist: number = 0.00000036; // 0.0006 ** 2;
+  threshDist: number = 0.0000002;
   lastN: number = 0;
   archivedCanvasVisible: boolean = false;
   currentCanvasVisible: boolean = false;
@@ -164,6 +163,14 @@ export class Tab1Page {
   ) {
     this.listenToAppStateChanges();
   }
+  
+/*  ngOnDestroy(): void {
+    try{
+      ForegroundService.stopForegroundService()
+      BackgroundGeolocation.removeWatcher({ id: this.watcherId });
+    }
+    catch{}
+  } */
 
   /* FUNCTIONS
 
@@ -210,7 +217,13 @@ export class Tab1Page {
 
   // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   listenToAppStateChanges() {
+    //let wasInForeground = true;
     App.addListener('appStateChange', (state) => {
+      //if (!wasInForeground && !state.isActive) {
+        // The app is being terminated (not in the foreground and not active anymore)
+        //ForegroundService.stopForegroundService()
+        //BackgroundGeolocation.removeWatcher({ id: this.watcherId });
+      //}
       this.foreground = state.isActive;  // true if in foreground, false if in background
       // Went to background
       if (!this.foreground) this.startBeepInterval();
@@ -247,6 +260,8 @@ export class Tab1Page {
           console.error('Error during foreground transition processing:', error);
         }
       });  
+      // Update the flag based on whether the app is in the foreground or not
+      //           wasInForeground = state.isActive;
     });
   }
 
@@ -264,6 +279,7 @@ export class Tab1Page {
       // elements shown, elements hidden
       this.show('map', 'block');
       this.show('search', 'block');
+      this.show('guide', 'block');
       this.show('data', 'none');
       this.show('start', 'block');
       this.show('stop', 'none');
@@ -399,6 +415,7 @@ export class Tab1Page {
 
   // 7. START TRACKING /////////////////////////////////
   async startTracking() {
+    const notice = ["S'està seguint la vostra ubicazció", "Rastreando tu posición", "Tracking your location"]
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
       // If not, request the necessary permissions
@@ -413,8 +430,8 @@ export class Tab1Page {
     // start foreground service
     await ForegroundService.startForegroundService({
       id: 1234,
-      title: 'Tracking Your Location.',
-      body: 'Location tracking in progress.',
+      title: notice[global.languageIndex],
+      body: '',
       smallIcon: 'splash.png',     
     });
     console.log ('Foreground service started successfully')
@@ -450,8 +467,8 @@ export class Tab1Page {
     }
     // Start Background Geolocation watcher
     BackgroundGeolocation.addWatcher({
-      backgroundMessage: "Cancel to prevent battery drain",
-      backgroundTitle: "Tracking Your Location.",
+      backgroundMessage: '',
+      backgroundTitle: notice[global.languageIndex],
       requestPermissions: true,
       stale: false,
       distanceFilter: this.distanceFilter
@@ -650,6 +667,7 @@ export class Tab1Page {
     // Show map and adjust buttons
     this.show('map', 'block');
     this.show('search', 'block');
+    this.show('guide', 'block');
     this.show('data', 'none');
     this.show('mapbutton', 'none');
     this.show('databutton', 'block');
@@ -667,6 +685,7 @@ export class Tab1Page {
     global.mapVisible = false
     this.show('map', 'none');
     this.show('search', 'none');
+    this.show('guide', 'none');
     this.show('data', 'block');
     this.show('mapbutton', 'block');
     this.show('databutton', 'none');
@@ -697,8 +716,9 @@ export class Tab1Page {
     // add location
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
-    let num = this.currentTrack.features[0].geometry.coordinates.length;
-    if ((num % 3 == 0) && (this.archivedTrack)) {
+    //let num = this.currentTrack.features[0].geometry.coordinates.length;
+    //if ((num % 3 == 0) && (this.archivedTrack)) {
+    if (this.archivedTrack) {
       await this.checkWhetherOnRoute();
     }
     return true;
@@ -1395,7 +1415,7 @@ export class Tab1Page {
     this.status = await this.onRoute() || 'black';
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
-      this.playDoubleBeep(1800, .3, 1, .15);
+      this.playDoubleBeep(1800, .3, 1, .12);
     }  
     // Beep for on-route transition  
     else if (previousStatus === 'red' && this.status === 'green') {
@@ -1890,13 +1910,17 @@ export class Tab1Page {
   }
 
   async search() {
+    global.comingFrom = 'search';
+    // Create modal
     const modal = await this.modalController.create({
       component: SearchModalComponent,
       cssClass: ['modal-class','yellow-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
+    // Present modal
     await modal.present();
     const padding = 0.005
+    // Receive data after modal dismiss
     const { data } = await modal.onDidDismiss();
     if (data) {
       const { bbox } = data;
@@ -1909,10 +1933,91 @@ export class Tab1Page {
       const extent = [minLon, minLat, maxLon, maxLat]; // OpenLayers extent
       this.map.getView().fit(extent);
     };
+  }
+
+  async guide() {
+    global.comingFrom = 'guide';
+    // Create modal
+    const modal = await this.modalController.create({
+      component: SearchModalComponent,
+      cssClass: ['modal-class','yellow-class'] ,
+      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+    });
+    // Present modal
+    await modal.present();
+    // Receive data after modal dismiss
+    const { data } = await modal.onDidDismiss();
+    if (data) {
+      const coordinates = await this.adjustCoordinates(data.response.features[0].geometry.coordinates, 0.015)
+      const num = coordinates.length;
+      this.archivedTrack = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {
+            name: '',
+            place: '',
+            date: undefined,
+            description: '',
+            totalDistance: data.response.features[0].properties.summary.distance / 1000,
+            totalElevationGain: NaN,
+            totalElevationLoss: NaN,
+            totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
+            totalNumber: num,
+            currentAltitude: undefined, 
+            currentSpeed: undefined
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: coordinates,
+            properties: {
+              data: [],
+            }
+          },
+          waypoints: []
+        }]
+      }
+    };
+    console.log('route', this.archivedTrack)
+    if (this.archivedTrack) {
+      this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+      this.multiLayer.setVisible(false);
+      this.archivedLayer.setVisible(true);  // No need for await
+      global.layerVisibility = 'archived';
+      await this.displayArchivedTrack();
+      await this.setMapView(this.archivedTrack);
     }
   }
 
+  async adjustCoordinates(
+    coordinates: [number, number][],
+    maxDistance: number // 15 meters in km
+  ): Promise<[number, number][]> {
+    const adjustedCoordinates: [number, number][] = [];
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const [lon1, lat1] = coordinates[i];
+      const [lon2, lat2] = coordinates[i + 1];
+      // Add the current point to the result
+      adjustedCoordinates.push([lon1, lat1]);
+      // Compute the distance between the two points
+      const distance = await this.fs.computeDistance(lon1, lat1, lon2, lat2);
+      if (distance > maxDistance) {
+        // Compute the number of intermediate points needed
+        const numIntermediatePoints = Math.ceil(distance / maxDistance) - 1;
+        // Interpolate intermediate points
+        for (let j = 1; j <= numIntermediatePoints; j++) {
+          const fraction = j / (numIntermediatePoints + 1);
+          const interpolatedLon = lon1 + fraction * (lon2 - lon1);
+          const interpolatedLat = lat1 + fraction * (lat2 - lat1);
+          adjustedCoordinates.push([interpolatedLon, interpolatedLat]);
+        }
+      }
+    }
+    // Add the last point
+    adjustedCoordinates.push(coordinates[coordinates.length - 1]);
+    return adjustedCoordinates;
+  }
+
+}
+
    
-
-  
-

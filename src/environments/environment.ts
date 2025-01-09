@@ -15,6 +15,7 @@ export var global: any = {
   archivedColor: 'green' as string,
   collection: [] as TrackDefinition [],
   key: 'null' as string,
+  comingFrom: '' as string,
 
   // Dynamic getter for the cancel button
   get cancelButton() {
