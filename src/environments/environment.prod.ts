@@ -12,6 +12,9 @@ export var global: any = {
   collection: [] as TrackDefinition [],
   key: 'null' as string,
   comingFrom: '' as string,
+  fontSize: 16 as number,
+  deleteSearch: false as boolean,
+  presentSearch: false as boolean,
   
   // Dynamic getter for the cancel button
   get cancelButton() {

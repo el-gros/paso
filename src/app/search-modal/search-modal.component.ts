@@ -3,6 +3,7 @@ import { IonicModule, ModalController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { global } from '../../environments/environment';
+import { FunctionsService } from '../services/functions.service';
 
 @Component({
   selector: 'app-search-modal',
@@ -23,46 +24,61 @@ export class SearchModalComponent implements OnInit {
   route: any;
   showTransportation: boolean = false;
   showSelection: boolean = true;
+  showCurrent: boolean = false;
   selectedTransportation: string = '';
-  transportation: string[] = ['','','','','']   
+  selectedCurrent: string = '';
+  transportation: string[] = ['','','','','']
+  currentLocation: string = '';
+  notice1: string = '';
+  notice2: string = '';
 
   constructor(
-    private modalController: ModalController
+    private modalController: ModalController,
+    private fs: FunctionsService,
   ) { }
 
   ngOnInit(): void {
     let titles: string[] = [];
     let placeholders: string[] = [];
-    let transportationMeans = [['En cotxe', 'En bicicleta', 'A peu', 'Senderisme', 'En cadira de rodes'],
+    const transportationMeans = [['En cotxe', 'En bicicleta', 'A peu', 'Senderisme', 'En cadira de rodes'],
       ['En coche', 'En bicicleta', 'A pie', 'Senderismo','En silla de ruedas'],
       ['By car', 'Cycling', 'Walking', 'Hiking','In a wheelchair']];
+    const currentLocation = ['Posició actual', 'Posición actual', 'Current location']   
+    const notices1 = ["Introduïu un punt d'inici...", 'Introducir un punto de inicio...',
+      'Enter a starting point...']
+    const notices2 = ["... o seleccioneu posició actual", 'o seleccionar la posición actual',
+      '... or select current location']
     if (global.comingFrom  == 'search') {
       titles = ['Trobeu la ubicació', 'Encuentra la ubicación', 'Find location'];
       placeholders = ['Nom del lloc', 'Nombre del lugar', 'Enter place name']
     }
     else if (global.comingFrom  == 'guide') {
-      titles = ['Trobeu la millor ruta', 'Encuentra la mejor ruta', 'Find the best route']
-      placeholders = ['Inici','Inicio','Start']
+      titles = ['Trobeu la millor ruta', 'Encuentra la mejor ruta', 'Find the best route'];
+      placeholders = ['Inici','Inicio','Start'];
+      this.showCurrent = true;
     }
     this.title = titles[global.languageIndex];
     this.placeholder = placeholders[global.languageIndex];  
     this.transportation = transportationMeans[global.languageIndex];  
-  }
-
-  ionViewWillEnter() {
+    this.currentLocation = currentLocation[global.languageIndex];
+    this.notice1 = notices1[global.languageIndex];
+    this.notice2 = notices2[global.languageIndex];
     this.num = 0;
   }
+
 
   async searchLocation() {
     if (!this.query) return;
     this.loading = true;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.query)}`;
+    //const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.query)}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       this.results = await response.json();
+      this.showCurrent = false;  
     } catch (error) {
       console.error('Error fetching geocoding data:', error);
     } finally {
@@ -74,7 +90,8 @@ export class SearchModalComponent implements OnInit {
     if (global.comingFrom  == 'search') {
       console.log('Selected location', location)
       this.modalController.dismiss({
-        bbox: location.boundingbox, 
+        //bbox: location.boundingbox, 
+        location: location 
       });
     }
     else if (global.comingFrom  == 'guide' && this.num == 0) {
@@ -84,7 +101,7 @@ export class SearchModalComponent implements OnInit {
       this.placeholder = placeholders[global.languageIndex];
       this.results = [];
       this.query = '';
-      this.num = 1;  
+      this.num = 1;
     }
     else if (global.comingFrom  == 'guide' && this.num == 1) {
       console.log('Selected location', location)
@@ -128,9 +145,15 @@ export class SearchModalComponent implements OnInit {
             });
           } else {
             console.error('No route features found in the response.');
+            const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found']
+            this.fs.displayToast(toast[global.languageIndex]);
+            this.modalController.dismiss();
           }
         } else {
           console.error('Error:', request.status, request.responseText); // Log error details
+          const toast = ["Sense connexió amb el servidor",'Sin conexión con el servidor','Server connection failed']
+          this.fs.displayToast(toast[global.languageIndex]);
+          this.modalController.dismiss();
         }
       }
     };
@@ -146,5 +169,18 @@ export class SearchModalComponent implements OnInit {
     }
   }
 
+  async onCurrentLocationChange(event: any): Promise<void> {
+    console.log('Selected value:', event.detail.value);
+    // Perform actions based on the new value
+    if (event.detail.value === 'current') {
+      console.log('Current location selected');
+      this.loading = true;
+      this.start = await this.fs.getCurrentPosition();
+      this.loading = false;
+      this.showCurrent = false;
+      this.num = 0;
+      await this.selectLocation(location);
+    }
+  }
 
 }

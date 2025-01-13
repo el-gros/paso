@@ -23,10 +23,8 @@ import { ModalController } from '@ionic/angular';
 })
 export class Tab2Page {
 
-  collection: TrackDefinition[] = global.collection;
   numChecked: number = 0;
   num: number = 0;
-  archivedPresent: boolean = global.archivedPresent
   translations = {
     title: ['Trajectes','Trayectos', 'Tracks'],
     export: ['EXPORTAR TRAJECTE','EXPORTAR TRAYECTO','EXPORT TRACK'],
@@ -36,6 +34,7 @@ export class Tab2Page {
     edit: ['EDITAR TRAJECTE','EDITAR TRAYECTO','EDIT TRACK'],
     hide: ['AMAGAR REFERÈNCIA','ESCONDER REFERENCIA','HIDE REFERENCE'],
     display: ['MOSTRAR REFERÈNCIA','MOSTRAR REFERENCIA','SHOW REFERENCE'],
+    search: ['ESBORRAR CERCA', 'BORRAR BÚSQUEDA', 'REMOVE SEARCH']
   }
   get title(): string { return this.translations.title[global.languageIndex]; }
   get export(): string { return this.translations.export[global.languageIndex]; }
@@ -45,17 +44,19 @@ export class Tab2Page {
   get edit(): string { return this.translations.edit[global.languageIndex]; }
   get hide(): string { return this.translations.hide[global.languageIndex]; }
   get display(): string { return this.translations.display[global.languageIndex]; }
+  get search(): string { return this.translations.search[global.languageIndex]; }
   get layerVisibility(): string { return global.layerVisibility; }
-  
+  get presentSearch(): boolean { return global.presentSearch; }
+  get archivedPresent(): boolean { return global.archivedPresent; }
+  get collection(): TrackDefinition[] { return global.collection} 
+
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
     private socialSharing: SocialSharing,
     private modalController: ModalController,
-  ) { 
-    this.collection = global.collection;
-  }
+  ) {  }
 
   /* FUNCTIONS
     1. ionViewDidEnter
@@ -75,7 +76,7 @@ export class Tab2Page {
     // retrieve collection (just in case)
     if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
     // Initialize variables
-    this.archivedPresent = global.archivedPresent
+    //this.archivedPresent = global.archivedPresent
     // retrieve collection and uncheck all tracks
     for (const item of global.collection) item.isChecked = false;
     //await this.fs.storeSet('collection', global.collection);
@@ -183,7 +184,7 @@ export class Tab2Page {
     );
     // Update the collection and save the updated list
     global.collection = toKeep;
-    this.collection = global.collection;
+    //this.collection = global.collection;
     await this.fs.storeSet('collection', global.collection);
     // Remove the selected items (batch operation if supported)
     for (const item of toRemove) {
@@ -199,16 +200,6 @@ export class Tab2Page {
 
   // 8. GEOJSON TO GPX //////////////////////
   async geoJsonToGpx(feature: any): Promise<string> {
-/*    const formatDate = (timestamp: number): string => {
-      const date = new Date(timestamp);
-      const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(date.getUTCDate()).padStart(2, '0');
-      const hours = String(date.getUTCHours()).padStart(2, '0');
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
-    };*/
     // Format timestamp into ISO 8601 format
     const formatDate = (timestamp: number): string => {
       const date = new Date(timestamp);
@@ -296,4 +287,9 @@ export class Tab2Page {
     await this.fs.storeSet('collection', global.collection);    
   }
 
+  removeSearch() {
+    global.removeSearch = true;
+    this.router.navigate(['tab1']);
   }
+
+}

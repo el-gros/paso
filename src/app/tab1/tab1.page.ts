@@ -18,14 +18,14 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import OSM from 'ol/source/OSM';
-import Feature from 'ol/Feature';
+import Feature, { FeatureLike } from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
 import { App } from '@capacitor/app';
-import { MultiLineString, MultiPoint } from 'ol/geom';
+import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
@@ -48,6 +48,9 @@ import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
+import Text from 'ol/style/Text';
+import { nodeModuleNameResolver } from 'typescript';
+import Layer from 'ol/renderer/Layer';
 
 useGeographic();
 
@@ -157,21 +160,12 @@ export class Tab1Page {
     public storage: Storage,
     private zone: NgZone,
     private cd: ChangeDetectorRef,
-    //public popoverController: PopoverController,
     private modalController: ModalController,
     private nominatimService: NominatimService
   ) {
     this.listenToAppStateChanges();
   }
   
-/*  ngOnDestroy(): void {
-    try{
-      ForegroundService.stopForegroundService()
-      BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-    }
-    catch{}
-  } */
-
   /* FUNCTIONS
 
   1. listenToAppStateChanges
@@ -208,10 +202,16 @@ export class Tab1Page {
   32. handleMapClick()
   33. drawCircle()
   34. averageSpeed()
+  35. computeDistances()
+  36. htmlValues()
+  37. checkWhetherOnRoute()
+  38. fixWrongOrder()
+  39. showCanvas()
+  40. ionViewWillLeave()
+  41. playBeep()
+  42. playDoubleBeep()
+  43. parseGpx()
 
-  drawPoint
-  computeMinMaxProperty
-  retrieveTrack
 
   */
 
@@ -330,6 +330,12 @@ export class Tab1Page {
   // 4. ION VIEW DID ENTER
   async ionViewDidEnter() {
     try {
+      // Remove search
+      if (global.removeSearch) {
+        await this.removeLayer('searchLayerId');
+        global.presentSearch = false;
+        global.removeSearch = false;
+      }
       // retrieve collection
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
@@ -716,8 +722,6 @@ export class Tab1Page {
     // add location
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
-    //let num = this.currentTrack.features[0].geometry.coordinates.length;
-    //if ((num % 3 == 0) && (this.archivedTrack)) {
     if (this.archivedTrack) {
       await this.checkWhetherOnRoute();
     }
@@ -733,8 +737,9 @@ export class Tab1Page {
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
-    const bounding = (this.status === 'red' ? 0.3 : 1) * Math.sqrt(this.threshDist);
-    const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
+    const bounding = (this.status === 'red' ? 0.25 : 1.75) * Math.sqrt(this.threshDist);
+    //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
+    const reduction = 1 // no reduction
     const multiplier = 10;
     const skip = 5;
     // Get the point to check from the current track
@@ -1368,7 +1373,7 @@ export class Tab1Page {
     this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));  
   } 
 
-  // COMPUTE DISTANCES //////////////////////////////////////
+  // 35. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
     if (!this.currentTrack) return;
     // get coordinates and data arrays 
@@ -1390,7 +1395,7 @@ export class Tab1Page {
     }
   }
 
-  // GET VALUES TO SHOW ON THE TABLE ////////////////////////////////////
+  // 36. GET VALUES TO SHOW ON THE TABLE ////////////////////////////////////
   async htmlValues() {
     if (!this.currentTrack) return;
     // Get the data array
@@ -1405,7 +1410,7 @@ export class Tab1Page {
     this.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
   }
 
-  // CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
+  // 37. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility !== 'archived') return;
@@ -1423,7 +1428,7 @@ export class Tab1Page {
     }
   }
 
-  // CASE OF LOCATIONS IN WRONG ORDER
+  // 38. CASE OF LOCATIONS IN WRONG ORDER
   async fixWrongOrder(location:Location) {
     if (!this.currentTrack || location.time === undefined) return;
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
@@ -1444,19 +1449,18 @@ export class Tab1Page {
     }
   }
 
-  // SHOW / HIDE CANVAS OF CURRENT TRACK
+  // 39. SHOW / HIDE CANVAS OF CURRENT TRACK
   async showCanvas(track: string, visible: 'block' | 'none' | 'inline' | 'flex') {
     await this.show(track+'c0',visible);
     await this.show(track+'c1',visible); 
   }
 
-  // ON LEAVE ////////////////////////////
-
+  // 40. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
     global.archivedPresent = !!this.archivedTrack;
   }
 
-  // PLAY A BEEP /////////////////////////////////////
+  // 41. PLAY A BEEP /////////////////////////////////////
   async playBeep(freq: number, time: number, volume: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1483,7 +1487,7 @@ export class Tab1Page {
     };
   } 
 
-  // PLAY A DOUBLE BEEP
+  // 42. PLAY A DOUBLE BEEP
   async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1515,7 +1519,7 @@ export class Tab1Page {
     };
   }
   
-  // PARSE CONTENT OF A GPX FILE ////////////////////////
+  // 43. PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
     let waypoints: Waypoint[] = [];
     let track: Track = {
@@ -1923,14 +1927,15 @@ export class Tab1Page {
     // Receive data after modal dismiss
     const { data } = await modal.onDidDismiss();
     if (data) {
-      const { bbox } = data;
-      let [minLat, maxLat, minLon, maxLon] = bbox.map((coord: string | number) => +coord);
+      const bbox = data.location.boundingbox;
+      // Destructure the box array and assign the values
+      const [minLat, maxLat, minLon, maxLon] = bbox.map(Number); //
       // Apply padding
-      minLat -= padding;
-      maxLat += padding;
-      minLon -= padding;
-      maxLon += padding;
-      const extent = [minLon, minLat, maxLon, maxLat]; // OpenLayers extent
+      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding]; // OpenLayers extent
+      // Parse GeoJSON into OpenLayers features
+      const features = new GeoJSON().readFeatures(data.location.geojson);
+      console.log(features)
+      await this.addSearchLayer(features[0])
       this.map.getView().fit(extent);
     };
   }
@@ -2018,6 +2023,83 @@ export class Tab1Page {
     return adjustedCoordinates;
   }
 
+  async addSearchLayer(feature: Feature<Geometry>) {
+    if (!this.map) return;
+    // Remove previous search
+    await this.removeLayer('searchLayerId');
+    global.presentSearch = false;
+    global.removeSearch = false;
+    // Style function to differentiate geometry types
+    const styleFunction = (featureLike: FeatureLike) => {
+      const geometryType = featureLike.getGeometry()?.getType();
+      if (geometryType === 'Point') {
+        return this.drawCircle('black'); // Black circle for points
+      } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+        return new Style({
+          stroke: new Stroke({
+            color: 'black', // Black outline
+            width: 2, // Adjust the width if needed
+          }),
+          fill: new Fill({
+            color: 'rgba(128, 128, 128, 0.5)', // Pale grey fill (50% opacity)
+          }),
+        });
+      } else {
+        return this.fs.setStrokeStyle('black'); // Black line for other geometries
+      }
+    };
+    // Create a vector source with the feature
+    const searchLayer = new VectorLayer({
+      source: new VectorSource({ features: [feature] }),
+      style: styleFunction,
+    });
+    // Assign a unique ID to the layer and add it to the map
+    searchLayer.set('id', 'searchLayerId');
+    this.map.addLayer(searchLayer);
+    global.presentSearch = true;
+  }
+
+  async removeLayer(id: string) {
+    // Remove the existing search layer if it exists
+    const existingLayer = this.map.getLayers().getArray().find((layer: { get: (arg0: string) => string; }) => layer.get('id') === id);
+    if (existingLayer) {
+      this.map.removeLayer(existingLayer);
+    }
+  }
+  
 }
 
+
    
+/*
+  }
+  setStrokeStyle(arg0: string) {
+    throw new Error('Method not implemented.');
+  }
+
+
+deleteFeature(feature: Feature, source: VectorSource): void {
+  if (source && feature) {
+    source.removeFeature(feature);
+  }
+}
+
+// Example: Deleting a specific feature
+const featureToDelete = this.searchLayer.getSource().getFeatures()[0]; // Get the first feature as an example
+if (featureToDelete) {
+  this.deleteFeature(featureToDelete, this.searchLayer.getSource());
+}
+
+  async addLayer(id: string, features: Feature<Geometry>[], style: Style) {
+    // Create a vector layer with the given source, style, and ID
+    const layer = new VectorLayer({
+      source: new VectorSource({ features }),
+      style: style,
+      properties: { id }, // Set the ID as a property during initialization
+    });
+    // Add the layer to the map
+    this.map.addLayer(layer);
+  }
+
+*/
+

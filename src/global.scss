@@ -176,9 +176,9 @@
 }
 
 .red-class {
-  --background: rgb(255, 221, 221)b; /* Light yellow background */
+  --background: rgb(255, 221, 221); /* Light yellow background */
   ion-content {
-    --background: rgb(255, 221, 221)b; /* Ensure content has the same background */
+    --background: rgb(255, 221, 221); /* Ensure content has the same background */
   }
 }
 
