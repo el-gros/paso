@@ -51,6 +51,7 @@ import { lastValueFrom } from 'rxjs';
 import Text from 'ol/style/Text';
 import { nodeModuleNameResolver } from 'typescript';
 import Layer from 'ol/renderer/Layer';
+import { CustomControl } from '../utils/openlayers/custom-control'; // Adjust path if needed
 
 useGeographic();
 
@@ -121,6 +122,7 @@ export class Tab1Page {
   language: 'ca' | 'es' | 'other' = 'other';
   languageIndex: 0 | 1 | 2 = 2; // Default to 'other'
   popText: [string, string, number] | undefined = undefined;
+  intervalId: any = null;
 
   translations = {
     arcTitle: ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'],
@@ -211,60 +213,57 @@ export class Tab1Page {
   41. playBeep()
   42. playDoubleBeep()
   43. parseGpx()
-
+  44. processUrl()
+  45. foregroundTask()
+  46. backgroundTask() 
+  47. startBeepInterval()
+  48. startBeepInterval()
+  49. changeMapProvider()
+  50. determineLanguage()
+  51. determineColors()
+  52. waypoint()
+  53. setWaypointAltitude()
+  54. search()
+  55. uide()
+  56. adjustCoordinates()
+  57. addSearchLayer()
+  58. removeLayer()
 
   */
 
-  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
-  listenToAppStateChanges() {
+  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND 
+  /* listenToAppStateChanges() {
     //let wasInForeground = true;
     App.addListener('appStateChange', (state) => {
-      //if (!wasInForeground && !state.isActive) {
-        // The app is being terminated (not in the foreground and not active anymore)
-        //ForegroundService.stopForegroundService()
-        //BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-      //}
       this.foreground = state.isActive;  // true if in foreground, false if in background
       // Went to background
       if (!this.foreground) this.startBeepInterval();
       // Went to background
       else this.stopBeepInterval();
       // Exit early if the app is going to the background or there is no current track
-      if (!state.isActive || !this.currentTrack) return;
-      // Run updates outside of Angular's zone to avoid change detection overhead
-      this.zone.runOutsideAngular(async () => {
-        try{
-          // display current track
-          await this.displayCurrentTrack();
-          // Filter altitude data
-          const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-          await this.filterAltitude(this.currentTrack, num - this.lag - 1);
-          // compute distances
-          await this.computeDistances();
-          // Filter speed data
-          if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
-            this.currentTrack.features[0].geometry.properties.data,
-            this.speedFiltered + 1
-          );
-          this.speedFiltered = num - 1;
-          // average speed
-          await this.averageSpeed();
-          // Update HTML values
-          await this.htmlValues();
-          // Trigger Angular's change detection
-          this.cd.detectChanges();
-          // Update the canvas
-          await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-          console.log('Transition.',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
-        } catch (error) {
-          console.error('Error during foreground transition processing:', error);
+      if (!this.foreground || !this.currentTrack) return;
+      this.morningTask()
+    });
+  }*/
+
+  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
+  listenToAppStateChanges() {
+    //let wasInForeground = true;
+    App.addListener('appStateChange', async (state) => {
+      if (!this.currentTrack) return;
+      this.foreground = state.isActive;  // true if in foreground, false if in background
+        // Background to foreground
+        if (this.foreground) {
+            this.stopBeepInterval();
+            await this.morningTask();
+          }
+        // Foreground to background
+        else {
+            this.startBeepInterval();
         }
-      });  
-      // Update the flag based on whether the app is in the foreground or not
-      //           wasInForeground = state.isActive;
     });
   }
-
+  
   // 2. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
@@ -510,7 +509,11 @@ export class Tab1Page {
     // Toast
     const toast = ["El trajecte actual s'ha esborrat",'El trayecto actual se ha eliminado','The current track has been removed']
     this.fs.displayToast(toast[global.languageIndex]);
-    try{if (this.currentLayer) await this.currentLayer.setVisible(false);} catch{}
+    if (!this.currentLayer) return;
+    try {
+      await this.currentLayer.setVisible(false);
+    }
+    catch {}    
   }
 
   // 9. STOP TRACKING //////////////////////////////////
@@ -985,7 +988,8 @@ export class Tab1Page {
       zoom: 8,
     });
     // Controls
-    const controls = [ new Zoom(), new ScaleLine(), new Rotate()]
+    const customControl = new CustomControl(this.fs); 
+    const controls = [ new Zoom(), new ScaleLine(), new Rotate(), customControl]
     // Create the map
     this.map = new Map({
       target: 'map',
@@ -1656,54 +1660,7 @@ export class Tab1Page {
     await this.fs.storeSet('collection', global.collection);
   }
 
-/*
-
-  export interface TrackSegment {
-    points: Waypoint[];
-  }
-  
-  export interface Track {
-    name?: string;
-    segments: TrackSegment[];
-  }
-  
-  export interface ParsedGPX {
-    waypoints: Waypoint[];
-    tracks: Track[];
-  }
-
-  async parseGPX(gpxContent: string): ParsedGPX {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(gpxContent, "application/xml");
-    const tracks: Track[] = [];
-    // Parse waypoints (<wpt>)
-    // Parse tracks (<trk>)
-    const trkNodes = xmlDoc.getElementsByTagName("trk");
-    for (const trk of Array.from(trkNodes)) {
-      const name = trk.getElementsByTagName("name")[0]?.textContent || undefined;
-      const segments: TrackSegment[] = [];
-      // Parse track segments (<trkseg>)
-      const trksegNodes = trk.getElementsByTagName("trkseg");
-      for (const trkseg of Array.from(trksegNodes)) {
-        const points: Waypoint[] = [];
-        const trkptNodes = trkseg.getElementsByTagName("trkpt");
-        for (const trkpt of Array.from(trkptNodes)) {
-          const lat = parseFloat(trkpt.getAttribute("lat") || "0");
-          const lon = parseFloat(trkpt.getAttribute("lon") || "0");
-          const ele = parseFloat(trkpt.getElementsByTagName("ele")[0]?.textContent || "0");
-          const time = trkpt.getElementsByTagName("time")[0]?.textContent || undefined;
-          points.push({ lat, lon, ele, cmt: time });
-        }
-        segments.push({ points });
-      }
-      tracks.push({ name, segments });
-    }
-    return { waypoints, tracks };
-  }
-
-*/
-
-  // PROCESS FILE AFTER TAPPING ON IT /////////////
+  // 44. PROCESS FILE AFTER TAPPING ON IT /////////////
   async processUrl(data: any) {
     if (data.url) {
       try {
@@ -1730,6 +1687,7 @@ export class Tab1Page {
     }
   }
 
+  // 45. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
     // fill the track
     const locationNew: boolean = await this.buildGeoJson(location);
@@ -1764,6 +1722,7 @@ export class Tab1Page {
     console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
   }
 
+  // 46. BACKGROUND TASK /////////////////////////////////////
   async backgroundTask(location: Location) {
     const taskId = await BackgroundTask.beforeExit(async () => {
       try {
@@ -1779,6 +1738,7 @@ export class Tab1Page {
     });
   }
 
+  // 47. START BEEP INTERVAL /////////////////////
   startBeepInterval() {
     // Clear any existing interval to avoid duplicates
     if (this.beepInterval) {
@@ -1790,7 +1750,7 @@ export class Tab1Page {
     }, 120000); // 120000 milliseconds = 120 seconds
   }
   
-  
+  // 48. STOP BEEP INTERVAL ////////////////////////////
   stopBeepInterval() {
     if (this.beepInterval) {
       clearInterval(this.beepInterval);
@@ -1798,6 +1758,7 @@ export class Tab1Page {
     }
   }
 
+  // 49. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
     const previousProvider: any = this.mapProvider;
     var credits: string = '';
@@ -1846,6 +1807,7 @@ export class Tab1Page {
     this.fs.displayToast(`${credits}`) 
   }
 
+  // 50. DETERMINE LANGUAGE ////////////////// 
   async determineLanguage() {
     try {
       const info = await Device.getLanguageCode();
@@ -1869,6 +1831,7 @@ export class Tab1Page {
     }
   }
 
+  // 51. DETERMINE COLORS ///////////////////////////////////////
   async determineColors() {
     try {
       global.archivedColor = await this.fs.check(global.archivedColor, 'archivedColor');
@@ -1878,6 +1841,7 @@ export class Tab1Page {
     }
   }
 
+  // 52. ADD WAYPOINT ////////////////////////////////////
   async waypoint() {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
@@ -1890,7 +1854,8 @@ export class Tab1Page {
       latitude: point[1],
       altitude: num - 1, // At this moment, this value is the position of the point in the track
       name: address.name,
-      comment: address.display_name
+      //comment: address.display_name
+      comment: ''
     }
     const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(waypoint, false, true)
     if (response.action == 'ok') {
@@ -1903,6 +1868,7 @@ export class Tab1Page {
     }
   }
 
+  // 53. SET WAYPOINT ALTITUDE ////////////////////////////////////////
   async setWaypointAltitude() {
     if (!this.currentTrack) return;
     // Retrieve waypoints
@@ -1913,6 +1879,7 @@ export class Tab1Page {
     console.log(this.currentTrack)
   }
 
+  // 54. SEARCH SITE /////////////////////////////////////////
   async search() {
     global.comingFrom = 'search';
     // Create modal
@@ -1940,6 +1907,7 @@ export class Tab1Page {
     };
   }
 
+  // 55. SEARCH ROUTE /////////////////////////////////////////////
   async guide() {
     global.comingFrom = 'guide';
     // Create modal
@@ -1994,6 +1962,7 @@ export class Tab1Page {
     }
   }
 
+  // 56. ADSD EXTRA POINTS TO ROUTE /////////////////////////////////////
   async adjustCoordinates(
     coordinates: [number, number][],
     maxDistance: number // 15 meters in km
@@ -2023,6 +1992,7 @@ export class Tab1Page {
     return adjustedCoordinates;
   }
 
+  // 57. ADD LAYER TO DISPLAY SITE ///////////////////////// 
   async addSearchLayer(feature: Feature<Geometry>) {
     if (!this.map) return;
     // Remove previous search
@@ -2059,6 +2029,7 @@ export class Tab1Page {
     global.presentSearch = true;
   }
 
+  // 58. REMOVE LAYER ////////////////////////////////////
   async removeLayer(id: string) {
     // Remove the existing search layer if it exists
     const existingLayer = this.map.getLayers().getArray().find((layer: { get: (arg0: string) => string; }) => layer.get('id') === id);
@@ -2066,7 +2037,39 @@ export class Tab1Page {
       this.map.removeLayer(existingLayer);
     }
   }
-  
+
+  async morningTask() {
+    // Run updates outside of Angular's zone to avoid change detection overhead
+    this.zone.runOutsideAngular(async () => {
+      try{
+        // display current track
+        await this.displayCurrentTrack();
+        // Filter altitude data
+        const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+        await this.filterAltitude(this.currentTrack, num - this.lag - 1);
+        // compute distances
+        await this.computeDistances();
+        // Filter speed data
+        if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
+          this.currentTrack.features[0].geometry.properties.data,
+          this.speedFiltered + 1
+        );
+        this.speedFiltered = num - 1;
+        // average speed
+        await this.averageSpeed();
+        // Update HTML values
+        await this.htmlValues();
+        // Trigger Angular's change detection
+        this.cd.detectChanges();
+        // Update the canvas
+        await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+        console.log('Transition.',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
+      } catch (error) {
+        console.error('Error during foreground transition processing:', error);
+      }
+    });  
+  }
+
 }
 
 
@@ -2103,3 +2106,30 @@ if (featureToDelete) {
 
 */
 
+  /*
+  async startLocating() {
+    this.intervalId = setInterval(async () => {
+      const currentPosition = await this.fs.getCurrentPosition();  
+      const feature = new Feature({ geometry: new Point(currentPosition) });
+      feature.setStyle(this.drawCircle('blue'));
+      // Create a vector source with the feature
+      const locationLayer = new VectorLayer({
+        source: new VectorSource({ features: [feature] }),
+      });
+      // Assign a unique ID to the layer and add it to the map
+      locationLayer.set('id', 'locationLayerId');
+      this.map.addLayer(locationLayer);
+      // Center vier
+      await this.map.getView().setCenter(currentPosition);
+    }, 10000); // 10 seconds
+  }
+
+  async stopLocating() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      await this.removeLayer('locationLayerId');
+      this.intervalId = null;
+    }
+  }
+
+  */

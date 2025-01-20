@@ -1,6 +1,5 @@
 import { Component, Injectable } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
-//import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { Track, TrackDefinition, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +10,6 @@ import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { Capacitor } from '@capacitor/core';
-//import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { ModalController } from '@ionic/angular';
 
 @Component({
@@ -59,27 +57,26 @@ export class Tab2Page {
   ) {  }
 
   /* FUNCTIONS
-    1. ionViewDidEnter
-    2. onChange
-    3. editTrack
-    4. saveFile
-    5. deleteTracks
-    6. displayTrack
-    7. yesDeleteTracks
-    8. geoJsonToGpx
-    9.  exportTrack
-    10. displayAllTracks
+    1. ionViewDidEnter()
+    2. onChange()
+    3. editTrack()
+    4. -----
+    5. deleteTracks()
+    6. displayTrack()
+    7. yesDeleteTracks()
+    8. geoJsonToGpx()
+    9.  exportTrack()
+    10. displayAllTracks()
+    11. ionViewWillLeave()
+    12. removeSearch()
   */
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
     // retrieve collection (just in case)
     if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
-    // Initialize variables
-    //this.archivedPresent = global.archivedPresent
     // retrieve collection and uncheck all tracks
     for (const item of global.collection) item.isChecked = false;
-    //await this.fs.storeSet('collection', global.collection);
     this.numChecked = 0;
     global.key = "null"
   }
@@ -93,8 +90,6 @@ export class Tab2Page {
     // Extract the date, or set to null if no checked item is found
     const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
     global.key = JSON.stringify(firstCheckedDate)
-    // Save collection
-    //await this.fs.storeSet('collection', global.collection)
   }
   
   // 3. EDIT TRACK DETAILS //////////////////////////////
@@ -103,32 +98,6 @@ export class Tab2Page {
     const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
-
-  // 4. SAVE FILE ////////////////////////////////////////////
-/*  async saveFile(i: number, name: string, place: string, description: string) {
-    try {
-      // Update the collection item with the new details
-      const updatedTrack = { ...global.collection[i], name, place, description };
-      // Update the collection in storage
-      global.collection[i] = updatedTrack;
-      await this.fs.storeSet('collection', global.collection);
-      // Retrieve the corresponding track
-      const track = await this.fs.storeGet(JSON.stringify(updatedTrack.date));
-      if (!track) {
-        console.error('Track not found');
-        return;
-      }  
-      // Update track details
-      const { properties } = track.features[0];
-      properties.name = name;
-      properties.place = place;
-      properties.description = description;
-      // Save the updated track back to storage
-      await this.fs.storeSet(JSON.stringify(track.features[0].properties.date), track);
-    } catch (error) {
-      console.error('Error saving track details:', error);
-    }
-  } */
 
   // 5. DELETE TRACK(S) //////////////////////////
   async deleteTracks() {
@@ -283,10 +252,12 @@ export class Tab2Page {
     this.router.navigate(['tab1']);
   }
 
+  // 11. ION VIEW WILL LEAVE
   async ionViewWillLeave() {
     await this.fs.storeSet('collection', global.collection);    
   }
 
+  // 12. REMOVE SEARCH LAYER
   removeSearch() {
     global.removeSearch = true;
     this.router.navigate(['tab1']);

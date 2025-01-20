@@ -139,7 +139,12 @@
       --background: #ffffbb !important;
     }
 
- // GREENALERT ////////////////////////////////////
+// YELLOWALERT ////////////////////////////////////
+  .redAlert{
+    --background: #ffbbbb !important;
+  }
+
+// GREENALERT ////////////////////////////////////
     .greenAlert{
       --background: #ddffdd !important;
     }
@@ -301,4 +306,12 @@
 .modal-small-icon {
   color: black; /* Set the icon color to black */
   font-size: 20px; /* Adjust icon size (optional) */
+}
+
+// CUSTOM CONTROL
+.custom-control {
+  position: absolute;
+  bottom: 10px; /* Distance from the bottom of the map */
+  right: 10px;  /* Distance from the right of the map */
+  z-index: 1000; /* Ensure it's above other elements */
 }

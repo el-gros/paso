@@ -1,7 +1,6 @@
 import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
-//import { ExploreContainerComponent } from '../explore-container/explore-container.component';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms'
@@ -25,6 +24,7 @@ export class Tab3Page {
   currentColor: string = global.currentColor;
   styleChecked: boolean = false;
   lag: number = global.lag; // 8
+  allowLocation: boolean = true;
   baseMaps = [
     {
       name: 'OpenStreetMap',
@@ -45,7 +45,9 @@ export class Tab3Page {
     ['Trajecte de referència', 'Trayecto de referencia','Reference track'],
     ['Mapa base','Mapa base', 'Base map'],
     ['Idioma','Idioma', 'Language'],
-    ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR']
+    ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR'],
+    ['Sense una ruta activa...','Sin una ruta activa...', 'Without any active route...'],
+    ['Mostrar posició?', '¿Mostrar posición?', 'Show location?']
   ]
   language: 'ca' | 'es' | 'other' = global.language;  
   languageIndex: 0 | 1 | 2 = global.languageIndex
@@ -95,12 +97,10 @@ export class Tab3Page {
         handler: async (data: string) => {
           if (currArch === 'Current') {
             this.currentColor = data;
-            //global.currentColor = this.currentColor
             global.currentColor = data;
             await this.fs.storeSet('currentColor', global.currentColor);
           } else if (currArch === 'Archived') {
             this.archivedColor = data;
-            //global.archivedColor = this.archivedColor;
             global.archivedColor = data;
             await this.fs.storeSet('archivedColor', global.archivedColor);
           }
@@ -144,23 +144,12 @@ export class Tab3Page {
     global.languageIndex = this.languageIndex
     console.log('Language:', global.language);
     console.log('Language Index:', global.languageIndex);
-    // translate
-    //this.title = await this.translate(this.title) 
   }
 
-  /*
-  async translate(variable: string[][]) {
-    for (let i in variable) {
-      variable[i][0] = variable[i][global.languageIndex+1]
-    }
-    return variable
-  }
-  */  
- 
   async ionViewWillLeave() {
     await this.fs.storeSet('language', global.language) 
-  } 
-
+  }
+  
 }
  
  
