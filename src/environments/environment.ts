@@ -18,6 +18,7 @@ export var global: any = {
   comingFrom: '' as string,
   deleteSearch: false as boolean,
   presentSearch: false as boolean,
+  locationUpdate: false as boolean,
 
   // Dynamic getter for the cancel button
   get cancelButton() {

@@ -15,6 +15,7 @@ export var global: any = {
   fontSize: 16 as number,
   deleteSearch: false as boolean,
   presentSearch: false as boolean,
+  locationUpdate: false as boolean,
   
   // Dynamic getter for the cancel button
   get cancelButton() {

@@ -414,7 +414,7 @@ export class Tab1Page {
     this.currentMarkers[1].setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
-      await this.setMapView(this.currentTrack);
+      if (!global.updateLocation) await this.setMapView(this.currentTrack);
     }
   }
 
@@ -548,7 +548,7 @@ export class Tab1Page {
     // Set waypoint altitude
     await this.setWaypointAltitude()    
     // set map view
-    await this.setMapView(this.currentTrack);
+    if (!global.updateLocation) await this.setMapView(this.currentTrack);
     // Toast
     const toast = ['El trajecte actual ha finalitzat','El trayecto actual ha finalizado','The current track is now finished']
     this.fs.displayToast(toast[global.languageIndex]);
@@ -1950,7 +1950,7 @@ export class Tab1Page {
           waypoints: []
         }]
       }
-    };
+    }
     console.log('route', this.archivedTrack)
     if (this.archivedTrack) {
       this.extremes = await this.fs.computeExtremes(this.archivedTrack);

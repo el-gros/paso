@@ -311,7 +311,7 @@
 // CUSTOM CONTROL
 .custom-control {
   position: absolute;
-  bottom: 10px; /* Distance from the bottom of the map */
-  right: 10px;  /* Distance from the right of the map */
+  bottom: 8px; /* Distance from the bottom of the map */
+  right: 8px;  /* Distance from the right of the map */
   z-index: 1000; /* Ensure it's above other elements */
 }
