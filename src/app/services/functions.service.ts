@@ -18,7 +18,7 @@ const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
 
 export class FunctionsService {
 
-  lag: number = global.lag; // 8
+  //lag: number = global.lag; // 8
 
   constructor(
     private storage: Storage,
@@ -86,7 +86,7 @@ export class FunctionsService {
     const num = data.length;
     // loop for points
     for (let i = initial; i < num; i++) {
-        const start = Math.max(i - this.lag, 0);
+        const start = Math.max(i - global.lag, 0);
         const distance = data[i].distance - data[start].distance;
         const time = data[i].time - data[start].time;
         // Check to avoid division by zero
@@ -174,7 +174,6 @@ export class FunctionsService {
 
   // 11. UNCHECK ALL ///////////////////////////////////////////
   async uncheckAll() {
-    //const collection: TrackDefinition[] = (await this.storeGet('collection')) ?? [];
     for (const item of global.collection) {
       if ('isChecked' in item) {
         item.isChecked = false;

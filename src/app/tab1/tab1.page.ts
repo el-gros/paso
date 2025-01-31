@@ -1890,13 +1890,14 @@ export class Tab1Page {
     });
     // Present modal
     await modal.present();
-    const padding = 0.005
     // Receive data after modal dismiss
     const { data } = await modal.onDidDismiss();
     if (data) {
       const bbox = data.location.boundingbox;
       // Destructure the box array and assign the values
       const [minLat, maxLat, minLon, maxLon] = bbox.map(Number); //
+      // Define padding
+      const padding = Math.max(Math.max(maxLat - minLat, maxLon - minLon) / 10, 0.005);
       // Apply padding
       const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding]; // OpenLayers extent
       // Parse GeoJSON into OpenLayers features

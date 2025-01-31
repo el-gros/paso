@@ -67,6 +67,7 @@ export class SearchModalComponent implements OnInit {
     private fs: FunctionsService,
   ) { }
 
+// 1. NGONINIT ///////////////////////////////  
 ngOnInit(): void {
   // Access constants and set variables
   if (global.comingFrom === 'search') {
@@ -82,130 +83,121 @@ ngOnInit(): void {
   this.notice1 = this.NOTICES.notice1[global.languageIndex];
   this.notice2 = this.NOTICES.notice2[global.languageIndex];
 }
-  
-initializeTexts(): void {
-  const titles = ['Trobeu la ubicació', 'Encuentra la ubicación', 'Find location'];
-  const placeholders = ['Nom del lloc', 'Nombre del lugar', 'Enter place name'];
-  // Initialize other arrays here
-  this.title = titles[global.languageIndex];
-  this.placeholder = placeholders[global.languageIndex];
+
+// 2. SEARCH LOCATION ///////////////////////////////////////////
+async searchLocation() {
+  if (!this.query) return;
+  this.loading = true;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    this.results = await response.json();
+    this.showCurrent = false;  
+  } catch (error) {
+    console.error('Error fetching geocoding data:', error);
+    this.fs.displayToast(['Error de xarxa', 'Error de red', 'Network error'][global.languageIndex]);
+  } finally {
+    this.loading = false;
+  }
 }
 
-  async searchLocation() {
-    if (!this.query) return;
-    this.loading = true;
-    //const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.query)}`;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      this.results = await response.json();
-      this.showCurrent = false;  
-    } catch (error) {
-      console.error('Error fetching geocoding data:', error);
-    } finally {
-      this.loading = false;
-    }
+// 3. SELECT LOCATION //////////////////////////////////////////
+async selectLocation(location: any) {
+  if (global.comingFrom  == 'search') {
+    console.log('Selected location', location)
+    this.modalController.dismiss({location: location });
+    return;
   }
-
-  async selectLocation(location: any) {
-    if (global.comingFrom  == 'search') {
-      console.log('Selected location', location)
-      this.modalController.dismiss({
-        //bbox: location.boundingbox, 
-        location: location 
-      });
-    }
-    else if (global.comingFrom  == 'guide' && this.num == 0) {
+  else if (global.comingFrom  == 'guide') {
+    this.results = [];
+    this.query = '';
+    if (this.num == 0) {
       console.log('Selected location', location)
       if (location) this.start = [+location.lon,+location.lat]
       let placeholders = ['Destinació','Destino','Destination']
       this.placeholder = placeholders[global.languageIndex];
-      this.results = [];
-      this.query = '';
       this.num = 1;
+      return
     }
-    else if (global.comingFrom  == 'guide' && this.num == 1) {
+    if (this.num == 1) {
       console.log('Selected location', location)
       this.destination = [+location.lon,+location.lat]
-      this.results = [];
-      this.query = '';
       this.showSelection = false;
       this.showTransportation = true; 
       this.selectedTransportation = '';
     }
   }
+}
 
-  dismissModal() {
-    this.modalController.dismiss();
-  }
+// 4. DISMISS MODAL ///////////////////////////  
+dismissModal() {
+  this.modalController.dismiss();
+}
 
-  async request() {
-    this.loading = true;
-    let request = new XMLHttpRequest();
-    const body = JSON.stringify({
-      coordinates: [this.start, this.destination]
-    });
-    console.log('request body: ', body)
-    //request.open('POST', "https://api.openrouteservice.org/v2/directions/foot-hiking/geojson");
-    const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransportation}/geojson`;
-    request.open('POST', url);
-    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
-    request.setRequestHeader('Content-Type', 'application/json');
-    request.setRequestHeader('Authorization', '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23');
-    // Use an arrow function to retain the `this` context
-    request.onreadystatechange = async () => {
-      if (request.readyState === 4) {
-        this.loading = false;
-        if (request.status === 200) { // HTTP OK
-          const response = JSON.parse(request.responseText); // Parse JSON response
-          console.log('Response:', response); // Log response object
-          // Call modalController.dismiss with the route data
-          if (response.features && response.features.length > 0) {
-            this.modalController.dismiss({
-              response: response
-            });
-          } else {
-            console.error('No route features found in the response.');
-            const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found']
-            this.fs.displayToast(toast[global.languageIndex]);
-            this.modalController.dismiss();
-          }
+// 5. REQUEST ////////////////////////////
+async request() {
+  this.loading = true;
+  let request = new XMLHttpRequest();
+  const body = JSON.stringify({
+    coordinates: [this.start, this.destination]
+  });
+  console.log('request body: ', body)
+  //request.open('POST', "https://api.openrouteservice.org/v2/directions/foot-hiking/geojson");
+  const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransportation}/geojson`;
+  request.open('POST', url);
+  request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+  request.setRequestHeader('Content-Type', 'application/json');
+  request.setRequestHeader('Authorization', '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23');
+  // Use an arrow function to retain the `this` context
+  request.onreadystatechange = async () => {
+    if (request.readyState === 4) {
+      this.loading = false;
+      if (request.status === 200) { // HTTP OK
+        const response = JSON.parse(request.responseText); // Parse JSON response
+        console.log('Response:', response); // Log response object
+        // Call modalController.dismiss with the route data
+        if (response.features && response.features.length > 0) {
+          this.modalController.dismiss({
+            response: response
+          });
         } else {
-          console.error('Error:', request.status, request.responseText); // Log error details
-          //const toast = ["Sense connexió amb el servidor",'Sin conexión con el servidor','Server connection failed']
+          console.error('No route features found in the response.');
           const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found']
           this.fs.displayToast(toast[global.languageIndex]);
           this.modalController.dismiss();
         }
+      } else {
+        console.error('Error:', request.status, request.responseText); // Log error details
+        //const toast = ["Sense connexió amb el servidor",'Sin conexión con el servidor','Server connection failed']
+        const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found']
+        this.fs.displayToast(toast[global.languageIndex]);
+        this.modalController.dismiss();
       }
-    };
-    //const body = '{"coordinates":[[8.686507,49.41943],[8.687872,49.420318]]}';
-    request.send(body);
-  }
-
-  confirmSelection() {
-    if (this.selectedTransportation != '') {
-      this.request();
-    } else {
-      console.error('No transportation selected');
     }
-  }
+  };
+  //const body = '{"coordinates":[[8.686507,49.41943],[8.687872,49.420318]]}';
+  request.send(body);
+}
 
-  async onCurrentLocationChange(event: any): Promise<void> {
-    console.log('Selected value:', event.detail.value);
-    // Perform actions based on the new value
-    if (event.detail.value === 'current') {
-      console.log('Current location selected');
-      this.loading = true;
-      this.start = await this.fs.getCurrentPosition();
-      this.loading = false;
-      this.showCurrent = false;
-      this.num = 0;
-      await this.selectLocation(null);
-    }
+// 6. CONFIRM SELECTION /////////////////////////////////////////////
+confirmSelection() {
+  if (this.selectedTransportation != '') this.request();
+}
+
+// 7. ON CURRENT LOLCATION CHANGE ////////////////////////////////
+async onCurrentLocationChange(event: any): Promise<void> {
+  console.log('Selected value:', event.detail.value);
+  // Perform actions based on the new value
+  if (event.detail.value === 'current') {
+    console.log('Current location selected');
+    this.loading = true;
+    this.start = await this.fs.getCurrentPosition();
+    this.loading = false;
+    this.showCurrent = false;
+    this.num = 0;
+    await this.selectLocation(null);
   }
+}
 
 }
