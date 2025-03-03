@@ -87,6 +87,35 @@
         <div class="line" [ngStyle]="{'background-color': archivedColor}"></div>
       </ion-col>        
     </ion-row>
-    </ion-grid>
+    
+    <!-- Upload and remove maps -->
 
-  </ion-content>
+    <ion-row *ngIf="!isDownloading">
+      <ion-col size="6" class = 'centered-content'>
+        <div><strong>{{title[7][languageIndex]}}</strong></div>
+      </ion-col>  
+      <ion-col size="6" class = 'centered-content'>
+        <div><strong>{{title[8][languageIndex]}}</strong></div>
+      </ion-col>  
+    </ion-row>
+ 
+    <ion-row *ngIf="!isDownloading">
+      <ion-col size="4" offset="1">
+        <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('upload')">
+          <div class="pick" >{{title[7][languageIndex]}}</div>
+        </ion-button>
+      </ion-col>  
+      <ion-col size="4" offset="2">
+        <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('remove')">
+          <div class="pick" >{{title[8][languageIndex]}}</div>
+        </ion-button>
+      </ion-col>  
+    </ion-row>
+    </ion-grid>
+ 
+    <!-- 🔹 Show progress bar only when downloading -->
+    <ng-container *ngIf="isDownloading">
+      <ion-progress-bar [value]="downloadProgress / 100"></ion-progress-bar>
+      <p>{{ downloadProgress }}% downloaded</p>
+    </ng-container>  
+</ion-content>

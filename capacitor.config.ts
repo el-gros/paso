@@ -25,6 +25,9 @@ const config: CapacitorConfig = {
     Http: {
       allowClearText: true, // Enable HTTP (non-HTTPS) requests
     },
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 

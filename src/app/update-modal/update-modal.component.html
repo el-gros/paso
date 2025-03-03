@@ -1,0 +1,34 @@
+<ion-header class="modal-header">
+  <div class="modal-title" *ngIf="upload">
+    <strong>{{ header }}</strong>
+  </div>
+
+  <div class="modal-title" *ngIf="!upload">
+    <strong>{{ header2 }}</strong>
+  </div>
+
+  <!-- Divider -->
+  <hr class="modal-divider"/>
+</ion-header>
+
+<ion-content>
+  <ion-list *ngIf="(upload ? missingMaps.length : availableMaps.length) > 0" class="padded-list">
+    <ion-item *ngFor="let map of (upload ? missingMaps : availableMaps)">
+      <ion-label>{{ map.names[language] }}</ion-label>
+      <ion-checkbox 
+        slot="start" 
+        [checked]="selectedMap?.filename === map.filename"
+        (ionChange)="toggleSelection(map)">
+      </ion-checkbox>
+    </ion-item>
+  </ion-list>
+</ion-content>
+
+<ion-footer class="modal-footer">
+
+  <ion-buttons class="modal-buttons">
+    <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
+    <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
+  </ion-buttons>
+
+</ion-footer>

@@ -19,7 +19,7 @@ dependencies {
     implementation project(':capacitor-share')
     implementation project(':capawesome-team-capacitor-android-foreground-service')
     implementation project(':capawesome-capacitor-background-task')
-    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+
 }
 
 

@@ -1,16 +1,16 @@
 import { Control } from 'ol/control';
 import { Feature } from 'ol';
-import { Vector as VectorSource } from 'ol/source';
-import { Point } from 'ol/geom';
+import VectorSource from 'ol/source/Vector';
+import { Point, Geometry } from 'ol/geom';
 import { Style, Circle as CircleStyle, Fill } from 'ol/style';
-import { Vector as VectorLayer } from 'ol/layer';
+import VectorLayer from 'ol/layer/Vector';
 import { FunctionsService } from '../../services/functions.service'; // Location service
 import { global } from '../../../environments/environment';
 
 export class CustomControl extends Control {
   private map: any;
   private vectorSource: VectorSource;
-  private vectorLayer: VectorLayer<Feature>;
+  private vectorLayer: VectorLayer<any>;
   private isActive: boolean = false;
   private fs: FunctionsService;
   private updateInterval: any; // To store the interval ID
@@ -56,7 +56,7 @@ export class CustomControl extends Control {
 
     this.fs = fs;
 
-    this.vectorSource = new VectorSource();
+    this.vectorSource = new VectorSource<Feature<Geometry>>({});
     this.vectorLayer = new VectorLayer({
       source: this.vectorSource,
       style: this.createCircleStyle('rgba(0, 60, 136, 0.7)'),
@@ -118,7 +118,9 @@ export class CustomControl extends Control {
   private updateLocation(coordinates: [number, number]) {
     this.vectorSource.clear();
     // Define a point feature
-    const feature = new Feature(new Point(coordinates));
+    const feature = new Feature({
+      geometry: new Point(coordinates),
+    });
     // Assign style to feature
     feature.setStyle(
       new Style({
@@ -134,9 +136,8 @@ export class CustomControl extends Control {
     this.vectorSource.addFeature(feature);
     // Set map view
     this.map.getView().setCenter(coordinates);
-    //this.map.getView().setZoom(12);
   }
-
+  
   // 5. START LOCATION UPDATES /////////////////////////
   private startLocationUpdates() {
     this.updateInterval = setInterval(async () => {
