@@ -1,26 +1,27 @@
-import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
-import { FunctionsService } from '../services/functions.service';
-import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
+import { Component, NgZone, Injectable, OnDestroy, ComponentFactoryResolver } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-import { global } from '../../environments/environment';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { registerPlugin } from "@capacitor/core";
-const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
-register();
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import OSM from 'ol/source/OSM';
-import Feature, { FeatureLike } from 'ol/Feature';
+import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
+import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { FunctionsService } from '../services/functions.service';
+import { ServerService } from '../services/server.service';
+import { global } from '../../environments/environment';
+const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
+
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
@@ -31,7 +32,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import Polyline from 'ol/format/Polyline.js';
-import { Source } from 'ol/source';
+//import { Source, VectorTile } from 'ol/source';
 import XYZ from 'ol/source/XYZ';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
@@ -50,10 +51,118 @@ import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
 import Text from 'ol/style/Text';
 import { nodeModuleNameResolver } from 'typescript';
+import { FeatureLike } from 'ol/Feature';
 import Layer from 'ol/renderer/Layer';
 import { CustomControl } from '../utils/openlayers/custom-control'; // Adjust path if needed
+import VectorTile from 'ol/VectorTile';
+import RenderFeature from 'ol/render/Feature';
+import TileState from 'ol/TileState';
+import { Tile } from 'ol';
+import pako from 'pako';
+
+const vectorFormat = new MVT();
 
 useGeographic();
+
+const styleFunction = (feature: FeatureLike, resolution: number) => {
+  //console.log('Feature Properties:', feature.getProperties());
+  const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
+  //console.log('Feature Layer:', sourceLayer);
+
+  //const styleJSON: any  = global.outdoor_style;
+  const styleJSON: any  = global.maptiler_terrain_gl_style;
+  
+  if (styleJSON && styleJSON.layers) {
+    for (const layerStyle of styleJSON.layers) {
+      if (layerStyle['source-layer'] === sourceLayer) {
+        console.log('Matching Layer:', layerStyle);
+        
+        if (layerStyle.type === 'fill') {
+          return new Style({
+            fill: new Fill({
+              color: layerStyle.paint?.['fill-color'] || '#000000',
+            }),
+          });
+        } else if (layerStyle.type === 'line') {
+          return new Style({
+            stroke: new Stroke({
+              color: layerStyle.paint?.['line-color'] || '#000000',
+              width: layerStyle.paint?.['line-width'] || 1,
+            }),
+          });
+        } else if (layerStyle.type === 'symbol') {
+          return new Style({
+            text: new Text({
+              text: feature.get('name') || feature.get('rawName') || 'Unknown',
+              fill: new Fill({ color: layerStyle.paint?.['text-color'] || '#000000' }),
+              stroke: new Stroke({ color: layerStyle.paint?.['text-halo-color'] || '#FFFFFF', width: layerStyle.paint?.['text-halo-width'] || 2 }),
+            }),
+          });
+        }
+      }
+    }
+  }
+  return new Style({}); // Default style
+};
+
+
+const vectorTileStyle = (feature: FeatureLike, resolution: number): Style | Style[] | void => {
+  const layer = feature.get('layer');
+  const zoom = Math.log2(156543.03 / resolution);
+
+  // Hide minor features at lower zoom levels
+  if (zoom < 10 && feature.get('type') === 'small-road') {
+    return;
+  }
+  if (zoom < 8 && feature.get('type') === 'building') {
+    return;
+  }
+
+  let strokeColor = '#000000';
+  let fillColor = '#eeeeee';
+  let lineWidth = 1;
+
+  if (layer === 'water') {
+    fillColor = '#a3c6ff';
+    strokeColor = '#5a91d9';
+  } else if (layer === 'landuse') {
+    fillColor = '#d0e8b0';
+  } else if (layer === 'road') {
+    strokeColor = '#ffffff';
+    lineWidth = 2;
+  } else if (layer === 'building') {
+    fillColor = '#cccccc';
+  } else if (layer === 'boundary') {
+    strokeColor = '#ff0000';
+    lineWidth = 2;
+  }
+
+  // Conditional text styling
+  let textStyle: Text | undefined;
+  if (zoom >= 12 && feature.get('name')) { // Adjust zoom level and condition as needed.
+    textStyle = new Text({
+      font: '12px Arial',
+      text: feature.get('name'),
+      fill: new Fill({ color: '#000' }),
+      stroke: new Stroke({ color: '#fff', width: 2 }),
+    });
+  } else {
+    textStyle = undefined;
+  }
+
+  return new Style({
+    stroke: new Stroke({
+      color: strokeColor,
+      width: lineWidth,
+    }),
+    fill: new Fill({
+      color: fillColor,
+    }),
+    text: textStyle,
+  });
+};
+
+export default vectorTileStyle;
 
 @Injectable({
   providedIn: 'root',
@@ -123,7 +232,7 @@ export class Tab1Page {
   languageIndex: 0 | 1 | 2 = 2; // Default to 'other'
   popText: [string, string, number] | undefined = undefined;
   intervalId: any = null;
-
+  
   translations = {
     arcTitle: ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'],
     curTitle: ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'],
@@ -158,6 +267,7 @@ export class Tab1Page {
 
   constructor(
     public fs: FunctionsService,
+    public server: ServerService,
     private router: Router,
     public storage: Storage,
     private zone: NgZone,
@@ -518,6 +628,7 @@ export class Tab1Page {
 
   // 9. STOP TRACKING //////////////////////////////////
   async stopTracking() {
+    console.log('initiate stop tracking')
     // show / hide elements
     this.show('start', 'none');
     this.show('stop', 'none');
@@ -572,6 +683,7 @@ export class Tab1Page {
     ] 
     const header = which === 'stop' ? stopHeader[global.languageIndex] : delHeader[global.languageIndex]
     const message = which === 'stop' ? stopMessage[global.languageIndex] : delMessage[global.languageIndex]
+    console.log('header', header)
     const text = ['Si','Si','Yes']
     const cssClass = 'alert yellowAlert';
     const inputs: never[] = [];
@@ -589,6 +701,7 @@ export class Tab1Page {
         }
       }
     ]
+    console.log(buttons)
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
   } 
 
@@ -765,7 +878,6 @@ export class Tab1Page {
         i += (skip - 1) * reduction;
       }
     }
-    console.log('checked forward')
     // Reverse search
     for (let i = this.lastN; i >= 0; i -= reduction) {
       const point2 = archivedCoordinates[i];
@@ -777,7 +889,6 @@ export class Tab1Page {
         i -= (skip - 1) * reduction;
       }
     }
-    console.log('checked backward')
     // No match found
     return 'red';
   }
@@ -944,65 +1055,62 @@ export class Tab1Page {
     // show current canvas
     await this.showCanvas('c','block')  
   }
-  
-  // 24. CREATE MAP /////////////////////////////
+
+  // 24. CREATE MAP ////////////////////////////////////////  
   async createMap() {
-    // current position
-    const currentPosition = await this.fs.getCurrentPosition();
-    // create layers
-    await this.createLayers();
-    // Create the map layer
-    var olLayer: any;
-    var credits: string = '';
-    if (this.mapProvider == 'OpenStreetMap') {
-      credits = '© OpenStreetMap contributors'
-      olLayer = new TileLayer({ source: new OSM() })
-    }
-    else if (this.mapProvider == 'OpenTopoMap') {
-      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-      olLayer = new TileLayer({
-        source: new XYZ({
-          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        })
-      })
-    }
-    else if (this.mapProvider == 'ICGC') {
-      credits = 'Institut Cartogràfic i Geològic de Catalunya'
-      olLayer = new TileLayer({ 
-        source: new XYZ({
-          url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg'
-        })
-      })
-    }
-    else if (this.mapProvider == 'IGN') {
-      credits = 'Instituto Geográfico Nacional (IGN)'
-      olLayer = new TileLayer({ 
-        source: new XYZ({
-          url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-        }),
+    try {
+      // Current position
+      const currentPosition = await this.fs.getCurrentPosition();
+      // Create layers
+      await this.createLayers();
+      let olLayer;
+      let credits = '';
+      // Select map
+      switch (this.mapProvider) {
+        case 'OpenStreetMap':
+          credits = '© OpenStreetMap contributors';
+          olLayer = new TileLayer({ source: new OSM() });
+          break;
+        case 'OpenTopoMap':
+          credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
+          olLayer = new TileLayer({ source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }) });
+          break;
+        case 'ICGC':
+          credits = 'Institut Cartogràfic i Geològic de Catalunya';
+          olLayer = new TileLayer({ source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }) });
+          break;
+        case 'IGN':
+          credits = 'Instituto Geográfico Nacional (IGN)';
+          olLayer = new TileLayer({ source: new XYZ({ url: 'https://www.ign.es/wmts/mapa-raster?...&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}' }) });
+          break;
+        case 'Catalonia':
+          credits = '© MapTiler © OpenStreetMap contributors'
+          await this.server.openMbtiles('catalonia.mbtiles');
+          const olSource = await this.createSource();
+          if (!olSource) return;
+          olLayer = new VectorTileLayer({ source: olSource, style: styleFunction });
+          break;
+        default:
+          // If the offline map does not exist
+          console.warn(`Unknown map provider: ${this.mapProvider}`);
+          return;
+      }
+      // Create map
+      this.map = new Map({
+        target: 'map',
+        layers: [olLayer, this.currentLayer, this.archivedLayer, this.multiLayer],
+        view: new View({ center: currentPosition, zoom: 9 }),
+        controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this.fs)],
       });
+      // Display information
+      this.fs.displayToast(credits);
+      // Handle click events
+      this.map.on('click', this.handleMapClick.bind(this));
+    } catch (error) {
+        console.error('Error creating map:', error);
     }
-    // Create the map view
-    var view = new View({
-      center: currentPosition,
-      zoom: 8,
-    });
-    // Controls
-    const customControl = new CustomControl(this.fs); 
-    const controls = [ new Zoom(), new ScaleLine(), new Rotate(), customControl]
-    // Create the map
-    this.map = new Map({
-      target: 'map',
-      layers: [olLayer, this.currentLayer, this.archivedLayer, this.multiLayer],
-      view: view,
-      controls: controls
-    });
-    // Report
-    this.fs.displayToast(`${credits}`) 
-    // Set up click events
-    this.map.on('click', this.handleMapClick.bind(this));
-  }
-  
+  }  
+
   // 25. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     this.openCanvas = true;
@@ -1760,53 +1868,66 @@ export class Tab1Page {
 
   // 49. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
-    const previousProvider: any = this.mapProvider;
-    var credits: string = '';
+    const previousProvider = this.mapProvider;
+    let credits = '';
     try {
-      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+        this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+    } catch {
+        console.log('Could not check the selected map provider');
     }
-    catch {
-      console.log('Could not check the map provider yhat had been selected')
+    if (previousProvider === this.mapProvider) return;
+    // Find and remove the existing base layer
+    const olLayers = this.map.getLayers();
+    const baseLayer = olLayers.item(0); // Assuming the base layer is at index 0
+    if (baseLayer) {
+      this.map.removeLayer(baseLayer);
     }
-    if (previousProvider == this.mapProvider) return;
-    // Find map layers
-    const olLayer = this.map.getLayers();
-    const baseLayer = olLayer.getArray()[0]; // Assume the first layer is the base map
-    // Replace the base layer with the selected one
-    if (this.mapProvider == 'OpenStreetMap') {
-      credits = '© OpenStreetMap contributors'
-      olLayer.setAt(0, new TileLayer({
-        source: new OSM()
-      }));
+    let newBaseLayer;
+    // Determine new base layer
+    if (this.mapProvider === 'OpenStreetMap') {
+      credits = '© OpenStreetMap contributors';
+      newBaseLayer = new TileLayer({ source: new OSM() });
+    } else if (this.mapProvider === 'OpenTopoMap') {
+      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
+      newBaseLayer = new TileLayer({
+        source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
+      });
+    } else if (this.mapProvider === 'ICGC') {
+      credits = 'Institut Cartogràfic i Geològic de Catalunya';
+      newBaseLayer = new TileLayer({
+        source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }),
+      });
+    } else if (this.mapProvider === 'IGN') {
+      credits = 'Instituto Geográfico Nacional (IGN)';
+      newBaseLayer = new TileLayer({
+        source: new XYZ({
+          url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+        }),
+      });
+    } else if (this.mapProvider === 'Catalonia') {
+      // Load vector tiles for Catalonia
+      credits = '© MapTiler © OpenStreetMap contributors';
+      await this.server.openMbtiles('catalonia.mbtiles');
+      console.log('Catalonia MBTiles database opened');
+      const olSource = await this.createSource();
+      if (!olSource) return;
+      newBaseLayer = new VectorTileLayer({
+        source: olSource,
+        style: styleFunction
+      });
     }
-    else if (this.mapProvider == 'OpenTopoMap') {
-      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-      olLayer.setAt(0, new TileLayer({source: new XYZ({
-        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
-      })}))
-    }
-    else if (this.mapProvider == 'ICGC') {
-      credits = 'Institut Cartogràfic i Geològic de Catalunya'
-      olLayer.setAt(0, new TileLayer({source: new XYZ({
-        url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg',
-      })}))
-    }
-    else if (this.mapProvider == 'IGN') {
-      credits = 'Instituto Geográfico Nacional (IGN)'
-      olLayer.setAt(0, new TileLayer({source: new XYZ({
-        url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-      })}))
-    }
+    // Add the new base layer at index 0
+    this.map.getLayers().insertAt(0, newBaseLayer);
     // Apply the fade-in effect
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
-      mapContainer.classList.add('fade-in');
-      setTimeout(() => mapContainer.classList.remove('fade-in'), 500); // Match animation duration
+        mapContainer.classList.add('fade-in');
+        setTimeout(() => mapContainer.classList.remove('fade-in'), 500);
     }
-    // Report
-    this.fs.displayToast(`${credits}`) 
+    // Report change
+    this.fs.displayToast(`${credits}`);
   }
-
+    
   // 50. DETERMINE LANGUAGE ////////////////// 
   async determineLanguage() {
     try {
@@ -2022,7 +2143,7 @@ export class Tab1Page {
     // Create a vector source with the feature
     const searchLayer = new VectorLayer({
       source: new VectorSource({ features: [feature] }),
-      style: styleFunction,
+      style: styleFunction , 
     });
     // Assign a unique ID to the layer and add it to the map
     searchLayer.set('id', 'searchLayerId');
@@ -2071,66 +2192,48 @@ export class Tab1Page {
     });  
   }
 
-}
-
-
-   
-/*
-  }
-  setStrokeStyle(arg0: string) {
-    throw new Error('Method not implemented.');
-  }
-
-
-deleteFeature(feature: Feature, source: VectorSource): void {
-  if (source && feature) {
-    source.removeFeature(feature);
-  }
-}
-
-// Example: Deleting a specific feature
-const featureToDelete = this.searchLayer.getSource().getFeatures()[0]; // Get the first feature as an example
-if (featureToDelete) {
-  this.deleteFeature(featureToDelete, this.searchLayer.getSource());
-}
-
-  async addLayer(id: string, features: Feature<Geometry>[], style: Style) {
-    // Create a vector layer with the given source, style, and ID
-    const layer = new VectorLayer({
-      source: new VectorSource({ features }),
-      style: style,
-      properties: { id }, // Set the ID as a property during initialization
-    });
-    // Add the layer to the map
-    this.map.addLayer(layer);
-  }
-
-*/
-
-  /*
-  async startLocating() {
-    this.intervalId = setInterval(async () => {
-      const currentPosition = await this.fs.getCurrentPosition();  
-      const feature = new Feature({ geometry: new Point(currentPosition) });
-      feature.setStyle(this.drawCircle('blue'));
-      // Create a vector source with the feature
-      const locationLayer = new VectorLayer({
-        source: new VectorSource({ features: [feature] }),
+  async createSource() {
+    try {
+      // Create vector tile source
+      return new VectorTileSource({
+        format: new MVT(),
+        tileClass: VectorTile,
+        tileGrid: new TileGrid({
+          extent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
+          resolutions: Array.from({ length: 20 }, (_, z) => 156543.03392804097 / Math.pow(2, z)),
+          tileSize: [256, 256],
+        }),
+        // Tile load function
+        tileLoadFunction: async (tile) => {
+          const vectorTile = tile as VectorTile;
+          const [z, x, y] = vectorTile.getTileCoord();
+          try {
+            // Get vector tile
+            const rawData = await this.server.getVectorTile(z, x, y);
+            if (!rawData?.byteLength) {
+              vectorTile.setLoader(() => {});
+              vectorTile.setState(TileState.EMPTY);
+              return;
+            }
+            // Decompress
+            const decompressed = pako.inflate(new Uint8Array(rawData));
+            // Read features
+            const features = new MVT().readFeatures(decompressed, {
+              extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
+              featureProjection: 'EPSG:3857',
+            });
+            // Set features to vector tile
+            vectorTile.setFeatures(features);
+          } catch (error) {
+            vectorTile.setState(TileState.ERROR);
+          }
+        },
+        tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
       });
-      // Assign a unique ID to the layer and add it to the map
-      locationLayer.set('id', 'locationLayerId');
-      this.map.addLayer(locationLayer);
-      // Center vier
-      await this.map.getView().setCenter(currentPosition);
-    }, 10000); // 10 seconds
-  }
-
-  async stopLocating() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      await this.removeLayer('locationLayerId');
-      this.intervalId = null;
+    } catch (e) {
+      console.error('Error in createSource:', e);
+      return null;
     }
   }
-
-  */
+      
+}

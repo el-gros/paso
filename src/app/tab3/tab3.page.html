@@ -48,11 +48,11 @@
       <div><strong>{{title[2][languageIndex]}}</strong></div>
     </ion-row>
     <ion-row>
-      <ion-col size="6" *ngFor="let baseMap of baseMaps">
+      <ion-col size="6" *ngFor="let baseMap of finalBaseMaps">
         <ion-card button (click)="selectBaseMap(baseMap)">
-          <img [src]="baseMap.image" alt="{{ baseMap.name }} Example"  class="map-image">
+          <img [src]="baseMap.image" alt="{{ baseMap.name }}"  class="map-image">
           <ion-card-header>
-            <ion-card-title>{{ baseMap.name }}</ion-card-title>
+            <ion-card-title>{{baseMap.name }}</ion-card-title>
           </ion-card-header>
         </ion-card>
       </ion-col>

@@ -26,17 +26,10 @@ register();
 })
 
 export class Tab3Page {
-  allMaps: Map[] = [
-    {
-      "filename": "catalonia.mbtiles",
-      "url": "https://dl.dropboxusercontent.com/scl/fi/9oa0knjdwwxcj61tha5au/catalonia.mbtiles?rlkey=jbodk9utxlagp9cdwqcqlex84",
-      "size": 215,
-      "update": "Feb 2025",
-      "names": ["Catalunya", "Cataluña", "Catalonia"] 
-    }
-  ]
-  missingMaps: Map[] = [];
-  availableMaps: Map[] = [];
+  private db: any;
+
+  missingOfflineMaps: Map[] = [];
+  availableOfflineMaps: Map[] = [];
   downloadProgress = 0;
   isDownloading = false; // 🔹 Controls visibility
   private progressSubscription?: Subscription; // 🔹 Store subscription
@@ -45,7 +38,7 @@ export class Tab3Page {
   styleChecked: boolean = false;
   lag: number = global.lag; // 8
   allowLocation: boolean = true;
-  baseMaps = [
+  baseMaps: Map[] = [
     {
       name: 'OpenStreetMap',
       image: '/assets/maps/osm.jpg',
@@ -59,6 +52,7 @@ export class Tab3Page {
       image: '/assets/maps/ign.jpg',
     },
   ];
+  finalBaseMaps: Map[] = []
   selectedLanguage: 'ca' | 'es' | 'other' = global.language;  
   title: any = [
     ['Trajecte actual', 'Trayecto actual', 'Current track'],
@@ -85,7 +79,6 @@ export class Tab3Page {
   async initialize() {
     this.archivedColor = global.archivedColor;
     this.currentColor = global.currentColor;
-    //this.allMaps = await this.server.fetchMaps();
     this.checkMaps();
   }
     
@@ -143,16 +136,15 @@ export class Tab3Page {
     // Set language in radio group
     this.language = global.language;
     this.languageIndex = global.languageIndex;
-    // Check available and missing maps
-    this.checkMaps();
   }
 
   // 3. SELECT MAP
   async selectBaseMap(baseMap: any) {
     console.log(baseMap)
-    const mapProvider = baseMap.name;     
+    // Open database
+    //if (global.offlineMaps.some((map: { name: string; }) => map.name === baseMap.name)) await this.server.openMbtiles(baseMap.filename);
     // Store the map provider
-    await this.fs.storeSet('mapProvider', mapProvider);
+    await this.fs.storeSet('mapProvider', baseMap.name);
     // Go to map
     this.fs.goHome();
   }
@@ -217,24 +209,27 @@ export class Tab3Page {
     const filesInDataDirectory = await this.server.listFilesInDataDirectory();
     console.log('Files in data directory:', filesInDataDirectory);
     // Missing maps (available to be downloaded)
-    this.missingMaps = this.allMaps.filter(map => !filesInDataDirectory.includes(map.filename));
-    console.log('Missing maps:', this.missingMaps);
+    this.missingOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => !filesInDataDirectory.includes(map.filename));
+    console.log('Missing maps:', this.missingOfflineMaps);
     // Available maps (already downloaded)
-    this.availableMaps = this.allMaps.filter(map => filesInDataDirectory.includes(map.filename));
-    console.log('Available maps:', this.availableMaps);
+    this.availableOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => filesInDataDirectory.includes(map.filename));
+    console.log('Available maps:', this.availableOfflineMaps);
+    // Build the final map list
+    this.finalBaseMaps = [...this.baseMaps, ...global.offlineMaps];
+    console.log('Final base maps:', this.finalBaseMaps);  
   }
   
   async mapsToUploadRemove(action: string) {
-    console.log('Action:', action);
-    const availableMaps = this.availableMaps;
-    const missingMaps = this.missingMaps;
+    //console.log('Action:', action);
+    const availableOfflineMaps = this.availableOfflineMaps;
+    const missingOfflineMaps = this.missingOfflineMaps;
     const cssClass = ['modal-class','blue-class'] 
     if (action === 'upload') {
       const upload: boolean = true;
       // Open the modal for uploading
       const modal = await this.modalController.create({
         component: UpdateModalComponent,
-        componentProps: { missingMaps, availableMaps, upload },
+        componentProps: { missingOfflineMaps, availableOfflineMaps, upload },
         cssClass: cssClass,
         backdropDismiss: true, // Allow dismissal by tapping the backdrop
       });
@@ -250,14 +245,14 @@ export class Tab3Page {
           await this.mapDownload(url, filePath);
         }
       }
-      console.log('potential uploads: ', this.missingMaps)
+      console.log('potential uploads: ', this.missingOfflineMaps)
     }
     else if (action === 'remove') {
       const upload: boolean = false;
       // Open the modal for editing
       const modal = await this.modalController.create({
         component: UpdateModalComponent,
-        componentProps: { missingMaps, availableMaps, upload },
+        componentProps: { missingOfflineMaps, availableOfflineMaps, upload },
         cssClass: cssClass,
         backdropDismiss: true, // Allow dismissal by tapping the backdrop
       });
@@ -287,7 +282,15 @@ export class Tab3Page {
       console.error(`Error removing file ${filename}:`, error);
     }
   }
+  
+  async getMbtilesPath() {
+    const fileUri = await Filesystem.getUri({
+      path: 'catalonia.mbtiles',
+      directory: Directory.Data
+    });
+    console.log('MBTiles path:', fileUri.uri);
+    return fileUri.uri;
+  }
 
 }
- 
- 
+

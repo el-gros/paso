@@ -12,9 +12,9 @@
 </ion-header>
 
 <ion-content>
-  <ion-list *ngIf="(upload ? missingMaps.length : availableMaps.length) > 0" class="padded-list">
-    <ion-item *ngFor="let map of (upload ? missingMaps : availableMaps)">
-      <ion-label>{{ map.names[language] }}</ion-label>
+  <ion-list *ngIf="(upload ? missingOfflineMaps.length : availableOfflineMaps.length) > 0" class="padded-list">
+    <ion-item *ngFor="let map of (upload ? missingOfflineMaps : availableOfflineMaps)">
+      <ion-label>{{ map.labels?.[language] }}</ion-label>
       <ion-checkbox 
         slot="start" 
         [checked]="selectedMap?.filename === map.filename"

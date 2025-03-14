@@ -75,9 +75,11 @@ export interface Extremes {
 } 
 
 export interface Map {
-  filename: string;
-  url: string;
-  size: number;
-  update: string;
-  names: string[]
+  filename?: string;
+  url?: string;
+  size?: number;
+  update?: string;
+  labels?: string[];
+  name: string,
+  image?: string,
 }

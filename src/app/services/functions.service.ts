@@ -10,7 +10,7 @@ import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import { registerPlugin } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
+//const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
 
 @Injectable({
   providedIn: 'root'

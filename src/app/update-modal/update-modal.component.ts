@@ -13,9 +13,9 @@ import { Map } from '../../globald';
 })
 export class UpdateModalComponent  implements OnInit {
   // Input for modal content
-  @Input() missingMaps: Map[ ]= [];
+  @Input() missingOfflineMaps: Map[ ]= [];
   // Input maps
-  @Input() availableMaps: Map[ ]= [];
+  @Input() availableOfflineMaps: Map[ ]= [];
   // Input upload or remove
   @Input() upload = true;
   header: string = '';

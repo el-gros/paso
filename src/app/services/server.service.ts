@@ -1,23 +1,35 @@
 import { Injectable } from '@angular/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { BehaviorSubject, lastValueFrom } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject } from 'rxjs';
+import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ServerService {
   private downloadProgress = new BehaviorSubject<number>(0); // 🔹 Track progress
+  private sqlite: SQLiteConnection;
+  private db: SQLiteDBConnection | null = null;
+  currentMbTiles: string = '';
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  constructor( ) {
+    this.sqlite = new SQLiteConnection(CapacitorSQLite);
+  }
 
   getDownloadProgress() {
     return this.downloadProgress.asObservable(); // 🔹 Allow components to subscribe
   }
   
   async downloadBinaryFile(url: string, filePath: string, onProgress: (progress: number) => void): Promise<void> {
+    try {
+      await Filesystem.deleteFile({
+        path: filePath,
+        directory: Directory.Data,
+      });
+      console.log('✅ Previous file deleted.');
+    } catch (error) {
+      console.log('ℹ️ No existing file to delete, proceeding with download.');
+    }
     const chunkSize = 1024 * 1024 * 10; // 🔹 10 MB chunks
     return new Promise((resolve, reject) => {
       console.log('Starting chunked download...');
@@ -81,18 +93,6 @@ export class ServerService {
     return btoa(binary);
   }
 
-/*  async fetchMaps(): Promise<any> {
-    const url = "https://www.dropbox.com/scl/fi/zyip6jym79ixv6b4tpnvr/maps.json?rlkey=crgfm7m6i92ymqn81t4p61igv&st=p65xzscb&dl=1";
-    try {
-      const response = await lastValueFrom(this.http.get<any>(url));
-      console.log('Maps JSON:', response);
-      return response;
-    } catch (error) {
-      console.error('Error fetching maps:', error);
-      return null;
-    }
-  } */
-
   // Method to list files in the data directory
   async listFilesInDataDirectory(): Promise<string[]> {
     try {
@@ -107,4 +107,82 @@ export class ServerService {
     }
   }
 
+  async getMbtilesPath(): Promise<string> {
+    const fileUri = await Filesystem.getUri({
+      path: 'catalonia.mbtiles',
+      directory: Directory.Data,
+    });
+    console.log('MBTiles path:', fileUri.uri);
+    // Convert 'file://' URI to a native file path
+    return fileUri.uri.replace('file://', '');
+  }
+
+  async openMbtiles(mbtilesFile: string) {
+    try {
+      // If the database is already open with the same path, do nothing
+      if (this.db && this.currentMbTiles === mbtilesFile) {
+        console.log('Database already opened with the same path:');
+        return;
+      }
+      // If a different database is open, close it
+      if (this.db) {
+        console.log('Closing previous database:', this.currentMbTiles);
+        await this.db.close();
+        this.db = null;
+      }
+      // Check mbtiles path
+      const appDir = await Filesystem.getUri({
+        directory: Directory.Data,
+        path: ''
+      });
+      var dbPath = `${appDir.uri}/${mbtilesFile}`;
+      dbPath = dbPath.replace('file://', '');
+      console.log('Database file exists:', dbPath);
+    } catch (statError) {
+      console.error('Database file does not exist. Please download it.', statError);
+      return; // Exit the function if the file doesn't exist
+    }
+    try {
+      // Create the connection to the database
+      this.db = await this.sqlite.createNCConnection(dbPath, 1);
+      // Open the database
+      await this.db.open();
+      this.currentMbTiles = mbtilesFile;
+      console.log('✅ Successfully opened MBTiles.');
+    } catch (error) {
+      console.error('❌ Failed to open MBTiles:', error);
+    }
+  }
+
+  async getVectorTile(zoom: number, x: number, y: number): Promise<ArrayBuffer | null> {
+    console.log(`🔍 Trying to get vector tile z=${zoom}, x=${x}, y=${y}`);
+    if (!this.db) {
+      console.error('❌ Database connection is not open.');
+      return null;
+    }
+    // Query the database for the tile using XYZ coordinates
+    const resultXYZ = await this.db.query(
+      `SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;`,
+      [zoom, x, y]  
+    );
+    if (resultXYZ?.values?.length) {
+      console.log(`✅ Tile found: z=${zoom}, x=${x}, y=${y}`);
+      const tileData = resultXYZ.values[0].tile_data;
+      // Ensure tileData is returned as an ArrayBuffer
+      if (tileData instanceof ArrayBuffer) {
+        return tileData;
+      } else if (Array.isArray(tileData)) {
+        return new Uint8Array(tileData).buffer; // Convert array to ArrayBuffer
+      } else {
+        console.error(`❌ Unexpected tile_data format for ${zoom}/${x}/${y}`, tileData);
+        return null;
+      }
+    } else {
+      console.log(`❌ No tile found: z=${zoom}, x=${x}, y=${y}`);
+      return null;
+    }
+  }
+
+
 }
+
