@@ -8,7 +8,6 @@ import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { Capacitor } from '@capacitor/core';
 import { ModalController } from '@ionic/angular';
 
@@ -52,7 +51,6 @@ export class Tab2Page {
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-    private socialSharing: SocialSharing,
     private modalController: ModalController,
   ) {  }
 

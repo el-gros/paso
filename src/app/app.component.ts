@@ -1,7 +1,6 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 
 
@@ -11,9 +10,7 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
   styleUrls: ['app.component.scss'],
   standalone: true,
   imports: [IonicModule, CommonModule ],
-  providers: [ SocialSharing, 
-//    SQLiteConnection, SQLiteDBConnection
-  ]
+  providers: [ ]
 })
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
