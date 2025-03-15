@@ -5,11 +5,10 @@ import { global } from '../../environments/environment';
 import { Map } from '../../globald';
 
 @Component({
-  selector: 'app-update-modal',
-  templateUrl: './update-modal.component.html',
-  styleUrls: ['./update-modal.component.scss'],
-  standalone: true,
-  imports: [CommonModule, IonicModule],
+    selector: 'app-update-modal',
+    templateUrl: './update-modal.component.html',
+    styleUrls: ['./update-modal.component.scss'],
+    imports: [CommonModule, IonicModule]
 })
 export class UpdateModalComponent  implements OnInit {
   // Input for modal content

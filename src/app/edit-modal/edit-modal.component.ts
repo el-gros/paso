@@ -4,11 +4,10 @@ import { CommonModule } from '@angular/common';
 import { global } from '../../environments/environment';
 
 @Component({
-  selector: 'app-edit-modal',
-  templateUrl: './edit-modal.component.html',
-  styleUrls: ['./edit-modal.component.scss'],
-  standalone: true,
-  imports: [CommonModule, IonicModule],
+    selector: 'app-edit-modal',
+    templateUrl: './edit-modal.component.html',
+    styleUrls: ['./edit-modal.component.scss'],
+    imports: [CommonModule, IonicModule]
 })
 
 export class EditModalComponent  implements OnInit {

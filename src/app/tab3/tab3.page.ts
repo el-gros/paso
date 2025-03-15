@@ -15,14 +15,13 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 
 register();
 
-@Component({      
-  selector: 'app-tab3',
-  templateUrl: 'tab3.page.html',
-  styleUrls: ['tab3.page.scss'],
-  standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule], 
-  providers: [DecimalPipe, DatePipe],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+@Component({
+    selector: 'app-tab3',
+    templateUrl: 'tab3.page.html',
+    styleUrls: ['tab3.page.scss'],
+    imports: [IonicModule, CommonModule, FormsModule],
+    providers: [DecimalPipe, DatePipe],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class Tab3Page {

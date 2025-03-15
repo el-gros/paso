@@ -3,11 +3,10 @@ import { IonicModule, ModalController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { global } from '../../environments/environment';
 @Component({
-  selector: 'app-wpt-modal',
-  templateUrl: './wpt-modal.component.html',
-  styleUrls: ['./wpt-modal.component.scss'],
-  standalone: true,
-  imports: [CommonModule, IonicModule],
+    selector: 'app-wpt-modal',
+    templateUrl: './wpt-modal.component.html',
+    styleUrls: ['./wpt-modal.component.scss'],
+    imports: [CommonModule, IonicModule]
 })
 export class WptModalComponent  implements OnInit {
   // Input for modal content

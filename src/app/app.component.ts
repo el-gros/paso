@@ -5,12 +5,11 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 
 
 @Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss'],
-  standalone: true,
-  imports: [IonicModule, CommonModule ],
-  providers: [ ]
+    selector: 'app-root',
+    templateUrl: 'app.component.html',
+    styleUrls: ['app.component.scss'],
+    imports: [IonicModule, CommonModule],
+    providers: []
 })
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);

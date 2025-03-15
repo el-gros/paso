@@ -6,11 +6,10 @@ import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
 
 @Component({
-  selector: 'app-search-modal',
-  templateUrl: './search-modal.component.html',
-  styleUrls: ['./search-modal.component.scss'],
-  standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule],
+    selector: 'app-search-modal',
+    templateUrl: './search-modal.component.html',
+    styleUrls: ['./search-modal.component.scss'],
+    imports: [CommonModule, IonicModule, FormsModule]
 })
 export class SearchModalComponent implements OnInit {
   query: string = '';

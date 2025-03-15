@@ -169,13 +169,12 @@ export default vectorTileStyle;
 })
 
 @Component({
-  selector: 'app-tab1',
-  templateUrl: 'tab1.page.html',
-  styleUrls: ['tab1.page.scss'],
-  standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule ],
-  providers: [DecimalPipe, DatePipe ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+    selector: 'app-tab1',
+    templateUrl: 'tab1.page.html',
+    styleUrls: ['tab1.page.scss'],
+    imports: [IonicModule, CommonModule, FormsModule],
+    providers: [DecimalPipe, DatePipe],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
   
 export class Tab1Page {
