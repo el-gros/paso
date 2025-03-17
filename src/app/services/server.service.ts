@@ -137,7 +137,6 @@ export class ServerService {
       });
       var dbPath = `${appDir.uri}/${mbtilesFile}`;
       dbPath = dbPath.replace('file://', '');
-      console.log('Database file exists:', dbPath);
     } catch (statError) {
       console.error('Database file does not exist. Please download it.', statError);
       return; // Exit the function if the file doesn't exist
@@ -148,14 +147,12 @@ export class ServerService {
       // Open the database
       await this.db.open();
       this.currentMbTiles = mbtilesFile;
-      console.log('✅ Successfully opened MBTiles.');
     } catch (error) {
       console.error('❌ Failed to open MBTiles:', error);
     }
   }
 
   async getVectorTile(zoom: number, x: number, y: number): Promise<ArrayBuffer | null> {
-    console.log(`🔍 Trying to get vector tile z=${zoom}, x=${x}, y=${y}`);
     if (!this.db) {
       console.error('❌ Database connection is not open.');
       return null;
@@ -166,7 +163,6 @@ export class ServerService {
       [zoom, x, y]  
     );
     if (resultXYZ?.values?.length) {
-      console.log(`✅ Tile found: z=${zoom}, x=${x}, y=${y}`);
       const tileData = resultXYZ.values[0].tile_data;
       // Ensure tileData is returned as an ArrayBuffer
       if (tileData instanceof ArrayBuffer) {

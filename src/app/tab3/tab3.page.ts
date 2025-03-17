@@ -206,16 +206,12 @@ export class Tab3Page {
   async checkMaps() {
     // Files in Data directory
     const filesInDataDirectory = await this.server.listFilesInDataDirectory();
-    console.log('Files in data directory:', filesInDataDirectory);
     // Missing maps (available to be downloaded)
     this.missingOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => !filesInDataDirectory.includes(map.filename));
-    console.log('Missing maps:', this.missingOfflineMaps);
     // Available maps (already downloaded)
     this.availableOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => filesInDataDirectory.includes(map.filename));
-    console.log('Available maps:', this.availableOfflineMaps);
     // Build the final map list
     this.finalBaseMaps = [...this.baseMaps, ...global.offlineMaps];
-    console.log('Final base maps:', this.finalBaseMaps);  
   }
   
   async mapsToUploadRemove(action: string) {

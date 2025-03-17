@@ -75,7 +75,7 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
   if (styleJSON && styleJSON.layers) {
     for (const layerStyle of styleJSON.layers) {
       if (layerStyle['source-layer'] === sourceLayer) {
-        console.log('Matching Layer:', layerStyle);
+        //console.log('Matching Layer:', layerStyle);
         
         if (layerStyle.type === 'fill') {
           return new Style({
@@ -340,21 +340,6 @@ export class Tab1Page {
 
   */
 
-  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND 
-  /* listenToAppStateChanges() {
-    //let wasInForeground = true;
-    App.addListener('appStateChange', (state) => {
-      this.foreground = state.isActive;  // true if in foreground, false if in background
-      // Went to background
-      if (!this.foreground) this.startBeepInterval();
-      // Went to background
-      else this.stopBeepInterval();
-      // Exit early if the app is going to the background or there is no current track
-      if (!this.foreground || !this.currentTrack) return;
-      this.morningTask()
-    });
-  }*/
-
   // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   listenToAppStateChanges() {
     //let wasInForeground = true;
@@ -376,8 +361,14 @@ export class Tab1Page {
   // 2. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
+      // Listen for app URL open events (e.g., file tap)
+      console.log('add file listener')
+      this.addFileListener();
       // create storage 
       await this.storage.create();
+      // Check map provider
+      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+      console.log('Map provider: ', this.mapProvider)
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
@@ -402,8 +393,6 @@ export class Tab1Page {
       await this.createCanvas();
       // create map
       await this.createMap()
-      // Listen for app URL open events (e.g., file tap)
-      this.addFileListener();
     } catch (error) {
       console.error('Error during ngOnInit:', error);
     }  
@@ -413,18 +402,23 @@ export class Tab1Page {
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
+      console.log(data)
       this.gotoPage('tab1');
+      console.log('went to tab1')
       await this.processUrl(data);
+      console.log('processed url')
       global.layerVisibility = 'archived'
       // retrieve archived track
       this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
       if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+      console.log('retrieved archived track')
       // assign visibility
       if (this.multiLayer) await this.multiLayer.setVisible(false);
       // iF archived track is available...
       if (this.archivedTrack) {
         // show archived track
         await this.showArchivedTrack();
+        console.log('displayed archived track')
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
           await this.setMapView(this.archivedTrack);
@@ -1080,8 +1074,12 @@ export class Tab1Page {
           break;
         case 'IGN':
           credits = 'Instituto Geográfico Nacional (IGN)';
-          olLayer = new TileLayer({ source: new XYZ({ url: 'https://www.ign.es/wmts/mapa-raster?...&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}' }) });
-          break;
+          olLayer = new TileLayer({
+            source: new XYZ({
+              url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+            }),
+          });
+        break;
         case 'Catalonia':
           credits = '© MapTiler © OpenStreetMap contributors'
           await this.server.openMbtiles('catalonia.mbtiles');
@@ -1869,16 +1867,14 @@ export class Tab1Page {
   async changeMapProvider() {
     const previousProvider = this.mapProvider;
     let credits = '';
-    try {
-        this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-    } catch {
-        console.log('Could not check the selected map provider');
-    }
+    this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+    console.log('Map provider: ', this.mapProvider)
     if (previousProvider === this.mapProvider) return;
+    console.log('Map provider: ', previousProvider, ' changes to: ', this.mapProvider)
     // Find and remove the existing base layer
-    const olLayers = this.map.getLayers();
-    const baseLayer = olLayers.item(0); // Assuming the base layer is at index 0
-    if (baseLayer) {
+    var olLayers = await this.map.getLayers();
+    if (olLayers) {
+      const baseLayer = olLayers.item(0); // Assuming the base layer is at index 0
       this.map.removeLayer(baseLayer);
     }
     let newBaseLayer;
@@ -2204,7 +2200,7 @@ export class Tab1Page {
         }),
         // Tile load function
         tileLoadFunction: async (tile) => {
-          const vectorTile = tile as VectorTile;
+          const vectorTile = tile as VectorTile<RenderFeature>;
           const [z, x, y] = vectorTile.getTileCoord();
           try {
             // Get vector tile
