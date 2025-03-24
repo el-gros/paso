@@ -98,3 +98,7 @@ ion-fab-button {
   .black {
     background-color: white;
   }
+
+  .bottom {
+    bottom: 30px !important; /* Moves the fab buttons slightly up */
+  }

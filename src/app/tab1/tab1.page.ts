@@ -65,104 +65,175 @@ const vectorFormat = new MVT();
 useGeographic();
 
 const styleFunction = (feature: FeatureLike, resolution: number) => {
-  //console.log('Feature Properties:', feature.getProperties());
   const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
-  //console.log('Feature Layer:', sourceLayer);
+  const classLayer = feature.get('class')
+  if (sourceLayer=='landuse') console.log(classLayer)
+  const styleJSON: any = global.maptiler_terrain_modified;
 
-  //const styleJSON: any  = global.outdoor_style;
-  const styleJSON: any  = global.maptiler_terrain_gl_style;
-  
-  if (styleJSON && styleJSON.layers) {
-    for (const layerStyle of styleJSON.layers) {
-      if (layerStyle['source-layer'] === sourceLayer) {
-        //console.log('Matching Layer:', layerStyle);
-        
-        if (layerStyle.type === 'fill') {
-          return new Style({
-            fill: new Fill({
-              color: layerStyle.paint?.['fill-color'] || '#000000',
-            }),
-          });
-        } else if (layerStyle.type === 'line') {
-          return new Style({
-            stroke: new Stroke({
-              color: layerStyle.paint?.['line-color'] || '#000000',
-              width: layerStyle.paint?.['line-width'] || 1,
-            }),
-          });
-        } else if (layerStyle.type === 'symbol') {
-          return new Style({
-            text: new Text({
-              text: feature.get('name') || feature.get('rawName') || 'Unknown',
-              fill: new Fill({ color: layerStyle.paint?.['text-color'] || '#000000' }),
-              stroke: new Stroke({ color: layerStyle.paint?.['text-halo-color'] || '#FFFFFF', width: layerStyle.paint?.['text-halo-width'] || 2 }),
-            }),
-          });
+  if (!styleJSON?.layers) return new Style({}); // Ensure layers exist
+
+  const zoom = Math.log2(156543.03 / resolution); // Convert resolution to zoom level
+
+  for (const layerStyle of styleJSON.layers) {
+    if (layerStyle['source-layer'] !== sourceLayer) continue;
+
+    // Apply feature filter before styling
+    if (layerStyle.filter && !evaluateFilter(layerStyle.filter, feature)) continue;
+
+    let computedMinZoom = 0; // Default to 0 if undefined
+    if (typeof layerStyle.minzoom === 'object') {
+      const rank = feature.get('rank') || 0; // Default rank to 0 if undefined
+
+      // Sort the minzoom keys in ascending order (to handle arbitrary input like "2": 9, "5": 11, etc.)
+      const sortedKeys = Object.keys(layerStyle.minzoom)
+        .map(Number) // Convert to number
+        .sort((a, b) => a - b); // Sort in ascending order
+
+      // Find the correct zoom level based on the rank
+      for (let i = 0; i < sortedKeys.length; i++) {
+        const rankStop = sortedKeys[i];
+        const nextRankStop = sortedKeys[i + 1];
+
+        if (rank <= rankStop) {
+          computedMinZoom = layerStyle.minzoom[rankStop];
+          break;
+        }
+
+        // If rank is larger than the last key, default to the max zoom value
+        if (nextRankStop === undefined) {
+          computedMinZoom = layerStyle.minzoom[rankStop];
         }
       }
+    } else if (typeof layerStyle.minzoom === 'number') {
+      computedMinZoom = layerStyle.minzoom;
+    }
+
+    // Apply minzoom and maxzoom filtering
+    if (zoom < computedMinZoom) continue;
+    if (layerStyle.maxzoom !== undefined && zoom > layerStyle.maxzoom) continue;
+
+    switch (layerStyle.type) {
+      case 'fill':
+        return new Style({
+          fill: new Fill({
+            color: layerStyle.paint?.['fill-color'] || '#000000',
+          }),
+        });
+
+      case 'line': {
+        const rawLineWidth = layerStyle.paint?.['line-width'];
+        let lineWidth = 1; // Default width
+
+        if (Array.isArray(rawLineWidth)) {
+          const stops = extractStops(rawLineWidth);
+          if (stops.length > 0) {
+            lineWidth = interpolateStops(stops, zoom); // Use zoom level to adjust line width
+          }
+        } else if (typeof rawLineWidth === 'number') {
+          lineWidth = rawLineWidth;
+        }
+
+        // Apply calculated line width
+        return new Style({
+          stroke: new Stroke({
+            color: layerStyle.paint?.['line-color'] || '#000000',
+            width: Math.max(lineWidth, 1), // Ensure minimum width is 1
+          }),
+        });
+      }
+
+      case 'symbol': {
+        // Read text size from layer, default to 10px if not specified
+        const textSizeRaw = layerStyle.layout?.['text-size'] || 10; // Default to 10 if not provided
+
+        // Ensure textSize is a number
+        let textSize = typeof textSizeRaw === 'number' ? textSizeRaw : 10;
+
+        return new Style({
+          text: new Text({
+            text: (feature.get('name') || feature.get('rawName') || 'Unknown').replace(/\n/g, ' '),
+            font: `bold ${textSize}px sans-serif`, // Use textSize from layer
+            fill: new Fill({ color: layerStyle.paint?.['text-color'] || '#000000' }),
+            stroke: new Stroke({ color: layerStyle.paint?.['text-halo-color'] || '#FFFFFF', width: 2 }),
+            scale: Math.max(textSize / 10, 1), // Prevent too-large scaling
+          }),
+        });
+      }
+
+      default:
+        continue;
     }
   }
-  return new Style({}); // Default style
-};
+  // Default return value to prevent errors
+  return new Style({});
+}
 
-
-const vectorTileStyle = (feature: FeatureLike, resolution: number): Style | Style[] | void => {
-  const layer = feature.get('layer');
-  const zoom = Math.log2(156543.03 / resolution);
-
-  // Hide minor features at lower zoom levels
-  if (zoom < 10 && feature.get('type') === 'small-road') {
-    return;
+function extractStops(expression: any[]): [number, number][] {
+  if (Array.isArray(expression) && expression.length > 4 && expression[0] === "interpolate") {
+    const stops: [number, number][] = [];
+    for (let i = 3; i < expression.length; i += 2) {
+      const stop: [number, number] = [Number(expression[i]), Number(expression[i + 1])]; // Convert to numbers
+      // Check if both values are numbers
+      if (!isNaN(stop[0]) && !isNaN(stop[1])) {
+        stops.push(stop);
+      }
+    }
+    return stops;
   }
-  if (zoom < 8 && feature.get('type') === 'building') {
-    return;
-  }
+  return [];
+}
 
-  let strokeColor = '#000000';
-  let fillColor = '#eeeeee';
-  let lineWidth = 1;
+function evaluateFilter(filter: any[], feature: FeatureLike): boolean {
+  if (!Array.isArray(filter) || filter.length === 0) return true; // No filter = always matches
+  if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; // Ignore invalid filters
 
-  if (layer === 'water') {
-    fillColor = '#a3c6ff';
-    strokeColor = '#5a91d9';
-  } else if (layer === 'landuse') {
-    fillColor = '#d0e8b0';
-  } else if (layer === 'road') {
-    strokeColor = '#ffffff';
-    lineWidth = 2;
-  } else if (layer === 'building') {
-    fillColor = '#cccccc';
-  } else if (layer === 'boundary') {
-    strokeColor = '#ff0000';
-    lineWidth = 2;
-  }
+  const properties = feature.getProperties() || {}; // Ensure properties exist
 
-  // Conditional text styling
-  let textStyle: Text | undefined;
-  if (zoom >= 12 && feature.get('name')) { // Adjust zoom level and condition as needed.
-    textStyle = new Text({
-      font: '12px Arial',
-      text: feature.get('name'),
-      fill: new Fill({ color: '#000' }),
-      stroke: new Stroke({ color: '#fff', width: 2 }),
-    });
-  } else {
-    textStyle = undefined;
+  function matchCondition(condition: any[]): boolean {
+    if (!Array.isArray(condition) || condition.length < 2) return false;
+
+    const [operator, field, ...values] = condition;
+    const value = properties[field] ?? null;
+
+    if (operator === "==") return value === values[0];
+    if (operator === "!=") return value !== values[0];
+    if (operator === ">") return typeof value === 'number' && value > values[0];
+    if (operator === ">=") return typeof value === 'number' && value >= values[0];
+    if (operator === "<") return typeof value === 'number' && value < values[0];
+    if (operator === "<=") return typeof value === 'number' && value <= values[0];
+    if (operator === "in") return values.includes(value); // FIXED
+    if (operator === "!in") return !values.includes(value); // FIXED
+    if (operator === "has") return field in properties;
+    if (operator === "!has") return !(field in properties);
+
+    return false; // Unknown operator
   }
 
-  return new Style({
-    stroke: new Stroke({
-      color: strokeColor,
-      width: lineWidth,
-    }),
-    fill: new Fill({
-      color: fillColor,
-    }),
-    text: textStyle,
-  });
-};
+  if (filter[0] === "all") {
+    return filter.slice(1).every(matchCondition);
+  } else if (filter[0] === "any") {
+    return filter.slice(1).some(matchCondition);
+  } else if (filter[0] === "none") {
+    return !filter.slice(1).some(matchCondition);
+  }
 
-export default vectorTileStyle;
+  return matchCondition(filter); // Direct condition
+}
+
+function interpolateStops(stops: [number, number][], zoom: number): number {
+  if (!Array.isArray(stops) || stops.length === 0) return 1; // Default value if stops is empty
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [z1, v1] = stops[i];
+    const [z2, v2] = stops[i + 1];
+
+    if (zoom >= z1 && zoom <= z2) {
+      return v1 + ((zoom - z1) / (z2 - z1)) * (v2 - v1);
+    }
+  }
+
+  return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
+}
 
 @Injectable({
   providedIn: 'root',
@@ -176,7 +247,7 @@ export default vectorTileStyle;
     providers: [DecimalPipe, DatePipe],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-  
+
 export class Tab1Page {
 
   watcherId: any = 0;
@@ -196,16 +267,16 @@ export class Tab1Page {
   currentMarkers: any = [null, null, null];
   archivedMarkers: any = [null, null, null];
   multiMarker: any | undefined = undefined;
-  archivedWaypoints: any | undefined = undefined; 
+  archivedWaypoints: any | undefined = undefined;
   lag: number = global.lag; // 8
   distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
-  computedDistances: number = 0; 
+  computedDistances: number = 0;
   mapProvider: string = 'OpenStreetMap'
   stopped: any = 0;
-  vMin: number = 1; 
+  vMin: number = 1;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: any = '00:00:00';
@@ -213,7 +284,7 @@ export class Tab1Page {
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
   currentFeature: any;
-  multiFeature: any; 
+  multiFeature: any;
   threshDist: number = 0.0000002;
   lastN: number = 0;
   archivedCanvasVisible: boolean = false;
@@ -231,7 +302,7 @@ export class Tab1Page {
   languageIndex: 0 | 1 | 2 = 2; // Default to 'other'
   popText: [string, string, number] | undefined = undefined;
   intervalId: any = null;
-  
+
   translations = {
     arcTitle: ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'],
     curTitle: ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'],
@@ -242,12 +313,13 @@ export class Tab1Page {
     motionTime: ['Temps en moviment','Tiempo en movimiento','In-motion time'],
     points: ['Punts gravats','Puntos grabados','Recorded points'],
     altitude: ['Altitud actual','Altitud actual','Current altitude'],
-    speed: ['Velocitat actual','Velocidad actual','Current speed'], 
+    speed: ['Velocitat actual','Velocidad actual','Current speed'],
     avgSpeed: ['Velocitat mitjana','Velocidad nedia','Average speed'],
     motionAvgSpeed: ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'],
     canvasAltitude: ['ALTITUD (m) vs DISTÀNCIA (km)','ALTITUD (m) vs DISTANCIA (km)','ALTITUDE (m) vs DISTANCE (km)'],
     canvasSpeed: ['VELOCITAT (km/h) vs TEMPS','VELOCIDAD (km/h) vs TIEMPO','SPEED (km/h) vs TIME']
   }
+
   get arcTitle(): string { return this.translations.arcTitle[global.languageIndex]; }
   get curTitle(): string { return this.translations.curTitle[global.languageIndex]; }
   get distance(): string { return this.translations.distance[global.languageIndex]; }
@@ -276,7 +348,7 @@ export class Tab1Page {
   ) {
     this.listenToAppStateChanges();
   }
-  
+
   /* FUNCTIONS
 
   1. listenToAppStateChanges
@@ -302,7 +374,7 @@ export class Tab1Page {
   21. updateAllCanvas
   22. setMapView
   23. firstPoint
-  24. createMap 
+  24. createMap
   25. createCanvas
   26. grid
   27. gridValue
@@ -324,7 +396,7 @@ export class Tab1Page {
   43. parseGpx()
   44. processUrl()
   45. foregroundTask()
-  46. backgroundTask() 
+  46. backgroundTask()
   47. startBeepInterval()
   48. startBeepInterval()
   49. changeMapProvider()
@@ -357,14 +429,13 @@ export class Tab1Page {
         }
     });
   }
-  
+
   // 2. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
       // Listen for app URL open events (e.g., file tap)
-      console.log('add file listener')
       this.addFileListener();
-      // create storage 
+      // create storage
       await this.storage.create();
       // Check map provider
       this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
@@ -395,10 +466,11 @@ export class Tab1Page {
       await this.createMap()
     } catch (error) {
       console.error('Error during ngOnInit:', error);
-    }  
+    }
+    global.ngOnInitFinished = true;
   }
 
-  // 3. LISTENING FOR OPEN EVENTS 
+  // 3. LISTENING FOR OPEN EVENTS
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
@@ -425,12 +497,15 @@ export class Tab1Page {
         }
         // Show canvas for archived track
         await this.showCanvas('a', 'block');
-      }  
+      }
     });
   }
 
   // 4. ION VIEW DID ENTER
   async ionViewDidEnter() {
+    while (!global.ngOnInitFinished) {
+      await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
+    }
     try {
       // Remove search
       if (global.removeSearch) {
@@ -442,7 +517,7 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
-      // only visible for layerVisibility == 'archived' 
+      // only visible for layerVisibility == 'archived'
       await this.showCanvas('a','none')
       // archived visible
       if (global.layerVisibility == 'archived') {
@@ -466,7 +541,7 @@ export class Tab1Page {
       else if (global.layerVisibility == 'multi') {
         // hide archived track
         try {
-          this.archivedLayer.setVisible(false); 
+          this.archivedLayer.setVisible(false);
         } catch (error) {}
         this.status = 'black'
         // display all tracks
@@ -485,11 +560,11 @@ export class Tab1Page {
       // center current track and show canvas
       if (this.currentTrack) {
         await this.setMapView(this.currentTrack);
-        await this.showCanvas('c','block');        
+        await this.showCanvas('c','block');
       }
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
-    }  
+    }
   }
 
   // 5. CENTER ALL TRACKS
@@ -497,8 +572,10 @@ export class Tab1Page {
     // get current position
     let currentPosition: [number, number] | undefined = await this.fs.getCurrentPosition();
     // center map
-    await this.map.getView().setCenter(currentPosition);
-    await this.map.getView().setZoom(8);
+    if (currentPosition) {
+      await this.map.getView().setCenter(currentPosition);
+      await this.map.getView().setZoom(8);
+    }
   }
 
   // 6. DISPLAY CURRENT TRACK
@@ -513,7 +590,7 @@ export class Tab1Page {
     // Set line geometry and style
     this.currentFeature.setGeometry(new LineString(coordinates));
     this.currentFeature.setStyle(this.fs.setStrokeStyle(global.currentColor));
-    // Set the last point as the marker geometry  
+    // Set the last point as the marker geometry
     this.currentMarkers[1].setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
@@ -540,16 +617,16 @@ export class Tab1Page {
       id: 1234,
       title: notice[global.languageIndex],
       body: '',
-      smallIcon: 'splash.png',     
+      smallIcon: 'splash.png',
     });
     console.log ('Foreground service started successfully')
     // Reset current track and related variables
     this.currentTrack = undefined;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    try { 
-      this.currentLayer.setVisible(false); 
-    } catch (error) { 
-      console.warn("Error hiding current layer:", error); 
+    try {
+      this.currentLayer.setVisible(false);
+    } catch (error) {
+      console.warn("Error hiding current layer:", error);
     }
     // initialize variables
     this.stopped = 0;
@@ -586,7 +663,7 @@ export class Tab1Page {
         if (this.foreground) await this.foregroundTask(location)
         else {
           // Performs background task
-          await this.backgroundTask(location)  
+          await this.backgroundTask(location)
         }
       }
     }).then((value: any) => this.watcherId = value);
@@ -616,7 +693,7 @@ export class Tab1Page {
     try {
       await this.currentLayer.setVisible(false);
     }
-    catch {}    
+    catch {}
   }
 
   // 9. STOP TRACKING //////////////////////////////////
@@ -650,7 +727,7 @@ export class Tab1Page {
     // filter remaining values
     await this.filterAltitude(this.currentTrack, num - 1);
     // Set waypoint altitude
-    await this.setWaypointAltitude()    
+    await this.setWaypointAltitude()
     // set map view
     if (!global.updateLocation) await this.setMapView(this.currentTrack);
     // Toast
@@ -668,12 +745,12 @@ export class Tab1Page {
       'Esteu segur que voleu finalitzar el trajecte?',
       '¿Estás seguro de que quieres finalizar el trayecto?',
       'Are you sure you want to stop the track'
-    ] 
+    ]
     const delMessage = [
       'Esteu segur que voleu eliminar el trajecte?',
       '¿Estás seguro de que quieres eliminar el trayecto?',
       'Are you sure you want to delete the track'
-    ] 
+    ]
     const header = which === 'stop' ? stopHeader[global.languageIndex] : delHeader[global.languageIndex]
     const message = which === 'stop' ? stopMessage[global.languageIndex] : delMessage[global.languageIndex]
     console.log('header', header)
@@ -696,9 +773,9 @@ export class Tab1Page {
     ]
     console.log(buttons)
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
-  } 
+  }
 
-  // 11. SET TRACK NAME, TIME, DESCRIPTION, ... 
+  // 11. SET TRACK NAME, TIME, DESCRIPTION, ...
   async setTrackDetails() {
     const modalEdit = {
       name: '',
@@ -725,7 +802,7 @@ export class Tab1Page {
       }
     }
   }
-  
+
   // 12. NO NAME TO SAVE ////////////////////////////////////
   async showValidationAlert() {
     const cssClass = 'alert yellowAlert'
@@ -751,12 +828,12 @@ export class Tab1Page {
     await this.fs.storeSet(dateKey, this.currentTrack);
     await this.fs.storeSet(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
     // Create a new track definition
-    const trackDef: TrackDefinition = { 
-      name, 
-      date: currentProperties.date, 
-      place, 
-      description, 
-      isChecked: false 
+    const trackDef: TrackDefinition = {
+      name,
+      date: currentProperties.date,
+      place,
+      description,
+      isChecked: false
     };
     // Add new track definition to the collection and save it
     global.collection.push(trackDef);
@@ -885,8 +962,8 @@ export class Tab1Page {
     // No match found
     return 'red';
   }
-  
-  // 19. SHOW / HIDE ELEMENTS ///////////////////////////////// 
+
+  // 19. SHOW / HIDE ELEMENTS /////////////////////////////////
   async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
     const obj = document.getElementById(id);
     if (obj) {
@@ -947,7 +1024,7 @@ export class Tab1Page {
       this.openCanvas = false;
     }
   }
-  
+
   // 22. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     var boundaries: Extremes | undefined;
@@ -975,7 +1052,7 @@ export class Tab1Page {
       }, 100);
     })
   }
-    
+
   // 23. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
     // Initialize current track
@@ -993,7 +1070,7 @@ export class Tab1Page {
           totalElevationLoss: 0,
           totalTime: '00:00:00',
           totalNumber: 0,
-          currentAltitude: undefined, 
+          currentAltitude: undefined,
           currentSpeed: undefined
         },
         geometry: {
@@ -1046,10 +1123,10 @@ export class Tab1Page {
     // display number of points (1)
     this.currentTrack.features[0].properties.totalNumber = 1;
     // show current canvas
-    await this.showCanvas('c','block')  
+    await this.showCanvas('c','block')
   }
 
-  // 24. CREATE MAP ////////////////////////////////////////  
+  // 24. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
       // Current position
@@ -1092,11 +1169,21 @@ export class Tab1Page {
           console.warn(`Unknown map provider: ${this.mapProvider}`);
           return;
       }
+      // set zoom levels
+      var minZoom = 0;
+      var maxZoom = 19;
+      if (this.mapProvider == 'Catalonia') {
+        var minZoom = 6;
+        var maxZoom = 14;
+      }
+      // Create view
+      const view = new View({ center: currentPosition, zoom: 9, minZoom: minZoom, maxZoom: maxZoom });
+      if (!currentPosition) view.setCenter([2, 41]);
       // Create map
       this.map = new Map({
         target: 'map',
         layers: [olLayer, this.currentLayer, this.archivedLayer, this.multiLayer],
-        view: new View({ center: currentPosition, zoom: 9 }),
+        view: view,
         controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this.fs)],
       });
       // Display information
@@ -1106,7 +1193,7 @@ export class Tab1Page {
     } catch (error) {
         console.error('Error creating map:', error);
     }
-  }  
+  }
 
   // 25. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
@@ -1258,7 +1345,7 @@ export class Tab1Page {
     this.archivedMarkers[0] = new Feature({ geometry: new Point([0, 40]) });
     this.archivedMarkers[1] = new Feature({ geometry: new Point([0, 40]) });
     this.archivedMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
-    this.archivedWaypoints = new Feature({geometry: new MultiPoint([0, 40]) });  
+    this.archivedWaypoints = new Feature({geometry: new MultiPoint([0, 40]) });
     // Vector sources for current, archived and multiple tracks
     var csource = new VectorSource({ features: [this.currentFeature, ...this.currentMarkers] });
     var asource = new VectorSource({ features: [this.archivedFeature, ...this.archivedMarkers, this.archivedWaypoints] });
@@ -1267,7 +1354,7 @@ export class Tab1Page {
     this.currentLayer = new VectorLayer({source: csource});
     this.archivedLayer = new VectorLayer({source: asource});
     this.multiLayer = new VectorLayer({source: msource});
-  } 
+  }
 
   // 30. UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(ctx: any, track: Track | undefined, propertyName: keyof Data, xParam: string) {
@@ -1337,14 +1424,14 @@ export class Tab1Page {
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
     return tUnit;
   }
-  
+
   // 31. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
     var track: any;
     var multiLine: any = [];
     let multiPoint = [];
-    let multiKey = [];        
+    let multiKey = [];
     // Loop through each item in the collection
     for (const item of global.collection) {
       key = item.date;
@@ -1365,7 +1452,7 @@ export class Tab1Page {
     // Set geometries for multiFeature and multiMarker
     this.multiFeature.setGeometry(new MultiLineString(multiLine));
     this.multiMarker.setGeometry(new MultiPoint(multiPoint));
-    this.multiMarker.set('multikey', multiKey) 
+    this.multiMarker.set('multikey', multiKey)
     // Apply styles to the features
     this.multiFeature.setStyle(this.fs.setStrokeStyle('black'));
     this.multiMarker.setStyle(this.drawCircle('green'));
@@ -1406,7 +1493,7 @@ export class Tab1Page {
         this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
           if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
             hit = true;
-            const index = global.collection.findIndex((item: { date: { getTime: () => number; }; }) => 
+            const index = global.collection.findIndex((item: { date: { getTime: () => number; }; }) =>
               item.date instanceof Date &&
               this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
               item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
@@ -1414,7 +1501,7 @@ export class Tab1Page {
             if (index >= 0) await this.fs.editTrack(index, '#ffffbb', false)
           }
         });
-        if (!hit) this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {  
+        if (!hit) this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
           if (feature === this.archivedWaypoints) {
             // Retrieve clicked coordinate and find its index
             const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
@@ -1433,15 +1520,15 @@ export class Tab1Page {
                 if (this.archivedTrack) {
                   this.archivedTrack.features[0].waypoints = waypoints;
                   await this.fs.storeSet(global.key,this.archivedTrack)
-                }                  
+                }
               }
-            }  
+            }
           };
         });
-        break;  
+        break;
       case 'none':
         break;
-    }    
+    }
   }
 
   // 33. DRAW A CIRCLE //////////////////////////////////////
@@ -1479,13 +1566,13 @@ export class Tab1Page {
       this.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.stopped);
     }
     // Format the motion time
-    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));  
-  } 
+    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));
+  }
 
   // 35. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
     if (!this.currentTrack) return;
-    // get coordinates and data arrays 
+    // get coordinates and data arrays
     const coordinates = this.currentTrack.features[0].geometry.coordinates;
     const data = this.currentTrack.features[0].geometry.properties.data;
     let num = coordinates.length ?? 0;
@@ -1530,8 +1617,8 @@ export class Tab1Page {
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);
-    }  
-    // Beep for on-route transition  
+    }
+    // Beep for on-route transition
     else if (previousStatus === 'red' && this.status === 'green') {
       this.playBeep(1800, .4, 1);
     }
@@ -1551,7 +1638,7 @@ export class Tab1Page {
         this.altitudeFiltered = Math.max(0, this.altitudeFiltered - 1);
         this.speedFiltered = Math.max(0, this.speedFiltered - 1);
         this.averagedSpeed = Math.max(0, this.averagedSpeed - 1);
-        this.computedDistances = Math.max(0, this.computedDistances - 1);      
+        this.computedDistances = Math.max(0, this.computedDistances - 1);
       } else {
         break;
       }
@@ -1561,7 +1648,7 @@ export class Tab1Page {
   // 39. SHOW / HIDE CANVAS OF CURRENT TRACK
   async showCanvas(track: string, visible: 'block' | 'none' | 'inline' | 'flex') {
     await this.show(track+'c0',visible);
-    await this.show(track+'c1',visible); 
+    await this.show(track+'c1',visible);
   }
 
   // 40. ON LEAVE ////////////////////////////
@@ -1588,13 +1675,13 @@ export class Tab1Page {
     // Start and stop the oscillator after the specified duration
     oscillator.start();
     console.log('beeping')
-    oscillator.stop(this.audioCtx.currentTime + time); 
+    oscillator.stop(this.audioCtx.currentTime + time);
     // Clean up after the sound has finished
     oscillator.onended = async () => {
       oscillator.disconnect();
       gainNode.disconnect();
     };
-  } 
+  }
 
   // 42. PLAY A DOUBLE BEEP
   async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
@@ -1627,7 +1714,7 @@ export class Tab1Page {
       gainNode.disconnect();
     };
   }
-  
+
   // 43. PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
     let waypoints: Waypoint[] = [];
@@ -1645,7 +1732,7 @@ export class Tab1Page {
           totalElevationLoss: 0,
           totalTime: '00:00:00',
           totalNumber: 0,
-          currentAltitude: undefined, 
+          currentAltitude: undefined,
           currentSpeed: undefined
         },
         geometry: {
@@ -1708,7 +1795,7 @@ export class Tab1Page {
       else {
         alt = undefined;
       }
-      if (alt == 0 && num > 1) alt = track.features[0].geometry.properties.data[num-2].altitude; 
+      if (alt == 0 && num > 1) alt = track.features[0].geometry.properties.data[num-2].altitude;
       // Handle time
       const locTime = time ? new Date(time).getTime() : 0;
       // Add data
@@ -1724,14 +1811,14 @@ export class Tab1Page {
     // Fill values
     var num: number = track.features[0].geometry.properties.data.length ?? 0;
     track.features[0].properties.totalDistance = distance;
-    track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(track.features[0].geometry.properties.data[num - 1].time - 
+    track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(track.features[0].geometry.properties.data[num - 1].time -
       track.features[0].geometry.properties.data[0].time);
     track.features[0].properties.totalNumber = num;
     // Speed filter
     try {
       this.fs.filterSpeed(track.features[0].geometry.properties.data, num - 1);
     }
-    catch {}  
+    catch {}
     // Altitude filter
     try{
       track.features[0].properties.totalElevationGain = 0;
@@ -1740,7 +1827,7 @@ export class Tab1Page {
       this.altitudeFiltered = 0;
     }
     catch {}
-    // speed filter      
+    // speed filter
     track.features[0].geometry.properties.data = await this.fs.filterSpeed(track.features[0].geometry.properties.data, 1);
     // Save imported track
     const date = new Date(track.features[0].geometry.properties.data[num - 1]?.time || Date.now());
@@ -1748,13 +1835,13 @@ export class Tab1Page {
     await this.fs.storeSet(JSON.stringify(date), track);
     // Update collection
     const trackDef = {
-      name: track.features[0].properties.name, 
-      date: track.features[0].properties.date, 
-      place: track.features[0].properties.place, 
-      description: track.features[0].properties.description, 
+      name: track.features[0].properties.name,
+      date: track.features[0].properties.date,
+      place: track.features[0].properties.place,
+      description: track.features[0].properties.description,
       isChecked: true
     };
-    // add new track definition and save collection and    
+    // add new track definition and save collection and
     // uncheck all tracks except the new one
     for (const item of global.collection) {
       if ('isChecked' in item) {
@@ -1785,7 +1872,7 @@ export class Tab1Page {
       } catch (error) {
         const toast = ["No s'ha pogut importar el fitxer", 'No se ha podido importar el fichero','Failed to upload file']
         this.fs.displayToast(toast[global.languageIndex]);
-      } 
+      }
     } else {
       const toast = ["No s'ha seleccionat cap fitxer", 'No se ha seleccionado ningún fichero','No file selected']
       this.fs.displayToast(toast[global.languageIndex]);
@@ -1800,7 +1887,7 @@ export class Tab1Page {
     if (!locationNew) return;
     // new point..
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    // filter altitude 
+    // filter altitude
     await this.filterAltitude(this.currentTrack, num - this.lag - 1)
     // compute distances
     await this.computeDistances();
@@ -1835,7 +1922,7 @@ export class Tab1Page {
         const locationNew: boolean = await this.buildGeoJson(location);
       } catch (error) {
         console.error('Error in background task:', error);
-      } 
+      }
       finally {
         //Always call finish
       BackgroundTask.finish({ taskId });
@@ -1854,7 +1941,7 @@ export class Tab1Page {
       this.playBeep(600, .001, .001);
     }, 120000); // 120000 milliseconds = 120 seconds
   }
-  
+
   // 48. STOP BEEP INTERVAL ////////////////////////////
   stopBeepInterval() {
     if (this.beepInterval) {
@@ -1866,11 +1953,12 @@ export class Tab1Page {
   // 49. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
     const previousProvider = this.mapProvider;
+    console.log('Previous map provider: ', previousProvider)
     let credits = '';
     this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-    console.log('Map provider: ', this.mapProvider)
+    console.log('Current map provider: ', this.mapProvider)
     if (previousProvider === this.mapProvider) return;
-    console.log('Map provider: ', previousProvider, ' changes to: ', this.mapProvider)
+    console.log('Previous map provider: ', previousProvider, ' changes to: ', this.mapProvider)
     // Find and remove the existing base layer
     var olLayers = await this.map.getLayers();
     if (olLayers) {
@@ -1921,9 +2009,18 @@ export class Tab1Page {
     }
     // Report change
     this.fs.displayToast(`${credits}`);
+    // Change max / min zoom
+    var minZoom = 0;
+    var maxZoom = 19;
+    if (this.mapProvider == 'Catalonia') {
+      var minZoom = 6;
+      var maxZoom = 14;
+    }
+    this.map.getView().setMinZoom(minZoom);
+    this.map.getView().setMaxZoom(maxZoom);
   }
-    
-  // 50. DETERMINE LANGUAGE ////////////////// 
+
+  // 50. DETERMINE LANGUAGE //////////////////
   async determineLanguage() {
     try {
       const info = await Device.getLanguageCode();
@@ -1977,7 +2074,7 @@ export class Tab1Page {
     if (response.action == 'ok') {
       waypoint.name = response.name,
       waypoint.comment = response.comment
-      this.currentTrack.features[0].waypoints?.push(waypoint); 
+      this.currentTrack.features[0].waypoints?.push(waypoint);
       // Toast
       const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
       this.fs.displayToast(toast[global.languageIndex]);
@@ -2054,7 +2151,7 @@ export class Tab1Page {
             totalElevationLoss: NaN,
             totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
             totalNumber: num,
-            currentAltitude: undefined, 
+            currentAltitude: undefined,
             currentSpeed: undefined
           },
           geometry: {
@@ -2109,7 +2206,7 @@ export class Tab1Page {
     return adjustedCoordinates;
   }
 
-  // 57. ADD LAYER TO DISPLAY SITE ///////////////////////// 
+  // 57. ADD LAYER TO DISPLAY SITE /////////////////////////
   async addSearchLayer(feature: Feature<Geometry>) {
     if (!this.map) return;
     // Remove previous search
@@ -2138,7 +2235,7 @@ export class Tab1Page {
     // Create a vector source with the feature
     const searchLayer = new VectorLayer({
       source: new VectorSource({ features: [feature] }),
-      style: styleFunction , 
+      style: styleFunction ,
     });
     // Assign a unique ID to the layer and add it to the map
     searchLayer.set('id', 'searchLayerId');
@@ -2184,7 +2281,7 @@ export class Tab1Page {
       } catch (error) {
         console.error('Error during foreground transition processing:', error);
       }
-    });  
+    });
   }
 
   async createSource() {
@@ -2230,5 +2327,5 @@ export class Tab1Page {
       return null;
     }
   }
-      
+
 }

@@ -191,7 +191,14 @@ async onCurrentLocationChange(event: any): Promise<void> {
   if (event.detail.value === 'current') {
     console.log('Current location selected');
     this.loading = true;
-    this.start = await this.fs.getCurrentPosition();
+    var currentLocation = undefined
+    while (!currentLocation) {
+      currentLocation = await this.fs.getCurrentPosition();
+      if (!currentLocation) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 1 second before retrying
+      }
+    }
+    this.start = currentLocation
     this.loading = false;
     this.showCurrent = false;
     this.num = 0;

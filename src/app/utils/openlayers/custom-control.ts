@@ -75,7 +75,7 @@ export class CustomControl extends Control {
     // get coordinates
     const coordinates = await this.fs.getCurrentPosition();
     // center map
-    this.updateLocation(coordinates);
+    if (coordinates) this.updateLocation(coordinates);
     // create layer (if it does not exist)
     if (!this.map.getLayers().getArray().includes(this.vectorLayer)) {
       this.map.addLayer(this.vectorLayer);
@@ -106,7 +106,7 @@ export class CustomControl extends Control {
   private createCircleStyle(color: string): Style {
     return new Style({
       image: new CircleStyle({
-        radius: 10,
+        radius: 15,
         fill: new Fill({
           color: color,
         }),
@@ -125,7 +125,7 @@ export class CustomControl extends Control {
     feature.setStyle(
       new Style({
         image: new CircleStyle({
-          radius: 10,
+          radius: 15,
           fill: new Fill({
             color: 'rgba(0, 60, 136, 0.7)',
           }),
@@ -142,7 +142,7 @@ export class CustomControl extends Control {
   private startLocationUpdates() {
     this.updateInterval = setInterval(async () => {
       const coordinates = await this.fs.getCurrentPosition();
-      this.updateLocation(coordinates);
+      if (coordinates) this.updateLocation(coordinates);
     }, 5000); // Update every 5 seconds
   }
 

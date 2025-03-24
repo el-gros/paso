@@ -183,12 +183,13 @@ export class FunctionsService {
   }
 
   // 12. GET CURRENT POSITION ////////////////////////////////// 
-  async getCurrentPosition(): Promise<[number, number]> {
+  async getCurrentPosition(): Promise<[number, number] | undefined> {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       return [coordinates.coords.longitude, coordinates.coords.latitude];
     } 
-    catch (error) { return [1, 41.5]; } // Default coordinates 
+    //catch (error) { return [1, 41.5]; } // Default coordinates 
+    catch (error) { return undefined; } // Default coordinates 
   } 
 
   // 13. RETRIEVE ARCHIVED TRACK //////////////////////////
