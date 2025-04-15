@@ -1,29 +1,33 @@
-/* Ensure toolbar height */
 ion-toolbar {
-    height: 75px;
-    display: flex;
-    align-items: center; /* Center content vertically */
+  height: 75px;
+  display: flex;
+  align-items: center; /* This is good */
 }
 
 /* Title Styling */
 #title {
-    margin-left: 20px;
-    font-size: 15px;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    top: 25px;
+  font-size: 16px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold;
+  margin-left: 10px;
 }
 
-/* Ensure button is visible */
+/* Button Styling */
 .header-button {
-    --background: rgb(255, 221, 221) !important;
-    --color: black;
-    top: -20px;
+  --background: rgb(255, 221, 221);
+  --color: black;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  margin-right: 10px;
 }
 
-/* Ensure icon is black */
+/* Icon Styling */
 ion-icon {
-    color: black;
+  font-size: 22px;
+  color: black;
 }
 
 // ion-checkbox
@@ -47,7 +51,7 @@ div{
     font-family: 'Arial, sans-serif';
 }
 
-// buttons 
+// buttons
 
 .redEnabled{
     --background: red;

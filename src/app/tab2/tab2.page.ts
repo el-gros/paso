@@ -21,30 +21,20 @@ export class Tab2Page {
 
   numChecked: number = 0;
   num: number = 0;
-  translations = {
-    title: ['Trajectes','Trayectos', 'Tracks'],
-    export: ['EXPORTAR TRAJECTE','EXPORTAR TRAYECTO','EXPORT TRACK'],
-    all: ['MOSTRAR TOTS','MOSTRAR TODOS','DISPLAY ALL'],
-    hideAll: ['AMAGAR TOTS','ESCONDER TODOS','HIDE ALL'],
-    remove: ['ESBORRAR TRAJECTES','ELIMINAR TRAYECTOS','REMOVE TRACKS'],
-    edit: ['EDITAR TRAJECTE','EDITAR TRAYECTO','EDIT TRACK'],
-    hide: ['AMAGAR REFERÈNCIA','ESCONDER REFERENCIA','HIDE REFERENCE'],
-    display: ['MOSTRAR REFERÈNCIA','MOSTRAR REFERENCIA','SHOW REFERENCE'],
-    search: ['ESBORRAR CERCA', 'BORRAR BÚSQUEDA', 'REMOVE SEARCH']
-  }
-  get title(): string { return this.translations.title[global.languageIndex]; }
-  get export(): string { return this.translations.export[global.languageIndex]; }
-  get all(): string { return this.translations.all[global.languageIndex]; }
-  get hideAll(): string { return this.translations.hideAll[global.languageIndex]; }
-  get remove(): string { return this.translations.remove[global.languageIndex]; }
-  get edit(): string { return this.translations.edit[global.languageIndex]; }
-  get hide(): string { return this.translations.hide[global.languageIndex]; }
-  get display(): string { return this.translations.display[global.languageIndex]; }
-  get search(): string { return this.translations.search[global.languageIndex]; }
+  title = ['Trajectes','Trayectos', 'Tracks'];
+  export = ['EXPORTAR TRAJECTE','EXPORTAR TRAYECTO','EXPORT TRACK'];
+  all = ['MOSTRAR TOTS','MOSTRAR TODOS','DISPLAY ALL'];
+  hideAll = ['AMAGAR TOTS','ESCONDER TODOS','HIDE ALL'];
+  remove = ['ESBORRAR TRAJECTES','ELIMINAR TRAYECTOS','REMOVE TRACKS'];
+  edit = ['EDITAR TRAJECTE','EDITAR TRAYECTO','EDIT TRACK'];
+  hide = ['AMAGAR REFERÈNCIA','ESCONDER REFERENCIA','HIDE REFERENCE'];
+  display = ['MOSTRAR REFERÈNCIA','MOSTRAR REFERENCIA','SHOW REFERENCE'];
+  search = ['ESBORRAR CERCA', 'BORRAR BÚSQUEDA', 'REMOVE SEARCH'];
+  get languageIndex(): number { return global.languageIndex; }
   get layerVisibility(): string { return global.layerVisibility; }
   get presentSearch(): boolean { return global.presentSearch; }
   get archivedPresent(): boolean { return global.archivedPresent; }
-  get collection(): TrackDefinition[] { return global.collection} 
+  get collection(): TrackDefinition[] { return global.collection}
 
   constructor(
     public fs: FunctionsService,
@@ -88,7 +78,7 @@ export class Tab2Page {
     const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
     global.key = JSON.stringify(firstCheckedDate)
   }
-  
+
   // 3. EDIT TRACK DETAILS //////////////////////////////
   async editTrack() {
     // Find the index of the selected track
@@ -98,7 +88,7 @@ export class Tab2Page {
 
   // 5. DELETE TRACK(S) //////////////////////////
   async deleteTracks() {
-    const cancel = ['Cancel.lar', 'Cancelar', 'Cancel']; 
+    const cancel = ['Cancel.lar', 'Cancelar', 'Cancel'];
     const headers = ["Confirma l'esborrat", "Confirma el borrado","Confirm deletion"];
     const messages = ["S'esborraran definitivament els trajectes marcats", "Se borrarán definitivamente los trayectos marcados",
       "The selected track(s) will be definitely removed"];
@@ -114,7 +104,7 @@ export class Tab2Page {
         text: cancel[global.languageIndex],
         role: 'cancel',
         cssClass: 'alert-cancel-button',
-        handler: async () => { 
+        handler: async () => {
           for (var item of global.collection) {
             item.isChecked = false;
           }
@@ -134,7 +124,7 @@ export class Tab2Page {
   // 6. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
     if (active) global.layerVisibility = 'archived'
-    else global.layerVisibility = 'none' 
+    else global.layerVisibility = 'none'
     this.router.navigate(['tab1']);
   }
 
@@ -173,10 +163,10 @@ export class Tab2Page {
     };
     // Initialize GPX text
     let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-      <gpx version="1.1" creator="elGros" 
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-        xmlns="http://www.topografix.com/GPX/1/1" 
-        xsi:schemaLocation="http://www.topografix.com/GPX/1/1 
+      <gpx version="1.1" creator="elGros"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.topografix.com/GPX/1/1"
+        xsi:schemaLocation="http://www.topografix.com/GPX/1/1
         http://www.topografix.com/GPX/1/1/gpx.xsd">`
     // Add waypoints
     if (feature.waypoints && feature.waypoints.length > 0) {
@@ -251,7 +241,7 @@ export class Tab2Page {
 
   // 11. ION VIEW WILL LEAVE
   async ionViewWillLeave() {
-    await this.fs.storeSet('collection', global.collection);    
+    await this.fs.storeSet('collection', global.collection);
   }
 
   // 12. REMOVE SEARCH LAYER

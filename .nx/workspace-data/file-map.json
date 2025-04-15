@@ -1,0 +1,824 @@
+{
+  "version": "6.0",
+  "nxVersion": "20.7.2",
+  "pathMappings": {},
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "nonProjectFiles": [],
+    "projectFileMap": {
+      "app": [
+        {
+          "file": ".browserslistrc",
+          "hash": "8928530114349553238"
+        },
+        {
+          "file": ".editorconfig",
+          "hash": "17241496168097493888"
+        },
+        {
+          "file": ".eslintrc.json",
+          "hash": "3555539555184033037"
+        },
+        {
+          "file": ".gitignore",
+          "hash": "16638012567540463894"
+        },
+        {
+          "file": ".vscode/extensions.json",
+          "hash": "13882691930734508667"
+        },
+        {
+          "file": ".vscode/settings.json",
+          "hash": "2207605887076883621"
+        },
+        {
+          "file": "android/.gitignore",
+          "hash": "575352867867564950"
+        },
+        {
+          "file": "android/app/.gitignore",
+          "hash": "5242844812731129648"
+        },
+        {
+          "file": "android/app/build.gradle",
+          "hash": "12052513008405355326"
+        },
+        {
+          "file": "android/app/capacitor.build.gradle",
+          "hash": "1840497665777234895"
+        },
+        {
+          "file": "android/app/proguard-rules.pro",
+          "hash": "7009836019969430653"
+        },
+        {
+          "file": "android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java",
+          "hash": "17425728664178362580"
+        },
+        {
+          "file": "android/app/src/main/AndroidManifest.xml",
+          "hash": "2749117105128861581"
+        },
+        {
+          "file": "android/app/src/main/java/io/elgros/paso/MainActivity.java",
+          "hash": "15102314323936338378"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-land-hdpi/splash.png",
+          "hash": "12618218220193540786"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-land-mdpi/splash.png",
+          "hash": "13354102016025079206"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-land-xhdpi/splash.png",
+          "hash": "16928120350772912315"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-land-xxhdpi/splash.png",
+          "hash": "8114284271146720243"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-land-xxxhdpi/splash.png",
+          "hash": "10648225290896133372"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-port-hdpi/splash.png",
+          "hash": "7870574596552345396"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-port-mdpi/splash.png",
+          "hash": "512985810174291431"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-port-xhdpi/splash.png",
+          "hash": "13168839858812363171"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-port-xxhdpi/splash.png",
+          "hash": "1546567578093946022"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-port-xxxhdpi/splash.png",
+          "hash": "7224188242308859997"
+        },
+        {
+          "file": "android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+          "hash": "13026793227704206803"
+        },
+        {
+          "file": "android/app/src/main/res/drawable/ic_launcher_background.xml",
+          "hash": "15966361446536358248"
+        },
+        {
+          "file": "android/app/src/main/res/drawable/splash.png",
+          "hash": "13354102016025079206"
+        },
+        {
+          "file": "android/app/src/main/res/layout/activity_main.xml",
+          "hash": "14482775682429207470"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+          "hash": "17629717949118964408"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+          "hash": "17629717949118964408"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+          "hash": "10700838889768688031"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+          "hash": "15163013499175324231"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+          "hash": "17762064175266230691"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+          "hash": "9342129704159603628"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+          "hash": "4133705743351324192"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+          "hash": "9039760806353812177"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+          "hash": "15127275078370164788"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+          "hash": "6222172872530160361"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+          "hash": "16696879462706858720"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+          "hash": "5466540626246768150"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+          "hash": "6321943060948364586"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+          "hash": "14088589834205738071"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+          "hash": "18428292913404649045"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+          "hash": "11484431673195189447"
+        },
+        {
+          "file": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+          "hash": "1772322197088498798"
+        },
+        {
+          "file": "android/app/src/main/res/values/ic_launcher_background.xml",
+          "hash": "13427459772988618231"
+        },
+        {
+          "file": "android/app/src/main/res/values/strings.xml",
+          "hash": "8192077378812795802"
+        },
+        {
+          "file": "android/app/src/main/res/values/styles.xml",
+          "hash": "17368100401790988459"
+        },
+        {
+          "file": "android/app/src/main/res/xml/file_paths.xml",
+          "hash": "12273653054905094054"
+        },
+        {
+          "file": "android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java",
+          "hash": "14058877953148054104"
+        },
+        {
+          "file": "android/build.gradle",
+          "hash": "9667185072279252448"
+        },
+        {
+          "file": "android/capacitor.settings.gradle",
+          "hash": "14050547508502970880"
+        },
+        {
+          "file": "android/gradle.properties",
+          "hash": "15205930620507747154"
+        },
+        {
+          "file": "android/gradle/wrapper/gradle-wrapper.jar",
+          "hash": "12100301608575443450"
+        },
+        {
+          "file": "android/gradle/wrapper/gradle-wrapper.properties",
+          "hash": "835249985485094372"
+        },
+        {
+          "file": "android/gradlew",
+          "hash": "8388103086298757654"
+        },
+        {
+          "file": "android/gradlew.bat",
+          "hash": "3049992198610835351"
+        },
+        {
+          "file": "android/package.json",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "android/settings.gradle",
+          "hash": "1444564698493455910"
+        },
+        {
+          "file": "android/variables.gradle",
+          "hash": "16206739457998548725"
+        },
+        {
+          "file": "angular.json",
+          "hash": "13724321243032064959"
+        },
+        {
+          "file": "assets/icon-background.png",
+          "hash": "2323961139106250724"
+        },
+        {
+          "file": "assets/icon-foreground.png",
+          "hash": "2323961139106250724"
+        },
+        {
+          "file": "assets/icon-only.png",
+          "hash": "2323961139106250724"
+        },
+        {
+          "file": "assets/icon.png",
+          "hash": "2323961139106250724"
+        },
+        {
+          "file": "assets/splash-dark.png",
+          "hash": "12844342122271671475"
+        },
+        {
+          "file": "assets/splash.png",
+          "hash": "12844342122271671475"
+        },
+        {
+          "file": "capacitor.config.ts",
+          "hash": "16153942895736284328",
+          "deps": [
+            "npm:@capacitor/cli"
+          ]
+        },
+        {
+          "file": "ionic.config.json",
+          "hash": "743975478848233785"
+        },
+        {
+          "file": "karma.conf.js",
+          "hash": "15586218685649057480",
+          "deps": [
+            [
+              "npm:karma-jasmine",
+              "dynamic"
+            ],
+            [
+              "npm:karma-chrome-launcher",
+              "dynamic"
+            ],
+            [
+              "npm:karma-jasmine-html-reporter",
+              "dynamic"
+            ],
+            [
+              "npm:karma-coverage",
+              "dynamic"
+            ],
+            [
+              "npm:@angular-devkit/build-angular",
+              "dynamic"
+            ]
+          ]
+        },
+        {
+          "file": "nx.json",
+          "hash": "11637765753581009889"
+        },
+        {
+          "file": "package-lock.json",
+          "hash": "2747984773120757726"
+        },
+        {
+          "file": "package.json",
+          "hash": "8907244711882055912",
+          "deps": [
+            "npm:@angular-devkit/build-angular",
+            "npm:@angular-devkit/core",
+            "npm:@angular-devkit/schematics",
+            "npm:@angular-eslint/eslint-plugin",
+            "npm:@angular-eslint/eslint-plugin-template",
+            "npm:@angular-eslint/schematics",
+            "npm:@angular/cli",
+            "npm:@angular/compiler",
+            "npm:@angular/compiler-cli",
+            "npm:@capacitor/cli",
+            "npm:@ionic/angular-toolkit",
+            "npm:@nx/angular",
+            "npm:@nx/workspace",
+            "npm:@schematics/angular",
+            "npm:@types/jasmine",
+            "npm:@types/ol",
+            "npm:@types/pako",
+            "npm:@typescript-eslint/eslint-plugin",
+            "npm:@typescript-eslint/parser",
+            "npm:eslint",
+            "npm:eslint-plugin-import",
+            "npm:eslint-plugin-jsdoc",
+            "npm:eslint-plugin-prefer-arrow",
+            "npm:jasmine-core",
+            "npm:jasmine-spec-reporter",
+            "npm:karma",
+            "npm:karma-chrome-launcher",
+            "npm:karma-coverage",
+            "npm:karma-coverage-istanbul-reporter",
+            "npm:karma-jasmine",
+            "npm:karma-jasmine-html-reporter",
+            "npm:nx",
+            "npm:@angular/common",
+            "npm:@angular/core",
+            "npm:@angular/forms",
+            "npm:@angular/platform-browser",
+            "npm:@angular/platform-browser-dynamic",
+            "npm:@angular/router",
+            "npm:@capacitor-community/background-geolocation",
+            "npm:@capacitor-community/sqlite",
+            "npm:@capacitor/android",
+            "npm:@capacitor/app",
+            "npm:@capacitor/core",
+            "npm:@capacitor/device",
+            "npm:@capacitor/filesystem",
+            "npm:@capacitor/geolocation",
+            "npm:@capacitor/local-notifications",
+            "npm:@capacitor/screen-orientation",
+            "npm:@capacitor/share",
+            "npm:@capawesome-team/capacitor-android-foreground-service",
+            "npm:@capawesome/capacitor-background-task",
+            "npm:@ionic/angular",
+            "npm:@ionic/storage-angular",
+            "npm:ionicons",
+            "npm:ol",
+            "npm:pako",
+            "npm:swiper",
+            "npm:tslib",
+            "npm:typescript",
+            "npm:zone.js"
+          ]
+        },
+        {
+          "file": "project.json",
+          "hash": "869533000898724443"
+        },
+        {
+          "file": "src/app/app.component.html",
+          "hash": "1863388359251399181"
+        },
+        {
+          "file": "src/app/app.component.scss",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "src/app/app.component.spec.ts",
+          "hash": "11499994380684985841",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@angular/router"
+          ]
+        },
+        {
+          "file": "src/app/app.component.ts",
+          "hash": "8409031462579650277",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common",
+            "npm:@capacitor/screen-orientation"
+          ]
+        },
+        {
+          "file": "src/app/app.routes.ts",
+          "hash": "7222757640428220149",
+          "deps": [
+            "npm:@angular/router"
+          ]
+        },
+        {
+          "file": "src/app/edit-modal/edit-modal.component.html",
+          "hash": "5510773062379260929"
+        },
+        {
+          "file": "src/app/edit-modal/edit-modal.component.scss",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "src/app/edit-modal/edit-modal.component.spec.ts",
+          "hash": "2955945670547782428",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/edit-modal/edit-modal.component.ts",
+          "hash": "3339185167237807189",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common"
+          ]
+        },
+        {
+          "file": "src/app/search-modal/search-modal.component.html",
+          "hash": "15327999681235757927"
+        },
+        {
+          "file": "src/app/search-modal/search-modal.component.scss",
+          "hash": "12807307455361470907"
+        },
+        {
+          "file": "src/app/search-modal/search-modal.component.spec.ts",
+          "hash": "18115520920009012625",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/search-modal/search-modal.component.ts",
+          "hash": "2114352367240584143",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common",
+            "npm:@angular/forms"
+          ]
+        },
+        {
+          "file": "src/app/services/functions.service.spec.ts",
+          "hash": "12716738801887793491",
+          "deps": [
+            "npm:@angular/core"
+          ]
+        },
+        {
+          "file": "src/app/services/functions.service.ts",
+          "hash": "8155671210142898636",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/storage-angular",
+            "npm:@ionic/angular",
+            "npm:@angular/router",
+            "npm:ol",
+            "npm:@capacitor/core",
+            "npm:@capacitor/geolocation"
+          ]
+        },
+        {
+          "file": "src/app/services/nominatim.service.spec.ts",
+          "hash": "16111851474786032054",
+          "deps": [
+            "npm:@angular/core"
+          ]
+        },
+        {
+          "file": "src/app/services/nominatim.service.ts",
+          "hash": "6453760309434752560",
+          "deps": [
+            "npm:@angular/core"
+          ]
+        },
+        {
+          "file": "src/app/services/server.service.spec.ts",
+          "hash": "12251039337579471892",
+          "deps": [
+            "npm:@angular/core"
+          ]
+        },
+        {
+          "file": "src/app/services/server.service.ts",
+          "hash": "1995487420655072120",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@capacitor/filesystem",
+            "npm:rxjs",
+            "npm:@capacitor-community/sqlite"
+          ]
+        },
+        {
+          "file": "src/app/tab1/tab1.page.html",
+          "hash": "566949371604830952"
+        },
+        {
+          "file": "src/app/tab1/tab1.page.scss",
+          "hash": "9005483846395085963"
+        },
+        {
+          "file": "src/app/tab1/tab1.page.spec.ts",
+          "hash": "12161599641614775841",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/tab1/tab1.page.ts",
+          "hash": "3773501146910868647",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common",
+            "npm:@angular/router",
+            "npm:@capacitor/core",
+            "npm:@ionic/storage-angular",
+            "npm:@angular/forms",
+            "npm:swiper",
+            "npm:ol",
+            "npm:@capacitor/app",
+            "npm:@capawesome-team/capacitor-android-foreground-service",
+            "npm:@capacitor/filesystem",
+            "npm:@capawesome/capacitor-background-task",
+            "npm:@capacitor/device",
+            "npm:@capacitor/local-notifications",
+            "npm:rxjs",
+            "npm:typescript",
+            "npm:pako"
+          ]
+        },
+        {
+          "file": "src/app/tab2/tab2.page.html",
+          "hash": "13340982905081274091"
+        },
+        {
+          "file": "src/app/tab2/tab2.page.scss",
+          "hash": "12973623595683497725"
+        },
+        {
+          "file": "src/app/tab2/tab2.page.spec.ts",
+          "hash": "13280125857535050733",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/tab2/tab2.page.ts",
+          "hash": "12351963634329284628",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common",
+            "npm:@angular/forms",
+            "npm:@angular/router",
+            "npm:@capacitor/filesystem",
+            "npm:@capacitor/share",
+            "npm:@capacitor/core"
+          ]
+        },
+        {
+          "file": "src/app/tab3/tab3.page.html",
+          "hash": "12230489917101355030"
+        },
+        {
+          "file": "src/app/tab3/tab3.page.scss",
+          "hash": "962109879445328793"
+        },
+        {
+          "file": "src/app/tab3/tab3.page.spec.ts",
+          "hash": "575662309985436233",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/tab3/tab3.page.ts",
+          "hash": "468458166297630822",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common",
+            "npm:@angular/forms",
+            "npm:swiper",
+            "npm:rxjs",
+            "npm:@capacitor/filesystem"
+          ]
+        },
+        {
+          "file": "src/app/update-modal/update-modal.component.html",
+          "hash": "6971844592173474621"
+        },
+        {
+          "file": "src/app/update-modal/update-modal.component.scss",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "src/app/update-modal/update-modal.component.spec.ts",
+          "hash": "13248992223433477347",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/update-modal/update-modal.component.ts",
+          "hash": "239395934702402312",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common"
+          ]
+        },
+        {
+          "file": "src/app/utils/openlayers/custom-control.ts",
+          "hash": "1951392465247783912",
+          "deps": [
+            "npm:ol"
+          ]
+        },
+        {
+          "file": "src/app/wpt-modal/wpt-modal.component.html",
+          "hash": "879394012666167888"
+        },
+        {
+          "file": "src/app/wpt-modal/wpt-modal.component.scss",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "src/app/wpt-modal/wpt-modal.component.spec.ts",
+          "hash": "5955481626979880509",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular"
+          ]
+        },
+        {
+          "file": "src/app/wpt-modal/wpt-modal.component.ts",
+          "hash": "5679327760013501663",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@ionic/angular",
+            "npm:@angular/common"
+          ]
+        },
+        {
+          "file": "src/assets/audio/beep.mp3",
+          "hash": "10469541990187633553"
+        },
+        {
+          "file": "src/assets/flags/ca.png",
+          "hash": "15440984597797250160"
+        },
+        {
+          "file": "src/assets/flags/es.png",
+          "hash": "5234294180523351970"
+        },
+        {
+          "file": "src/assets/flags/us.png",
+          "hash": "11116702205526640610"
+        },
+        {
+          "file": "src/assets/icon/favicon.png",
+          "hash": "17482944836898362639"
+        },
+        {
+          "file": "src/assets/icons/icon-128.webp",
+          "hash": "12557782720268047668"
+        },
+        {
+          "file": "src/assets/icons/icon-192.webp",
+          "hash": "16333973297298730246"
+        },
+        {
+          "file": "src/assets/icons/icon-256.webp",
+          "hash": "7843213127349743209"
+        },
+        {
+          "file": "src/assets/icons/icon-48.webp",
+          "hash": "3085400358377960918"
+        },
+        {
+          "file": "src/assets/icons/icon-512.webp",
+          "hash": "10841080042654611275"
+        },
+        {
+          "file": "src/assets/icons/icon-72.webp",
+          "hash": "15366822838510551407"
+        },
+        {
+          "file": "src/assets/icons/icon-96.webp",
+          "hash": "15911853965967067639"
+        },
+        {
+          "file": "src/assets/maps/cat.jpg",
+          "hash": "18151539719939893183"
+        },
+        {
+          "file": "src/assets/maps/ign.jpg",
+          "hash": "8289966156721872410"
+        },
+        {
+          "file": "src/assets/maps/osm.jpg",
+          "hash": "2800890041945692301"
+        },
+        {
+          "file": "src/assets/maps/otm.jpg",
+          "hash": "6356503283184309205"
+        },
+        {
+          "file": "src/environments/environment.prod.ts",
+          "hash": "8556584161078733264"
+        },
+        {
+          "file": "src/environments/environment.ts",
+          "hash": "15296495653699701646"
+        },
+        {
+          "file": "src/global.scss",
+          "hash": "11899657312477753678"
+        },
+        {
+          "file": "src/globald.ts",
+          "hash": "7786824553136952748"
+        },
+        {
+          "file": "src/index.html",
+          "hash": "4887858049390628778"
+        },
+        {
+          "file": "src/main.ts",
+          "hash": "12802578569404213651",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@angular/platform-browser",
+            "npm:@angular/router",
+            "npm:@ionic/angular",
+            "npm:@ionic/storage-angular",
+            "npm:@angular/common",
+            "npm:ionicons"
+          ]
+        },
+        {
+          "file": "src/manifest.webmanifest",
+          "hash": "5085718616582067322"
+        },
+        {
+          "file": "src/polyfills.ts",
+          "hash": "2772692812868943254",
+          "deps": [
+            "npm:zone.js"
+          ]
+        },
+        {
+          "file": "src/test.ts",
+          "hash": "7876741224155508608",
+          "deps": [
+            "npm:zone.js",
+            "npm:@angular/core",
+            "npm:@angular/platform-browser-dynamic"
+          ]
+        },
+        {
+          "file": "src/theme/variables.scss",
+          "hash": "17480313424598593857"
+        },
+        {
+          "file": "src/zone-flags.ts",
+          "hash": "6117193595888083885"
+        },
+        {
+          "file": "tsconfig.app.json",
+          "hash": "4969333129142004842"
+        },
+        {
+          "file": "tsconfig.json",
+          "hash": "5652003633647583164"
+        },
+        {
+          "file": "tsconfig.spec.json",
+          "hash": "14277469517724802009"
+        }
+      ]
+    }
+  }
+}

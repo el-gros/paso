@@ -2027,7 +2027,7 @@ export class Tab1Page {
       let deviceLanguage = info.value.split('-')[0]; // Extract the base language code
       console.log('Device Language:', deviceLanguage);
       // Check if there is a replacement
-      deviceLanguage = await this.fs.check(global.language, 'language');
+      deviceLanguage = await this.fs.check(deviceLanguage, 'language');
       // Map the device language and assign index
       if (deviceLanguage === 'ca') {
         global.language = 'ca';

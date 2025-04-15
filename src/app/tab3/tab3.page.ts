@@ -52,7 +52,7 @@ export class Tab3Page {
     },
   ];
   finalBaseMaps: Map[] = []
-  selectedLanguage: 'ca' | 'es' | 'other' = global.language;  
+  selectedLanguage: 'ca' | 'es' | 'other' = global.language;
   title: any = [
     ['Trajecte actual', 'Trayecto actual', 'Current track'],
     ['Trajecte de referència', 'Trayecto de referencia','Reference track'],
@@ -64,12 +64,12 @@ export class Tab3Page {
     ['Carregar mapes', 'Cargar mapas', 'Upload maps'],
     ['Eliminar mapes', 'Eliminar mapas', 'Remove maps'],
   ]
-  language: 'ca' | 'es' | 'other' = global.language;  
+  language: 'ca' | 'es' | 'other' = global.language;
   languageIndex: 0 | 1 | 2 = global.languageIndex;
 
   constructor(
     public fs: FunctionsService,
-    public server: ServerService, 
+    public server: ServerService,
     public modalController: ModalController
   ) {
     this.initialize();
@@ -80,7 +80,7 @@ export class Tab3Page {
     this.currentColor = global.currentColor;
     this.checkMaps();
   }
-    
+
   /*
   1. selectColor
   2. ionViewWillEnter
@@ -168,7 +168,7 @@ export class Tab3Page {
   }
 
   async ionViewWillLeave() {
-    await this.fs.storeSet('language', global.language) 
+    await this.fs.storeSet('language', global.language)
   }
 
  async mapDownload(url:string, filePath: string) {
@@ -211,14 +211,14 @@ export class Tab3Page {
     // Available maps (already downloaded)
     this.availableOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => filesInDataDirectory.includes(map.filename));
     // Build the final map list
-    this.finalBaseMaps = [...this.baseMaps, ...global.offlineMaps];
+    this.finalBaseMaps = [...this.baseMaps, ...this.availableOfflineMaps];
   }
-  
+
   async mapsToUploadRemove(action: string) {
     //console.log('Action:', action);
     const availableOfflineMaps = this.availableOfflineMaps;
     const missingOfflineMaps = this.missingOfflineMaps;
-    const cssClass = ['modal-class','blue-class'] 
+    const cssClass = ['modal-class','blue-class']
     if (action === 'upload') {
       const upload: boolean = true;
       // Open the modal for uploading
@@ -235,7 +235,7 @@ export class Tab3Page {
         let { action, selectedMap } = data;
         if (action === 'ok') {
           console.log('Selected map:', selectedMap);
-          const url = selectedMap.url; 
+          const url = selectedMap.url;
           const filePath = selectedMap.filename;
           await this.mapDownload(url, filePath);
         }
@@ -277,7 +277,7 @@ export class Tab3Page {
       console.error(`Error removing file ${filename}:`, error);
     }
   }
-  
+
   async getMbtilesPath() {
     const fileUri = await Filesystem.getUri({
       path: 'catalonia.mbtiles',

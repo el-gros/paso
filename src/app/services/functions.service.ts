@@ -51,7 +51,7 @@ export class FunctionsService {
     19. editTrack
   */
 
-  // 1. COMPUTES DISTANCES ///////////////////////////////////// 
+  // 1. COMPUTES DISTANCES /////////////////////////////////////
   async computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): Promise<number> {
     // differences in latitude and longitude in radians
     const DEG_TO_RAD = Math.PI / 180;
@@ -61,12 +61,12 @@ export class FunctionsService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * DEG_TO_RAD) * Math.cos(lat2 * DEG_TO_RAD) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);   
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
     // angular distance in radians
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     // distance in km
     const earthRadiusKm = 6371;
-    return earthRadiusKm * c;  
+    return earthRadiusKm * c;
   }
 
   // 2. FORMAT MILISECONDS TO HH:MM:SS
@@ -95,7 +95,7 @@ export class FunctionsService {
     return data;
   }
 
-  // 4. ADD POINT TO TRACK //////////////////////////////// 
+  // 4. ADD POINT TO TRACK ////////////////////////////////
   async fillGeojson(track: Track | undefined, location: Location): Promise<void> {
     if (!track) return;
     // Add minimal data
@@ -127,14 +127,16 @@ export class FunctionsService {
   }
 
   // 8. CHECK IN STORAGE //////////////////////////
-  async check(variable: any, key: string) {
+  async check<T>(defaultValue: T, key: string): Promise<T> {
     try {
       const result = await this.storeGet(key);
       if (result !== null && result !== undefined) {
-        variable = result;
-      } else { }
-    } catch { }
-    return variable
+        return result as T;
+      }
+    } catch (error) {
+      console.warn('Storage check failed:', error);
+    }
+    return defaultValue;
   }
 
   // 9. COMPUTE TRACK EXTREMES
@@ -154,11 +156,11 @@ export class FunctionsService {
       if (x > maxX) maxX = x;
       // Update min and max values for y
       if (y < minY) minY = y;
-      if (y > maxY) maxY = y;    
+      if (y > maxY) maxY = y;
     }
     // Return the computed extremes
     return { minX, minY, maxX, maxY };
-  } 
+  }
 
   // 10. DISPLAY TOAST //////////////////////////////
   async displayToast(message: string) {
@@ -182,15 +184,15 @@ export class FunctionsService {
     await this.storeSet('collection', global.collection);
   }
 
-  // 12. GET CURRENT POSITION ////////////////////////////////// 
+  // 12. GET CURRENT POSITION //////////////////////////////////
   async getCurrentPosition(): Promise<[number, number] | undefined> {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       return [coordinates.coords.longitude, coordinates.coords.latitude];
-    } 
-    //catch (error) { return [1, 41.5]; } // Default coordinates 
-    catch (error) { return undefined; } // Default coordinates 
-  } 
+    }
+    //catch (error) { return [1, 41.5]; } // Default coordinates
+    catch (error) { return undefined; } // Default coordinates
+  }
 
   // 13. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
@@ -201,7 +203,7 @@ export class FunctionsService {
       // If track can not be retrieved
       const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
       if (!track) this.displayToast(toast[global.languageIndex]);
-    }  
+    }
     // Return the retrieved track
     return track;
   }
@@ -255,8 +257,8 @@ export class FunctionsService {
 
   // 18. SET STROKE STYLE /////////////////////////////////////////
   setStrokeStyle(color: string): Style {
-    return new Style({ stroke: new Stroke({ 
-      color: color, 
+    return new Style({ stroke: new Stroke({
+      color: color,
       width: 5 })
     });
   }
@@ -276,7 +278,7 @@ export class FunctionsService {
     // Select cssClass
     let cssClass: string[] = []
     if (backgroundColor == '#ffbbbb') cssClass = ['modal-class','red-class']
-    else cssClass = ['modal-class','yellow-class'] 
+    else cssClass = ['modal-class','yellow-class']
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: EditModalComponent,
@@ -319,7 +321,7 @@ export class FunctionsService {
         .replace("<![CDATA[", "")
         .replace("]]>", "")
         .replace(/\n/g, '<br>'),
-    }; 
+    };
     // Open the modal for editing
     const modal = await this.modalController.create({
       component: WptModalComponent,
