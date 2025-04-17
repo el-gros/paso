@@ -1,5 +1,5 @@
 ion-toolbar {
-  height: 75px;
+  height: 85px;
   display: flex;
   align-items: center; /* This is good */
 }
@@ -51,8 +51,19 @@ div{
     font-family: 'Arial, sans-serif';
 }
 
-// buttons
+.menu-button {
+  font-size: 16px;
+  font-family: 'Arial, sans-serif';
+  font-weight: bold;
 
+  &[disabled] {
+    font-weight: normal;
+    opacity: 0.5; // optional: visually show it’s disabled
+  }
+}
+
+// buttons
+/*
 .redEnabled{
     --background: red;
     --color: white;
@@ -74,3 +85,4 @@ div{
 .move-up {
     padding-bottom: 20px;
   }
+*/

@@ -19,7 +19,7 @@ export class SearchModalComponent implements OnInit {
   placeholder: string = '';
   num: number = 0;
   start: number[] = [];
-  destination: number[] = []; 
+  destination: number[] = [];
   route: any;
   showTransportation: boolean = false;
   showSelection: boolean = true;
@@ -66,7 +66,7 @@ export class SearchModalComponent implements OnInit {
     private fs: FunctionsService,
   ) { }
 
-// 1. NGONINIT ///////////////////////////////  
+// 1. NGONINIT ///////////////////////////////
 ngOnInit(): void {
   // Access constants and set variables
   if (global.comingFrom === 'search') {
@@ -92,7 +92,7 @@ async searchLocation() {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     this.results = await response.json();
-    this.showCurrent = false;  
+    this.showCurrent = false;
   } catch (error) {
     console.error('Error fetching geocoding data:', error);
     this.fs.displayToast(['Error de xarxa', 'Error de red', 'Network error'][global.languageIndex]);
@@ -123,13 +123,13 @@ async selectLocation(location: any) {
       console.log('Selected location', location)
       this.destination = [+location.lon,+location.lat]
       this.showSelection = false;
-      this.showTransportation = true; 
+      this.showTransportation = true;
       this.selectedTransportation = '';
     }
   }
 }
 
-// 4. DISMISS MODAL ///////////////////////////  
+// 4. DISMISS MODAL ///////////////////////////
 dismissModal() {
   this.modalController.dismiss();
 }

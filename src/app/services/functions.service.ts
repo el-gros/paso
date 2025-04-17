@@ -337,6 +337,11 @@ export class FunctionsService {
     }
   }
 
+
+ goSettings() {
+  this.router.navigate(['tab3']);
+ }
+
 }
 
 

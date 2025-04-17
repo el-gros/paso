@@ -59,10 +59,9 @@ import RenderFeature from 'ol/render/Feature';
 import TileState from 'ol/TileState';
 import { Tile } from 'ol';
 import pako from 'pako';
-
 const vectorFormat = new MVT();
-
 useGeographic();
+register();
 
 const styleFunction = (feature: FeatureLike, resolution: number) => {
   const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');

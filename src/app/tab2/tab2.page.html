@@ -2,15 +2,20 @@
   <ion-toolbar>
     <ion-title id="title">{{ title[languageIndex] }}</ion-title>
     <ion-buttons slot="end">
+      <ion-button class="header-button" shape="round" fill="solid" (click)="openMenu()">
+        <ion-icon slot="icon-only" name="menu"></ion-icon>
+      </ion-button>
       <ion-button class="header-button" shape="round" fill="solid" (click)="fs.goHome()">
         <ion-icon slot="icon-only" name="home"></ion-icon>
+      </ion-button>
+      <ion-button class="header-button" shape="round" fill="solid" (click)="fs.goSettings()">
+        <ion-icon slot="icon-only" name="settings"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content padding>
-
   <div class="ion-content-scroll-host">
     <ion-list>
       <ion-item *ngFor="let item of collection">
@@ -25,7 +30,26 @@
       </ion-item>
     </ion-list>
   </div>
+
+  <ion-menu side="start" contentId="main-content">
+    <ion-content>
+      <ion-list>
+        <ion-item class="menu-button" button [disabled]='(!presentSearch)' (click)="removeSearch()">{{search[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="exportTrack()">{{export[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="(layerVisibility == 'multi')" (click)="displayAllTracks(true)">{{all[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="(layerVisibility != 'multi')" (click)="displayAllTracks(false)">{{hideAll[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(numChecked == 0)' (click)="deleteTracks()">{{remove[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="editTrack()">{{edit[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="displayTrack(true)">{{display[languageIndex]}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="(numChecked == 1 || layerVisibility != 'archived' || !archivedPresent)" (click)="displayTrack(false)">{{hide[languageIndex]}}</ion-item>
+
+      </ion-list>
+    </ion-content>
+  </ion-menu>
+  <ion-content id="main-content"></ion-content>
 </ion-content>
+
+<!--
 
 <ion-footer>
   <ion-grid>
@@ -77,3 +101,5 @@
     </ion-row>
   </ion-grid>
 </ion-footer>
+
+-->

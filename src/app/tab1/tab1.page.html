@@ -1,6 +1,3 @@
-<!--
-<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /></head>
--->
 <ion-content>
 
   <!-- buttons to select start / stop recording or save track -->
@@ -9,60 +6,63 @@
     <ion-row>
       <ion-fab-button id='start' (click)="startTracking()">
         <ion-icon name="play"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='stop' (click)="confirm('stop')">
         <ion-icon name="pause"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='alert' (click)="waypoint()">
         <ion-icon name="alert"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='save' (click)="setTrackDetails()">
         <ion-icon name="save"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='trash' (click)="confirm('delete')">
         <ion-icon name="trash"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <!-- Spacer -->
       <div style="width: 30px;"></div>
-      <ion-fab-button id='databutton' (click)="gotoData()">
-        <ion-icon name="analytics"></ion-icon>
-      </ion-fab-button>  
-      <ion-fab-button id='mapbutton' (click)="gotoMap()">
-        <ion-icon name="earth"></ion-icon>
-      </ion-fab-button>
       <ion-fab-button id='search' (click)="search()">
         <ion-icon name="search"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='help' (click)="guide()">
         <ion-icon name="help"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
     </ion-row>
   </ion-fab>
 
   <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom">
     <ion-row>
+      <ion-fab-button id='databutton' (click)="gotoData()">
+        <ion-icon name="analytics"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='mapbutton' (click)="gotoMap()">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
       <ion-fab-button id='list' (click)="gotoPage('tab2')">
         <ion-icon name="list"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
       <ion-fab-button id='settings' (click)="gotoPage('tab3')">
         <ion-icon name="settings"></ion-icon>
-      </ion-fab-button>  
+      </ion-fab-button>
     </ion-row>
   </ion-fab>
 
 <div id="map" class="map-container"></div>
 
 <swiper-container id="data">
-  <swiper-slide>
-    <div class = 'empty'></div>  
-    <div class = 'element card' *ngIf="currentTrack">
-      <table>
-        <tr [ngClass]="status">           
+
+  <swiper-slide [hidden]="!currentTrack">
+
+    <div class='empty'></div>
+
+    <div class='element card'>
+      <table *ngIf="currentTrack">
+        <tr [ngClass]="status">
           <td colspan='2'>{{curTitle}}</td>
         </tr>
         <tr>
           <td>{{distance}}</td>
-          <td>{{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+          <td >{{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
         </tr>
         <tr>
           <td>{{eGain}}</td>
@@ -86,82 +86,102 @@
         </tr>
         <tr>
           <td>{{altitude}}</td>
-          <td  *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+          <td *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
             {{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</td>
         </tr>
         <tr>
           <td>{{speed}}</td>
-          <td><div *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
-            {{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h</div></td>
+          <td>
+            <div *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+              {{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h
+            </div>
+          </td>
         </tr>
         <tr>
           <td>{{avgSpeed}}</td>
-          <td><div *ngIf="currentAverageSpeed != undefined">{{currentAverageSpeed | number:'1.1-1'}} km/h</div></td>
+          <td>
+            <div *ngIf="currentAverageSpeed != undefined">
+              {{currentAverageSpeed | number:'1.1-1'}} km/h
+            </div>
+          </td>
         </tr>
         <tr>
           <td>{{motionAvgSpeed}}</td>
-          <td><div *ngIf="currentMotionSpeed != undefined">{{currentMotionSpeed | number:'1.1-1'}} km/h</div></td>
+          <td>
+            <div *ngIf="currentMotionSpeed != undefined">
+              {{currentMotionSpeed | number:'1.1-1'}} km/h
+            </div>
+          </td>
         </tr>
       </table>
     </div>
-    <div class = 'element card' *ngIf="archivedTrack && layerVisibility=='archived'">
-      <table>
-        <tr>           
+
+    <div class='element' id='cc0'>
+      <h1 class='title'>{{canvasAltitude}}</h1>
+      <canvas class='canvas' id="currentCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
+    <div class='element' id='cc1'>
+      <h1 class='title'>{{canvasSpeed}} ({{currentUnit}})</h1>
+      <canvas class='canvas' id="currentCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+  </swiper-slide>
+
+  <swiper-slide [hidden]="!archivedTrack || layerVisibility != 'archived'">
+
+    <div class='empty'></div>
+
+    <div class='element card'>
+      <table *ngIf="archivedTrack">
+        <tr>
           <td colspan='2'>{{arcTitle}}</td>
         </tr>
-        <tr>           
+        <tr>
           <td colspan='2'>{{archivedTrack.features[0].properties.name}}</td>
         </tr>
         <tr>
           <td>{{distance}}</td>
           <td *ngIf="archivedTrack.features[0].properties.totalDistance > -1">
-            {{archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+            {{archivedTrack.features[0].properties.totalDistance | number:'1.3'}} km
+          </td>
         </tr>
         <tr>
           <td>{{eGain}}</td>
           <td *ngIf="archivedTrack.features[0].properties.totalElevationGain > -1">
-            {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
+            {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0'}} m
+          </td>
         </tr>
         <tr>
           <td>{{eLoss}}</td>
           <td *ngIf="archivedTrack.features[0].properties.totalElevationLoss > -1">
-            {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
+            {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0'}} m
+          </td>
         </tr>
         <tr>
           <td>{{time}}</td>
           <td *ngIf="archivedTrack.features[0].properties.totalTime !== undefined">
-            {{archivedTrack.features[0].properties.totalTime}}</td>
+            {{archivedTrack.features[0].properties.totalTime}}
+          </td>
         </tr>
         <tr>
           <td>{{points}}</td>
           <td>{{archivedTrack.features[0].properties.totalNumber}}</td>
         </tr>
       </table>
-    </div>  
+    </div>
+
+    <div class='element' id='ac0'>
+      <h1 class='title'>{{canvasAltitude}}</h1>
+      <canvas class='canvas' id="archivedCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
+    <div class='element' id='ac1'>
+      <h1 class='title'>{{canvasSpeed}} ({{archivedUnit}})</h1>
+      <canvas class='canvas' id="archivedCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
   </swiper-slide>
-  <swiper-slide>
-    <div class = 'empty'></div>  
-    <div class = 'element' id ='cc0'>
-      <h1 class = 'title'>{{canvasAltitude}}</h1>
-      <canvas class = 'canvas' id="currentCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </div>
-    <div class = 'element' id="ac0">
-      <h1 class = 'title'>{{canvasAltitude}}</h1>
-      <canvas class = 'canvas' id="archivedCanvas0" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </div>  
-  </swiper-slide>  
-  <swiper-slide>
-    <div class = 'empty'></div>
-    <div class = 'element' id="cc1">  
-      <h1 class = 'title'>{{canvasSpeed}} ({{currentUnit}})</h1>
-      <canvas class = 'canvas' id="currentCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </div>
-    <div class = 'element' id="ac1">  
-      <h1 class = 'title'>{{canvasSpeed}} ({{archivedUnit}})</h1>
-      <canvas class = 'canvas' id="archivedCanvas1" width="{{canvasNum}}" height="{{canvasNum}}"></canvas>
-    </div>
-  </swiper-slide> 
-</swiper-container>    
-        
+</swiper-container>
+
 </ion-content>
 

@@ -9,7 +9,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { Capacitor } from '@capacitor/core';
-import { ModalController } from '@ionic/angular';
+import { MenuController } from '@ionic/angular';
 
 @Component({
     selector: 'app-tab2',
@@ -40,7 +40,7 @@ export class Tab2Page {
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-    private modalController: ModalController,
+    private menu: MenuController
   ) {  }
 
   /* FUNCTIONS
@@ -248,6 +248,15 @@ export class Tab2Page {
   removeSearch() {
     global.removeSearch = true;
     this.router.navigate(['tab1']);
+  }
+
+  openMenu() {
+    this.menu.open();
+  }
+
+  selectOption(option: string) {
+    console.log('Selected:', option);
+    this.menu.close();
   }
 
 }
