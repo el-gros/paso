@@ -337,10 +337,10 @@ export class FunctionsService {
     }
   }
 
-
- goSettings() {
-  this.router.navigate(['tab3']);
- }
+// 14. GO TO PAGE ... //////////////////////////////
+async gotoPage(option: string) {
+  this.router.navigate([option]);
+}
 
 }
 

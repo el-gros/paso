@@ -1,0 +1,156 @@
+<ion-content>
+
+  <!-- buttons to navigate -->
+  <ion-fab slot="fixed" horizontal="center" vertical="top">
+    <ion-row>
+      <ion-fab-button id='mapbutton' (click)="fs.gotoPage('tab1')">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
+        <ion-icon name="list"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='settings' (click)="fs.gotoPage('tab3')">
+        <ion-icon name="settings"></ion-icon>
+      </ion-fab-button>
+    </ion-row>
+  </ion-fab>
+
+<swiper-container id="data" pagination="true">
+
+  <!-- Slide 1: Current track -->
+  <swiper-slide [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
+
+    <div class='empty'></div>
+
+    <div class='element card'>
+      <table *ngIf="currentTrack">
+        <tr [ngClass]="status">
+          <td colspan='2'>{{curTitle[languageIndex]}}</td>
+        </tr>
+        <tr>
+          <td>{{distance[languageIndex]}}</td>
+          <td >{{currentTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+        </tr>
+        <tr>
+          <td>{{eGain[languageIndex]}}</td>
+          <td>{{currentTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{eLoss[languageIndex]}}</td>
+          <td>{{currentTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{time[languageIndex]}}</td>
+          <td>{{currentTrack.features[0].properties.totalTime}}</td>
+        </tr>
+        <tr>
+          <td>{{motionTime[languageIndex]}}</td>
+          <td>{{ currentMotionTime }}</td>
+        </tr>
+        <tr>
+          <td>{{points[languageIndex]}}</td>
+          <td>{{currentTrack.features[0].properties.totalNumber}}</td>
+        </tr>
+        <tr>
+          <td>{{altitude[languageIndex]}}</td>
+          <td *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+            {{ currentTrack.features[0].properties.currentAltitude | number:'1.0-0' }} m</td>
+        </tr>
+        <tr>
+          <td>{{speed[languageIndex]}}</td>
+          <td>
+            <div *ngIf="currentTrack.features[0].properties.currentAltitude !== undefined">
+              {{ currentTrack.features[0].properties.currentSpeed | number:'1.1-1' }} km/h
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>{{avgSpeed[languageIndex]}}</td>
+          <td>
+            <div *ngIf="currentAverageSpeed != undefined">
+              {{currentAverageSpeed | number:'1.1-1'}} km/h
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>{{motionAvgSpeed[languageIndex]}}</td>
+          <td>
+            <div *ngIf="currentMotionSpeed != undefined">
+              {{currentMotionSpeed | number:'1.1-1'}} km/h
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class='element' id='cc0'>
+      <h1 class='title'>{{canvasAltitude[languageIndex]}}</h1>
+      <canvas class='canvas' id="currCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
+    <div class='element' id='cc1'>
+      <h1 class='title'>{{canvasSpeed[languageIndex]}} ({{currentUnit}})</h1>
+      <canvas class='canvas' id="currCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+  </swiper-slide>
+
+  <!-- Slide 1: Archived track -->
+  <swiper-slide [hidden]="!archivedTrack || layerVisibility != 'archived'">
+
+    <div class='empty'></div>
+
+    <div class='element card'>
+      <table *ngIf="archivedTrack">
+        <tr>
+          <td colspan='2'>{{arcTitle[languageIndex]}}</td>
+        </tr>
+        <tr>
+          <td colspan='2'>{{archivedTrack.features[0].properties.name}}</td>
+        </tr>
+        <tr>
+          <td>{{distance[languageIndex]}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalDistance > -1">
+            {{archivedTrack.features[0].properties.totalDistance | number:'1.3'}} km
+          </td>
+        </tr>
+        <tr>
+          <td>{{eGain[languageIndex]}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalElevationGain > -1">
+            {{archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0'}} m
+          </td>
+        </tr>
+        <tr>
+          <td>{{eLoss[languageIndex]}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalElevationLoss > -1">
+            {{archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0'}} m
+          </td>
+        </tr>
+        <tr>
+          <td>{{time[languageIndex]}}</td>
+          <td *ngIf="archivedTrack.features[0].properties.totalTime !== undefined">
+            {{archivedTrack.features[0].properties.totalTime}}
+          </td>
+        </tr>
+        <tr>
+          <td>{{points[languageIndex]}}</td>
+          <td>{{archivedTrack.features[0].properties.totalNumber}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class='element' id='ac0'>
+      <h1 class='title'>{{canvasAltitude[languageIndex]}}</h1>
+      <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
+    <div class='element' id='ac1'>
+      <h1 class='title'>{{canvasSpeed[languageIndex]}} ({{archivedUnit}})</h1>
+      <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+    </div>
+
+  </swiper-slide>
+</swiper-container>
+
+</ion-content>
+
+

@@ -18,6 +18,7 @@ import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
+import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
@@ -254,9 +255,6 @@ export class Tab1Page {
   archivedTrack: Track | undefined = undefined;
   track: any;
   vMax: number = 400;
-  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  canvasNum: number = 400; // canvas size
   margin: number = 10;
   threshold: number = 20;
   altitudeThreshold: number = 20;
@@ -279,64 +277,40 @@ export class Tab1Page {
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: any = '00:00:00';
-  currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
-  archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedFeature: any;
   currentFeature: any;
   multiFeature: any;
   threshDist: number = 0.0000002;
   lastN: number = 0;
-  archivedCanvasVisible: boolean = false;
-  currentCanvasVisible: boolean = false;
   currentLayer: any;
   archivedLayer: any;
   multiLayer: any;
   foreground: boolean = true;
   extremes: Extremes | undefined
-  openCanvas: boolean = true;
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
   language: 'ca' | 'es' | 'other' = 'other';
-  languageIndex: 0 | 1 | 2 = 2; // Default to 'other'
   popText: [string, string, number] | undefined = undefined;
   intervalId: any = null;
+  arcTitle = ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'];
+  curTitle = ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'];
+  distance = ['Distància','Distancia','Distance'];
+  eGain = ['Desnivell positiu','Desnivel positivo','Elevation gain'];
+  eLoss = ['Desnivell negatiu','Desnivel negativo','Elevation loss'];
+  time = ['Temps', 'Tiempo','Time'];
+  motionTime = ['Temps en moviment','Tiempo en movimiento','In-motion time'];
+  points = ['Punts gravats','Puntos grabados','Recorded points'];
+  altitude = ['Altitud actual','Altitud actual','Current altitude'];
+  speed = ['Velocitat actual','Velocidad actual','Current speed'];
+  avgSpeed = ['Velocitat mitjana','Velocidad nedia','Average speed'];
+  motionAvgSpeed = ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'];
 
-  translations = {
-    arcTitle: ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'],
-    curTitle: ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'],
-    distance: ['Distància','Distancia','Distance'],
-    eGain: ['Desnivell positiu','Desnivel positivo','Elevation gain'],
-    eLoss: ['Desnivell negatiu','Desnivel negativo','Elevation loss'],
-    time: ['Temps', 'Tiempo','Time'],
-    motionTime: ['Temps en moviment','Tiempo en movimiento','In-motion time'],
-    points: ['Punts gravats','Puntos grabados','Recorded points'],
-    altitude: ['Altitud actual','Altitud actual','Current altitude'],
-    speed: ['Velocitat actual','Velocidad actual','Current speed'],
-    avgSpeed: ['Velocitat mitjana','Velocidad nedia','Average speed'],
-    motionAvgSpeed: ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'],
-    canvasAltitude: ['ALTITUD (m) vs DISTÀNCIA (km)','ALTITUD (m) vs DISTANCIA (km)','ALTITUDE (m) vs DISTANCE (km)'],
-    canvasSpeed: ['VELOCITAT (km/h) vs TEMPS','VELOCIDAD (km/h) vs TIEMPO','SPEED (km/h) vs TIME']
-  }
-
-  get arcTitle(): string { return this.translations.arcTitle[global.languageIndex]; }
-  get curTitle(): string { return this.translations.curTitle[global.languageIndex]; }
-  get distance(): string { return this.translations.distance[global.languageIndex]; }
-  get eGain(): string { return this.translations.eGain[global.languageIndex]; }
-  get eLoss(): string { return this.translations.eLoss[global.languageIndex]; }
-  get time(): string { return this.translations.time[global.languageIndex]; }
-  get motionTime(): string { return this.translations.motionTime[global.languageIndex]; }
-  get points(): string { return this.translations.points[global.languageIndex]; }
-  get altitude(): string { return this.translations.altitude[global.languageIndex]; }
-  get speed(): string { return this.translations.speed[global.languageIndex]; }
-  get avgSpeed(): string { return this.translations.avgSpeed[global.languageIndex]; }
-  get motionAvgSpeed(): string { return this.translations.motionAvgSpeed[global.languageIndex]; }
-  get canvasAltitude(): string { return this.translations.canvasAltitude[global.languageIndex]; }
-  get canvasSpeed(): string { return this.translations.canvasSpeed[global.languageIndex]; }
-  get layerVisibility(): string { return global.layerVisibility; }
+  get languageIndex(): number { return global.languageIndex; }
 
   constructor(
     public fs: FunctionsService,
+    public ts: TrackService,
     public server: ServerService,
     private router: Router,
     public storage: Storage,
@@ -363,32 +337,32 @@ export class Tab1Page {
   11. setTrackDetails
   12. showValidationAlert
   13. saveFile
-  14. gotoPage
-  15. gotoMap
-  16. gotoData
+
+
+
   17. buildGeoJson
   18. onRoute
   19. show
   20. displayArchivedTrack
-  21. updateAllCanvas
+
   22. setMapView
   23. firstPoint
   24. createMap
-  25. createCanvas
+
   26. grid
   27. gridValue
   28. filterAltitude
   29. createLayers
-  30. updateCanvas
+
   31. displayAllTracks
   32. handleMapClick()
   33. drawCircle()
-  34. averageSpeed()
+
   35. computeDistances()
-  36. htmlValues()
+
   37. checkWhetherOnRoute()
   38. fixWrongOrder()
-  39. showCanvas()
+
   40. ionViewWillLeave()
   41. playBeep()
   42. playDoubleBeep()
@@ -459,8 +433,6 @@ export class Tab1Page {
       this.show('databutton', 'block');
       // uncheck all
       await this.fs.uncheckAll();
-      // create canvas
-      await this.createCanvas();
       // create map
       await this.createMap()
     } catch (error) {
@@ -474,13 +446,14 @@ export class Tab1Page {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
       console.log(data)
-      this.gotoPage('tab1');
+      this.fs.gotoPage('tab1');
       console.log('went to tab1')
       await this.processUrl(data);
       console.log('processed url')
       global.layerVisibility = 'archived'
       // retrieve archived track
       this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
+      this.ts.setArchivedTrack(this.archivedTrack);
       if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
       console.log('retrieved archived track')
       // assign visibility
@@ -494,8 +467,6 @@ export class Tab1Page {
         if (!this.currentTrack) {
           await this.setMapView(this.archivedTrack);
         }
-        // Show canvas for archived track
-        await this.showCanvas('a', 'block');
       }
     });
   }
@@ -516,12 +487,11 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
-      // only visible for layerVisibility == 'archived'
-      await this.showCanvas('a','none')
       // archived visible
       if (global.layerVisibility == 'archived') {
         // retrieve archived track
         this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
+        this.ts.setArchivedTrack(this.archivedTrack);
         if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
         // assign visibility
         if (this.multiLayer) await this.multiLayer.setVisible(false);
@@ -533,8 +503,6 @@ export class Tab1Page {
           if (!this.currentTrack) {
             await this.setMapView(this.archivedTrack);
           }
-          // Show canvas for archived track
-          await this.showCanvas('a', 'block');
         }
       }
       else if (global.layerVisibility == 'multi') {
@@ -543,23 +511,22 @@ export class Tab1Page {
           this.archivedLayer.setVisible(false);
         } catch (error) {}
         this.status = 'black'
+        this.ts.setStatus(this.status);
         // display all tracks
         await this.displayAllTracks();
         // center all tracks
         if (!this.currentTrack) await this.centerAllTracks();
       }
       else {
-        this.status = 'black'
+        this.status = 'black';
+        this.ts.setStatus(this.status);
         // Hide archived and multi layers
         if (this.archivedLayer) await this.archivedLayer.setVisible(false);
         if (this.multiLayer) await this.multiLayer.setVisible(false);
       }
-      // update canvas
-      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      // center current track and show canvas
+      // center current track
       if (this.currentTrack) {
         await this.setMapView(this.currentTrack);
-        await this.showCanvas('c','block');
       }
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
@@ -621,7 +588,7 @@ export class Tab1Page {
     console.log ('Foreground service started successfully')
     // Reset current track and related variables
     this.currentTrack = undefined;
-    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.ts.setCurrentTrack(this.currentTrack);
     try {
       this.currentLayer.setVisible(false);
     } catch (error) {
@@ -681,10 +648,11 @@ export class Tab1Page {
     this.show('alert', 'none');
     this.show('save', 'none');
     this.show('trash', 'none');
-    // Reset current track and corresponding canvases
-    this.status = 'black'
+    // Reset current track
+    this.status = 'black';
+    this.ts.setStatus(this.status);
     this.currentTrack = undefined;
-    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+    this.ts.setCurrentTrack(this.currentTrack);
     // Toast
     const toast = ["El trajecte actual s'ha esborrat",'El trayecto actual se ha eliminado','The current track has been removed']
     this.fs.displayToast(toast[global.languageIndex]);
@@ -732,8 +700,6 @@ export class Tab1Page {
     // Toast
     const toast = ['El trajecte actual ha finalitzat','El trayecto actual ha finalizado','The current track is now finished']
     this.fs.displayToast(toast[global.languageIndex]);
-    // update canvas
-    this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
   }
 
   // 10. CONFIRM TRACK DELETION OR STOP TRACKING
@@ -848,46 +814,6 @@ export class Tab1Page {
     this.show('trash', 'block');
   }
 
-  // 14. GO TO PAGE ... //////////////////////////////
-  async gotoPage(option: string) {
-    this.router.navigate([option]);
-  }
-
-  // 15. GO TO MAP ////////////////////////////
-  async gotoMap() {
-    // Show map and adjust buttons
-    this.show('map', 'block');
-    this.show('search', 'block');
-    this.show('guide', 'block');
-    this.show('data', 'none');
-    this.show('mapbutton', 'none');
-    this.show('databutton', 'block');
-    // Center map based on available track
-    if (this.currentTrack) {
-      await this.setMapView(this.currentTrack);
-    } else if (this.archivedTrack) {
-      await this.setMapView(this.archivedTrack);
-    }
-  }
-
-  // 16. GO TO DATA ////////////////////////////
-  async gotoData() {
-    // Show data and adjust buttons
-    global.mapVisible = false
-    this.show('map', 'none');
-    this.show('search', 'none');
-    this.show('guide', 'none');
-    this.show('data', 'block');
-    this.show('mapbutton', 'block');
-    this.show('databutton', 'none');
-    // Update canvas after view change
-    setTimeout(async () => {
-      if (this.currentTrack) {
-        this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      }
-    }, 200);
-  }
-
   // 17. BUILD GEOJSON ////////////////////////////////////
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
@@ -996,34 +922,6 @@ export class Tab1Page {
     this.archivedWaypoints.setStyle(this.drawCircle('yellow'));
   }
 
-  // 21. UPDATE ALL CANVAS ////////////////////////////////
-  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
-    // Validate context
-    if (!context) {
-      this.openCanvas = false;
-      return '';
-    }
-    // Open canvas
-    this.openCanvas = true;
-    try {
-      // Hide canvas for the current or archived track
-      if (track === this.currentTrack || track === this.archivedTrack) {
-        const type = track === this.currentTrack ? 'c' : 'a';
-        await this.showCanvas(type, 'none');
-      }
-      // Update canvas
-      let lastUnit = '';
-      for (const [index, property] of Object.entries(this.properties)) {
-        const mode = property === 'altitude' ? 'x' : 't';
-        lastUnit = await this.updateCanvas(context[index], track, property, mode);
-      }
-      return lastUnit;
-    } finally {
-      // Close canvas
-      this.openCanvas = false;
-    }
-  }
-
   // 22. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     var boundaries: Extremes | undefined;
@@ -1121,8 +1019,7 @@ export class Tab1Page {
     } catch (error) {}
     // display number of points (1)
     this.currentTrack.features[0].properties.totalNumber = 1;
-    // show current canvas
-    await this.showCanvas('c','block')
+    this.ts.setCurrentTrack(this.currentTrack);
   }
 
   // 24. CREATE MAP ////////////////////////////////////////
@@ -1194,91 +1091,6 @@ export class Tab1Page {
     }
   }
 
-  // 25. CREATE CANVASES //////////////////////////////////////////
-  async createCanvas() {
-    this.openCanvas = true;
-    let currentCanvas: HTMLCanvasElement | undefined;
-    let archivedCanvas: HTMLCanvasElement | undefined;
-    // show canvases
-    await this.showCanvas('c','block')
-    await this.showCanvas('a','block')
-    // Get window size for canvas size
-    const size = Math.min(window.innerWidth, window.innerHeight);
-    // Loop through properties to create canvases and their contexts
-    for (var i in this.properties) {
-      // Get canvas for current track
-      currentCanvas = document.getElementById('currentCanvas' + i) as HTMLCanvasElement;
-      if (currentCanvas) {
-        currentCanvas.width = size;
-        currentCanvas.height = size;
-        const ctx = currentCanvas.getContext("2d");
-        if (ctx) this.currentCtx[i] = ctx
-      } else {
-        console.error(`Canvas with ID currentCanvas${i} not found.`);
-      }
-      // Get canvas for archived track
-      archivedCanvas = document.getElementById('archivedCanvas' + i) as HTMLCanvasElement;
-      if (archivedCanvas) {
-        archivedCanvas.width = size;
-        archivedCanvas.height = size;
-        const ctx = archivedCanvas.getContext("2d");
-        if (ctx) this.archivedCtx[i] = ctx
-      } else {
-        console.error(`Canvas with ID archivedCanvas${i} not found.`);
-      }
-    }
-    // Define canvasNum as height and width
-    this.canvasNum = size;
-    // Hide canvases after setup
-    await this.showCanvas('c', 'none');
-    await this.showCanvas('a', 'none');
-    this.openCanvas = false;
-  }
-
-  // 26. GRID /////////////////////////////////////////////////////
-  async grid(  ctx: CanvasRenderingContext2D | undefined,
-    xMin: number,
-    xMax: number,
-    yMin: number,
-    yMax: number,
-    a: number,
-    d: number,
-    e: number,
-    f: number) {
-      // Return if there is no canvascontext
-      if (!ctx) return;
-      // Define fonts and styles
-      ctx.font = "15px Arial"
-      ctx.save();
-      ctx.setLineDash([5, 15]);
-      ctx.strokeStyle = 'black';
-      ctx.fillStyle = 'black'
-      // Define line spacing and position
-      const gridx = this.gridValue(xMax - xMin);
-      const gridy = this.gridValue(yMax - yMin);
-      const fx = Math.ceil(xMin / gridx);
-      const fy = Math.ceil(yMin / gridy);
-      // Draw vertical lines
-      for (var xi = fx * gridx; xi <= xMax; xi += gridx) {
-        ctx.beginPath();
-        ctx.moveTo(xi * a + e, yMin * d + f);
-        ctx.lineTo(xi * a + e, yMax * d + f);
-        ctx.stroke();
-        ctx.fillText(xi.toLocaleString(), xi * a + e + 2, yMax * d + f + 15)
-      }
-      // Draw horizontal lines
-      for (var yi = fy * gridy; yi <= yMax; yi += gridy) {
-        ctx.beginPath();
-        ctx.moveTo(xMin * a + e, yi * d + f);
-        ctx.lineTo(xMax * a + e, yi * d + f);
-        ctx.stroke();
-        ctx.fillText(yi.toLocaleString(), xMin * a + e + 2, yi * d + f - 10)
-      }
-      // Restore context
-      ctx.restore();
-      ctx.setLineDash([]);
-  }
-
   // 27. DETERMINATION OF GRID STEP //////////////////////
   gridValue(dx: number) {
     const nx = Math.floor(Math.log10(dx));
@@ -1293,8 +1105,6 @@ export class Tab1Page {
     try {
       this.archivedLayer.setVisible(true);  // No need for await
     } catch (error) {}
-    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    await this.showCanvas('a', 'block');
     await this.displayArchivedTrack();
   }
 
@@ -1355,75 +1165,6 @@ export class Tab1Page {
     this.multiLayer = new VectorLayer({source: msource});
   }
 
-  // 30. UPDATE CANVAS ///////////////////////////////////
-  async updateCanvas(ctx: any, track: Track | undefined, propertyName: keyof Data, xParam: string) {
-    var tUnit: string = ''
-    if (!ctx) return tUnit;
-    // Reset and clear the canvas
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
-    if (!track) return tUnit;
-    // Show appropriate canvas
-    if (track === this.currentTrack) {
-      await this.showCanvas('c', 'block');
-    } else if (track === this.archivedTrack) {
-      await this.showCanvas('a', 'block');
-    }
-    // Define data array
-    const data = track.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num === 0) return tUnit;
-    // Determine time/distance scale and units
-    let xDiv: number = 1;
-    let xTot: number;
-    if (xParam === 'x') {
-      xTot = data[num - 1].distance;
-    } else {
-      xTot = data[num - 1].time - data[0].time;
-      if (xTot > 3600000) {
-        tUnit = 'h';
-        xDiv = 3600000;
-      } else if (xTot > 60000) {
-        tUnit = 'min';
-        xDiv = 60000;
-      } else {
-        tUnit = 's';
-        xDiv = 1000;
-      }
-      xTot /= xDiv;
-    }
-    // Compute min and max bounds
-    const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
-    if (bounds.max === bounds.min) {
-      bounds.max += 2;
-      bounds.min -= 2;
-    }
-    // Compute scaling factors for drawing
-    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
-    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
-    const offsetX = this.margin;
-    const offsetY = this.margin - bounds.max * scaleY;
-    // Draw the line graph
-    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
-    ctx.beginPath();
-    ctx.moveTo(0, bounds.min);
-    for (const point of data) {
-      const xValue = xParam === 'x' ? point.distance : (point.time - data[0].time) / xDiv;
-      const yValue = point[propertyName];
-      ctx.lineTo(xValue, yValue);
-    }
-    // Close the path and fill with color
-    ctx.lineTo(xTot, bounds.min);
-    ctx.closePath();
-    ctx.fillStyle = 'yellow';
-    ctx.fill();
-    // Reset transformation matrix
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // Draw grid
-    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
-    return tUnit;
-  }
-
   // 31. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
@@ -1434,6 +1175,7 @@ export class Tab1Page {
     // Loop through each item in the collection
     for (const item of global.collection) {
       key = item.date;
+      console.log('key', key)
       track = await this.fs.storeGet(JSON.stringify(key));
       // If the track does not exist, remove the key and skip this iteration
       if (!track) {
@@ -1442,6 +1184,7 @@ export class Tab1Page {
       }
       // Extract coordinates and add to multiLine and multiPoint
       const coord = track.features[0]?.geometry?.coordinates;
+      console.log('coord', coord)
       if (coord) {
         multiLine.push(coord);
         multiPoint.push(coord[0]);
@@ -1475,12 +1218,12 @@ export class Tab1Page {
             const multiKey = feature.get('multikey'); // Retrieve stored waypoints
             const key = multiKey[index];
             this.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
+            this.ts.setArchivedTrack(this.archivedTrack);
             // Display archived track details if it exists
             if (this.archivedTrack) {
               this.extremes = await this.fs.computeExtremes(this.archivedTrack);
               this.multiLayer.setVisible(false);
               global.layerVisibility = 'archived';
-              await this.showCanvas('a', 'block');
               await this.showArchivedTrack();
               await this.setMapView(this.archivedTrack);
             }
@@ -1518,6 +1261,7 @@ export class Tab1Page {
                 waypoints[index].comment = response.comment;
                 if (this.archivedTrack) {
                   this.archivedTrack.features[0].waypoints = waypoints;
+                  this.ts.setArchivedTrack(this.archivedTrack);
                   await this.fs.storeSet(global.key,this.archivedTrack)
                 }
               }
@@ -1538,34 +1282,6 @@ export class Tab1Page {
         fill: new Fill({ color: color })
       })
     });
-  }
-
-  // 34. COMPUTE AVERAGE SPEEDS AND TIMES
-  async averageSpeed() {
-    if (!this.currentTrack) return;
-    // get data array
-    const data = this.currentTrack.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num < 2) return;
-    // Compute time at rest
-    for (let i = this.averagedSpeed + 1; i < num; i++) {
-      if (data[i].compSpeed < this.vMin) {
-        // Add the time spent at rest
-        this.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
-      }
-      this.averagedSpeed = i;  // Track last processed index
-    }
-    // Compute total time
-    let totalTime = data[num - 1].time - data[0].time;
-    totalTime = totalTime / 1000; // Convert milliseconds to seconds
-    // Calculate average speed (in km/h)
-    this.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
-    // If the total time minus stopped time is greater than 5 seconds, calculate motion speed
-    if (totalTime - this.stopped > 5) {
-      this.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.stopped);
-    }
-    // Format the motion time
-    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));
   }
 
   // 35. COMPUTE DISTANCES //////////////////////////////////////
@@ -1603,6 +1319,7 @@ export class Tab1Page {
     this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(data[num - 1].time - data[0].time);
     this.currentTrack.features[0].properties.totalNumber = num;
     this.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
+    this.ts.setCurrentTrack(this.currentTrack);
   }
 
   // 37. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
@@ -1613,6 +1330,7 @@ export class Tab1Page {
     const previousStatus = this.status;
     // Determine the current route color based on `onRoute` function
     this.status = await this.onRoute() || 'black';
+    this.ts.setStatus(this.status);
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);
@@ -1638,16 +1356,11 @@ export class Tab1Page {
         this.speedFiltered = Math.max(0, this.speedFiltered - 1);
         this.averagedSpeed = Math.max(0, this.averagedSpeed - 1);
         this.computedDistances = Math.max(0, this.computedDistances - 1);
+        this.ts.setCurrentTrack(this.currentTrack);
       } else {
         break;
       }
     }
-  }
-
-  // 39. SHOW / HIDE CANVAS OF CURRENT TRACK
-  async showCanvas(track: string, visible: 'block' | 'none' | 'inline' | 'flex') {
-    await this.show(track+'c0',visible);
-    await this.show(track+'c1',visible);
   }
 
   // 40. ON LEAVE ////////////////////////////
@@ -1896,16 +1609,11 @@ export class Tab1Page {
         this.currentTrack.features[0].geometry.properties.data,
         this.speedFiltered + 1
       );
+      this.ts.setCurrentTrack(this.currentTrack);
     }
     this.speedFiltered = num - 1;
-    // average speed
-    await this.averageSpeed();
     // html values
     await this.htmlValues();
-    // update canvas
-    if (num % 20 == 0) {
-      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    }
     // display the current track
     await this.displayCurrentTrack();
     // detect changes for Angular
@@ -2074,6 +1782,7 @@ export class Tab1Page {
       waypoint.name = response.name,
       waypoint.comment = response.comment
       this.currentTrack.features[0].waypoints?.push(waypoint);
+      this.ts.setCurrentTrack(this.currentTrack);
       // Toast
       const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
       this.fs.displayToast(toast[global.languageIndex]);
@@ -2088,6 +1797,7 @@ export class Tab1Page {
     for (const wp of waypoints) {
       if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
     }
+    this.ts.setCurrentTrack(this.currentTrack);
     console.log(this.currentTrack)
   }
 
@@ -2164,6 +1874,7 @@ export class Tab1Page {
         }]
       }
     }
+    this.ts.setArchivedTrack(this.archivedTrack);
     console.log('route', this.archivedTrack)
     if (this.archivedTrack) {
       this.extremes = await this.fs.computeExtremes(this.archivedTrack);
@@ -2268,15 +1979,11 @@ export class Tab1Page {
           this.speedFiltered + 1
         );
         this.speedFiltered = num - 1;
-        // average speed
-        await this.averageSpeed();
+        this.ts.setCurrentTrack(this.currentTrack);
         // Update HTML values
         await this.htmlValues();
         // Trigger Angular's change detection
         this.cd.detectChanges();
-        // Update the canvas
-        await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-        console.log('Transition.',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
       } catch (error) {
         console.error('Error during foreground transition processing:', error);
       }

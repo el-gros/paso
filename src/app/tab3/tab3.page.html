@@ -1,10 +1,18 @@
 <ion-content>
 
-  <!-- home -->
-  <ion-fab slot="fixed" horizontal="center" vertical="top">
-    <ion-fab-button (click)="fs.goHome()">
-      <ion-icon name='home'></ion-icon>
-    </ion-fab-button>  
+  <!-- Navigation buttons -->
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom">
+    <ion-row>
+      <ion-fab-button id='databutton' (click)="fs.gotoPage('tab1')">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='databutton' (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
+        <ion-icon name="list"></ion-icon>
+      </ion-fab-button>
+    </ion-row>
   </ion-fab>
 
   <ion-grid>
@@ -67,10 +75,10 @@
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Current')">
           <div class="pick" >{{title[4][languageIndex]}}</div>
         </ion-button>
-      </ion-col>  
+      </ion-col>
       <ion-col size="2" offset="1">
         <div class="line" [ngStyle]="{'background-color': currentColor}"></div>
-      </ion-col>  
+      </ion-col>
     </ion-row>
 
     <!-- Reference track color -->
@@ -82,40 +90,42 @@
         <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Archived')">
           <div class="pick" >{{title[4][languageIndex]}}</div>
         </ion-button>
-      </ion-col>  
+      </ion-col>
       <ion-col size="2" offset="1">
         <div class="line" [ngStyle]="{'background-color': archivedColor}"></div>
-      </ion-col>        
+      </ion-col>
     </ion-row>
-    
+
     <!-- Upload and remove maps -->
 
     <ion-row *ngIf="!isDownloading">
       <ion-col size="6" class = 'centered-content'>
         <div><strong>{{title[7][languageIndex]}}</strong></div>
-      </ion-col>  
+      </ion-col>
       <ion-col size="6" class = 'centered-content'>
         <div><strong>{{title[8][languageIndex]}}</strong></div>
-      </ion-col>  
+      </ion-col>
     </ion-row>
- 
+
     <ion-row *ngIf="!isDownloading">
       <ion-col size="4" offset="1">
         <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('upload')">
           <div class="pick" >{{title[7][languageIndex]}}</div>
         </ion-button>
-      </ion-col>  
+      </ion-col>
       <ion-col size="4" offset="2">
         <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('remove')">
           <div class="pick" >{{title[8][languageIndex]}}</div>
         </ion-button>
-      </ion-col>  
+      </ion-col>
     </ion-row>
     </ion-grid>
- 
+
     <!-- 🔹 Show progress bar only when downloading -->
     <ng-container *ngIf="isDownloading">
       <ion-progress-bar [value]="downloadProgress / 100"></ion-progress-bar>
       <p>{{ downloadProgress }}% downloaded</p>
-    </ng-container>  
-</ion-content>
+    </ng-container>
+
+  </ion-content>
+

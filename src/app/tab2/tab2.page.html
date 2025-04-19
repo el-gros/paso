@@ -5,12 +5,6 @@
       <ion-button class="header-button" shape="round" fill="solid" (click)="openMenu()">
         <ion-icon slot="icon-only" name="menu"></ion-icon>
       </ion-button>
-      <ion-button class="header-button" shape="round" fill="solid" (click)="fs.goHome()">
-        <ion-icon slot="icon-only" name="home"></ion-icon>
-      </ion-button>
-      <ion-button class="header-button" shape="round" fill="solid" (click)="fs.goSettings()">
-        <ion-icon slot="icon-only" name="settings"></ion-icon>
-      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -30,6 +24,7 @@
       </ion-item>
     </ion-list>
   </div>
+    <div class='empty'></div>
 
   <ion-menu side="start" contentId="main-content">
     <ion-content>
@@ -49,57 +44,18 @@
   <ion-content id="main-content"></ion-content>
 </ion-content>
 
-<!--
-
-<ion-footer>
-  <ion-grid>
+  <!-- Navigation buttons -->
+  <ion-fab slot="fixed" horizontal="center" class="bottom" vertical="boittom">
     <ion-row>
-      <ion-col size="4">
-        <ion-button [ngClass]="(presentSearch) ? 'redEnabled' : 'redDisabled'" (click)="removeSearch()"
-          expand="block" [disabled]='(!presentSearch)'>
-          <div>{{search[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="4">
-        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="exportTrack()"
-          expand="block" [disabled]='(numChecked != 1)'>
-          <div>{{export[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="4">
-        <ion-button *ngIf="layerVisibility != 'multi'" class='greenEnabled' (click)="displayAllTracks(true)" expand="block">
-          <div>{{all[languageIndex]}}</div>
-        </ion-button>
-        <ion-button *ngIf="layerVisibility == 'multi'" class='redEnabled' (click)="displayAllTracks(false)" expand="block">
-          <div>{{hideAll[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
+      <ion-fab-button (click)="fs.gotoPage('tab1')">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="fs.gotoPage('tab3')">
+        <ion-icon name="settings"></ion-icon>
+      </ion-fab-button>
     </ion-row>
-    <ion-row class="move-up">
-      <ion-col size="4">
-        <ion-button [ngClass]="(numChecked == 0) ? 'redDisabled' : 'redEnabled'" (click)="deleteTracks()" expand="block"
-          [disabled]='(numChecked == 0)'>
-          <div>{{remove[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="4">
-        <ion-button [ngClass]="(numChecked != 1) ? 'greenDisabled' : 'greenEnabled'" (click)="editTrack()"
-          expand="block" [disabled]='(numChecked != 1)'>
-          <div>{{edit[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="4">
-        <ion-button *ngIf="(numChecked == 1)" class= 'greenEnabled' (click)="displayTrack(true)"
-          expand="block">
-          <div>{{display[languageIndex]}}</div>
-        </ion-button>
-        <ion-button *ngIf="(numChecked != 1)" [ngClass]="((layerVisibility != 'archived') || !archivedPresent) ? 'redDisabled' : 'redEnabled'" (click)="displayTrack(false)"
-          expand="block" [disabled]="(layerVisibility != 'archived') || !archivedPresent">
-          <div>{{hide[languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
-</ion-footer>
+  </ion-fab>
 
--->

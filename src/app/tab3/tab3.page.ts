@@ -12,6 +12,7 @@ import { UpdateModalComponent } from '../update-modal/update-modal.component';
 import { ModalController } from '@ionic/angular';
 import { Map } from '../../globald';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Router } from '@angular/router';
 
 register();
 
@@ -70,7 +71,8 @@ export class Tab3Page {
   constructor(
     public fs: FunctionsService,
     public server: ServerService,
-    public modalController: ModalController
+    public modalController: ModalController,
+    private router: Router,
   ) {
     this.initialize();
   }
@@ -145,7 +147,7 @@ export class Tab3Page {
     // Store the map provider
     await this.fs.storeSet('mapProvider', baseMap.name);
     // Go to map
-    this.fs.goHome();
+    this.fs.gotoPage('tab1')
   }
 
   async onLanguageChange() {
