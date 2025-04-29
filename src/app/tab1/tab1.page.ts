@@ -307,6 +307,7 @@ export class Tab1Page {
   motionAvgSpeed = ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'];
 
   get languageIndex(): number { return global.languageIndex; }
+  get state(): string { return global.state; }
 
   constructor(
     public fs: FunctionsService,
@@ -318,9 +319,7 @@ export class Tab1Page {
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
     private nominatimService: NominatimService
-  ) {
-    this.listenToAppStateChanges();
-  }
+  ) {}
 
   /* FUNCTIONS
 
@@ -329,36 +328,28 @@ export class Tab1Page {
   3. addFileListener
   4. ionViewDidEnter
   5. centerAllTracks
-  6. displayCurrentTrack
+  ** 6. displayCurrentTrack
   7. startTracking
-  8. removeTrack
+  ** 8. removeTrack
   9. stopTracking
   10. confirm
   11. setTrackDetails
   12. showValidationAlert
   13. saveFile
-
-
-
-  17. buildGeoJson
-  18. onRoute
-  19. show
-  20. displayArchivedTrack
-
-  22. setMapView
-  23. firstPoint
-  24. createMap
-
-  26. grid
-  27. gridValue
-  28. filterAltitude
-  29. createLayers
-
-  31. displayAllTracks
-  32. handleMapClick()
-  33. drawCircle()
-
-  35. computeDistances()
+  14. buildGeoJson
+  15. onRoute
+  16. show
+  17. displayArchivedTrack
+  18. setMapView
+  19. firstPoint
+  20. createMap
+  21. showArchivedTrack
+  22. filterAltitude
+  ** 23. createLayers
+  24. displayAllTracks
+  25. handleMapClick()
+  26. drawCircle()
+  27. computeDistances()
 
   37. checkWhetherOnRoute()
   38. fixWrongOrder()
@@ -387,7 +378,7 @@ export class Tab1Page {
 
   // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   listenToAppStateChanges() {
-    //let wasInForeground = true;
+    // State changes between foreground and background
     App.addListener('appStateChange', async (state) => {
       if (!this.currentTrack) return;
       this.foreground = state.isActive;  // true if in foreground, false if in background
@@ -406,13 +397,14 @@ export class Tab1Page {
   // 2. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
-      // Listen for app URL open events (e.g., file tap)
-      this.addFileListener();
+      // Listen for state changes
+      this.listenToAppStateChanges();
       // create storage
       await this.storage.create();
+      // Listen for app URL open events (e.g., file tap)
+      this.addFileListener();
       // Check map provider
       this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-      console.log('Map provider: ', this.mapProvider)
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
@@ -420,17 +412,7 @@ export class Tab1Page {
       // Determine line color
       this.determineColors();
       // elements shown, elements hidden
-      this.show('map', 'block');
-      this.show('search', 'block');
-      this.show('guide', 'block');
-      this.show('data', 'none');
-      this.show('start', 'block');
-      this.show('stop', 'none');
       this.show('alert', 'none');
-      this.show('save', 'none');
-      this.show('trash', 'none');
-      this.show('mapbutton', 'none');
-      this.show('databutton', 'block');
       // uncheck all
       await this.fs.uncheckAll();
       // create map
@@ -445,24 +427,17 @@ export class Tab1Page {
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
-      console.log(data)
       this.fs.gotoPage('tab1');
-      console.log('went to tab1')
       await this.processUrl(data);
-      console.log('processed url')
       global.layerVisibility = 'archived'
-      // retrieve archived track
-      this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
-      this.ts.setArchivedTrack(this.archivedTrack);
-      if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
-      console.log('retrieved archived track')
       // assign visibility
       if (this.multiLayer) await this.multiLayer.setVisible(false);
-      // iF archived track is available...
+      // iF an archived track has been parsed...
       if (this.archivedTrack) {
+        this.ts.setArchivedTrack(this.archivedTrack);
+        this.extremes = await this.fs.computeExtremes(this.archivedTrack);
         // show archived track
         await this.showArchivedTrack();
-        console.log('displayed archived track')
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
           await this.setMapView(this.archivedTrack);
@@ -487,12 +462,16 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
+      // Display current track (updates color)
+      if (this.currentTrack && this.map) await this.displayCurrentTrack();
       // archived visible
       if (global.layerVisibility == 'archived') {
         // retrieve archived track
         this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
-        this.ts.setArchivedTrack(this.archivedTrack);
-        if (this.archivedTrack) this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+        if (this.archivedTrack) {
+          this.ts.setArchivedTrack(this.archivedTrack);
+          this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+        }
         // assign visibility
         if (this.multiLayer) await this.multiLayer.setVisible(false);
         // iF archived track is available...
@@ -560,13 +539,15 @@ export class Tab1Page {
     this.currentMarkers[1].setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
-      if (!global.updateLocation) await this.setMapView(this.currentTrack);
+      await this.setMapView(this.currentTrack);
     }
   }
 
   // 7. START TRACKING /////////////////////////////////
   async startTracking() {
-    const notice = ["S'està seguint la vostra ubicazció", "Rastreando tu posición", "Tracking your location"]
+    // In case there is something wrong
+    if (!this.currentLayer) return;
+    // Check-reqauest permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
       // If not, request the necessary permissions
@@ -579,21 +560,17 @@ export class Tab1Page {
       await ForegroundService.requestManageOverlayPermission();
     }
     // start foreground service
+    const notice = ["S'està seguint la vostra ubicazció", "Rastreando tu posición", "Tracking your location"]
     await ForegroundService.startForegroundService({
       id: 1234,
       title: notice[global.languageIndex],
       body: '',
       smallIcon: 'splash.png',
     });
-    console.log ('Foreground service started successfully')
     // Reset current track and related variables
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
-    try {
-      this.currentLayer.setVisible(false);
-    } catch (error) {
-      console.warn("Error hiding current layer:", error);
-    }
+    this.currentLayer.setVisible(false);
     // initialize variables
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
@@ -634,44 +611,31 @@ export class Tab1Page {
       }
     }).then((value: any) => this.watcherId = value);
     // show / hide UI elements
-    this.show('start', 'none');
-    this.show('stop', 'block');
-    this.show('trash', 'none');
-    this.show('save', 'none');
+    global.state = 'tracking';
   }
 
   // 8. REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
     // show / hide elements
-    this.show('start', 'block');
-    this.show('stop', 'none');
+    global.state = 'inactive'
     this.show('alert', 'none');
-    this.show('save', 'none');
-    this.show('trash', 'none');
     // Reset current track
     this.status = 'black';
     this.ts.setStatus(this.status);
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
+    if (this.currentLayer) this.currentLayer.setVisible(false);
     // Toast
     const toast = ["El trajecte actual s'ha esborrat",'El trayecto actual se ha eliminado','The current track has been removed']
     this.fs.displayToast(toast[global.languageIndex]);
-    if (!this.currentLayer) return;
-    try {
-      await this.currentLayer.setVisible(false);
-    }
-    catch {}
   }
 
   // 9. STOP TRACKING //////////////////////////////////
   async stopTracking() {
     console.log('initiate stop tracking')
     // show / hide elements
-    this.show('start', 'none');
-    this.show('stop', 'none');
+    global.state = 'stopped';
     this.show('alert', 'none');
-    this.show('save', 'block');
-    this.show('trash', 'block');
     // Set the red marker at the last coordinate
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     if (num > 0 && this.currentMarkers[2] && this.currentTrack) {
@@ -696,7 +660,7 @@ export class Tab1Page {
     // Set waypoint altitude
     await this.setWaypointAltitude()
     // set map view
-    if (!global.updateLocation) await this.setMapView(this.currentTrack);
+    await this.setMapView(this.currentTrack);
     // Toast
     const toast = ['El trajecte actual ha finalitzat','El trayecto actual ha finalizado','The current track is now finished']
     this.fs.displayToast(toast[global.languageIndex]);
@@ -720,7 +684,7 @@ export class Tab1Page {
     const message = which === 'stop' ? stopMessage[global.languageIndex] : delMessage[global.languageIndex]
     console.log('header', header)
     const text = ['Si','Si','Yes']
-    const cssClass = 'alert yellowAlert';
+    const cssClass = 'alert greenishAlert';
     const inputs: never[] = [];
     const buttons =  [
       global.cancelButton,
@@ -770,7 +734,7 @@ export class Tab1Page {
 
   // 12. NO NAME TO SAVE ////////////////////////////////////
   async showValidationAlert() {
-    const cssClass = 'alert yellowAlert'
+    const cssClass = 'alert greenishAlert'
     const header = 'Validation Error'
     const message = 'Please enter a name for the track.'
     const buttons = ['OK']
@@ -807,14 +771,11 @@ export class Tab1Page {
     const toast = ['Fitxer guardat correctament', 'Fichero guardado correctamente','File saved successfully']
     this.fs.displayToast(toast[global.languageIndex]);
     // Update UI elements
-    this.show('start', 'none');
-    this.show('stop', 'none');
+    global.state = 'saved'
     this.show('alert', 'none');
-    this.show('save', 'none');
-    this.show('trash', 'block');
   }
 
-  // 17. BUILD GEOJSON ////////////////////////////////////
+  // 14. BUILD GEOJSON ////////////////////////////////////
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return false;
@@ -839,7 +800,7 @@ export class Tab1Page {
     return true;
   }
 
-  // 18. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
+  // 15. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
   async onRoute() {
     // Return 'black' if conditions aren't met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility != 'archived') return 'black';
@@ -888,7 +849,7 @@ export class Tab1Page {
     return 'red';
   }
 
-  // 19. SHOW / HIDE ELEMENTS /////////////////////////////////
+  // 16. SHOW / HIDE ELEMENTS /////////////////////////////////
   async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
     const obj = document.getElementById(id);
     if (obj) {
@@ -896,7 +857,7 @@ export class Tab1Page {
     }
   }
 
-  // 20. DISPLAY AN ARCHIVED TRACK /////////////////////////
+  // 17. DISPLAY AN ARCHIVED TRACK /////////////////////////
   async displayArchivedTrack() {
     // Ensure the map and archived track exist
     if (!this.map || !this.archivedTrack) return;
@@ -916,13 +877,13 @@ export class Tab1Page {
     }
     // Display waypoints
     const waypoints = this.archivedTrack.features[0].waypoints || []
-    const multiPoint = waypoints.map(point => [point.longitude, point.latitude]);
+    const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
     this.archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
     this.archivedWaypoints.set('waypoints', waypoints);
     this.archivedWaypoints.setStyle(this.drawCircle('yellow'));
   }
 
-  // 22. SET MAP VIEW /////////////////////////////////////////
+  // 18. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     var boundaries: Extremes | undefined;
     if (track == this.archivedTrack) boundaries = this.extremes
@@ -950,7 +911,7 @@ export class Tab1Page {
     })
   }
 
-  // 23. FIRST POINT OF THE TRACK /////////////////////////////
+  // 19. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
     // Initialize current track
     this.currentTrack = {
@@ -1022,7 +983,7 @@ export class Tab1Page {
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
-  // 24. CREATE MAP ////////////////////////////////////////
+  // 20. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
       // Current position
@@ -1091,16 +1052,7 @@ export class Tab1Page {
     }
   }
 
-  // 27. DETERMINATION OF GRID STEP //////////////////////
-  gridValue(dx: number) {
-    const nx = Math.floor(Math.log10(dx));
-    const x = dx / (10 ** nx);
-    if (x < 2.5) return 0.5 * (10 ** nx);
-    else if (x < 5) return 10 ** nx;
-    else return 2 * (10 ** nx);
-  }
-
-  // SHOW ARCHIVED TRACK ///////////////////////////
+  // 21, SHOW ARCHIVED TRACK ///////////////////////////
   async showArchivedTrack() {
     try {
       this.archivedLayer.setVisible(true);  // No need for await
@@ -1108,7 +1060,7 @@ export class Tab1Page {
     await this.displayArchivedTrack();
   }
 
-  // 28. FI8LTER ALTITUDE /////////////////////////////
+  // 22. FI8LTER ALTITUDE /////////////////////////////
   async filterAltitude(track: any, final: number) {
     if (!track) return;
     // number of points
@@ -1139,22 +1091,18 @@ export class Tab1Page {
     }
   }
 
-  // 29. CREATE FEATURES /////////////////////////////
+  // 23. CREATE LAYERS /////////////////////////////
   async createLayers() {
-    // create features to hold current track and markers
-    this.currentMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
-    this.currentMarkers[1] = new Feature({ geometry: new Point([0, 40]) });
-    this.currentMarkers[0] = new Feature({ geometry: new Point([0, 40]) });
-    this.currentFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
+    // Create features to display the current track
+    this.currentFeature= new Feature();
+    this.currentMarkers = [new Feature(), new Feature(), new Feature()];
     // create features to hold multiple track and markers
-    this.multiFeature = new Feature({ geometry: new MultiLineString([[[0, 40], [0, 40]]]) });
-    this.multiMarker = new Feature({ geometry: new MultiPoint([0, 40]) });
-    // create features to hold archived track, markers and waypoints
-    this.archivedFeature = new Feature({ geometry: new LineString([[0, 40], [0, 40]]) });
-    this.archivedMarkers[0] = new Feature({ geometry: new Point([0, 40]) });
-    this.archivedMarkers[1] = new Feature({ geometry: new Point([0, 40]) });
-    this.archivedMarkers[2] = new Feature({ geometry: new Point([0, 40]) });
-    this.archivedWaypoints = new Feature({geometry: new MultiPoint([0, 40]) });
+    this.multiFeature = new Feature();
+    this.multiMarker = new Feature();
+    // create features to display the archived track
+    this.archivedFeature = new Feature();
+    this.archivedMarkers = [new Feature(), new Feature(), new Feature()];
+    this.archivedWaypoints = new Feature();
     // Vector sources for current, archived and multiple tracks
     var csource = new VectorSource({ features: [this.currentFeature, ...this.currentMarkers] });
     var asource = new VectorSource({ features: [this.archivedFeature, ...this.archivedMarkers, this.archivedWaypoints] });
@@ -1165,7 +1113,7 @@ export class Tab1Page {
     this.multiLayer = new VectorLayer({source: msource});
   }
 
-  // 31. DISPLAY ALL ARCHIVED TRACKS
+  // 24. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
     var track: any;
@@ -1175,7 +1123,6 @@ export class Tab1Page {
     // Loop through each item in the collection
     for (const item of global.collection) {
       key = item.date;
-      console.log('key', key)
       track = await this.fs.storeGet(JSON.stringify(key));
       // If the track does not exist, remove the key and skip this iteration
       if (!track) {
@@ -1202,7 +1149,7 @@ export class Tab1Page {
     this.multiLayer.setVisible(true);
   }
 
-  // 32. HANDLE MAP CLICK //////////////////////////////
+  // 25. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     switch(global.layerVisibility) {
       case 'multi':
@@ -1218,9 +1165,9 @@ export class Tab1Page {
             const multiKey = feature.get('multikey'); // Retrieve stored waypoints
             const key = multiKey[index];
             this.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
-            this.ts.setArchivedTrack(this.archivedTrack);
             // Display archived track details if it exists
             if (this.archivedTrack) {
+              this.ts.setArchivedTrack(this.archivedTrack);
               this.extremes = await this.fs.computeExtremes(this.archivedTrack);
               this.multiLayer.setVisible(false);
               global.layerVisibility = 'archived';
@@ -1261,7 +1208,6 @@ export class Tab1Page {
                 waypoints[index].comment = response.comment;
                 if (this.archivedTrack) {
                   this.archivedTrack.features[0].waypoints = waypoints;
-                  this.ts.setArchivedTrack(this.archivedTrack);
                   await this.fs.storeSet(global.key,this.archivedTrack)
                 }
               }
@@ -1274,7 +1220,7 @@ export class Tab1Page {
     }
   }
 
-  // 33. DRAW A CIRCLE //////////////////////////////////////
+  // 26. DRAW A CIRCLE //////////////////////////////////////
   drawCircle(color: string): Style {
     return new Style({
       image: new CircleStyle({
@@ -1284,7 +1230,7 @@ export class Tab1Page {
     });
   }
 
-  // 35. COMPUTE DISTANCES //////////////////////////////////////
+  // 27. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
     if (!this.currentTrack) return;
     // get coordinates and data arrays
@@ -1544,8 +1490,12 @@ export class Tab1Page {
     // Save imported track
     const date = new Date(track.features[0].geometry.properties.data[num - 1]?.time || Date.now());
     track.features[0].properties.date = date;
-    await this.fs.storeSet(JSON.stringify(date), track);
-    // Update collection
+    this.archivedTrack = track;
+    const dateKey = JSON.stringify(date);
+    const existing = await this.fs.storeGet(dateKey);
+    if (existing) return;
+    await this.fs.storeSet(dateKey, track);
+    // Track definition for global collection
     const trackDef = {
       name: track.features[0].properties.name,
       date: track.features[0].properties.date,
@@ -1553,31 +1503,30 @@ export class Tab1Page {
       description: track.features[0].properties.description,
       isChecked: true
     };
-    // add new track definition and save collection and
-    // uncheck all tracks except the new one
-    for (const item of global.collection) {
-      if ('isChecked' in item) {
-        item.isChecked = false;
-      }
-    }
+    // add new track definition and save collection
     global.collection.push(trackDef);
     await this.fs.storeSet('collection', global.collection);
+    console.log('collection', global.collection)
   }
 
   // 44. PROCESS FILE AFTER TAPPING ON IT /////////////
   async processUrl(data: any) {
     if (data.url) {
       try {
+        // Read file
         const fileContent = await Filesystem.readFile({
           path: data.url,
           encoding: Encoding.UTF8,
         });
+        // If we read a string,
         if (typeof fileContent.data === 'string') {
-            await this.parseGpx(fileContent.data);
-            const toast = ["El fitxer s'ha importat correctament","El fichero se ha importado correctamente",'File uploaded successfully']
-            this.fs.displayToast(toast[global.languageIndex]);
+          // Parse GPX file content
+          await this.parseGpx(fileContent.data);
+          const toast = ["El fitxer s'ha importat correctament","El fichero se ha importado correctamente",'File uploaded successfully']
+          this.fs.displayToast(toast[global.languageIndex]);
         }
         else {
+          console.log('not a string')
           const toast = ["No s'ha importat cap fitxer","No se ha importado ningún fichero", 'No file uploaded']
           this.fs.displayToast(toast[global.languageIndex]);
         }
@@ -1757,7 +1706,7 @@ export class Tab1Page {
       global.archivedColor = await this.fs.check(global.archivedColor, 'archivedColor');
       global.currentColor = await this.fs.check(global.currentColor, 'currentColor');
     } catch (error) {
-      console.error('Error determining language:', error);
+      console.error('Error determining color:', error);
     }
   }
 
@@ -1766,7 +1715,6 @@ export class Tab1Page {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
     let point = this.currentTrack.features[0].geometry.coordinates[num-1];
-    console.log(point)
     const address = await this.nominatimService.reverseGeocode(point[1],point[0]) || {name:'',address_name:''};
     console.log(address)
     let waypoint: Waypoint = {
@@ -1874,9 +1822,9 @@ export class Tab1Page {
         }]
       }
     }
-    this.ts.setArchivedTrack(this.archivedTrack);
     console.log('route', this.archivedTrack)
     if (this.archivedTrack) {
+      this.ts.setArchivedTrack(this.archivedTrack);
       this.extremes = await this.fs.computeExtremes(this.archivedTrack);
       this.multiLayer.setVisible(false);
       this.archivedLayer.setVisible(true);  // No need for await

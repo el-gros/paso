@@ -22,9 +22,6 @@ export class CanvasComponent  implements OnInit {
   currentTrack: Track | undefined = undefined;
   archivedTrack: Track | undefined = undefined;
 
-  get layerVisibility(): string { return global.layerVisibility; }
-  get languageIndex(): number { return global.languageIndex; }
-
   arcTitle = ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'];
   curTitle = ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'];
   distance = ['Distància','Distancia','Distance'];
@@ -56,6 +53,9 @@ export class CanvasComponent  implements OnInit {
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   margin: number = 10;
 
+  layerVisibility = global.layerVisibility;
+  languageIndex = global.languageIndex;
+
   constructor(
     private router: Router,
     public fs: FunctionsService,
@@ -76,10 +76,20 @@ export class CanvasComponent  implements OnInit {
       this.archivedTrack = archived;
       this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     });
+    // In case of archived track
+    if (this.archivedTrack) this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
     // Subscribe to status
     this.ts.status$.subscribe(async status => {
       this.status = status;
     });
+    console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
+  }
+
+  async ionViewWillEnter() {
+    // Variables
+    this.layerVisibility = global.layerVisibility;
+    this.languageIndex = global.languageIndex;
+    console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
   }
 
   // 34. COMPUTE AVERAGE SPEEDS AND TIMES

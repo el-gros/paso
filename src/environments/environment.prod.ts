@@ -2,7 +2,7 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-import { TrackDefinition } from "../globald";
+import { TrackDefinition, Track } from "../globald";
 import { Map } from '../globald';
 
 export var global: any = {
@@ -20,6 +20,8 @@ export var global: any = {
   deleteSearch: false as boolean,
   presentSearch: false as boolean,
   locationUpdate: false as boolean,
+  archivedTrack: undefined as Track | undefined,
+  state: 'inactive' as 'inactive' | 'tracking' | 'stopped' | 'saved',
 
   // Dynamic getter for the cancel button
   get cancelButton() {

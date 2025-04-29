@@ -11,12 +11,12 @@
     android:theme="@style/AppTheme"
     android:usesCleartextTraffic="true"
     android:requestLegacyExternalStorage="true">
-        <activity 
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation" 
-            android:exported="true" 
-            android:label="@string/title_activity_main" 
-            android:launchMode="singleInstance" 
-            android:name=".MainActivity" 
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:exported="true"
+            android:label="@string/title_activity_main"
+            android:launchMode="singleTask"
+            android:name=".MainActivity"
             android:theme="@style/AppTheme.NoActionBarLaunch"
         >
             <!-- Default launch intent filter -->
@@ -46,9 +46,9 @@
         </provider>
 
         <receiver android:name="io.capawesome.capacitorjs.plugins.foregroundservice.NotificationActionBroadcastReceiver" />
-        <service 
-            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService" 
-            android:foregroundServiceType="location" 
+        <service
+            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService"
+            android:foregroundServiceType="location"
             android:stopWithTask="true"
         />
     </application>

@@ -1,4 +1,4 @@
-import { TrackDefinition } from "../globald";
+import { TrackDefinition, Track } from "../globald";
 import { Map } from '../globald';
 
 export var global: any = {
@@ -8,7 +8,7 @@ export var global: any = {
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
   cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
-  currentColor: 'orange' as string, 
+  currentColor: 'orange' as string,
   archivedColor: 'green' as string,
   collection: [] as TrackDefinition [],
   key: 'null' as string,
@@ -17,6 +17,8 @@ export var global: any = {
   deleteSearch: false as boolean,
   presentSearch: false as boolean,
   locationUpdate: false as boolean,
+  archivedTrack: undefined as Track | undefined,
+  state: 'inactive' as 'inactive' | 'tracking' | 'stopped' | 'saved',
 
   // Dynamic getter for the cancel button
   get cancelButton() {
@@ -39,7 +41,7 @@ export var global: any = {
       "labels": ["Catalunya", "Cataluña", "Catalonia"],
       "name": 'Catalonia',
       "image": '/assets/maps/cat.jpg'
-    }  
+    }
   ] as Map[],
   maptiler_terrain_modified: {
     "version": 8,
@@ -596,7 +598,7 @@ export var global: any = {
         "paint": {
           "line-color": "#FF0000",
           "line-width": 10,
-          "line-dasharray": [4, 2] 
+          "line-dasharray": [4, 2]
         }
       },
       {
@@ -617,7 +619,7 @@ export var global: any = {
     ],
     "id": "maptiler-terrain"
   } as unknown as JSON,
-  onInitFinished: false as boolean,  
+  onInitFinished: false as boolean,
 }
 
 export const environment = {
@@ -1483,4 +1485,4 @@ export const environment = {
     ],
     "id": "maptiler-terrain"
   } as unknown as JSON,
-  */ 
+  */

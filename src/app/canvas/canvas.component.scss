@@ -34,10 +34,15 @@ ion-fab-button {
 
   .empty {
     width: 100%;
-    height: 12vh;
+    height: 6vh;
   }
 
-  .element {
+  .elementData {
+    width: 100%;
+    height: 40vh;
+  }
+
+  .elementCanvas {
     width: 100%;
     height: 55vh;
   }
@@ -79,3 +84,6 @@ ion-fab-button {
     background-color: white;
   }
 
+  .bottom {
+    bottom: 30px !important; /* Moves the fab buttons slightly up */
+  }

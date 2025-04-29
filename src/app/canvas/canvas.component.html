@@ -1,28 +1,13 @@
 <ion-content>
 
-  <!-- buttons to navigate -->
-  <ion-fab slot="fixed" horizontal="center" vertical="top">
-    <ion-row>
-      <ion-fab-button id='mapbutton' (click)="fs.gotoPage('tab1')">
-        <ion-icon name="earth"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
-        <ion-icon name="list"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='settings' (click)="fs.gotoPage('tab3')">
-        <ion-icon name="settings"></ion-icon>
-      </ion-fab-button>
-    </ion-row>
-  </ion-fab>
-
 <swiper-container id="data" pagination="true">
 
   <!-- Slide 1: Current track -->
-  <swiper-slide [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
+  <swiper-slide>
 
     <div class='empty'></div>
 
-    <div class='element card'>
+    <div class='elementData card' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
       <table *ngIf="currentTrack">
         <tr [ngClass]="status">
           <td colspan='2'>{{curTitle[languageIndex]}}</td>
@@ -83,23 +68,27 @@
       </table>
     </div>
 
-    <div class='element' id='cc0'>
+    <div class='elementCanvas' id='cc0' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
       <h1 class='title'>{{canvasAltitude[languageIndex]}}</h1>
       <canvas class='canvas' id="currCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
 
-    <div class='element' id='cc1'>
+    <div class='elementCanvas' id='cc1' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
       <h1 class='title'>{{canvasSpeed[languageIndex]}} ({{currentUnit}})</h1>
       <canvas class='canvas' id="currCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
+
+    <div class='empty'></div>
+    <div class='empty'></div>
+
   </swiper-slide>
 
-  <!-- Slide 1: Archived track -->
-  <swiper-slide [hidden]="!archivedTrack || layerVisibility != 'archived'">
+  <!-- Slide 2: Archived track -->
+  <swiper-slide>
 
     <div class='empty'></div>
 
-    <div class='element card'>
+    <div class='elementData card' [hidden]="!archivedTrack || layerVisibility != 'archived'">
       <table *ngIf="archivedTrack">
         <tr>
           <td colspan='2'>{{arcTitle[languageIndex]}}</td>
@@ -138,19 +127,37 @@
       </table>
     </div>
 
-    <div class='element' id='ac0'>
+    <div class='elementCanvas' id='ac0' [hidden]="!archivedTrack || layerVisibility != 'archived'">
       <h1 class='title'>{{canvasAltitude[languageIndex]}}</h1>
       <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
 
-    <div class='element' id='ac1'>
+    <div class='elementCanvas' id='ac1' [hidden]="!archivedTrack || layerVisibility != 'archived'">
       <h1 class='title'>{{canvasSpeed[languageIndex]}} ({{archivedUnit}})</h1>
       <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
+
+    <div class='empty'></div>
+    <div class='empty'></div>
 
   </swiper-slide>
 </swiper-container>
 
 </ion-content>
+
+  <!-- buttons to navigate -->
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom">
+    <ion-row>
+      <ion-fab-button (click)="fs.gotoPage('tab1')">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
+        <ion-icon name="list"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='settings' (click)="fs.gotoPage('tab3')">
+        <ion-icon name="settings"></ion-icon>
+      </ion-fab-button>
+    </ion-row>
+  </ion-fab>
 
 

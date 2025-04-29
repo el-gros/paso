@@ -3,19 +3,19 @@
 
   <ion-fab slot="fixed" horizontal="center" vertical="top">
     <ion-row>
-      <ion-fab-button id='start' (click)="startTracking()">
+      <ion-fab-button *ngIf="state == 'inactive'" id='start' (click)="startTracking()">
         <ion-icon name="play"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button id='stop' (click)="confirm('stop')">
+      <ion-fab-button *ngIf="state == 'tracking'" id='stop' (click)="confirm('stop')">
         <ion-icon name="pause"></ion-icon>
       </ion-fab-button>
       <ion-fab-button id='alert' (click)="waypoint()">
         <ion-icon name="alert"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button id='save' (click)="setTrackDetails()">
+      <ion-fab-button *ngIf="state == 'stopped'" id='save' (click)="setTrackDetails()">
         <ion-icon name="save"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button id='trash' (click)="confirm('delete')">
+      <ion-fab-button *ngIf="state == 'stopped' || state == 'saved'" id='trash' (click)="confirm('delete')">
         <ion-icon name="trash"></ion-icon>
       </ion-fab-button>
       <!-- Spacer -->

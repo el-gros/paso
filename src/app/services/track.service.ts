@@ -26,7 +26,7 @@ export class TrackService {
     this.archivedTrackSource.next(track);
   }
 
-  getArchivedTrack() {
+  getArchivedTrackTrack() {
     return this.archivedTrackSource.value;
   }
 
