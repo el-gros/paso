@@ -142,8 +142,6 @@ export class Tab3Page {
   // 3. SELECT MAP
   async selectBaseMap(baseMap: any) {
     console.log(baseMap)
-    // Open database
-    //if (global.offlineMaps.some((map: { name: string; }) => map.name === baseMap.name)) await this.server.openMbtiles(baseMap.filename);
     // Store the map provider
     await this.fs.storeSet('mapProvider', baseMap.name);
     // Go to map

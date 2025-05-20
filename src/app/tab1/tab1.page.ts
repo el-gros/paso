@@ -1,8 +1,8 @@
-import { Component, NgZone, Injectable, OnDestroy, ComponentFactoryResolver } from '@angular/core';
+import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { registerPlugin } from "@capacitor/core";
+import { PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
@@ -16,7 +16,7 @@ import OSM from 'ol/source/OSM';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
@@ -286,7 +286,7 @@ export class Tab1Page {
   archivedLayer: any;
   multiLayer: any;
   foreground: boolean = true;
-  extremes: Extremes | undefined
+  //extremes: Extremes | undefined
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
@@ -305,6 +305,12 @@ export class Tab1Page {
   speed = ['Velocitat actual','Velocidad actual','Current speed'];
   avgSpeed = ['Velocitat mitjana','Velocidad nedia','Average speed'];
   motionAvgSpeed = ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'];
+  appStateListener?: PluginListenerHandle;
+  greenPin?: Style;
+  redPin?: Style;
+  bluePin?: Style;
+  yellowPin?: Style;
+  blackPin?: Style;
 
   get languageIndex(): number { return global.languageIndex; }
   get state(): string { return global.state; }
@@ -327,7 +333,7 @@ export class Tab1Page {
   2. ngOnInit
   3. addFileListener
   4. ionViewDidEnter
-  5. centerAllTracks
+  ** 5. centerAllTracks
   ** 6. displayCurrentTrack
   7. startTracking
   ** 8. removeTrack
@@ -339,19 +345,19 @@ export class Tab1Page {
   14. buildGeoJson
   15. onRoute
   16. show
-  17. displayArchivedTrack
+  ** 17. displayArchivedTrack
   18. setMapView
   19. firstPoint
   20. createMap
-  21. showArchivedTrack
+
   22. filterAltitude
   ** 23. createLayers
   24. displayAllTracks
   25. handleMapClick()
-  26. drawCircle()
-  27. computeDistances()
 
-  37. checkWhetherOnRoute()
+  ??? 27. computeDistances()
+  28. checkWhetherOnRoute()
+
   38. fixWrongOrder()
 
   40. ionViewWillLeave()
@@ -377,20 +383,20 @@ export class Tab1Page {
   */
 
   // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
-  listenToAppStateChanges() {
-    // State changes between foreground and background
-    App.addListener('appStateChange', async (state) => {
+  async listenToAppStateChanges() {
+    this.appStateListener = await App.addListener('appStateChange', async (state) => {
       if (!this.currentTrack) return;
-      this.foreground = state.isActive;  // true if in foreground, false if in background
-        // Background to foreground
-        if (this.foreground) {
-            this.stopBeepInterval();
-            await this.morningTask();
-          }
-        // Foreground to background
-        else {
-            this.startBeepInterval();
+      this.foreground = state.isActive;
+      if (this.foreground) {
+        this.stopBeepInterval();
+        try {
+          await this.morningTask();
+        } catch (err) {
+          console.error('Error in morningTask:', err);
         }
+      } else {
+        this.startBeepInterval();
+      }
     });
   }
 
@@ -435,9 +441,9 @@ export class Tab1Page {
       // iF an archived track has been parsed...
       if (this.archivedTrack) {
         this.ts.setArchivedTrack(this.archivedTrack);
-        this.extremes = await this.fs.computeExtremes(this.archivedTrack);
-        // show archived track
-        await this.showArchivedTrack();
+        //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+        // Display archived track
+        await this.displayArchivedTrack();
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
           await this.setMapView(this.archivedTrack);
@@ -469,15 +475,19 @@ export class Tab1Page {
         // retrieve archived track
         this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
         if (this.archivedTrack) {
+          console.log(this.archivedTrack)
           this.ts.setArchivedTrack(this.archivedTrack);
-          this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+          //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
         }
-        // assign visibility
+         // assign visibility
         if (this.multiLayer) await this.multiLayer.setVisible(false);
         // iF archived track is available...
         if (this.archivedTrack) {
-          // show archived track
-          await this.showArchivedTrack();
+          console.log('3', this.archivedTrack)
+          // Display ar
+          // chived track
+          await this.displayArchivedTrack();
+          console.log('4');
           // Set map view for archived track if no current track
           if (!this.currentTrack) {
             await this.setMapView(this.archivedTrack);
@@ -515,11 +525,11 @@ export class Tab1Page {
   // 5. CENTER ALL TRACKS
   async centerAllTracks() {
     // get current position
-    let currentPosition: [number, number] | undefined = await this.fs.getCurrentPosition();
+    let currentPosition: [number, number] | undefined = await this.fs.getCurrentPosition(false, 1000);
     // center map
     if (currentPosition) {
-      await this.map.getView().setCenter(currentPosition);
-      await this.map.getView().setZoom(8);
+      this.map.getView().setCenter(currentPosition);
+      this.map.getView().setZoom(8);
     }
   }
 
@@ -642,7 +652,7 @@ export class Tab1Page {
       this.currentMarkers[2].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ));
-      this.currentMarkers[2].setStyle(this.drawCircle('red'));
+      this.currentMarkers[2].setStyle(this.redPin);
       if (this.currentMarkers[1]) {
         this.currentMarkers[1].setStyle(undefined);
       }
@@ -809,7 +819,7 @@ export class Tab1Page {
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
-    const bounding = (this.status === 'red' ? 0.25 : 1.75) * Math.sqrt(this.threshDist);
+    const bounding = (this.status === 'red' ? 0.25 : 2.5) * Math.sqrt(this.threshDist);
     //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
     const reduction = 1 // no reduction
     const multiplier = 10;
@@ -817,12 +827,17 @@ export class Tab1Page {
     // Get the point to check from the current track
     const point = currentCoordinates[currentCoordinates.length - 1];
     // Boundary check
-    if (this.extremes) {
-      if (point[0] < this.extremes.minX - bounding || point[0] > this.extremes.maxX + bounding ||
-          point[1] < this.extremes.minY - bounding || point[1] > this.extremes.maxY + bounding) {
-        return 'red';
-      }
+    const bbox = this.archivedTrack.features[0].bbox;
+    if (bbox)  {
+      if (point[0] < bbox[0] - bounding || point[0] > bbox[2] + bounding ||
+        point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
     }
+    //if (this.extremes) {
+    //  if (point[0] < this.extremes.minX - bounding || point[0] > this.extremes.maxX + bounding ||
+    //      point[1] < this.extremes.minY - bounding || point[1] > this.extremes.maxY + bounding) {
+    //    return 'red';
+    //  }
+    //}
     // Forward search
     for (let i = this.lastN; i < archivedCoordinates.length; i += reduction) {
       const point2 = archivedCoordinates[i];
@@ -860,7 +875,10 @@ export class Tab1Page {
   // 17. DISPLAY AN ARCHIVED TRACK /////////////////////////
   async displayArchivedTrack() {
     // Ensure the map and archived track exist
-    if (!this.map || !this.archivedTrack) return;
+    if (!this.map || !this.archivedTrack || !this.archivedLayer) return;
+    console.log('33', this.archivedTrack);
+    // Set the layer visible
+    this.archivedLayer.setVisible(true);
     // Build coordinates array
     const coordinates = this.archivedTrack.features[0].geometry.coordinates;
     const num = coordinates.length;
@@ -871,39 +889,35 @@ export class Tab1Page {
     this.archivedFeature.setStyle(this.fs.setStrokeStyle(global.archivedColor));
     if (this.archivedMarkers.length >= 3) {
       this.archivedMarkers[0].setGeometry(new Point(coordinates[0]));
-      this.archivedMarkers[0].setStyle(this.drawCircle('green'));
+      this.archivedMarkers[0].setStyle(this.greenPin);
       this.archivedMarkers[2].setGeometry(new Point(coordinates[num - 1]));
-      this.archivedMarkers[2].setStyle(this.drawCircle('red'));
+      this.archivedMarkers[2].setStyle(this.redPin);
     }
     // Display waypoints
     const waypoints = this.archivedTrack.features[0].waypoints || []
     const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
     this.archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
     this.archivedWaypoints.set('waypoints', waypoints);
-    this.archivedWaypoints.setStyle(this.drawCircle('yellow'));
+    this.archivedWaypoints.setStyle(this.yellowPin);
   }
 
   // 18. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
-    var boundaries: Extremes | undefined;
-    if (track == this.archivedTrack) boundaries = this.extremes
-    else boundaries = await this.fs.computeExtremes(track)
+    const boundaries = track.features[0].bbox;
     if (!boundaries) return;
     // Set a minimum area
     const minVal = 0.002;
-    if ((boundaries.maxX - boundaries.minX < minVal) && (boundaries.maxY - boundaries.minY < minVal)) {
-      const centerX = 0.5 * (boundaries.minX + boundaries.maxX);
-      const centerY = 0.5 * (boundaries.minY + boundaries.maxY);
-      boundaries.minX = centerX - minVal / 2;
-      boundaries.maxX = centerX + minVal / 2;
-      boundaries.minY = centerY - minVal / 2;
-      boundaries.maxY = centerY + minVal / 2;
+    if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
+      const centerX = 0.5 * (boundaries[0] + boundaries[2]);
+      const centerY = 0.5 * (boundaries[1] + boundaries[3]);
+      boundaries[0] = centerX - minVal / 2;
+      boundaries[2] = centerX + minVal / 2;
+      boundaries[1] = centerY - minVal / 2;
+      boundaries[3] = centerY + minVal / 2;
     }
-    // map extent
-    var extent = [boundaries.minX, boundaries.minY, boundaries.maxX, boundaries.maxY];
     // map view
     setTimeout(() => {
-      this.map.getView().fit(extent, {
+      this.map.getView().fit(boundaries, {
         size: this.map.getSize(),
         padding: [50, 50, 50, 50],
         duration: 1000  // Optional: animation duration in milliseconds
@@ -927,40 +941,39 @@ export class Tab1Page {
           totalElevationGain: 0,
           totalElevationLoss: 0,
           totalTime: '00:00:00',
-          totalNumber: 0,
+          totalNumber: 1,
           currentAltitude: undefined,
           currentSpeed: undefined
         },
+        bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
         geometry: {
           type: 'LineString',
-          coordinates: [],
+          coordinates: [
+            [location.longitude, location.latitude]
+          ],
           properties: {
-            data: [],
+            data: [
+              {
+                altitude: location.altitude,
+                speed: location.speed,
+                time: location.time,
+                compSpeed: 0,
+                distance: 0,
+              }
+            ],
           }
         },
         waypoints: []
       }]
     }
-    // Add location data to the track
-    this.currentTrack.features[0].geometry.properties.data.push({
-      altitude: location.altitude,
-      speed: location.speed,
-      time: location.time,
-      compSpeed: 0,
-      distance: 0,
-    });
     // Display waypoint button
     this.show('alert', 'block');
-    // Add coordinates for the first point
-    this.currentTrack.features[0].geometry.coordinates.push(
-      [location.longitude, location.latitude]
-    );
     // Set the geometry and style for the first marker
     if (this.currentMarkers[0]) {
       await this.currentMarkers[0].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[0]
       ));
-      await this.currentMarkers[0].setStyle(this.drawCircle('green'));
+      await this.currentMarkers[0].setStyle(this.greenPin);
     }
     // Set the geometry and style for the second marker (for tracking progress)
     const num = this.currentTrack.features[0].geometry.coordinates.length;
@@ -968,7 +981,7 @@ export class Tab1Page {
       await this.currentMarkers[1].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ));
-      await this.currentMarkers[1].setStyle(this.drawCircle('blue'));
+      await this.currentMarkers[1].setStyle(this.bluePin);
     }
     // Reset the style for the third marker (if applicable)
     if (this.currentMarkers[2]) {
@@ -978,8 +991,8 @@ export class Tab1Page {
     try {
       await this.currentLayer.setVisible(true);
     } catch (error) {}
-    // display number of points (1)
-    this.currentTrack.features[0].properties.totalNumber = 1;
+    // Set current track
+    //this.currentTrack.features[0].properties.totalNumber = 1;
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
@@ -987,7 +1000,7 @@ export class Tab1Page {
   async createMap() {
     try {
       // Current position
-      const currentPosition = await this.fs.getCurrentPosition();
+      const currentPosition = await this.fs.getCurrentPosition(false, 1000);
       // Create layers
       await this.createLayers();
       let olLayer;
@@ -1052,14 +1065,6 @@ export class Tab1Page {
     }
   }
 
-  // 21, SHOW ARCHIVED TRACK ///////////////////////////
-  async showArchivedTrack() {
-    try {
-      this.archivedLayer.setVisible(true);  // No need for await
-    } catch (error) {}
-    await this.displayArchivedTrack();
-  }
-
   // 22. FI8LTER ALTITUDE /////////////////////////////
   async filterAltitude(track: any, final: number) {
     if (!track) return;
@@ -1093,6 +1098,12 @@ export class Tab1Page {
 
   // 23. CREATE LAYERS /////////////////////////////
   async createLayers() {
+    // Create pin styles
+    this.greenPin = this.fs.createPinStyle('green');
+    this.redPin = this.fs.createPinStyle('red');
+    this.bluePin = this.fs.createPinStyle('blue');
+    this.yellowPin = this.fs.createPinStyle('yellow');
+    this.blackPin = this.fs.createPinStyle('black');
     // Create features to display the current track
     this.currentFeature= new Feature();
     this.currentMarkers = [new Feature(), new Feature(), new Feature()];
@@ -1144,7 +1155,7 @@ export class Tab1Page {
     this.multiMarker.set('multikey', multiKey)
     // Apply styles to the features
     this.multiFeature.setStyle(this.fs.setStrokeStyle('black'));
-    this.multiMarker.setStyle(this.drawCircle('green'));
+    this.multiMarker.setStyle(this.greenPin);
     // Set visibility of multiLayer
     this.multiLayer.setVisible(true);
   }
@@ -1168,10 +1179,10 @@ export class Tab1Page {
             // Display archived track details if it exists
             if (this.archivedTrack) {
               this.ts.setArchivedTrack(this.archivedTrack);
-              this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+              //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
               this.multiLayer.setVisible(false);
               global.layerVisibility = 'archived';
-              await this.showArchivedTrack();
+              await this.displayArchivedTrack();
               await this.setMapView(this.archivedTrack);
             }
           }
@@ -1220,16 +1231,6 @@ export class Tab1Page {
     }
   }
 
-  // 26. DRAW A CIRCLE //////////////////////////////////////
-  drawCircle(color: string): Style {
-    return new Style({
-      image: new CircleStyle({
-        radius: 10,
-        fill: new Fill({ color: color })
-      })
-    });
-  }
-
   // 27. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
     if (!this.currentTrack) return;
@@ -1268,7 +1269,7 @@ export class Tab1Page {
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
-  // 37. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
+  // 28. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility !== 'archived') return;
@@ -1393,6 +1394,7 @@ export class Tab1Page {
           currentAltitude: undefined,
           currentSpeed: undefined
         },
+        bbox: undefined,
         geometry: {
           type: 'LineString',
           coordinates: [],
@@ -1434,13 +1436,21 @@ export class Tab1Page {
     track.features[0].properties.description = tracks[0].getElementsByTagName('cmt')[0]?.innerHTML || '';
     // Initialize distance
     let distance = 0;
-    // Loopo on points
+    // Initialize bounding box values
+    let lonMin = Infinity, latMin = Infinity;
+    let lonMax = -Infinity, latMax = -Infinity;
+    // Loop on points
     for (let k = 0; k < trackPoints.length; k++) {
       const lat = parseFloat(trackPoints[k].getAttribute('lat') || '');
       const lon = parseFloat(trackPoints[k].getAttribute('lon') || '');
       const ele = parseFloat(trackPoints[k].getElementsByTagName('ele')[0]?.textContent || '0');
       const time = trackPoints[k].getElementsByTagName('time')[0]?.textContent;
       if (isNaN(lat) || isNaN(lon)) continue;
+      // Update bounding box
+      lonMin = Math.min(lonMin, lon);
+      latMin = Math.min(latMin, lat);
+      lonMax = Math.max(lonMax, lon);
+      latMax = Math.max(latMax, lat);
       // Add coordinates
       track.features[0].geometry.coordinates.push([lon, lat]);
       const num = track.features[0].geometry.coordinates.length;
@@ -1449,11 +1459,12 @@ export class Tab1Page {
         const prevCoord = track.features[0].geometry.coordinates[k - 1];
         distance += await this.fs.computeDistance(prevCoord[0], prevCoord[1], lon, lat);
       }
-      if (ele) var alt: number | undefined = +ele;
-      else {
-        alt = undefined;
-      }
-      if (alt == 0 && num > 1) alt = track.features[0].geometry.properties.data[num-2].altitude;
+      // Handle elevation
+      let alt: number | undefined;
+      if (ele) alt = +ele;
+      else alt = undefined;
+      if (alt === 0 && num > 1) alt = track.features[0].geometry.properties.data[num - 2].altitude;
+      if (!alt) alt = 0;
       // Handle time
       const locTime = time ? new Date(time).getTime() : 0;
       // Add data
@@ -1465,6 +1476,7 @@ export class Tab1Page {
         compSpeed: 0,
         distance: distance,
       });
+      track.features[0].bbox = [lonMin, latMin, lonMax, latMax];
     }
     // Fill values
     var num: number = track.features[0].geometry.properties.data.length ?? 0;
@@ -1558,7 +1570,6 @@ export class Tab1Page {
         this.currentTrack.features[0].geometry.properties.data,
         this.speedFiltered + 1
       );
-      this.ts.setCurrentTrack(this.currentTrack);
     }
     this.speedFiltered = num - 1;
     // html values
@@ -1791,32 +1802,55 @@ export class Tab1Page {
     await modal.present();
     // Receive data after modal dismiss
     const { data } = await modal.onDidDismiss();
+    // Build track
+    const date = new Date();
+    var trackName = ''
     if (data) {
-      const coordinates = await this.adjustCoordinates(data.response.features[0].geometry.coordinates, 0.015)
-      const num = coordinates.length;
-      this.archivedTrack = {
+      console.log(data.response)
+      trackName = data.response.trackName;
+      var slopes = {gain: NaN, loss: NaN}
+      // Coordinates
+      const rawCoordinates = data.response.features[0].geometry.coordinates;
+      // Compute distances
+      const distances: number[] = await this.computeCumulativeDistances(rawCoordinates)
+      console.log('distances', distances)
+      // Get altitudes and compute elevation gain and loss
+      var elevations: number[] = [];
+      await this.getAltitudes(rawCoordinates).then(async altitudes => {
+        console.log('altitudes', altitudes)
+        elevations = altitudes;
+        slopes = await this.computeElevationGainAndLoss(altitudes)
+        console.log('slopes', slopes)
+      }).catch(err => {
+        console.error('Error:', err);
+      });
+      const prop: Data[] | undefined = await this.fillProperties(distances, elevations);
+      // Increase the numbedr of coordinates
+      const num = rawCoordinates.length;
+      //const coordinates = await this.adjustCoordinates(rawCoordinates, 0.015)
+      //const num = coordinates.length;
+      if (prop) this.archivedTrack = {
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
           properties: {
-            name: '',
+            name: trackName,
             place: '',
-            date: undefined,
+            date: date,
             description: '',
             totalDistance: data.response.features[0].properties.summary.distance / 1000,
-            totalElevationGain: NaN,
-            totalElevationLoss: NaN,
+            totalElevationGain: slopes.gain,
+            totalElevationLoss: slopes.loss,
             totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
             totalNumber: num,
             currentAltitude: undefined,
             currentSpeed: undefined
           },
+          bbox: data.response.features[0].bbox,
           geometry: {
             type: 'LineString',
-            coordinates: coordinates,
-            properties: {
-              data: [],
-            }
+            coordinates: rawCoordinates,
+            properties: { data: prop }
           },
           waypoints: []
         }]
@@ -1824,13 +1858,27 @@ export class Tab1Page {
     }
     console.log('route', this.archivedTrack)
     if (this.archivedTrack) {
+      await this.fs.uncheckAll();
       this.ts.setArchivedTrack(this.archivedTrack);
-      this.extremes = await this.fs.computeExtremes(this.archivedTrack);
+      //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
       this.multiLayer.setVisible(false);
       this.archivedLayer.setVisible(true);  // No need for await
       global.layerVisibility = 'archived';
       await this.displayArchivedTrack();
       await this.setMapView(this.archivedTrack);
+      this.archivedTrack.features[0].properties.date = date;
+      const dateKey = JSON.stringify(date);
+      await this.fs.storeSet(dateKey, this.archivedTrack);
+      // Track definition for global collection
+      const trackDef = {
+        name: trackName,
+        date: date,
+        place: '',
+        description: '',
+        isChecked: false
+      };
+      // add new track definition and save collection
+      global.collection.push(trackDef);
     }
   }
 
@@ -1875,7 +1923,7 @@ export class Tab1Page {
     const styleFunction = (featureLike: FeatureLike) => {
       const geometryType = featureLike.getGeometry()?.getType();
       if (geometryType === 'Point') {
-        return this.drawCircle('black'); // Black circle for points
+        return this.blackPin;
       } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
         return new Style({
           stroke: new Stroke({
@@ -1914,8 +1962,6 @@ export class Tab1Page {
     // Run updates outside of Angular's zone to avoid change detection overhead
     this.zone.runOutsideAngular(async () => {
       try{
-        // display current track
-        await this.displayCurrentTrack();
         // Filter altitude data
         const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
         await this.filterAltitude(this.currentTrack, num - this.lag - 1);
@@ -1927,9 +1973,10 @@ export class Tab1Page {
           this.speedFiltered + 1
         );
         this.speedFiltered = num - 1;
-        this.ts.setCurrentTrack(this.currentTrack);
         // Update HTML values
         await this.htmlValues();
+        // display current track
+        await this.displayCurrentTrack();
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -1980,6 +2027,102 @@ export class Tab1Page {
       console.error('Error in createSource:', e);
       return null;
     }
+  }
+
+  async ngOnDestroy() {
+    if (this.appStateListener) {
+      await this.appStateListener.remove();
+    }
+  }
+
+  // 27. COMPUTE DISTANCES //////////////////////////////////////
+  /*
+  async computeArchivedDistances() {
+    if (!this.archivedTrack) return;
+    // get coordinates and data arrays
+    const coordinates = this.archivedTrack.features[0].geometry.coordinates;
+    const data = this.archivedTrack.features[0].geometry.properties.data;
+    let num = coordinates.length ?? 0;
+    // Ensure data exists and has enough entries
+    if (num < 2 || !data || data.length == num) return;
+    // First point
+    data.push({
+      distance: 0, speed: 0, time: 0, compSpeed: 0, altitude: 0
+    });
+    // Compute distances for each point
+    for (let i = 1; i < num; i++) {
+      const lastPoint = coordinates[i - 1];
+      const currentPoint = coordinates[i];
+      // Calculate the distance
+      const distance = await this.fs.computeDistance(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1]);
+      // Update the data with the new distance
+      data.push({distance: data[i - 1].distance + distance, speed: 0, time: 0, compSpeed: 0, altitude: 0});
+    }
+  }
+  */
+
+  // COMPUTE ALTITUDES
+  async getAltitudes(rawCoordinates: [number, number][]): Promise<number[]> {
+    const requestBody = {
+      locations: rawCoordinates.map(([lon, lat]) => ({
+        latitude: lat,
+        longitude: lon
+      }))
+    };
+    const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) {
+      throw new Error(`Open-Elevation request failed: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.results.map((result: any) => result.elevation);
+  }
+
+  // COMPUTE ELEVATION GAIN AND LOSS
+  async computeElevationGainAndLoss(altitudes: number[]): Promise<{ gain: number; loss: number; }> {
+    let gain = 0;
+    let loss = 0;
+    for (let i = 1; i < altitudes.length; i++) {
+      const diff = altitudes[i] - altitudes[i - 1];
+      if (diff > 0) {
+        gain += diff;
+      } else if (diff < 0) {
+        loss -= diff; // Subtracting a negative to get positive loss
+      }
+    }
+    return { gain, loss };
+  }
+
+  // COMPUTE CYUMULATIVE DISTANCES
+  async computeCumulativeDistances(
+    rawCoordinates: [number, number][]
+  ): Promise<number[]> {
+    const distances: number[] = [0];
+    for (let i = 1; i < rawCoordinates.length; i++) {
+      const [lon1, lat1] = rawCoordinates[i - 1];
+      const [lon2, lat2] = rawCoordinates[i];
+      const segmentDistance = await this.fs.computeDistance(lon1, lat1, lon2, lat2);
+      const cumulativeDistance = distances[i - 1] + segmentDistance;
+      distances.push(cumulativeDistance);
+    }
+    return distances;
+  }
+
+  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined): Promise<Data[] | undefined> {
+    if (!distances || !altitudes || distances.length !== altitudes.length) {
+      return undefined;
+    }
+    const result: Data[] = distances.map((distance, i) => ({
+      altitude: altitudes[i],
+      speed: 0,
+      time: NaN,
+      compSpeed: 0,
+      distance: distance,
+    }));
+    return result;
   }
 
 }

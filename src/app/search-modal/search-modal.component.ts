@@ -30,6 +30,7 @@ export class SearchModalComponent implements OnInit {
   currentLocation: string = '';
   notice1: string = '';
   notice2: string = '';
+  trackName: string = '';
 
   // Constants for localization
   private readonly TITLES = {
@@ -113,7 +114,13 @@ async selectLocation(location: any) {
     this.query = '';
     if (this.num == 0) {
       console.log('Selected location', location)
-      if (location) this.start = [+location.lon,+location.lat]
+      if (location) {
+        this.start = [+location.lon,+location.lat]
+        this.trackName = location.name;
+      }
+      else {
+        this.trackName = 'o';
+      }
       let placeholders = ['Destinació','Destino','Destination']
       this.placeholder = placeholders[global.languageIndex];
       this.num = 1;
@@ -121,6 +128,7 @@ async selectLocation(location: any) {
     }
     if (this.num == 1) {
       console.log('Selected location', location)
+      this.trackName = this.trackName + ' - ' + location.name;
       this.destination = [+location.lon,+location.lat]
       this.showSelection = false;
       this.showTransportation = true;
@@ -153,7 +161,8 @@ async request() {
     if (request.readyState === 4) {
       this.loading = false;
       if (request.status === 200) { // HTTP OK
-        const response = JSON.parse(request.responseText); // Parse JSON response
+        var response = JSON.parse(request.responseText); // Parse JSON response
+        response.trackName = this.trackName;
         console.log('Response:', response); // Log response object
         // Call modalController.dismiss with the route data
         if (response.features && response.features.length > 0) {
@@ -175,7 +184,6 @@ async request() {
       }
     }
   };
-  //const body = '{"coordinates":[[8.686507,49.41943],[8.687872,49.420318]]}';
   request.send(body);
 }
 
@@ -193,7 +201,7 @@ async onCurrentLocationChange(event: any): Promise<void> {
     this.loading = true;
     var currentLocation = undefined
     while (!currentLocation) {
-      currentLocation = await this.fs.getCurrentPosition();
+      currentLocation = await this.fs.getCurrentPosition(true, 2000);
       if (!currentLocation) {
         await new Promise(resolve => setTimeout(resolve, 500)); // Wait 1 second before retrying
       }

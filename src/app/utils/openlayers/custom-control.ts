@@ -73,7 +73,7 @@ export class CustomControl extends Control {
     // Disable the activate button
     activateButton.disabled = true;
     // get coordinates
-    const coordinates = await this.fs.getCurrentPosition();
+    const coordinates = await this.fs.getCurrentPosition(true, 1000);
     // center map
     if (coordinates) this.updateLocation(coordinates);
     // create layer (if it does not exist)
@@ -114,7 +114,7 @@ export class CustomControl extends Control {
     });
   }
 
-  // 4. CENTER MAP //////////////////////////////// 
+  // 4. CENTER MAP ////////////////////////////////
   private updateLocation(coordinates: [number, number]) {
     this.vectorSource.clear();
     // Define a point feature
@@ -137,11 +137,11 @@ export class CustomControl extends Control {
     // Set map view
     this.map.getView().setCenter(coordinates);
   }
-  
+
   // 5. START LOCATION UPDATES /////////////////////////
   private startLocationUpdates() {
     this.updateInterval = setInterval(async () => {
-      const coordinates = await this.fs.getCurrentPosition();
+      const coordinates = await this.fs.getCurrentPosition(true, 1000);
       if (coordinates) this.updateLocation(coordinates);
     }, 5000); // Update every 5 seconds
   }

@@ -1,7 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { IonFab, IonContent, IonRow, IonFabButton, IonIcon } from "@ionic/angular/standalone";
 import { global } from '../../environments/environment';
-import { Location, Extremes, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FunctionsService } from '../services/functions.service';

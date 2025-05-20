@@ -48,6 +48,7 @@ export interface Track {
       totalElevationLoss: number,
       totalNumber: number,
     },
+    bbox?: [number, number, number, number],
     geometry: {
       type: 'LineString',
       coordinates: number[][],
@@ -56,7 +57,7 @@ export interface Track {
       }
     }
     waypoints?: Waypoint []
-  }]  
+  }]
 }
 
 export interface TrackDefinition {
@@ -67,12 +68,12 @@ export interface TrackDefinition {
   isChecked: boolean
 }
 
-export interface Extremes {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-} 
+//export interface Extremes {
+//  minX: number;
+//  minY: number;
+//  maxX: number;
+//  maxY: number;
+//}
 
 export interface Map {
   filename?: string;
