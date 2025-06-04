@@ -382,6 +382,52 @@ createPinStyle(color: string): Style {
   });
 }
 
+  async adjustCoordinatesAndProperties(
+    coordinates: [number, number][],
+    properties: Data[],
+    maxDistance: number
+  ): Promise<{
+    newCoordinates: [number, number][];
+    newProperties: Data[];
+  }> {
+    const newCoordinates: [number, number][] = [];
+    const newProperties: Data[] = [];
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const [lon1, lat1] = coordinates[i];
+      const [lon2, lat2] = coordinates[i + 1];
+      const prop1 = properties[i];
+      const prop2 = properties[i + 1];
+      // Add original point
+      newCoordinates.push([lon1, lat1]);
+      newProperties.push({ ...prop1 });
+      // Compute distance
+      const distance = prop2.distance - prop1.distance
+      if (distance > maxDistance) {
+        const numIntermediatePoints = Math.ceil(distance / maxDistance) - 1;
+        for (let j = 1; j <= numIntermediatePoints; j++) {
+          const fraction = j / (numIntermediatePoints + 1);
+          // Interpolate coordinates
+          const interpolatedLon = lon1 + fraction * (lon2 - lon1);
+          const interpolatedLat = lat1 + fraction * (lat2 - lat1);
+          newCoordinates.push([interpolatedLon, interpolatedLat]);
+          // Interpolate properties linearly
+          const interp = (a: number, b: number) => a + fraction * (b - a);
+          newProperties.push({
+            altitude: interp(prop1.altitude, prop2.altitude),
+            speed: interp(prop1.speed, prop2.speed),
+            time: interp(prop1.time, prop2.time),
+            compSpeed: interp(prop1.compSpeed, prop2.compSpeed),
+            distance: interp(prop1.distance, prop2.distance),
+          });
+        }
+      }
+    }
+    // Add the last point and its properties
+    newCoordinates.push(coordinates[coordinates.length - 1]);
+    newProperties.push({ ...properties[properties.length - 1] });
+    return { newCoordinates, newProperties };
+  }
+
 }
 
 

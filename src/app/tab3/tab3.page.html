@@ -1,20 +1,5 @@
 <ion-content>
 
-  <!-- Navigation buttons -->
-  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom">
-    <ion-row>
-      <ion-fab-button id='databutton' (click)="fs.gotoPage('tab1')">
-        <ion-icon name="earth"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='databutton' (click)="fs.gotoPage('canvas')">
-        <ion-icon name="analytics"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
-        <ion-icon name="list"></ion-icon>
-      </ion-fab-button>
-    </ion-row>
-  </ion-fab>
-
   <ion-grid>
     <!-- Language selection -->
     <ion-row class="centered-content">
@@ -128,4 +113,27 @@
     </ng-container>
 
   </ion-content>
+
+  <!-- space for android controls -->
+  <div class="bottom-safe-gray"></div>
+
+  <!-- Navigation buttons -->
+  <ion-fab
+    slot="fixed"
+    horizontal="center"
+    vertical="bottom"
+    class="bottom-safe"
+  >
+    <ion-row>
+      <ion-fab-button id='databutton' (click)="fs.gotoPage('tab1')">
+        <ion-icon name="earth"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='databutton' (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
+        <ion-icon name="list"></ion-icon>
+      </ion-fab-button>
+    </ion-row>
+  </ion-fab>
 

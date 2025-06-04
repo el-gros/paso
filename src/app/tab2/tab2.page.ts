@@ -114,7 +114,7 @@ export class Tab2Page {
       }, {
         // proceed button
         text: 'OK',
-        cssClass: 'alert-button',
+        cssClass: 'alert-ok-button',
         handler: () => { this.yesDeleteTracks(); }
       }]
     });

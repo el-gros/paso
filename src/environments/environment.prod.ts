@@ -8,7 +8,6 @@ import { Map } from '../globald';
 export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
-  language: 'other' as 'ca' | 'es' | 'other',
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
   cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
@@ -29,9 +28,13 @@ export var global: any = {
       text: this.cancel[this.languageIndex], // Dynamically fetch the text
       role: 'cancel',
       cssClass: 'alert-cancel-button',
-      handler: () => {
-        // Optional handler logic can go here
-      }
+    };
+  },
+  get okButton() {
+    return {
+      text: 'OK', // Dynamically fetch the text
+      role: 'confirm',
+      cssClass: 'alert-ok-button',
     };
   },
 

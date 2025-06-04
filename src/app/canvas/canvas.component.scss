@@ -84,6 +84,7 @@ ion-fab-button {
     background-color: white;
   }
 
-  .bottom {
-    bottom: 30px !important; /* Moves the fab buttons slightly up */
+  .custom-content {
+    padding: 16px; // or whatever padding you want for the scrollable area
+    --padding-bottom: 0; // prevent Ionics default bottom padding
   }

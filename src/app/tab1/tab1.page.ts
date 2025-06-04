@@ -376,7 +376,7 @@ export class Tab1Page {
   53. setWaypointAltitude()
   54. search()
   55. uide()
-  56. adjustCoordinates()
+
   57. addSearchLayer()
   58. removeLayer()
 
@@ -700,7 +700,7 @@ export class Tab1Page {
       global.cancelButton,
       {
         text: text[global.languageIndex],
-        cssClass: 'alert-button',
+        cssClass: 'alert-ok-button',
         handler: async () => {
           if (which === 'delete') {
             await this.removeTrack();
@@ -819,7 +819,7 @@ export class Tab1Page {
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
-    const bounding = (this.status === 'red' ? 0.25 : 2.5) * Math.sqrt(this.threshDist);
+    const bounding = (this.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
     //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
     const reduction = 1 // no reduction
     const multiplier = 10;
@@ -1027,7 +1027,7 @@ export class Tab1Page {
             }),
           });
         break;
-        case 'Catalonia':
+        case 'catalonia':
           credits = '© MapTiler © OpenStreetMap contributors'
           await this.server.openMbtiles('catalonia.mbtiles');
           const olSource = await this.createSource();
@@ -1035,14 +1035,14 @@ export class Tab1Page {
           olLayer = new VectorTileLayer({ source: olSource, style: styleFunction });
           break;
         default:
-          // If the offline map does not exist
-          console.warn(`Unknown map provider: ${this.mapProvider}`);
-          return;
+          credits = '© OpenStreetMap contributors';
+          olLayer = new TileLayer({ source: new OSM() });
+          break;
       }
       // set zoom levels
       var minZoom = 0;
       var maxZoom = 19;
-      if (this.mapProvider == 'Catalonia') {
+      if (this.mapProvider == 'catalonia') {
         var minZoom = 6;
         var maxZoom = 14;
       }
@@ -1696,16 +1696,9 @@ export class Tab1Page {
       // Check if there is a replacement
       deviceLanguage = await this.fs.check(deviceLanguage, 'language');
       // Map the device language and assign index
-      if (deviceLanguage === 'ca') {
-        global.language = 'ca';
-        global.languageIndex = 0;
-      } else if (deviceLanguage === 'es') {
-        global.language = 'es';
-        global.languageIndex = 1;
-      } else {
-        global.language = 'other';
-        global.languageIndex = 2;
-      }
+      if (deviceLanguage === 'ca') global.languageIndex = 0
+      else if (deviceLanguage === 'es') global.languageIndex = 1
+      else global.languageIndex = 2;
     } catch (error) {
       console.error('Error determining language:', error);
     }
@@ -1814,6 +1807,9 @@ export class Tab1Page {
       // Compute distances
       const distances: number[] = await this.computeCumulativeDistances(rawCoordinates)
       console.log('distances', distances)
+      // Compute times
+      const times: number[] = await this.createTimes(data, date, distances);
+      console.log(times);
       // Get altitudes and compute elevation gain and loss
       var elevations: number[] = [];
       await this.getAltitudes(rawCoordinates).then(async altitudes => {
@@ -1824,36 +1820,40 @@ export class Tab1Page {
       }).catch(err => {
         console.error('Error:', err);
       });
-      const prop: Data[] | undefined = await this.fillProperties(distances, elevations);
-      // Increase the numbedr of coordinates
+      // compute speed
+      const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
+      const rawProperties: Data[] = await this.fillProperties(distances, elevations, times, speed);
+      // Increase the number of coordinates
       const num = rawCoordinates.length;
-      //const coordinates = await this.adjustCoordinates(rawCoordinates, 0.015)
-      //const num = coordinates.length;
-      if (prop) this.archivedTrack = {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          properties: {
-            name: trackName,
-            place: '',
-            date: date,
-            description: '',
-            totalDistance: data.response.features[0].properties.summary.distance / 1000,
-            totalElevationGain: slopes.gain,
-            totalElevationLoss: slopes.loss,
-            totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
-            totalNumber: num,
-            currentAltitude: undefined,
-            currentSpeed: undefined
-          },
-          bbox: data.response.features[0].bbox,
-          geometry: {
-            type: 'LineString',
-            coordinates: rawCoordinates,
-            properties: { data: prop }
-          },
-          waypoints: []
-        }]
+      const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
+      if (result) {
+        const num = result.newCoordinates.length;
+        this.archivedTrack = {
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: {
+              name: trackName,
+              place: '',
+              date: date,
+              description: '',
+              totalDistance: data.response.features[0].properties.summary.distance / 1000,
+              totalElevationGain: slopes.gain,
+              totalElevationLoss: slopes.loss,
+              totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
+              totalNumber: num,
+              currentAltitude: undefined,
+              currentSpeed: undefined
+            },
+            bbox: data.response.features[0].bbox,
+            geometry: {
+              type: 'LineString',
+              coordinates: result.newCoordinates,
+              properties: { data: result.newProperties }
+            },
+            waypoints: []
+          }]
+        };
       }
     }
     console.log('route', this.archivedTrack)
@@ -1880,36 +1880,6 @@ export class Tab1Page {
       // add new track definition and save collection
       global.collection.push(trackDef);
     }
-  }
-
-  // 56. ADSD EXTRA POINTS TO ROUTE /////////////////////////////////////
-  async adjustCoordinates(
-    coordinates: [number, number][],
-    maxDistance: number // 15 meters in km
-  ): Promise<[number, number][]> {
-    const adjustedCoordinates: [number, number][] = [];
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      const [lon1, lat1] = coordinates[i];
-      const [lon2, lat2] = coordinates[i + 1];
-      // Add the current point to the result
-      adjustedCoordinates.push([lon1, lat1]);
-      // Compute the distance between the two points
-      const distance = await this.fs.computeDistance(lon1, lat1, lon2, lat2);
-      if (distance > maxDistance) {
-        // Compute the number of intermediate points needed
-        const numIntermediatePoints = Math.ceil(distance / maxDistance) - 1;
-        // Interpolate intermediate points
-        for (let j = 1; j <= numIntermediatePoints; j++) {
-          const fraction = j / (numIntermediatePoints + 1);
-          const interpolatedLon = lon1 + fraction * (lon2 - lon1);
-          const interpolatedLat = lat1 + fraction * (lat2 - lat1);
-          adjustedCoordinates.push([interpolatedLon, interpolatedLat]);
-        }
-      }
-    }
-    // Add the last point
-    adjustedCoordinates.push(coordinates[coordinates.length - 1]);
-    return adjustedCoordinates;
   }
 
   // 57. ADD LAYER TO DISPLAY SITE /////////////////////////
@@ -2111,18 +2081,30 @@ export class Tab1Page {
     return distances;
   }
 
-  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined): Promise<Data[] | undefined> {
+  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined, times: number[], speed: number): Promise<Data[] > {
     if (!distances || !altitudes || distances.length !== altitudes.length) {
-      return undefined;
+      return [];
     }
     const result: Data[] = distances.map((distance, i) => ({
       altitude: altitudes[i],
-      speed: 0,
-      time: NaN,
-      compSpeed: 0,
+      speed: speed,
+      time: times[i],
+      compSpeed: speed,
       distance: distance,
     }));
     return result;
+  }
+
+  async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
+    const totalDistance = data.response.features[0].properties.summary.distance;
+    const totalDuration = data.response.features[0].properties.summary.duration * 1000; // in ms
+    const endTime = date.getTime(); // in ms
+    const startTime = endTime - totalDuration;
+      return distances.map(d => {
+      const ratio = d / totalDistance;
+      const timeOffset = ratio * totalDuration;
+      return Math.round(startTime + timeOffset); // in ms
+    });
   }
 
 }

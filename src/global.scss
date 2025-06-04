@@ -314,11 +314,28 @@
 // CUSTOM CONTROL
 .custom-control {
   position: absolute;
-  bottom: 30px; /* Distance from the bottom of the map */
+  bottom: 0px; /* Distance from the bottom of the map */
   right: 20px;  /* Distance from the right of the map */
   z-index: 1000; /* Ensure it's above other elements */
 }
 
 .padded-list {
   padding: 0 5px !important;
+}
+
+/* Add gray area behind the Android bottom bar */
+.bottom-safe-gray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: env(safe-area-inset-bottom);
+  background-color: #eee; /* light gray */
+  z-index: 10;
+}
+
+/* Ensure FAB stays above the gray bar and not overlapped */
+.bottom-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
 }

@@ -1,4 +1,4 @@
-<ion-content>
+<ion-content class="custom-content">
 
 <swiper-container id="data" pagination="true">
 
@@ -145,8 +145,16 @@
 
 </ion-content>
 
+<!-- space for android controls -->
+<div class="bottom-safe-gray"></div>
+
   <!-- buttons to navigate -->
-  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom">
+  <ion-fab
+    slot="fixed"
+    horizontal="center"
+    vertical="bottom"
+    class="bottom-safe"
+  >
     <ion-row>
       <ion-fab-button (click)="fs.gotoPage('tab1')">
         <ion-icon name="earth"></ion-icon>

@@ -9,9 +9,17 @@ ion-fab-button {
 
 // map
   #map{
-    width:100%;
-    height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    
+      /* Prevent map from overlapping Android navigation bar */
+      padding-bottom: env(safe-area-inset-bottom);
+      box-sizing: border-box;
   }
+    
 
   .title {
     font-size: 15px;
@@ -90,6 +98,3 @@ ion-fab-button {
     background-color: white;
   }
 
-  .bottom {
-    bottom: 30px !important; /* Moves the fab buttons slightly up */
-  }
