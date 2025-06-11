@@ -290,7 +290,7 @@ export class Tab1Page {
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
-  language: 'ca' | 'es' | 'other' = 'other';
+  language: 'ca' | 'es' | 'en' | 'other' = 'other';
   popText: [string, string, number] | undefined = undefined;
   intervalId: any = null;
   arcTitle = ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'];
@@ -1000,7 +1000,8 @@ export class Tab1Page {
   async createMap() {
     try {
       // Current position
-      const currentPosition = await this.fs.getCurrentPosition(false, 1000);
+      var currentPosition = null;
+      if (this.mapProvider != 'catalonia') currentPosition = await this.fs.getCurrentPosition(false, 1000);
       // Create layers
       await this.createLayers();
       let olLayer;
@@ -1030,9 +1031,8 @@ export class Tab1Page {
         case 'catalonia':
           credits = '© MapTiler © OpenStreetMap contributors'
           await this.server.openMbtiles('catalonia.mbtiles');
-          const olSource = await this.createSource();
-          if (!olSource) return;
-          olLayer = new VectorTileLayer({ source: olSource, style: styleFunction });
+          const sourceResult = await this.createSource();
+          if (sourceResult) olLayer = new VectorTileLayer({ source: sourceResult, style: styleFunction });
           break;
         default:
           credits = '© OpenStreetMap contributors';
@@ -1047,8 +1047,9 @@ export class Tab1Page {
         var maxZoom = 14;
       }
       // Create view
+      if (!currentPosition) currentPosition = [2, 41]
       const view = new View({ center: currentPosition, zoom: 9, minZoom: minZoom, maxZoom: maxZoom });
-      if (!currentPosition) view.setCenter([2, 41]);
+      //if (!currentPosition) view.setCenter([2, 41]);
       // Create map
       this.map = new Map({
         target: 'map',
@@ -1628,54 +1629,58 @@ export class Tab1Page {
     console.log('Previous map provider: ', previousProvider, ' changes to: ', this.mapProvider)
     // Find and remove the existing base layer
     var olLayers = await this.map.getLayers();
-    if (olLayers) {
-      const baseLayer = olLayers.item(0); // Assuming the base layer is at index 0
-      this.map.removeLayer(baseLayer);
-    }
-    let newBaseLayer;
+    let newBaseLayer = null;
     // Determine new base layer
     if (this.mapProvider === 'OpenStreetMap') {
       credits = '© OpenStreetMap contributors';
-      newBaseLayer = new TileLayer({ source: new OSM() });
+      newBaseLayer = await new TileLayer({ source: new OSM() });
     } else if (this.mapProvider === 'OpenTopoMap') {
       credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-      newBaseLayer = new TileLayer({
+      newBaseLayer = await new TileLayer({
         source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
       });
     } else if (this.mapProvider === 'ICGC') {
       credits = 'Institut Cartogràfic i Geològic de Catalunya';
-      newBaseLayer = new TileLayer({
+      newBaseLayer = await new TileLayer({
         source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }),
       });
     } else if (this.mapProvider === 'IGN') {
       credits = 'Instituto Geográfico Nacional (IGN)';
-      newBaseLayer = new TileLayer({
+      newBaseLayer = await new TileLayer({
         source: new XYZ({
           url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
         }),
       });
-    } else if (this.mapProvider === 'Catalonia') {
+    } else if (this.mapProvider === 'catalonia') {
+      await this.map.getView().setCenter([2, 41]);
+      await this.map.getView().setZoom(8);
       // Load vector tiles for Catalonia
       credits = '© MapTiler © OpenStreetMap contributors';
       await this.server.openMbtiles('catalonia.mbtiles');
       console.log('Catalonia MBTiles database opened');
-      const olSource = await this.createSource();
-      if (!olSource) return;
-      newBaseLayer = new VectorTileLayer({
-        source: olSource,
+      const sourceResult = await this.createSource();
+      if (sourceResult) newBaseLayer = await new VectorTileLayer({
+        source: sourceResult,
         style: styleFunction
       });
     }
-    // Add the new base layer at index 0
-    this.map.getLayers().insertAt(0, newBaseLayer);
+    // If newBaseLayer has been created, replace the old base layer with it
+    if (newBaseLayer) {
+      await this.map.removeLayer(olLayers.item(0));
+      await this.map.getLayers().insertAt(0, newBaseLayer);
+    }
+    else {
+      console.log('The new base layer has not been created');
+      return;
+    }
     // Apply the fade-in effect
-    const mapContainer = document.getElementById('map');
+    const mapContainer = await document.getElementById('map');
     if (mapContainer) {
         mapContainer.classList.add('fade-in');
         setTimeout(() => mapContainer.classList.remove('fade-in'), 500);
     }
     // Report change
-    this.fs.displayToast(`${credits}`);
+    await this.fs.displayToast(`${credits}`);
     // Change max / min zoom
     var minZoom = 0;
     var maxZoom = 19;
@@ -1683,8 +1688,8 @@ export class Tab1Page {
       var minZoom = 6;
       var maxZoom = 14;
     }
-    this.map.getView().setMinZoom(minZoom);
-    this.map.getView().setMaxZoom(maxZoom);
+    await this.map.getView().setMinZoom(minZoom);
+    await this.map.getView().setMaxZoom(maxZoom);
   }
 
   // 50. DETERMINE LANGUAGE //////////////////
@@ -1699,6 +1704,7 @@ export class Tab1Page {
       if (deviceLanguage === 'ca') global.languageIndex = 0
       else if (deviceLanguage === 'es') global.languageIndex = 1
       else global.languageIndex = 2;
+      global.languageCode = deviceLanguage
     } catch (error) {
       console.error('Error determining language:', error);
     }

@@ -8,6 +8,7 @@ import { Map } from '../globald';
 export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
+  languageCode: 'en' as string,
   languageIndex: 2 as 0 | 1 | 2,
   archivedPresent: false as boolean,
   cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],

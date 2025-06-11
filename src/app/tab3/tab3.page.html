@@ -1,118 +1,94 @@
 <ion-content>
 
-  <ion-grid>
-    <!-- Language selection -->
-    <ion-row class="centered-content">
-      <div><strong>{{title[3][languageIndex]}}</strong></div>
-    </ion-row>
-      <ion-list>
-        <ion-radio-group [(ngModel)]="language" (ionChange)="onLanguageChange()">
-          <ion-row class="centered-content">
-          <ion-col size="4">
-          <ion-item>
-            <ion-label>
-              <img src="assets/flags/ca.png" alt="Catalan Flag" width="24" height="24" />
-            </ion-label>
-            <ion-radio slot="start" value="ca"></ion-radio>
-          </ion-item>
-          </ion-col>
-          <ion-col size="4">
-          <ion-item>
-            <ion-label>
-              <img src="assets/flags/es.png" alt="Spanish Flag" width="24" height="24" />
-            </ion-label>
-            <ion-radio slot="start" value="es"></ion-radio>
-          </ion-item>
-          </ion-col>
-          <ion-col size="4">
-          <ion-item>
-            <ion-label>
-              <img src="assets/flags/us.png" alt="US Flag" width="24" height="24" />
-            </ion-label>
-            <ion-radio slot="start" value="other"></ion-radio>
-          </ion-item>
-          </ion-col>
-        </ion-row>
-        </ion-radio-group>
-      </ion-list>
+<!-- Language selector -->
+<ion-item lines="none" class="top-margin-selector">
+  <ion-label>{{title[3][selectedLanguage.index]}}</ion-label>
+  <ion-select
+    [value]="selectedLanguage.code"
+    (ionChange)="onLanguageChange($event.detail.value)"
+    interface="popover"
+    slot="end"
+  >
+    <ion-select-option *ngFor="let lang of languages" [value]="lang.code">
+      {{ lang.name }}
+    </ion-select-option>
+  </ion-select>
+</ion-item>
 
-    <!-- Map selection -->
-    <ion-row class="centered-content">
-      <div><strong>{{title[2][languageIndex]}}</strong></div>
-    </ion-row>
-    <ion-row>
-      <ion-col size="6" *ngFor="let baseMap of finalBaseMaps">
-        <ion-card button (click)="selectBaseMap(baseMap)">
-          <img [src]="baseMap.image" alt="{{ baseMap.name }}"  class="map-image">
-          <ion-card-header>
-            <ion-card-title>{{baseMap.name }}</ion-card-title>
-          </ion-card-header>
-        </ion-card>
-      </ion-col>
-    </ion-row>
+<!-- Map selector -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{title[2][selectedLanguage.index]}}</ion-label>
+  <ion-select
+    [value]="selectedMap"
+    (ionChange)="onMapChange($event.detail.value)"
+    interface="popover"
+    slot="end"
+  >
+    <ion-select-option *ngFor="let map of baseMaps" [value]="map">
+      {{ map }}
+    </ion-select-option>
+  </ion-select>
+</ion-item>
 
-      <!-- Current track color -->
-    <ion-row class="centered-content">
-      <div><strong>{{title[0][languageIndex]}}</strong></div>
-    </ion-row>
-    <ion-row>
-      <ion-col size="5" offset="2">
-        <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Current')">
-          <div class="pick" >{{title[4][languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="2" offset="1">
-        <div class="line" [ngStyle]="{'background-color': currentColor}"></div>
-      </ion-col>
-    </ion-row>
+<!-- Current track color selection -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{ title[0][selectedLanguage.index] }}</ion-label>
+  <ion-button fill="clear" (click)="openColorPopover($event, 'current')">
+    <div class="color-display">
+      <div class="color-line" [ngStyle]="{ 'background-color': currentColor }"></div>
+      <div class="triangle" [ngStyle]="{ 'border-top-color': currentColor }"></div>
+    </div>
+  </ion-button>
+</ion-item>
 
-    <!-- Reference track color -->
-    <ion-row class="centered-content">
-      <div><strong>{{title[1][languageIndex]}}</strong></div>
-    </ion-row>
-    <ion-row>
-      <ion-col size="5" offset="2">
-        <ion-button class = 'bigButton' expand = 'block' (click)="selectColor('Archived')">
-          <div class="pick" >{{title[4][languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="2" offset="1">
-        <div class="line" [ngStyle]="{'background-color': archivedColor}"></div>
-      </ion-col>
-    </ion-row>
+<!-- Archived track color selection -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{ title[1][selectedLanguage.index] }}</ion-label>
+  <ion-button fill="clear" (click)="openColorPopover($event, 'archived')">
+    <div class="color-display">
+      <div class="color-line" [ngStyle]="{ 'background-color': archivedColor }"></div>
+      <div class="triangle" [ngStyle]="{ 'border-top-color': archivedColor }"></div>
+    </div>
+  </ion-button>
+</ion-item>
 
-    <!-- Upload and remove maps -->
+<!-- Upload offline maps -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{title[5][selectedLanguage.index]}}</ion-label>
+  <ion-select
+    [value]=""
+    (ionChange)="onMapUploadChange($event.detail.value)"
+    interface="popover"
+    slot="end"
+  >
+    <ion-select-option *ngFor="let map of missingOfflineMaps" [value]="map">
+      {{ map }}
+    </ion-select-option>
+  </ion-select>
+</ion-item>
 
-    <ion-row *ngIf="!isDownloading">
-      <ion-col size="6" class = 'centered-content'>
-        <div><strong>{{title[7][languageIndex]}}</strong></div>
-      </ion-col>
-      <ion-col size="6" class = 'centered-content'>
-        <div><strong>{{title[8][languageIndex]}}</strong></div>
-      </ion-col>
-    </ion-row>
+<!-- Remove offline maps -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{title[6][selectedLanguage.index]}}</ion-label>
+  <ion-select
+    [value]=""
+    (ionChange)="onMapRemoveChange($event.detail.value)"
+    interface="popover"
+    slot="end"
+  >
+    <ion-select-option *ngFor="let map of availableOfflineMaps" [value]="map">
+      {{ map }}
+    </ion-select-option>
+  </ion-select>
+</ion-item>
 
-    <ion-row *ngIf="!isDownloading">
-      <ion-col size="4" offset="1">
-        <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('upload')">
-          <div class="pick" >{{title[7][languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-      <ion-col size="4" offset="2">
-        <ion-button class = 'bigButton' expand = 'block' (click)="mapsToUploadRemove('remove')">
-          <div class="pick" >{{title[8][languageIndex]}}</div>
-        </ion-button>
-      </ion-col>
-    </ion-row>
-    </ion-grid>
+</ion-content>
 
     <!-- 🔹 Show progress bar only when downloading -->
     <ng-container *ngIf="isDownloading">
       <ion-progress-bar [value]="downloadProgress / 100"></ion-progress-bar>
       <p>{{ downloadProgress }}% downloaded</p>
     </ng-container>
-
-  </ion-content>
 
   <!-- space for android controls -->
   <div class="bottom-safe-gray"></div>

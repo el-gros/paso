@@ -1,0 +1,24 @@
+ion-item {
+  --min-height: 44px;
+  --padding-start: 16px;
+  --inner-border-width: 0; /* 👈 disables internal bottom border */
+  --border-width: 0;       /* 👈 disables outer border */
+  --background: transparent; // just to be safe
+}
+
+
+ion-label {
+  font-size: 1rem;
+}
+
+.color-preview {
+  width: 50px;
+  height: 5px;
+  border-radius: 2px;
+  margin-left: 16px;
+}
+
+.selected-item {
+  --background: #a3bfff; /* 👈 this is the correct way to set background in ion-item */
+  border-radius: 8px;
+}

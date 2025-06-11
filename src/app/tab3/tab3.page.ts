@@ -1,18 +1,22 @@
+/**
+ * Tab3Page manages the settings and preferences for the application, including language selection,
+ * base map selection, color customization for tracks, and offline map management (uploading and removing MBTiles files).
+ * Integrates with FunctionsService and ServerService for storage and file operations, and uses modals and popovers
+ * for user interactions. Handles download progress display and updates the UI accordingly.
+ */
 import { FunctionsService } from '../services/functions.service';
-import { Component, ViewChild, ElementRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms'
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
 import { Subscription } from 'rxjs';
-import { UpdateModalComponent } from '../update-modal/update-modal.component';
-import { ModalController } from '@ionic/angular';
-import { Map } from '../../globald';
+import { ModalController, PopoverController } from '@ionic/angular';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Router } from '@angular/router';
+import { ColorPopoverComponent } from '../color-popover/color-popover.component';
+import { debounce } from 'lodash';
 
 register();
 
@@ -22,88 +26,79 @@ register();
     styleUrls: ['tab3.page.scss'],
     imports: [IonicModule, CommonModule, FormsModule],
     providers: [DecimalPipe, DatePipe],
-    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
-export class Tab3Page {
-  private db: any;
-
-  missingOfflineMaps: Map[] = [];
-  availableOfflineMaps: Map[] = [];
-  downloadProgress = 0;
-  isDownloading = false; // 🔹 Controls visibility
+export class Tab3Page implements OnDestroy {
+  downloadProgress = 0; // To show download progress
+  isDownloading = false; // 🔹 Controls progress bar
   private progressSubscription?: Subscription; // 🔹 Store subscription
-  archivedColor: string = global.archivedColor;
-  currentColor: string = global.currentColor;
-  styleChecked: boolean = false;
-  lag: number = global.lag; // 8
-  allowLocation: boolean = true;
-  baseMaps: Map[] = [
-    {
-      name: 'OpenStreetMap',
-      image: '/assets/maps/osm.jpg',
-    },
-    {
-      name: 'OpenTopoMap',
-      image: '/assets/maps/otm.jpg',
-    },
-    {
-      name: 'IGN',
-      image: '/assets/maps/ign.jpg',
-    },
-  ];
-  finalBaseMaps: Map[] = []
-  selectedLanguage: 'ca' | 'es' | 'other' = global.language;
   title: any = [
     ['Trajecte actual', 'Trayecto actual', 'Current track'],
     ['Trajecte de referència', 'Trayecto de referencia','Reference track'],
     ['Mapa base','Mapa base', 'Base map'],
     ['Idioma','Idioma', 'Language'],
     ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR'],
-    ['Sense una ruta activa...','Sin una ruta activa...', 'Without any active route...'],
-    ['Mostrar posició?', '¿Mostrar posición?', 'Show location?'],
     ['Carregar mapes', 'Cargar mapas', 'Upload maps'],
     ['Eliminar mapes', 'Eliminar mapas', 'Remove maps'],
-  ]
-  language: 'ca' | 'es' | 'other' = global.language;
-  languageIndex: 0 | 1 | 2 = global.languageIndex;
+  ];
+  // Language
+  languages: any = [
+    {name: 'Català', code:'ca', index: 0},
+    {name: 'Español', code: 'es', index: 1},
+    {name:'English', code:'en', index:2}
+  ];
+  selectedLanguage: any = {name:'English', code:'en', index:2}
+  onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'IGN'];
+  missingOfflineMaps: string[] = [];
+  availableOfflineMaps: string[] = [];
+  selectedMap: string = '';
+  baseMaps: string[] = [];
+  // Colors
+  archivedColor: string = global.archivedColor;
+  currentColor: string = global.currentColor;
+  colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
 
   constructor(
     public fs: FunctionsService,
     public server: ServerService,
     public modalController: ModalController,
-    private router: Router,
-  ) {
-    this.initialize();
-  }
-
-  async initialize() {
-    this.archivedColor = global.archivedColor;
-    this.currentColor = global.currentColor;
-    this.checkMaps();
-  }
+    private popoverController: PopoverController
+  ) {}
 
   /*
-  1. selectColor
-  2. ionViewWillEnter
-  3. selectBaseMap
+  2. selectColor
+  3. ionViewWillEnter
+  4. selectBaseMap
+  5. onLanguageChange
+  6. onMapChange
+  7. openColorPopover
+  8. onCurrentChange
+  9. onArchivedChange
+  10. onMapUploadChange
+  11. onMapRemoveChange
+  12. mapUpload
+  13. cleanupSubscription
+  14. checkMaps
+  15. removeMapFile
+  16. ngOnDestroy
+  17. updateColor
   */
 
-  // 1. SELECT COLOR ////////////////////////////////////////
+  // 2. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
     // Define variables
     const messages = ['Tria el color del trajecte','Elige el color del trayecto', 'Set the track color']
     const currHeader = ['Trajecte actual','Trayecto actual', 'Current Track']
     const archHeader = ['Trajecte de referència','Trayecto de referencia', 'Reference Track']
-    const colors: string[][] = [
+    const colors2: string[][] = [
       ['carmesí', 'vermell', 'taronja', 'daurat', 'groc', 'magenta', 'morat', 'llima', 'verd', 'cian', 'blau'],
       ['carmesí', 'rojo', 'naranja', 'oro', 'amarillo', 'magenta', 'púrpura', 'lima', 'verde', 'cian', 'azul'],
       ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
     ]
-    const inputs: AlertInput[] = colors[2].map((color, index) => ({
+    const inputs: AlertInput[] = colors2[2].map((color, index) => ({
       name: color,
       type: 'radio' as const,
-      label: colors[global.languageIndex][index], // Use the label from the selected language
+      label: colors2[global.languageIndex][index], // Use the label from the selected language
       value: color, // Value comes from colors2[2]
       checked: currArch === 'Current' ? global.currentColor === color : global.archivedColor === color,
       cssClass: `color-option-${color}` // Style based on the value from colors2[2]
@@ -132,14 +127,25 @@ export class Tab3Page {
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, '');
   }
 
-  // 2. IONVIEWWILLENTER /////////////////////////////
+  // 3. IONVIEWWILLENTER /////////////////////////////
   async ionViewWillEnter() {
+    // Check maps
+    await this.checkMaps();
     // Set language in radio group
-    this.language = global.language;
-    this.languageIndex = global.languageIndex;
+    this.selectedLanguage.code = global.languageCode;
+    this.selectedLanguage.index = global.languageIndex;
+    if (global.languageIndex == 0) this.selectedLanguage.name = 'Català'
+    else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
+    else this.selectedLanguage.name = 'English';
+    console.log(this.selectedLanguage)
+    // Set map in radio group
+    this.selectedMap = await this.fs.storeGet('mapProvider') || ''
+    // Set colors
+    this.archivedColor = global.archivedColor;
+    this.currentColor = global.currentColor;
   }
 
-  // 3. SELECT MAP
+  // 4. SELECT MAP ////////////////////////////////
   async selectBaseMap(baseMap: any) {
     console.log(baseMap)
     // Store the map provider
@@ -148,30 +154,90 @@ export class Tab3Page {
     this.fs.gotoPage('tab1')
   }
 
-  async onLanguageChange() {
-    global.language = this.language;
-    // Map the selected language to an index
-    switch (this.language) {
-      case 'ca':
-        this.languageIndex = 0;
-        break;
-      case 'es':
-        this.languageIndex = 1;
-        break;
-      default:
-        this.languageIndex = 2;
+  // 5. LANGUAGE CHANGE ///////////////////////////////////////
+  async onLanguageChange(code: string) {
+    this.selectedLanguage.code = code;
+    const picked = this.languages.find((l: { code: string; }) => l.code === code);
+    if (picked) {
+      this.selectedLanguage.index = picked.index;
+      this.selectedLanguage.name  = picked.name;
+      global.languageIndex = this.selectedLanguage.index
+      global.languageCode = this.selectedLanguage.code
     }
-    global.language = this.language;
-    global.languageIndex = this.languageIndex
-    console.log('Language:', global.language);
-    console.log('Language Index:', global.languageIndex);
+    await this.fs.storeSet('language', this.selectedLanguage.code)
   }
 
-  async ionViewWillLeave() {
-    await this.fs.storeSet('language', global.language)
+  // 6. MAP CHANGE ///////////////////////////////////////
+  async onMapChange(map: string) {
+    this.selectedMap = map;
+    await this.fs.storeSet('mapProvider', this.selectedMap)
   }
 
- async mapDownload(url:string, filePath: string) {
+  // 7. COLOR POPOVER ///////////////////////////////////////
+  async openColorPopover(ev: Event, type: 'current' | 'archived') {
+    const popover = await this.popoverController.create({
+      component: ColorPopoverComponent,
+      componentProps: {
+        colors: this.colors,
+        currentColor: type === 'current' ? this.currentColor : this.archivedColor,
+        onSelect: (selectedColor: string) => {
+          this.updateColor(type, selectedColor);
+        },
+      },
+      event: ev,
+      showBackdrop: true,
+      translucent: true,
+    });
+    await popover.present();
+  }
+
+  // 8. CURRENT COLOR CHANGE /////////////////////
+  async onCurrentChange(color: string) {
+    this.currentColor = color;
+    global.currentColor = color;
+    await this.fs.storeSet('currentColor', color);
+  }
+
+  // 9. ARCHIVED COLOR CHANGE ///////////////////////////////////////
+  async onArchivedChange(color: string) {
+    this.archivedColor = color;
+    global.archivedColor = color;
+    await this.fs.storeSet('archivedColor', global.archivedColor);
+  }
+
+  // 10. MAP UPLOAD //////////////////////////////////////////
+  async onMapUploadChange(map: string) {
+    this.debouncedMapUploadChange(map);
+  }
+
+  // Debounced versions
+  private debouncedMapUploadChange = debounce(async (map: string) => {
+    const mapWithExtension = map + '.mbtiles';
+    const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
+    if (match) await this.mapUpload(match.url, match.filename);
+    else {
+      console.log('No matching map found.');
+      return;
+    }
+  }, 500);
+
+  // 11. MAP REMOVE //////////////////////////////////////////
+  async onMapRemoveChange(map: string) {
+    this.debouncedMapRemoveChange(map);
+  }
+
+  private debouncedMapRemoveChange = debounce(async (map: string) => {
+    const mapWithExtension = map + '.mbtiles';
+    const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
+    if (match) await this.removeMapFile(match.filename);
+    else {
+      console.log('No matching map found.');
+      return;
+    }
+  }, 500);
+
+ // 12. MAP UPLOAD /////////////////////////////////////////
+ async mapUpload(url:string, filePath: string) {
     this.isDownloading = true; // 🔹 Show progress bar
     // Subscribe to progress updates
     this.progressSubscription = this.server.getDownloadProgress().subscribe((progress) => {
@@ -194,6 +260,7 @@ export class Tab3Page {
     });
   }
 
+  // 13. CLEAN SUBSCRIPTION ////////////////////////
   private cleanupSubscription() {
     if (this.progressSubscription) {
       this.progressSubscription.unsubscribe();
@@ -203,67 +270,26 @@ export class Tab3Page {
     this.downloadProgress = 0; // Reset progress
   }
 
+  // 14. CHECK MAPS //////////////////////////
   async checkMaps() {
     // Files in Data directory
     const filesInDataDirectory = await this.server.listFilesInDataDirectory();
     // Missing maps (available to be downloaded)
-    this.missingOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => !filesInDataDirectory.includes(map.filename));
-    // Available maps (already downloaded)
-    this.availableOfflineMaps = global.offlineMaps.filter((map: { filename: string; }) => filesInDataDirectory.includes(map.filename));
+    this.missingOfflineMaps = global.offlineMaps
+      .filter((map: { filename: string }) => !filesInDataDirectory.includes(map.filename))
+      .map((map: { filename: string }) => map.filename.replace(/\.mbtiles$/i, ''));
+    // Available maps
+    this.availableOfflineMaps = global.offlineMaps
+      .filter((map: { filename: string }) => filesInDataDirectory.includes(map.filename))
+      .map((map: { filename: string }) => map.filename.replace(/\.mbtiles$/i, ''));
     // Build the final map list
-    this.finalBaseMaps = [...this.baseMaps, ...this.availableOfflineMaps];
+    this.baseMaps = [...this.onlineMaps, ...this.availableOfflineMaps];
+    console.log('Missing offline maps:', this.missingOfflineMaps);
+    console.log('Available offline maps:', this.availableOfflineMaps);
+    console.log('Base maps', this.baseMaps);
   }
 
-  async mapsToUploadRemove(action: string) {
-    //console.log('Action:', action);
-    const availableOfflineMaps = this.availableOfflineMaps;
-    const missingOfflineMaps = this.missingOfflineMaps;
-    const cssClass = ['modal-class','blue-class']
-    if (action === 'upload') {
-      const upload: boolean = true;
-      // Open the modal for uploading
-      const modal = await this.modalController.create({
-        component: UpdateModalComponent,
-        componentProps: { missingOfflineMaps, availableOfflineMaps, upload },
-        cssClass: cssClass,
-        backdropDismiss: true, // Allow dismissal by tapping the backdrop
-      });
-      // Present modal
-      await modal.present();
-      const { data } = await modal.onDidDismiss();
-      if (data) {
-        let { action, selectedMap } = data;
-        if (action === 'ok') {
-          console.log('Selected map:', selectedMap);
-          const url = selectedMap.url;
-          const filePath = selectedMap.filename;
-          await this.mapDownload(url, filePath);
-        }
-      }
-      console.log('potential uploads: ', this.missingOfflineMaps)
-    }
-    else if (action === 'remove') {
-      const upload: boolean = false;
-      // Open the modal for editing
-      const modal = await this.modalController.create({
-        component: UpdateModalComponent,
-        componentProps: { missingOfflineMaps, availableOfflineMaps, upload },
-        cssClass: cssClass,
-        backdropDismiss: true, // Allow dismissal by tapping the backdrop
-      });
-      // Present modal
-      await modal.present();
-      const { data } = await modal.onDidDismiss();
-      if (data) {
-        let { action, selectedMap } = data;
-        if (action === 'ok') {
-          console.log('Selected map:', selectedMap);
-          await this.removeMapFile(selectedMap.filename);
-        }
-      }
-    }
-  }
-
+  // 15. REMOVE MAP /////////////////////////////////
   async removeMapFile(filename: string) {
     try {
       await Filesystem.deleteFile({
@@ -278,14 +304,28 @@ export class Tab3Page {
     }
   }
 
-  async getMbtilesPath() {
-    const fileUri = await Filesystem.getUri({
-      path: 'catalonia.mbtiles',
-      directory: Directory.Data
-    });
-    console.log('MBTiles path:', fileUri.uri);
-    return fileUri.uri;
+  // 16. ON DESTROY //////////////////////////////
+  ngOnDestroy() {
+    if (this.progressSubscription) {
+      this.progressSubscription.unsubscribe();
+      this.progressSubscription = undefined;
+    }
   }
+
+  // 17. UPDATE COLOR ////////////////////////////////
+  async updateColor(type: 'current' | 'archived', color: string) {
+    if (type === 'current') {
+      this.currentColor = color;
+      global.currentColor = color;
+      await this.fs.storeSet('currentColor', color);
+    } else {
+      this.archivedColor = color;
+      global.archivedColor = color;
+      await this.fs.storeSet('archivedColor', color);
+    }
+  }
+
+
 
 }
 

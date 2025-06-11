@@ -19,7 +19,7 @@ export class ServerService {
   getDownloadProgress() {
     return this.downloadProgress.asObservable(); // 🔹 Allow components to subscribe
   }
-  
+
   async downloadBinaryFile(url: string, filePath: string, onProgress: (progress: number) => void): Promise<void> {
     try {
       await Filesystem.deleteFile({
@@ -107,6 +107,7 @@ export class ServerService {
     }
   }
 
+  /*
   async getMbtilesPath(): Promise<string> {
     const fileUri = await Filesystem.getUri({
       path: 'catalonia.mbtiles',
@@ -116,6 +117,7 @@ export class ServerService {
     // Convert 'file://' URI to a native file path
     return fileUri.uri.replace('file://', '');
   }
+  */
 
   async openMbtiles(mbtilesFile: string) {
     try {
@@ -160,7 +162,7 @@ export class ServerService {
     // Query the database for the tile using XYZ coordinates
     const resultXYZ = await this.db.query(
       `SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;`,
-      [zoom, x, y]  
+      [zoom, x, y]
     );
     if (resultXYZ?.values?.length) {
       const tileData = resultXYZ.values[0].tile_data;

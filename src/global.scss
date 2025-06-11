@@ -339,3 +339,35 @@
   margin-bottom: env(safe-area-inset-bottom);
   z-index: 20;
 }
+
+  .top-margin-selector {
+    margin-top: 70px;       /* if you still need a 70px top margin */
+    background: #a3bfff;
+  }
+  .top-margin-selector ion-label {
+    font-weight: bold;      /* make the label text bold */
+  }
+
+  .selector {
+    background: #a3bfff;
+  }
+  .selector ion-label {
+    font-weight: bold;      /* make the label text bold */
+  }
+
+  ion-select-option[aria-selected="true"] {
+  font-weight: bold;
+}
+
+
+  .color-crimson { color: crimson; }
+  .color-red     { color: red; }
+  .color-orange  { color: orange; }
+  .color-gold    { color: gold; }
+  .color-yellow  { color: yellow; }
+  .color-magenta { color: magenta; }
+  .color-purple  { color: purple; }
+  .color-lime    { color: lime; }
+  .color-green   { color: green; }
+  .color-cyan    { color: cyan; }
+  .color-blue    { color: blue; }
