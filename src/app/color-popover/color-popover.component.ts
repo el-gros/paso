@@ -1,3 +1,13 @@
+/**
+ * Standalone component that displays a popover for selecting a color from a provided list.
+ * Emits the selected color and dismisses the popover on selection.
+ *
+ * Inputs:
+ *   - colors: Array of color options to display.
+ *   - currentColor: Currently selected color.
+ * Output:
+ *   - colorSelected: Emits the chosen color string.
+ */
 import { Component, Input } from '@angular/core';
 import { IonicModule, PopoverController } from '@ionic/angular';
 import { CommonModule } from '@angular/common'; // 👈 Required for *ngIf, *ngFor, ngClass

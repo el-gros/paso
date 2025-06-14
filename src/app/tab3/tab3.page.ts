@@ -296,10 +296,14 @@ export class Tab3Page implements OnDestroy {
         path: filename,
         directory: Directory.Data,
       });
-      console.log(`File ${filename} removed successfully.`);
-      // Refresh the maps list
+      // Toast for success
+      const toast = ["El mapa s'ha eliminat correctament", "El mapa se ha eliminado con éxito", "Map successfully removed"];
+      this.fs.displayToast(toast[global.languageIndex]);
       await this.checkMaps();
     } catch (error) {
+      // Toast for error
+      const errorToast = ["Error eliminant el mapa", "Error eliminando el mapa", "Error removing map"];
+      this.fs.displayToast(errorToast[global.languageIndex]);
       console.error(`Error removing file ${filename}:`, error);
     }
   }
@@ -309,11 +313,23 @@ export class Tab3Page implements OnDestroy {
     if (this.progressSubscription) {
       this.progressSubscription.unsubscribe();
       this.progressSubscription = undefined;
+      if (this.debouncedMapUploadChange && this.debouncedMapUploadChange.cancel) {
+        this.debouncedMapUploadChange.cancel();
+      }
+      if (this.debouncedMapRemoveChange && this.debouncedMapRemoveChange.cancel) {
+        this.debouncedMapRemoveChange.cancel();
+      }
     }
   }
 
   // 17. UPDATE COLOR ////////////////////////////////
   async updateColor(type: 'current' | 'archived', color: string) {
+    // Only allow colors from the predefined list
+    if (!this.colors.includes(color)) {
+      console.warn(`Invalid color selected: ${color}`);
+      return;
+    }
+    // Current or archived
     if (type === 'current') {
       this.currentColor = color;
       global.currentColor = color;

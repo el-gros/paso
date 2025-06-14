@@ -1,4 +1,13 @@
-import { Component, Injectable } from '@angular/core';
+/**
+ * Tab2Page component for managing and displaying archived tracks.
+ *
+ * Handles track selection, editing, deletion, exporting to GPX, and sharing.
+ * Provides multi-language support for UI labels and messages.
+ * Integrates with global state and organization-specific services for storage, alerts, and navigation.
+ * Includes methods for batch operations, menu handling, and resetting selection state.
+ */
+
+import { Component } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { Track, TrackDefinition, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
@@ -8,9 +17,7 @@ import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
-import { Capacitor } from '@capacitor/core';
 import { MenuController } from '@ionic/angular';
-
 @Component({
     selector: 'app-tab2',
     templateUrl: 'tab2.page.html',
@@ -60,12 +67,16 @@ export class Tab2Page {
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
-    // retrieve collection (just in case)
-    if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
-    // retrieve collection and uncheck all tracks
-    for (const item of global.collection) item.isChecked = false;
-    this.numChecked = 0;
-    global.key = "null"
+    try {
+      if (global.collection.length <= 0) {
+        const collection = await this.fs.storeGet('collection');
+        global.collection = collection || [];
+      }
+      this.resetSelection();
+    } catch (error) {
+      await this.fs.displayToast('Error loading collection');
+      console.error('ionViewDidEnter error:', error);
+    }
   }
 
   // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
@@ -95,30 +106,27 @@ export class Tab2Page {
     // create alert control
     const alert = await this.alertController.create({
       cssClass: 'alert redAlert',
-      // header and message
       header: headers[global.languageIndex],
       message: messages[global.languageIndex],
-      // buttons
       buttons: [{
-        // cancel button
         text: cancel[global.languageIndex],
         role: 'cancel',
         cssClass: 'alert-cancel-button',
-        handler: async () => {
-          for (var item of global.collection) {
-            item.isChecked = false;
-          }
-          this.numChecked = 0;
-          global.key = "null"
-        }
+        handler: this.onCancelDeleteTracks.bind(this)
       }, {
-        // proceed button
         text: 'OK',
         cssClass: 'alert-ok-button',
-        handler: () => { this.yesDeleteTracks(); }
+        handler: this.onConfirmDeleteTracks.bind(this)
       }]
-    });
-    await alert.present();
+    });    await alert.present();
+  }
+
+  private async onCancelDeleteTracks() {
+    await this.resetSelection();
+  }
+
+  private onConfirmDeleteTracks() {
+    this.yesDeleteTracks();
   }
 
   // 6. DISPLAY TRACK ///////////////////////////
@@ -170,13 +178,17 @@ export class Tab2Page {
         http://www.topografix.com/GPX/1/1/gpx.xsd">`
     // Add waypoints
     if (feature.waypoints && feature.waypoints.length > 0) {
+      const escapeXml = (unsafe: string | undefined) =>
+        (unsafe ?? '').replace(/[<>&'"]/g, c => ({
+          '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+        }[c] as string));
       feature.waypoints.forEach((wp: Waypoint) => {
         const { latitude, longitude, altitude = '', name = '', comment = '' } = wp;
         gpxText += `
           <wpt lat="${latitude}" lon="${longitude}">
-            <ele>${altitude}</ele>
-            <name><![CDATA[${name}]]></name>
-            <cmt><![CDATA[${comment}]]></cmt>
+            <ele>${escapeXml(String(altitude))}</ele>
+            <name><![CDATA[${name.replace(/]]>/g, ']]]]><![CDATA[>')}]]></name>
+            <cmt><![CDATA[${comment.replace(/]]>/g, ']]]]><![CDATA[>')}]]></cmt>
           </wpt>`;
       });
     }
@@ -196,11 +208,15 @@ export class Tab2Page {
   async exportTrack() {
     var track: Track | undefined;
     const dialogTitles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
+    function sanitizeFilename(name: string): string {
+      return name.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    }
     track = await this.fs.retrieveTrack();
     if (!track) return;
     await this.fs.uncheckAll();
-    var gpxText = await this.geoJsonToGpx(track.features[0]);
-    var file: string = track.features[0].properties.name.replaceAll(' ', '_') + '.gpx';
+    var gpxText = await this.geoJsonToGpx(track.features?.[0]);
+    const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
+    const file: string = `${sanitizedName}.gpx`;
     try {
       // Write the file to the Data directory
       const result = await Filesystem.writeFile({
@@ -257,6 +273,12 @@ export class Tab2Page {
   selectOption(option: string) {
     console.log('Selected:', option);
     this.menu.close();
+  }
+
+  async resetSelection() {
+    await this.fs.uncheckAll();
+    this.numChecked = 0;
+    global.key = "null";
   }
 
 }

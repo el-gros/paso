@@ -1,4 +1,14 @@
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
+/**
+ * CanvasComponent is responsible for displaying and managing interactive canvas charts
+ * for both the current and archived tracks, including statistics such as distance,
+ * elevation gain/loss, speed, and time. It initializes canvases, subscribes to track
+ * and status updates, computes average and motion speeds, and renders graphical
+ * representations of track data with dynamic scaling and grid overlays. The component
+ * supports multilingual labels and adapts canvas size to the viewport.
+ */
+
+import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { IonFab, IonContent, IonRow, IonFabButton, IonIcon } from "@ionic/angular/standalone";
 import { global } from '../../environments/environment';
 import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
@@ -17,7 +27,7 @@ register();
   imports: [CommonModule, IonFab, IonContent, IonRow, IonFabButton, IonIcon],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class CanvasComponent  implements OnInit {
+export class CanvasComponent implements OnInit, OnDestroy {
 
   currentTrack: Track | undefined = undefined;
   archivedTrack: Track | undefined = undefined;
@@ -40,12 +50,12 @@ export class CanvasComponent  implements OnInit {
   status: 'black' | 'red' | 'green' = 'black';
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: any = '00:00:00';
+  currentMotionTime: string = '00:00:00';
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   canvasNum: number = 400; // canvas size
   averagedSpeed: number = 0;
-  stopped: any = 0;
+  stopped: number = 0;
   vMin: number = 1;
 
   currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
@@ -56,6 +66,8 @@ export class CanvasComponent  implements OnInit {
   layerVisibility = global.layerVisibility;
   languageIndex = global.languageIndex;
 
+  private subscriptions: Subscription = new Subscription();
+
   constructor(
     private router: Router,
     public fs: FunctionsService,
@@ -63,26 +75,31 @@ export class CanvasComponent  implements OnInit {
   ) { }
 
   async ngOnInit() {
-    // Create canvases
     await this.createCanvas();
-    // Subscribe to currentTrack
-    this.ts.currentTrack$.subscribe(async current => {
-      this.currentTrack = current;
-      await this.averageSpeed();
-      this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-    });
-    // Subscribe to archivedTrack
-    this.ts.archivedTrack$.subscribe(async archived => {
-      this.archivedTrack = archived;
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    });
-    // In case of archived track
+    this.subscriptions.add(
+      this.ts.currentTrack$.subscribe(async current => {
+        this.currentTrack = current;
+        await this.averageSpeed();
+        this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
+      })
+    );
+    this.subscriptions.add(
+      this.ts.archivedTrack$.subscribe(async archived => {
+        this.archivedTrack = archived;
+        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+      })
+    );
+    this.subscriptions.add(
+      this.ts.status$.subscribe(async status => {
+        this.status = status;
+      })
+    );
     if (this.archivedTrack) this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    // Subscribe to status
-    this.ts.status$.subscribe(async status => {
-      this.status = status;
-    });
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
   }
 
   async ionViewWillEnter() {
@@ -122,49 +139,45 @@ export class CanvasComponent  implements OnInit {
 
   // 25. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
-    let currentCanvas: HTMLCanvasElement | undefined;
-    let archivedCanvas: HTMLCanvasElement | undefined;
-    // Get window size for canvas size
     const size = Math.min(window.innerWidth, window.innerHeight);
-    // Loop through properties to create canvases and their contexts
-    for (var i in this.properties) {
-      // Get canvas for current track
-      currentCanvas = document.getElementById('currCanvas' + i) as HTMLCanvasElement;
-      if (currentCanvas) {
-        currentCanvas.width = size;
-        currentCanvas.height = size;
-        const ctx = currentCanvas.getContext("2d");
-        if (ctx) this.currentCtx[i] = ctx
-      } else {
-        console.error(`Canvas with ID currCanvas${i} not found.`);
-      }
-      // Get canvas for archived track
-      archivedCanvas = document.getElementById('archCanvas' + i) as HTMLCanvasElement;
-      if (archivedCanvas) {
-        archivedCanvas.width = size;
-        archivedCanvas.height = size;
-        const ctx = archivedCanvas.getContext("2d");
-        if (ctx) this.archivedCtx[i] = ctx
-      } else {
-        console.error(`Canvas with ID archCanvas${i} not found.`);
-      }
+    for (const i in this.properties) {
+      this.initCanvas(`currCanvas${i}`, size, this.currentCtx, i);
+      this.initCanvas(`archCanvas${i}`, size, this.archivedCtx, i);
     }
-    // Define canvasNum as height and width
     this.canvasNum = size;
   }
 
+  private initCanvas(
+    elementId: string,
+    size: number,
+    ctxArray: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined],
+    index: string | number
+  ) {
+    const canvas = document.getElementById(elementId) as HTMLCanvasElement;
+    if (canvas) {
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctxArray[Number(index)] = ctx;
+    } else {
+      console.error(`Canvas with ID ${elementId} not found.`);
+    }
+  }
+
   // 30. UPDATE CANVAS ///////////////////////////////////
-  async updateCanvas(ctx: any, track: Track | undefined, propertyName: keyof Data, xParam: string) {
-    var tUnit: string = ''
+  async updateCanvas(
+    ctx: CanvasRenderingContext2D | undefined,
+    track: Track | undefined,
+    propertyName: keyof Data,
+    xParam: string
+  ) {
+    let tUnit: string = ''
     if (!ctx) return tUnit;
     // Reset and clear the canvas
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return tUnit;
-    // Show appropriate canvas
-    if (track === this.currentTrack) {
-    } else if (track === this.archivedTrack) {
-    }
+    // No need for empty checks; remove them for clarity
     // Define data array
     const data = track.features[0].geometry.properties.data;
     const num = data.length ?? 0;
@@ -221,7 +234,8 @@ export class CanvasComponent  implements OnInit {
   }
 
   // 26. GRID /////////////////////////////////////////////////////
-  async grid(  ctx: CanvasRenderingContext2D | undefined,
+  async grid(
+    ctx: CanvasRenderingContext2D | undefined,
     xMin: number,
     xMax: number,
     yMin: number,
@@ -229,39 +243,40 @@ export class CanvasComponent  implements OnInit {
     a: number,
     d: number,
     e: number,
-    f: number) {
-      // Return if there is no canvascontext
-      if (!ctx) return;
-      // Define fonts and styles
-      ctx.font = "15px Arial"
-      ctx.save();
-      ctx.setLineDash([5, 15]);
-      ctx.strokeStyle = 'black';
-      ctx.fillStyle = 'black'
-      // Define line spacing and position
-      const gridx = this.gridValue(xMax - xMin);
-      const gridy = this.gridValue(yMax - yMin);
-      const fx = Math.ceil(xMin / gridx);
-      const fy = Math.ceil(yMin / gridy);
-      // Draw vertical lines
-      for (var xi = fx * gridx; xi <= xMax; xi += gridx) {
-        ctx.beginPath();
-        ctx.moveTo(xi * a + e, yMin * d + f);
-        ctx.lineTo(xi * a + e, yMax * d + f);
-        ctx.stroke();
-        ctx.fillText(xi.toLocaleString(), xi * a + e + 2, yMax * d + f + 15)
-      }
-      // Draw horizontal lines
-      for (var yi = fy * gridy; yi <= yMax; yi += gridy) {
-        ctx.beginPath();
-        ctx.moveTo(xMin * a + e, yi * d + f);
-        ctx.lineTo(xMax * a + e, yi * d + f);
-        ctx.stroke();
-        ctx.fillText(yi.toLocaleString(), xMin * a + e + 2, yi * d + f - 10)
-      }
-      // Restore context
-      ctx.restore();
-      ctx.setLineDash([]);
+    f: number
+  ) {
+    // Return if there is no canvascontext
+    if (!ctx) return;
+    // Define fonts and styles
+    ctx.font = "15px Arial"
+    ctx.save();
+    ctx.setLineDash([5, 15]);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black'
+    // Define line spacing and position
+    const gridx = this.gridValue(xMax - xMin);
+    const gridy = this.gridValue(yMax - yMin);
+    const fx = Math.ceil(xMin / gridx);
+    const fy = Math.ceil(yMin / gridy);
+    // Draw vertical lines
+    for (var xi = fx * gridx; xi <= xMax; xi += gridx) {
+      ctx.beginPath();
+      ctx.moveTo(xi * a + e, yMin * d + f);
+      ctx.lineTo(xi * a + e, yMax * d + f);
+      ctx.stroke();
+      ctx.fillText(xi.toLocaleString(), xi * a + e + 2, yMax * d + f + 15)
+    }
+    // Draw horizontal lines
+    for (var yi = fy * gridy; yi <= yMax; yi += gridy) {
+      ctx.beginPath();
+      ctx.moveTo(xMin * a + e, yi * d + f);
+      ctx.lineTo(xMax * a + e, yi * d + f);
+      ctx.stroke();
+      ctx.fillText(yi.toLocaleString(), xMin * a + e + 2, yi * d + f - 10)
+    }
+    // Restore context
+    ctx.restore();
+    ctx.setLineDash([]);
   }
 
   // 27. DETERMINATION OF GRID STEP //////////////////////

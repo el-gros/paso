@@ -36,7 +36,7 @@
   <ion-button fill="clear" (click)="openColorPopover($event, 'current')">
     <div class="color-display">
       <div class="color-line" [ngStyle]="{ 'background-color': currentColor }"></div>
-      <div class="triangle" [ngStyle]="{ 'border-top-color': currentColor }"></div>
+      <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
     </div>
   </ion-button>
 </ion-item>
@@ -47,7 +47,7 @@
   <ion-button fill="clear" (click)="openColorPopover($event, 'archived')">
     <div class="color-display">
       <div class="color-line" [ngStyle]="{ 'background-color': archivedColor }"></div>
-      <div class="triangle" [ngStyle]="{ 'border-top-color': archivedColor }"></div>
+      <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
     </div>
   </ion-button>
 </ion-item>

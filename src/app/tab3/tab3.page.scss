@@ -1,72 +1,7 @@
-.centered-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  height: 100%; /* Ensure it takes the full height of the row */
-}
-
-ion-toggle {
-  margin-right: 20px;
-  margin-left: 20px;
-}
-
-.bigButton{
-  margin-top: 0px;
-  margin-right: 5px;
-  margin-left: 5px;
-}
-
-.pick {
-  font-size: 12px !important;
-  font-family: 'Arial, sans-serif';
-}
 
 ion-icon {
   --color: black
 }
-
-ion-grid {
-  margin-top: 75px;
-}
-
-.label_b {
-  color: #3880ff;
-}
-
-.line {
-  margin-top: 20px;
-  height: 5px; /* Thickness of the line */
-  width: 100%; /* Full width */
-  border: none;
-}
-  .map-image {
-    height: 100px; /* Set the strip height */
-    width: 100%; /* Set the desired width (or keep auto) */
-    object-fit: cover; /* Ensures the image fills the height while maintaining aspect ratio */
-    object-position: center; /* Adjusts which part of the image is shown */
-    display: block; /* Ensures proper rendering as a block-level element */
-  }
-
-  ion-card {
-    margin-top: 0;
-    margin-bottom: 0
-  }
-
-  ion-card-header {
-    ion-card-title {
-      font-size: 15px;
-    }
-    padding: 5px !important;
-  }
-
-  .language-selector {
-    margin-top: 70px;
-  }
-  
-  .map-selector {
-    margin-top: 0px;
-  }
 
   .color-display {
     display: flex;
@@ -74,14 +9,14 @@ ion-grid {
     gap: 6px;
     padding-left: 4px;
   }
-  
+
   .color-line {
     width: 50px;
     height: 5px;
     background-color: gray;
     border-radius: 2px;
   }
-  
+
   .triangle {
     width: 0;
     height: 0;
@@ -90,4 +25,3 @@ ion-grid {
     border-top: 6px solid #444; /* or use 'darkgrey' or '#333' */
     margin-top: 2px;
   }
-  
