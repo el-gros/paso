@@ -69,7 +69,6 @@ import RenderFeature from 'ol/render/Feature';
 import TileState from 'ol/TileState';
 import { Tile } from 'ol';
 import pako from 'pako';
-import { debounce } from 'lodash';
 import BaseLayer from 'ol/layer/Base';
 const vectorFormat = new MVT();
 useGeographic();
@@ -318,9 +317,7 @@ export class Tab1Page {
   bluePin?: Style;
   yellowPin?: Style;
   blackPin?: Style;
-  debouncedComputeDistances: any;
-  debouncedFilterAltitude: any;
-  debouncedDisplayCurrentTrack: any;
+
   selectedAltitude: string = 'GPS'; // Default altitude method
 
   get languageIndex(): number { return global.languageIndex; }
@@ -343,7 +340,6 @@ export class Tab1Page {
 
   1. ngOnInit
   2. listenToAppStateChanges
-  3. initializeDebouncedFunctions
   3b. addFileListener
   3c. onDestroy
   4. ionViewDidEnter
@@ -399,7 +395,6 @@ export class Tab1Page {
   // 1. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
-      //this.initializeDebouncedFunctions();
       // Listen for state changes
       this.listenToAppStateChanges();
       // create storage
@@ -442,13 +437,6 @@ export class Tab1Page {
         this.startBeepInterval();
       }
     });
-  }
-
-  // 3. INITIALIZE DEBOUNCED FUNCTIONS ////////////////////
-  private initializeDebouncedFunctions() {
-    this.debouncedComputeDistances = debounce(this.computeDistances.bind(this), 300);
-    this.debouncedFilterAltitude = debounce(this.filterAltitude.bind(this), 300);
-    this.debouncedDisplayCurrentTrack = debounce(this.displayCurrentTrack.bind(this), 300);
   }
 
   // 3b. LISTENING FOR OPEN EVENTS
@@ -796,15 +784,16 @@ async displayCurrentTrack() {
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
     // altitud method
-    /*if (this.selectedAltitude === 'DEM') {
+    if (this.selectedAltitude === 'DEM') {
       const coordinates: number[][] = this.currentTrack.features[0].geometry.coordinates;
       var altSlopes: any = await this.getAltitudesFromMap(coordinates as [number, number][])
-      this.currentTrack.features[0].properties.totalElevationGain = altSlopes.slopes.gain;
-      this.currentTrack.features[0].properties.totalElevationLoss = altSlopes.slopes.loss;
-      this.currentTrack.features[0].geometry.properties.data.forEach((item, index) => {
+      console.log(altSlopes)
+      if (altSlopes.slopes) this.currentTrack.features[0].properties.totalElevationGain = altSlopes.slopes.gain;
+      if (altSlopes.slopes) this.currentTrack.features[0].properties.totalElevationLoss = altSlopes.slopes.loss;
+      if (altSlopes.altitudes) this.currentTrack.features[0].geometry.properties.data.forEach((item, index) => {
         item.altitude = altSlopes.altitudes[index];
       });
-    }*/
+    }
     // build new track definition
     const currentProperties = this.currentTrack.features[0].properties;
     currentProperties.name = name;
@@ -1633,21 +1622,15 @@ async displayCurrentTrack() {
   // 45. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
     // fill the track
-    console.log('1',this.currentTrack)
     const locationNew: boolean = await this.buildGeoJson(location);
-    console.log('2',this.currentTrack)
     // no new point..
     if (!locationNew) return;
     // new point..
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
-    //this.debouncedFilterAltitude(this.currentTrack, num - this.lag - 1);
     await this.filterAltitude(this.currentTrack, num - this.lag - 1);
-    console.log('3',this.currentTrack)
     // compute distances
-    //this.debouncedComputeDistances();
     await this.computeDistances();
-    console.log('4',this.currentTrack)
     // filter speed
     if (this.currentTrack) {
       this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
@@ -1661,7 +1644,6 @@ async displayCurrentTrack() {
     await this.htmlValues();
     console.log('6',this.currentTrack)
     // display the current track
-    //this.debouncedDisplayCurrentTrack();
     await this.displayCurrentTrack();
     // Ensure UI updates are reflected
     this.zone.run(() => {
@@ -1911,19 +1893,10 @@ async displayCurrentTrack() {
       const times: number[] = await this.createTimes(data, date, distances);
       console.log(times);
       // Get altitudes and compute elevation gain and loss
-      var elevations: number[] = [];
-      //var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
-      await this.getAltitudes(rawCoordinates).then(async altitudes => {
-        console.log('altitudes', altitudes)
-        elevations = altitudes;
-        slopes = await this.computeElevationGainAndLoss(altitudes)
-        console.log('slopes', slopes)
-      }).catch(err => {
-        console.error('Error:', err);
-      });
+      var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
       // compute speed
       const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
-      const rawProperties: Data[] = await this.fillProperties(distances, elevations, times, speed);
+      const rawProperties: Data[] = await this.fillProperties(distances, altSlopes.altitudes, times, speed);
       // Increase the number of coordinates
       const num = rawCoordinates.length;
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
@@ -1939,8 +1912,8 @@ async displayCurrentTrack() {
               date: date,
               description: '',
               totalDistance: data.response.features[0].properties.summary.distance / 1000,
-              totalElevationGain: slopes.gain,
-              totalElevationLoss: slopes.loss,
+              totalElevationGain: altSlopes.slopes.gain,
+              totalElevationLoss: altSlopes.slopes.loss,
               totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
               totalNumber: num,
               currentAltitude: undefined,
@@ -2185,13 +2158,14 @@ async displayCurrentTrack() {
   }
 
   async getAltitudesFromMap(coordinates: [number, number][] ) {
-    await this.getAltitudes(coordinates).then(async altitudes => {
-      var slopes = await this.computeElevationGainAndLoss(altitudes)
+    try {
+      const altitudes = await this.getAltitudes(coordinates)
+      const slopes = await this.computeElevationGainAndLoss(altitudes)
       return {altitudes: altitudes, slopes: slopes}
-    }).catch(err => {
-      console.error('Error:', err);
+    }
+    catch {
       return {altitudes: null, slopes: null}
-    });
+    }
   }
 
 }

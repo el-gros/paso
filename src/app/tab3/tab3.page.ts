@@ -190,7 +190,8 @@ export class Tab3Page implements OnDestroy {
     this.archivedColor = global.archivedColor;
     this.currentColor = global.currentColor;
     // Set altitude
-    this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
+    // this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
+    this.selectedAltitude = await this.fs.storeGet('altitude') || ''
   }
 
   // 4. SELECT MAP ////////////////////////////////
