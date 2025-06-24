@@ -330,7 +330,7 @@
   left: 0;
   width: 100%;
   height: env(safe-area-inset-bottom);
-  background-color: #eee; /* light gray */
+  background-color: #ccc; /* light gray */
   z-index: 10;
 }
 
@@ -357,6 +357,10 @@
 
   ion-select-option[aria-selected="true"] {
   font-weight: bold;
+}
+
+.blue-first-option-select ion-select-option:first-of-type {
+  background-color: #a3bfff !important;
 }
 
 

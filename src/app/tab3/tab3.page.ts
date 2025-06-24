@@ -4,6 +4,7 @@
  * Integrates with FunctionsService and ServerService for storage and file operations, and uses modals and popovers
  * for user interactions. Handles download progress display and updates the UI accordingly.
  */
+
 import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
@@ -12,13 +13,19 @@ import { FormsModule } from '@angular/forms'
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
-import { Subscription } from 'rxjs';
 import { ModalController, PopoverController } from '@ionic/angular';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { ColorPopoverComponent } from '../color-popover/color-popover.component';
-import { debounce } from 'lodash';
+import { Subscription, Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 register();
+
+interface LanguageOption {
+  name: string;
+  code: string;
+  index: number;
+}
 
 @Component({
     selector: 'app-tab3',
@@ -29,6 +36,7 @@ register();
 })
 
 export class Tab3Page implements OnDestroy {
+[x: string]: any;
   downloadProgress = 0; // To show download progress
   isDownloading = false; // 🔹 Controls progress bar
   private progressSubscription?: Subscription; // 🔹 Store subscription
@@ -40,12 +48,13 @@ export class Tab3Page implements OnDestroy {
     ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR'],
     ['Carregar mapes', 'Cargar mapas', 'Upload maps'],
     ['Eliminar mapes', 'Eliminar mapas', 'Remove maps'],
+    ['Altitud del trajecte guardat', 'Altitud del trayecto guardado', 'Altitude of saved track']
   ];
   // Language
-  languages: any = [
-    {name: 'Català', code:'ca', index: 0},
-    {name: 'Español', code: 'es', index: 1},
-    {name:'English', code:'en', index:2}
+  languages: LanguageOption[] = [
+    { name: 'Català', code: 'ca', index: 0 },
+    { name: 'Español', code: 'es', index: 1 },
+    { name: 'English', code: 'en', index: 2 }
   ];
   selectedLanguage: any = {name:'English', code:'en', index:2}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'IGN'];
@@ -57,13 +66,49 @@ export class Tab3Page implements OnDestroy {
   archivedColor: string = global.archivedColor;
   currentColor: string = global.currentColor;
   colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
+  // Altitudes
+  selectedAltitude: string = 'GPS';
+  altitudes: string[] = ['GPS', 'DEM'];
+
+  // Subjects for debouncing map upload/remove actions
+  private mapUploadSubject = new Subject<string>();
+  private mapRemoveSubject = new Subject<string>();
+  private mapUploadSubscription?: Subscription;
+  private mapRemoveSubscription?: Subscription;
 
   constructor(
     public fs: FunctionsService,
     public server: ServerService,
     public modalController: ModalController,
     private popoverController: PopoverController
-  ) {}
+  ) {
+
+    // Debounced map upload
+    this.mapUploadSubscription = this.mapUploadSubject.pipe(debounceTime(500)).subscribe(async (map: string) => {
+      const mapWithExtension = map + '.mbtiles';
+      const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
+      if (match) await this.mapUpload(match.url, match.filename);
+      else {
+        console.log('No matching map found.');
+        return;
+      }
+    });
+
+    // Debounced map remove
+    this.mapRemoveSubscription = this.mapRemoveSubject.pipe(debounceTime(500)).subscribe(async (map: string) => {
+      const mapWithExtension = map + '.mbtiles';
+      const toast = ["El mapa s'ha eliminat",'El mapa se ha eliminado','The map has been removed']
+      const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
+      if (match) {
+        await this.removeMapFile(match.filename);
+        this.fs.displayToast(toast[global.languageIndex]);
+      }
+      else {
+        console.log('No matching map found.');
+        return;
+      }
+    });
+  }
 
   /*
   2. selectColor
@@ -74,6 +119,7 @@ export class Tab3Page implements OnDestroy {
   7. openColorPopover
   8. onCurrentChange
   9. onArchivedChange
+  9b.
   10. onMapUploadChange
   11. onMapRemoveChange
   12. mapUpload
@@ -138,11 +184,13 @@ export class Tab3Page implements OnDestroy {
     else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
     else this.selectedLanguage.name = 'English';
     console.log(this.selectedLanguage)
-    // Set map in radio group
+    // Set map
     this.selectedMap = await this.fs.storeGet('mapProvider') || ''
     // Set colors
     this.archivedColor = global.archivedColor;
     this.currentColor = global.currentColor;
+    // Set altitude
+    this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
   }
 
   // 4. SELECT MAP ////////////////////////////////
@@ -205,36 +253,21 @@ export class Tab3Page implements OnDestroy {
     await this.fs.storeSet('archivedColor', global.archivedColor);
   }
 
-  // 10. MAP UPLOAD //////////////////////////////////////////
-  async onMapUploadChange(map: string) {
-    this.debouncedMapUploadChange(map);
+  // 9b. ALTITUDE METHOD CHANGE /////////////////////////
+  async onAltitudeChange(method: string) {
+    this.selectedAltitude = method;
+    await this.fs.storeSet('altitude', this.selectedAltitude);
   }
 
-  // Debounced versions
-  private debouncedMapUploadChange = debounce(async (map: string) => {
-    const mapWithExtension = map + '.mbtiles';
-    const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
-    if (match) await this.mapUpload(match.url, match.filename);
-    else {
-      console.log('No matching map found.');
-      return;
-    }
-  }, 500);
+  // 10. MAP UPLOAD //////////////////////////////////////////
+  async onMapUploadChange(map: string) {
+    this.mapUploadSubject.next(map);
+  }
 
   // 11. MAP REMOVE //////////////////////////////////////////
   async onMapRemoveChange(map: string) {
-    this.debouncedMapRemoveChange(map);
+    this.mapRemoveSubject.next(map);
   }
-
-  private debouncedMapRemoveChange = debounce(async (map: string) => {
-    const mapWithExtension = map + '.mbtiles';
-    const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
-    if (match) await this.removeMapFile(match.filename);
-    else {
-      console.log('No matching map found.');
-      return;
-    }
-  }, 500);
 
  // 12. MAP UPLOAD /////////////////////////////////////////
  async mapUpload(url:string, filePath: string) {
@@ -249,9 +282,6 @@ export class Tab3Page implements OnDestroy {
     }).then( async() => {
       console.log('Download complete!');
       this.cleanupSubscription();
-      // Toast
-      const toast = ["El mapa s'ha carregat correctament",'El mapa se ha cargado con éxito','Map successfully uploaded']
-      this.fs.displayToast(toast[global.languageIndex]);
       // Refresh
       await this.checkMaps();
     }).catch((err) => {
@@ -268,6 +298,9 @@ export class Tab3Page implements OnDestroy {
     }
     this.isDownloading = false; // 🔹 Hide progress bar
     this.downloadProgress = 0; // Reset progress
+    // Toast
+    const toast = ["El mapa s'ha carregat correctament",'El mapa se ha cargado con éxito','Map successfully uploaded']
+    this.fs.displayToast(toast[global.languageIndex]);
   }
 
   // 14. CHECK MAPS //////////////////////////
@@ -284,6 +317,7 @@ export class Tab3Page implements OnDestroy {
       .map((map: { filename: string }) => map.filename.replace(/\.mbtiles$/i, ''));
     // Build the final map list
     this.baseMaps = [...this.onlineMaps, ...this.availableOfflineMaps];
+    // Selected online - remove
     console.log('Missing offline maps:', this.missingOfflineMaps);
     console.log('Available offline maps:', this.availableOfflineMaps);
     console.log('Base maps', this.baseMaps);
@@ -313,12 +347,14 @@ export class Tab3Page implements OnDestroy {
     if (this.progressSubscription) {
       this.progressSubscription.unsubscribe();
       this.progressSubscription = undefined;
-      if (this.debouncedMapUploadChange && this.debouncedMapUploadChange.cancel) {
-        this.debouncedMapUploadChange.cancel();
-      }
-      if (this.debouncedMapRemoveChange && this.debouncedMapRemoveChange.cancel) {
-        this.debouncedMapRemoveChange.cancel();
-      }
+    }
+    if (this.mapUploadSubscription) {
+      this.mapUploadSubscription.unsubscribe();
+      this.mapUploadSubscription = undefined;
+    }
+    if (this.mapRemoveSubscription) {
+      this.mapRemoveSubscription.unsubscribe();
+      this.mapRemoveSubscription = undefined;
     }
   }
 
@@ -344,4 +380,3 @@ export class Tab3Page implements OnDestroy {
 
 
 }
-

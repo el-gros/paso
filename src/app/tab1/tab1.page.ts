@@ -8,6 +8,7 @@
  * statistics computation, and UI feedback.
  */
 
+// IMPORTS /////////////////////////////////
 import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
@@ -32,7 +33,6 @@ import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
-
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
@@ -43,7 +43,6 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import Polyline from 'ol/format/Polyline.js';
-//import { Source, VectorTile } from 'ol/source';
 import XYZ from 'ol/source/XYZ';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
@@ -76,6 +75,7 @@ const vectorFormat = new MVT();
 useGeographic();
 register();
 
+// INTERFACES /////////////////////////////
 interface StyleJSON {
   layers: Array<{
     type: string;
@@ -88,6 +88,7 @@ interface StyleJSON {
   }>;
 }
 
+// STYLE FUNCTIONS ////////////////////////
 const getZoomFromResolution = (resolution: number): number => {
   if (typeof resolution !== 'number' || resolution <= 0) {
     throw new Error('Invalid resolution value');
@@ -100,44 +101,33 @@ const getPaintValue = (paint: any, key: string, fallback: any) => paint?.[key] ?
 const styleFunction = (feature: FeatureLike, resolution: number) => {
   const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
   const classLayer = feature.get('class');
-  // if (sourceLayer=='landuse') console.log(classLayer)
-
   const styleJSON: StyleJSON | undefined = global && typeof global.maptiler_terrain_modified === 'object'
     ? global.maptiler_terrain_modified
     : undefined;
-
   if (!styleJSON || !Array.isArray(styleJSON.layers)) {
     // Optionally log an error or warning here
     return new Style({});
   }
-
   const zoom = getZoomFromResolution(resolution);
-
   for (const layerStyle of styleJSON.layers) {
     if (layerStyle['source-layer'] !== sourceLayer) continue;
-
     // Apply feature filter before styling
     if (layerStyle.filter && !evaluateFilter(layerStyle.filter, feature)) continue;
-
     let computedMinZoom = 0; // Default to 0 if undefined
     if (typeof layerStyle.minzoom === 'object') {
       const rank = feature.get('rank') || 0; // Default rank to 0 if undefined
-
       // Sort the minzoom keys in ascending order (to handle arbitrary input like "2": 9, "5": 11, etc.)
       const sortedKeys = Object.keys(layerStyle.minzoom)
         .map(Number) // Convert to number
         .sort((a, b) => a - b); // Sort in ascending order
-
       // Find the correct zoom level based on the rank
       for (let i = 0; i < sortedKeys.length; i++) {
         const rankStop = sortedKeys[i];
         const nextRankStop = sortedKeys[i + 1];
-
         if (rank <= rankStop) {
           computedMinZoom = layerStyle.minzoom[rankStop];
           break;
         }
-
         // If rank is larger than the last key, default to the max zoom value
         if (nextRankStop === undefined) {
           computedMinZoom = layerStyle.minzoom[rankStop];
@@ -146,11 +136,9 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
     } else if (typeof layerStyle.minzoom === 'number') {
       computedMinZoom = layerStyle.minzoom;
     }
-
     // Apply minzoom and maxzoom filtering
     if (zoom < computedMinZoom) continue;
     if (layerStyle.maxzoom !== undefined && zoom > layerStyle.maxzoom) continue;
-
     switch (layerStyle.type) {
       case 'fill':
         return new Style({
@@ -158,11 +146,9 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
             color: getPaintValue(layerStyle.paint, 'fill-color', '#000000'),
           }),
         });
-
       case 'line': {
         const rawLineWidth = getPaintValue(layerStyle.paint, 'line-width', undefined);
         let lineWidth = 1; // Default width
-
         if (Array.isArray(rawLineWidth)) {
           const stops = extractStops(rawLineWidth);
           if (stops.length > 0) {
@@ -171,7 +157,6 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
         } else if (typeof rawLineWidth === 'number') {
           lineWidth = rawLineWidth;
         }
-
         // Apply calculated line width
         return new Style({
           stroke: new Stroke({
@@ -180,14 +165,11 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
           }),
         });
       }
-
       case 'symbol': {
         // Read text size from layer, default to 10px if not specified
         const textSizeRaw = layerStyle.layout?.['text-size'] || 10; // Default to 10 if not provided
-
         // Ensure textSize is a number
         let textSize = typeof textSizeRaw === 'number' ? textSizeRaw : 10;
-
         return new Style({
           text: new Text({
             text: (feature.get('name') || feature.get('rawName') || 'Unknown').replace(/\n/g, ' '),
@@ -198,7 +180,6 @@ const styleFunction = (feature: FeatureLike, resolution: number) => {
           }),
         });
       }
-
       default:
         continue;
     }
@@ -225,15 +206,11 @@ function extractStops(expression: any[]): [number, number][] {
 function evaluateFilter(filter: any[], feature: FeatureLike): boolean {
   if (!Array.isArray(filter) || filter.length === 0) return true; // No filter = always matches
   if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; // Ignore invalid filters
-
   const properties = feature.getProperties() || {}; // Ensure properties exist
-
   function matchCondition(condition: any[]): boolean {
     if (!Array.isArray(condition) || condition.length < 2) return false;
-
     const [operator, field, ...values] = condition;
     const value = properties[field] ?? null;
-
     if (operator === "==") return value === values[0];
     if (operator === "!=") return value !== values[0];
     if (operator === ">") return typeof value === 'number' && value > values[0];
@@ -244,10 +221,8 @@ function evaluateFilter(filter: any[], feature: FeatureLike): boolean {
     if (operator === "!in") return !values.includes(value); // FIXED
     if (operator === "has") return field in properties;
     if (operator === "!has") return !(field in properties);
-
     return false; // Unknown operator
   }
-
   if (filter[0] === "all") {
     return filter.slice(1).every(matchCondition);
   } else if (filter[0] === "any") {
@@ -255,25 +230,22 @@ function evaluateFilter(filter: any[], feature: FeatureLike): boolean {
   } else if (filter[0] === "none") {
     return !filter.slice(1).some(matchCondition);
   }
-
   return matchCondition(filter); // Direct condition
 }
 
 function interpolateStops(stops: [number, number][], zoom: number): number {
   if (!Array.isArray(stops) || stops.length === 0) return 1; // Default value if stops is empty
-
   for (let i = 0; i < stops.length - 1; i++) {
     const [z1, v1] = stops[i];
     const [z2, v2] = stops[i + 1];
-
     if (zoom >= z1 && zoom <= z2) {
       return v1 + ((zoom - z1) / (z2 - z1)) * (v2 - v1);
     }
   }
-
   return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
 }
 
+// DEFINE COMPONENT /////////////////////////
 @Component({
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
@@ -349,6 +321,7 @@ export class Tab1Page {
   debouncedComputeDistances: any;
   debouncedFilterAltitude: any;
   debouncedDisplayCurrentTrack: any;
+  selectedAltitude: string = 'GPS'; // Default altitude method
 
   get languageIndex(): number { return global.languageIndex; }
   get state(): string { return global.state; }
@@ -368,9 +341,11 @@ export class Tab1Page {
 
   /* FUNCTIONS
 
-  1. listenToAppStateChanges
-  2. ngOnInit
-  3. addFileListener
+  1. ngOnInit
+  2. listenToAppStateChanges
+  3. initializeDebouncedFunctions
+  3b. addFileListener
+  3c. onDestroy
   4. ionViewDidEnter
   ** 5. centerAllTracks
   ** 6. displayCurrentTrack
@@ -384,15 +359,15 @@ export class Tab1Page {
   14. buildGeoJson
   15. onRoute
   16. show
-  ** 17. displayArchivedTrack
-  18. setMapView
-  19. firstPoint
-  20. createMap
 
-  22. filterAltitude
-  ** 23. createLayers
-  24. displayAllTracks
-  25. handleMapClick()
+  ** 19. displayArchivedTrack
+  20. setMapView
+  21. firstPoint
+  22. createMap
+  23. filterAltitude
+  ** 24. createLayers
+  25. displayAllTracks
+  26. handleMapClick()
 
   ??? 27. computeDistances()
   28. checkWhetherOnRoute()
@@ -421,30 +396,10 @@ export class Tab1Page {
 
   */
 
-  // 1. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
-  async listenToAppStateChanges() {
-    this.appStateListener = await App.addListener('appStateChange', async (state) => {
-      if (!this.currentTrack) return;
-      this.foreground = state.isActive;
-      if (this.foreground) {
-        this.stopBeepInterval();
-        try {
-          await this.morningTask();
-        } catch (err) {
-          console.error('Error in morningTask:', err);
-        }
-      } else {
-        this.startBeepInterval();
-      }
-    });
-  }
-
-  // 2. ON INIT ////////////////////////////////
+  // 1. ON INIT ////////////////////////////////
   async ngOnInit() {
     try {
-      this.debouncedComputeDistances = debounce(this.computeDistances.bind(this), 300);
-      this.debouncedFilterAltitude = debounce(this.filterAltitude.bind(this), 300);
-      this.debouncedDisplayCurrentTrack = debounce(this.displayCurrentTrack.bind(this), 300);
+      //this.initializeDebouncedFunctions();
       // Listen for state changes
       this.listenToAppStateChanges();
       // create storage
@@ -471,7 +426,32 @@ export class Tab1Page {
     global.ngOnInitFinished = true;
   }
 
-  // 3. LISTENING FOR OPEN EVENTS
+  // 2. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
+  async listenToAppStateChanges() {
+    this.appStateListener = await App.addListener('appStateChange', async (state) => {
+      if (!this.currentTrack) return;
+      this.foreground = state.isActive;
+      if (this.foreground) {
+        this.stopBeepInterval();
+        try {
+          await this.morningTask();
+        } catch (err) {
+          console.error('Error in morningTask:', err);
+        }
+      } else {
+        this.startBeepInterval();
+      }
+    });
+  }
+
+  // 3. INITIALIZE DEBOUNCED FUNCTIONS ////////////////////
+  private initializeDebouncedFunctions() {
+    this.debouncedComputeDistances = debounce(this.computeDistances.bind(this), 300);
+    this.debouncedFilterAltitude = debounce(this.filterAltitude.bind(this), 300);
+    this.debouncedDisplayCurrentTrack = debounce(this.displayCurrentTrack.bind(this), 300);
+  }
+
+  // 3b. LISTENING FOR OPEN EVENTS
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
@@ -483,7 +463,6 @@ export class Tab1Page {
       // iF an archived track has been parsed...
       if (this.archivedTrack) {
         this.ts.setArchivedTrack(this.archivedTrack);
-        //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
         // Display archived track
         await this.displayArchivedTrack();
         // Set map view for archived track if no current track
@@ -492,6 +471,20 @@ export class Tab1Page {
         }
       }
     });
+  }
+
+  // 3c. ON DESTROY ////////////////////////
+  ngOnDestroy(): void {
+    // Remove app state listener
+    if (this.appStateListener) {
+      this.appStateListener.remove();
+      this.appStateListener = undefined;
+    }
+    // Clear beep interval
+    if (this.beepInterval) {
+      clearInterval(this.beepInterval);
+      this.beepInterval = null;
+    }
   }
 
   // 4. ION VIEW DID ENTER
@@ -510,6 +503,8 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
+      // Altitude method
+      this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
       // Display current track (updates color)
       if (this.currentTrack && this.map) await this.displayCurrentTrack();
       // archived visible
@@ -578,19 +573,19 @@ export class Tab1Page {
   }
 
   // 6. DISPLAY CURRENT TRACK
-  async displayCurrentTrack() {
+async displayCurrentTrack() {
     // Ensure current track and map exist
-    if (!this.currentTrack || !this.map) return;
+    if (!this.currentTrack || !this.map || !this.currentFeature || !this.currentMarkers?.[1]) return;
     // Number of points in the track
-    const coordinates = this.currentTrack.features[0].geometry.coordinates;
-    const num = coordinates.length;
+    const coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
+    const num = coordinates?.length ?? 0;
     // Ensure there are enough points to display
     if (num < 2) return;
     // Set line geometry and style
     this.currentFeature.setGeometry(new LineString(coordinates));
     this.currentFeature.setStyle(this.fs.setStrokeStyle(global.currentColor));
     // Set the last point as the marker geometry
-    this.currentMarkers[1].setGeometry(new Point(coordinates[num - 1]));
+    this.currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
       await this.setMapView(this.currentTrack);
@@ -800,6 +795,16 @@ export class Tab1Page {
   // 13. SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
+    // altitud method
+    /*if (this.selectedAltitude === 'DEM') {
+      const coordinates: number[][] = this.currentTrack.features[0].geometry.coordinates;
+      var altSlopes: any = await this.getAltitudesFromMap(coordinates as [number, number][])
+      this.currentTrack.features[0].properties.totalElevationGain = altSlopes.slopes.gain;
+      this.currentTrack.features[0].properties.totalElevationLoss = altSlopes.slopes.loss;
+      this.currentTrack.features[0].geometry.properties.data.forEach((item, index) => {
+        item.altitude = altSlopes.altitudes[index];
+      });
+    }*/
     // build new track definition
     const currentProperties = this.currentTrack.features[0].properties;
     currentProperties.name = name;
@@ -916,7 +921,7 @@ export class Tab1Page {
     }
   }
 
-  // 17. DISPLAY AN ARCHIVED TRACK /////////////////////////
+  // 19. DISPLAY AN ARCHIVED TRACK /////////////////////////
   async displayArchivedTrack() {
     // Ensure the map and archived track exist
     if (!this.map || !this.archivedTrack || !this.archivedLayer) return;
@@ -947,7 +952,7 @@ export class Tab1Page {
     }
   }
 
-  // 18. SET MAP VIEW /////////////////////////////////////////
+  // 20. SET MAP VIEW /////////////////////////////////////////
   async setMapView(track: any) {
     const boundaries = track.features[0].bbox;
     if (!boundaries) return;
@@ -973,7 +978,7 @@ export class Tab1Page {
     })
   }
 
-  // 19. FIRST POINT OF THE TRACK /////////////////////////////
+  // 21. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
     // Initialize current track
     this.currentTrack = {
@@ -1046,7 +1051,7 @@ export class Tab1Page {
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
-  // 20. CREATE MAP ////////////////////////////////////////
+  // 22. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
       // Current position
@@ -1116,7 +1121,7 @@ export class Tab1Page {
     }
   }
 
-  // 22. FI8LTER ALTITUDE /////////////////////////////
+  // 23. FI8LTER ALTITUDE /////////////////////////////
   async filterAltitude(track: any, final: number) {
     if (!track) return;
     // number of points
@@ -1147,7 +1152,7 @@ export class Tab1Page {
     }
   }
 
-  // 23. CREATE LAYERS /////////////////////////////
+  // 24. CREATE LAYERS /////////////////////////////
   async createLayers() {
     // Create pin styles
     this.greenPin = this.fs.createPinStyle('green');
@@ -1175,7 +1180,7 @@ export class Tab1Page {
     this.multiLayer = new VectorLayer({source: msource});
   }
 
-  // 24. DISPLAY ALL ARCHIVED TRACKS
+  // 25. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
     var track: any;
@@ -1215,7 +1220,7 @@ export class Tab1Page {
     }
   }
 
-  // 25. HANDLE MAP CLICK //////////////////////////////
+  // 26. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     switch(global.layerVisibility) {
       case 'multi':
@@ -1487,8 +1492,9 @@ export class Tab1Page {
       const longitude = parseFloat(lonStr);
       const eleNode = wpt.getElementsByTagName("ele")[0];
       const altitude = eleNode && !isNaN(Number(eleNode.textContent ?? '')) ? parseFloat(eleNode.textContent ?? '0') : 0;
-      const name = wpt.getElementsByTagName("name")[0]?.textContent?.replace(/[<>]/g, '') || undefined;
-      let comment = wpt.getElementsByTagName("cmt")[0]?.textContent?.replace(/[<>]/g, '') || undefined;
+      // Sanitize name and comment using the service's sanitize method
+      const name = this.fs['sanitize']?.(wpt.getElementsByTagName("name")[0]?.textContent || '') || undefined;
+      let comment = this.fs['sanitize']?.(wpt.getElementsByTagName("cmt")[0]?.textContent || '') || undefined;
       if (name == comment) comment = undefined;
       waypoints.push({ latitude, longitude, altitude, name, comment });
     }
@@ -1502,10 +1508,10 @@ export class Tab1Page {
     const trackSegment = trackSegments[0];
     // Extract points
     const trackPoints = trackSegment.getElementsByTagName('trkpt');
-    // Track name
-    track.features[0].properties.name = tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name';
-    // Track comment
-    track.features[0].properties.description = tracks[0].getElementsByTagName('cmt')[0]?.innerHTML || '';
+    // Track name (sanitize)
+    track.features[0].properties.name = this.fs['sanitize']?.(tracks[0].getElementsByTagName('name')[0]?.textContent || 'No Name') || 'No Name';
+    // Track comment (sanitize)
+    track.features[0].properties.description = this.fs['sanitize']?.(tracks[0].getElementsByTagName('cmt')[0]?.innerHTML || '') || '';
     // Initialize distance
     let distance = 0;
     // Initialize bounding box values
@@ -1627,15 +1633,21 @@ export class Tab1Page {
   // 45. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
     // fill the track
+    console.log('1',this.currentTrack)
     const locationNew: boolean = await this.buildGeoJson(location);
+    console.log('2',this.currentTrack)
     // no new point..
     if (!locationNew) return;
     // new point..
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
-    this.debouncedFilterAltitude(this.currentTrack, num - this.lag - 1);
+    //this.debouncedFilterAltitude(this.currentTrack, num - this.lag - 1);
+    await this.filterAltitude(this.currentTrack, num - this.lag - 1);
+    console.log('3',this.currentTrack)
     // compute distances
-    this.debouncedComputeDistances();
+    //this.debouncedComputeDistances();
+    await this.computeDistances();
+    console.log('4',this.currentTrack)
     // filter speed
     if (this.currentTrack) {
       this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
@@ -1643,11 +1655,14 @@ export class Tab1Page {
         this.speedFiltered + 1
       );
     }
+    console.log('5',this.currentTrack)
     this.speedFiltered = num - 1;
     // html values
     await this.htmlValues();
+    console.log('6',this.currentTrack)
     // display the current track
-    this.debouncedDisplayCurrentTrack();
+    //this.debouncedDisplayCurrentTrack();
+    await this.displayCurrentTrack();
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
@@ -1801,13 +1816,14 @@ export class Tab1Page {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
     let point = this.currentTrack.features[0].geometry.coordinates[num-1];
-    const address = await this.nominatimService.reverseGeocode(point[1],point[0]) || {name:'',address_name:''};
+    const addressObservable = this.nominatimService.reverseGeocode(point[1], point[0]);
+    const address = addressObservable ? await lastValueFrom(addressObservable) : { name: '', address_name: '' };
     console.log(address)
     let waypoint: Waypoint = {
       longitude: point[0],
       latitude: point[1],
       altitude: num - 1, // At this moment, this value is the position of the point in the track
-      name: address.name,
+      name: (address && 'name' in address ? address.name : (address as any)?.address_name ?? ''),
       //comment: address.display_name
       comment: ''
     }
@@ -1896,6 +1912,7 @@ export class Tab1Page {
       console.log(times);
       // Get altitudes and compute elevation gain and loss
       var elevations: number[] = [];
+      //var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
       await this.getAltitudes(rawCoordinates).then(async altitudes => {
         console.log('altitudes', altitudes)
         elevations = altitudes;
@@ -1944,7 +1961,6 @@ export class Tab1Page {
     if (this.archivedTrack) {
       await this.fs.uncheckAll();
       this.ts.setArchivedTrack(this.archivedTrack);
-      //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
       if (this.multiLayer) this.multiLayer.setVisible(false);
       if (this.archivedLayer) this.archivedLayer.setVisible(true);  // No need for await
       global.layerVisibility = 'archived';
@@ -2084,12 +2100,6 @@ export class Tab1Page {
     }
   }
 
-  async ngOnDestroy() {
-    if (this.appStateListener) {
-      await this.appStateListener.remove();
-    }
-  }
-
   // COMPUTE ALTITUDES
   async getAltitudes(rawCoordinates: [number, number][]): Promise<number[]> {
     const requestBody = {
@@ -2098,16 +2108,24 @@ export class Tab1Page {
         longitude: lon
       }))
     };
-    const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-    if (!response.ok) {
-      throw new Error(`Open-Elevation request failed: ${response.statusText}`);
+    try {
+      const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      if (!response.ok) {
+        // Optionally, provide user feedback here
+        this.fs.displayToast('Failed to fetch elevation data.');
+        return [];
+      }
+      const data = await response.json();
+      return data.results.map((result: any) => result.elevation);
+    } catch (error) {
+      // Handle network or parsing errors gracefully
+      this.fs.displayToast('Error retrieving elevation data.');
+      return [];
     }
-    const data = await response.json();
-    return data.results.map((result: any) => result.elevation);
   }
 
   // COMPUTE ELEVATION GAIN AND LOSS
@@ -2163,6 +2181,16 @@ export class Tab1Page {
       const ratio = d / totalDistance;
       const timeOffset = ratio * totalDuration;
       return Math.round(startTime + timeOffset); // in ms
+    });
+  }
+
+  async getAltitudesFromMap(coordinates: [number, number][] ) {
+    await this.getAltitudes(coordinates).then(async altitudes => {
+      var slopes = await this.computeElevationGainAndLoss(altitudes)
+      return {altitudes: altitudes, slopes: slopes}
+    }).catch(err => {
+      console.error('Error:', err);
+      return {altitudes: null, slopes: null}
     });
   }
 

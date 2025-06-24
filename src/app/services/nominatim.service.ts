@@ -1,59 +1,85 @@
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+/**
+* Service for performing forward and reverse geocoding using the Nominatim API.
+* Provides methods to search for locations by query string and to retrieve address details from latitude and longitude.
+* Uses HTTP GET requests and handles errors for both geocoding operations.
+*/
+
 import { Injectable } from '@angular/core';
-//import { CapacitorHttp } from '@capacitor/core';
+import { catchError } from 'rxjs/operators';
+
+interface NominatimSearchResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  // add other relevant fields as needed
+}
+
+interface NominatimReverseResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  address: Record<string, string>;
+  // add other relevant fields as needed
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class NominatimService {
-  private baseUrl = 'https://nominatim.openstreetmap.org';
-  // Example of a GET request
-  options = {
-    url: 'https://example.com/my/api',
-    headers: { 'X-Fake-Header': 'Fake-Value' },
-    params: { size: 'XL' },
-  };
+  private readonly baseUrl = 'https://nominatim.openstreetmap.org';
 
-  constructor() {
-    
+  constructor(private http: HttpClient) {}
+
+  search(query: string): Observable<NominatimSearchResult[]> {
+    if (!query || !query.trim()) {
+      return throwError(() => new Error('Query parameter must not be empty.'));
+    }
+    const url = `${this.baseUrl}/search`;
+    const params = new HttpParams()
+      .set('q', query)
+      .set('format', 'json')
+      .set('addressdetails', '1');
+    const headers = new HttpHeaders()
+      .set('User-Agent', 'YourAppName/1.0 (your@email.com)');
+    return this.http.get<NominatimSearchResult[]>(url, { params, headers }).pipe(
+      catchError(error => {
+        // Handle error appropriately, e.g., log or return a fallback value
+        return of([]);
+      })
+    );
   }
 
-  // Forward geocoding using Capacitor HTTP plugin
-  async search(query: string): Promise<any> {
-    const url = `${this.baseUrl}/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1`;
-
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      console.log(response);
-    } catch (error) {
-      console.error('Error with Nominatim search (native):', error);
-      throw error;
+  // Reverse geocoding using HttpClient for consistent request handling
+  reverseGeocode(lat: number, lon: number): Observable<NominatimReverseResult | null> {
+    if (
+      typeof lat !== 'number' ||
+      typeof lon !== 'number' ||
+      isNaN(lat) ||
+      isNaN(lon) ||
+      lat < -90 ||
+      lat > 90 ||
+      lon < -180 ||
+      lon > 180
+    ) {
+      return throwError(() => new Error('Latitude and longitude must be valid numbers within their respective ranges.'));
     }
-  }
-
-  // Reverse geocoding using Capacitor HTTP plugin
-  async reverseGeocode(lat: number, lon: number): Promise<any> {
-    console.log(lat, lon)
-    const url = `${this.baseUrl}/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
-    console.log(url)
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      // Extract JSON data from the response
-      if (response.ok) { // Check if the response status is 200-299
-        const data = await response.json(); // Parse JSON data
-        return data
-      } else {
-        console.error('HTTP Error:', response.status, response.statusText);
-        return {}
-      }
-    } catch (error) {
-      console.error('Error with reverse geocoding (native):', error);
-      throw error;
-    }
+    const url = `${this.baseUrl}/reverse`;
+    const params = new HttpParams()
+      .set('lat', lat.toString())
+      .set('lon', lon.toString())
+      .set('format', 'json')
+      .set('addressdetails', '1');
+    const headers = new HttpHeaders()
+      .set('User-Agent', 'YourAppName/1.0 (your@email.com)');
+    return this.http.get<NominatimReverseResult>(url, { params, headers }).pipe(
+      catchError(error => {
+        // Handle error appropriately, e.g., log or return a fallback value
+        return of(null);
+      })
+    );
   }
 }
