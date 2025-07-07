@@ -52,6 +52,21 @@
   </ion-button>
 </ion-item>
 
+<!-- Audio alert on / off -->
+<ion-item lines="none" class="selector">
+  <ion-label>{{title[8][selectedLanguage.index]}}</ion-label>
+  <ion-select
+    [value]="selectedAudioAlert"
+    (ionChange)="onAudioAlertChange($event.detail.value)"
+    interface="popover"
+    slot="end"
+  >
+    <ion-select-option *ngFor="let alert of alerts" [value]="alert">
+      {{ alert }}
+    </ion-select-option>
+  </ion-select>
+</ion-item>
+
 <!-- Altitude method selector -->
 <ion-item lines="none" class="selector">
   <ion-label>{{title[7][selectedLanguage.index]}}</ion-label>
@@ -122,7 +137,7 @@
       <ion-fab-button id='databutton' (click)="fs.gotoPage('canvas')">
         <ion-icon name="analytics"></ion-icon>
       </ion-fab-button>
-      <ion-fab-button id='list' (click)="fs.gotoPage('tab2')">
+      <ion-fab-button id='list' (click)="fs.gotoPage('archive')">
         <ion-icon name="list"></ion-icon>
       </ion-fab-button>
     </ion-row>

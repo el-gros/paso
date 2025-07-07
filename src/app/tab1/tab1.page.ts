@@ -319,6 +319,7 @@ export class Tab1Page {
   blackPin?: Style;
 
   selectedAltitude: string = 'GPS'; // Default altitude method
+  selectedAudioAlert: string = 'on'; // Default audio alert
 
   get languageIndex(): number { return global.languageIndex; }
   get state(): string { return global.state; }
@@ -491,6 +492,8 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
+      // Audio alert
+      this.selectedAudioAlert = await this.fs.check(this.selectedAudioAlert, 'audioAlert');
       // Altitude method
       this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
       // Display current track (updates color)
@@ -1337,6 +1340,8 @@ async displayCurrentTrack() {
     // Determine the current route color based on `onRoute` function
     this.status = await this.onRoute() || 'black';
     this.ts.setStatus(this.status);
+    // If audio alerts are off, return
+    if (this.selectedAudioAlert == 'off') return;
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);

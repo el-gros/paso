@@ -1,5 +1,5 @@
 /**
- * Tab3Page manages the settings and preferences for the application, including language selection,
+ * SettingsPage manages the settings and preferences for the application, including language selection,
  * base map selection, color customization for tracks, and offline map management (uploading and removing MBTiles files).
  * Integrates with FunctionsService and ServerService for storage and file operations, and uses modals and popovers
  * for user interactions. Handles download progress display and updates the UI accordingly.
@@ -28,14 +28,14 @@ interface LanguageOption {
 }
 
 @Component({
-    selector: 'app-tab3',
-    templateUrl: 'tab3.page.html',
-    styleUrls: ['tab3.page.scss'],
+    selector: 'app-settings',
+    templateUrl: 'settings.page.html',
+    styleUrls: ['settings.page.scss'],
     imports: [IonicModule, CommonModule, FormsModule],
     providers: [DecimalPipe, DatePipe],
 })
 
-export class Tab3Page implements OnDestroy {
+export class SettingsPage implements OnDestroy {
 [x: string]: any;
   downloadProgress = 0; // To show download progress
   isDownloading = false; // 🔹 Controls progress bar
@@ -48,7 +48,8 @@ export class Tab3Page implements OnDestroy {
     ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR'],
     ['Carregar mapes', 'Cargar mapas', 'Upload maps'],
     ['Eliminar mapes', 'Eliminar mapas', 'Remove maps'],
-    ['Altitud del trajecte guardat', 'Altitud del trayecto guardado', 'Altitude of saved track']
+    ['Altitud del trajecte guardat', 'Altitud del trayecto guardado', 'Altitude of saved track'],
+    ['Alerta sonora', 'Alerta sonora', 'Audio alert']
   ];
   // Language
   languages: LanguageOption[] = [
@@ -66,6 +67,9 @@ export class Tab3Page implements OnDestroy {
   archivedColor: string = global.archivedColor;
   currentColor: string = global.currentColor;
   colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
+  // Audio alert
+  selectedAudioAlert: string = 'on';
+  alerts: string[] = ['on', 'off'];
   // Altitudes
   selectedAltitude: string = 'GPS';
   altitudes: string[] = ['GPS', 'DEM'];
@@ -258,6 +262,12 @@ export class Tab3Page implements OnDestroy {
   async onAltitudeChange(method: string) {
     this.selectedAltitude = method;
     await this.fs.storeSet('altitude', this.selectedAltitude);
+  }
+
+  // 9c. AUDIO ALERT CHANGE /////////////////////////
+  async onAudioAlertChange(position: string) {
+    this.selectedAudioAlert = position;
+    await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
   }
 
   // 10. MAP UPLOAD //////////////////////////////////////////

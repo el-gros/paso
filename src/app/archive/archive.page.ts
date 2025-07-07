@@ -19,9 +19,9 @@ import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { MenuController } from '@ionic/angular';
 @Component({
-    selector: 'app-tab2',
-    templateUrl: 'tab2.page.html',
-    styleUrls: ['tab2.page.scss'],
+    selector: 'app-archive',
+    templateUrl: 'archive.page.html',
+    styleUrls: ['archive.page.scss'],
     imports: [CommonModule, IonicModule, FormsModule]
 })
 export class Tab2Page {

@@ -1,3 +1,25 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "java.project.excludeFolders": [
+    "**/node_modules",
+    "**/.settings"
+  ],
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.settings": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.settings": true
+  },
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:\\Program Files\\Java\\jdk-17"
+    }
+  ],
+  "java.project.sourcePaths": [
+    "src"
+  ],
+  "java.project.referencedLibraries": []
 }
