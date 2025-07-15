@@ -10,23 +10,23 @@
 <ion-content class="nodal-content">
 
   <!-- Notice -->
-  <div class="notice" *ngIf="showCurrent">{{notice1}}</div> 
+  <div class="notice" *ngIf="showCurrent">{{notice1}}</div>
 
   <!-- Find location -->
   <ion-row *ngIf="showSelection">
     <ion-col size="10">
       <ion-list>
       <ion-item>
-        <ion-input 
-          [(ngModel)]="query" 
+        <ion-input
+          [(ngModel)]="query"
           placeholder={{placeholder}}></ion-input>
       </ion-item>
       </ion-list>
     </ion-col>
     <ion-col size="2" class="center-col">
-        <ion-button 
-        (click)="searchLocation()" 
-        fill="clear" 
+        <ion-button
+        (click)="searchLocation()"
+        fill="clear"
         class="modal-edit-button">
         <ion-icon name="search" class="modal-small-icon"></ion-icon>
       </ion-button>
@@ -34,7 +34,7 @@
   </ion-row>
 
   <!-- Notice -->
-  <div class="notice" *ngIf="showCurrent">{{notice2}}</div> 
+  <div class="notice" *ngIf="showCurrent">{{notice2}}</div>
 
   <!-- Current location -->
   <ion-list id="current" *ngIf="showCurrent">
@@ -46,19 +46,19 @@
     </ion-radio-group>
   </ion-list>
 
-  <!-- Selection among different locations -->  
+  <!-- Selection among different locations -->
   <ion-list *ngIf="results.length > 0">
-    <ion-item 
-      *ngFor="let result of results" 
+    <ion-item
+      *ngFor="let result of results"
       (click)="selectLocation(result)">
-      {{ result.display_name}}
+      {{ result['display_name'] }}
     </ion-item>
   </ion-list>
 
-  <!-- means of transportation --> 
+  <!-- means of transportation -->
   <ion-list id="transportation" *ngIf="showTransportation">
     <ion-radio-group [(ngModel)]="selectedTransportation">
-      <!-- other options: driving-hgv, cycling-mountain, 
+      <!-- other options: driving-hgv, cycling-mountain,
        cycling-road, cycling-electric -->
       <ion-item>
         <ion-label>{{transportation[0]}}</ion-label>
@@ -84,7 +84,7 @@
   </ion-list>
   <ion-buttons class="modal-buttons" *ngIf="showTransportation">
     <ion-button class="modal-confirm-button" (click)="confirmSelection()">OK</ion-button>
-  </ion-buttons>  
+  </ion-buttons>
 <ion-row *ngIf="loading" class="spinner-row">
   <ion-col>
     <ion-spinner class="center-spinner" color="dark"></ion-spinner>

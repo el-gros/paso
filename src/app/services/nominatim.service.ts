@@ -1,11 +1,10 @@
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
 /**
 * Service for performing forward and reverse geocoding using the Nominatim API.
 * Provides methods to search for locations by query string and to retrieve address details from latitude and longitude.
 * Uses HTTP GET requests and handles errors for both geocoding operations.
 */
-
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { catchError } from 'rxjs/operators';
 
@@ -14,26 +13,28 @@ interface NominatimSearchResult {
   display_name: string;
   lat: string;
   lon: string;
-  // add other relevant fields as needed
 }
-
 interface NominatimReverseResult {
   place_id: number;
   display_name: string;
   lat: string;
   lon: string;
   address: Record<string, string>;
-  // add other relevant fields as needed
 }
 
 @Injectable({
   providedIn: 'root',
 })
+
 export class NominatimService {
   private readonly baseUrl = 'https://nominatim.openstreetmap.org';
 
   constructor(private http: HttpClient) {}
 
+  // 1. SEARCH
+  // 2. REVERSE GEOCODE
+
+  // 1. SEARCH ///////////////////////////////////
   search(query: string): Observable<NominatimSearchResult[]> {
     if (!query || !query.trim()) {
       return throwError(() => new Error('Query parameter must not be empty.'));
@@ -53,7 +54,7 @@ export class NominatimService {
     );
   }
 
-  // Reverse geocoding using HttpClient for consistent request handling
+  // 2. REVERSE GEOCODE //////////////////////////
   reverseGeocode(lat: number, lon: number): Observable<NominatimReverseResult | null> {
     if (
       typeof lat !== 'number' ||

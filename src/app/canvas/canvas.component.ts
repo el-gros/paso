@@ -1,4 +1,3 @@
-import { Subscription } from 'rxjs';
 /**
  * CanvasComponent is responsible for displaying and managing interactive canvas charts
  * for both the current and archived tracks, including statistics such as distance,
@@ -9,9 +8,10 @@ import { Subscription } from 'rxjs';
  */
 
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { IonFab, IonContent, IonRow, IonFabButton, IonIcon } from "@ionic/angular/standalone";
+import { Subscription } from 'rxjs';
 import { global } from '../../environments/environment';
 import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FunctionsService } from '../services/functions.service';
@@ -24,7 +24,8 @@ register();
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonFab, IonContent, IonRow, IonFabButton, IonIcon],
+  //imports: [CommonModule, IonFab, IonContent, IonFabButton, IonIcon],
+  imports: [IonicModule, CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class CanvasComponent implements OnInit, OnDestroy {
@@ -74,6 +75,18 @@ export class CanvasComponent implements OnInit, OnDestroy {
     public ts: TrackService
   ) { }
 
+  // 1. ngOnInit()
+  // 2. ngOnDestroy()
+  // 3. ionViewWillEnter()
+  // 4. averageSpeed()
+  // 5. createCanvas()
+  // 6. updateCanvas()
+  // 7. grid()
+  // 8. gridValue()
+  // 9. updateAllCanvas()
+
+
+  // 1. ON INIT ///////////////////
   async ngOnInit() {
     await this.createCanvas();
     this.subscriptions.add(
@@ -98,10 +111,12 @@ export class CanvasComponent implements OnInit, OnDestroy {
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
   }
 
+  // 2. ON DESTROY ///////////////////
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
   }
 
+  // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
     // Variables
     this.layerVisibility = global.layerVisibility;
@@ -109,7 +124,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
   }
 
-  // 34. COMPUTE AVERAGE SPEEDS AND TIMES
+  // 4. COMPUTE AVERAGE SPEEDS AND TIMES
   async averageSpeed() {
     if (!this.currentTrack) return;
     // get data array
@@ -137,7 +152,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));
   }
 
-  // 25. CREATE CANVASES //////////////////////////////////////////
+  // 5. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     const size = Math.min(window.innerWidth, window.innerHeight);
     for (const i in this.properties) {
@@ -146,7 +161,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
     this.canvasNum = size;
   }
-
   private initCanvas(
     elementId: string,
     size: number,
@@ -164,7 +178,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 30. UPDATE CANVAS ///////////////////////////////////
+  // 6. UPDATE CANVAS ///////////////////////////////////
   async updateCanvas(
     ctx: CanvasRenderingContext2D | undefined,
     track: Track | undefined,
@@ -177,7 +191,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
     if (!track) return tUnit;
-    // No need for empty checks; remove them for clarity
     // Define data array
     const data = track.features[0].geometry.properties.data;
     const num = data.length ?? 0;
@@ -233,7 +246,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     return tUnit;
   }
 
-  // 26. GRID /////////////////////////////////////////////////////
+  // 7. GRID /////////////////////////////////////////////////////
   async grid(
     ctx: CanvasRenderingContext2D | undefined,
     xMin: number,
@@ -279,7 +292,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     ctx.setLineDash([]);
   }
 
-  // 27. DETERMINATION OF GRID STEP //////////////////////
+  // 8. DETERMINATION OF GRID STEP //////////////////////
   gridValue(dx: number) {
     const nx = Math.floor(Math.log10(dx));
     const x = dx / (10 ** nx);
@@ -288,7 +301,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     else return 2 * (10 ** nx);
   }
 
-  // 21. UPDATE ALL CANVAS ////////////////////////////////
+  // 9. UPDATE ALL CANVAS ////////////////////////////////
   async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
     // Validate context
     if (!context) {

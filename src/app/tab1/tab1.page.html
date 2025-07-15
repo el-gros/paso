@@ -1,8 +1,10 @@
 
   <!-- buttons to select start / stop recording or save track -->
 
+
+
   <ion-fab slot="fixed" horizontal="center" vertical="top">
-    <ion-row>
+    <ion-row> 
       <ion-fab-button *ngIf="state == 'inactive'" id='start' (click)="startTracking()">
         <ion-icon name="play"></ion-icon>
       </ion-fab-button>
@@ -18,8 +20,9 @@
       <ion-fab-button *ngIf="state == 'stopped' || state == 'saved'" id='trash' (click)="confirm('delete')">
         <ion-icon name="trash"></ion-icon>
       </ion-fab-button>
-      <!-- Spacer -->
-      <div style="width: 30px;"></div>
+
+      <div style="width: 150px;"></div>
+
       <ion-fab-button id='search' (click)="search()">
         <ion-icon name="search"></ion-icon>
       </ion-fab-button>

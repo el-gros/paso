@@ -1,3 +1,13 @@
+/**
+ * Service for managing MBTiles files and vector tile retrieval.
+ *
+ * Provides methods to download large binary files with progress tracking,
+ * list available MBTiles files in the app's data directory, open and manage
+ * SQLite database connections to MBTiles files, and retrieve vector tile data
+ * by XYZ coordinates. Utilizes Capacitor Filesystem and SQLite libraries for
+ * file and database operations.
+ */
+
 import { Injectable } from '@angular/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { BehaviorSubject } from 'rxjs';
@@ -7,6 +17,7 @@ import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacito
   providedIn: 'root',
 })
 export class ServerService {
+
   private downloadProgress = new BehaviorSubject<number>(0); // 🔹 Track progress
   private sqlite: SQLiteConnection;
   private db: SQLiteDBConnection | null = null;
@@ -16,10 +27,19 @@ export class ServerService {
     this.sqlite = new SQLiteConnection(CapacitorSQLite);
   }
 
+  // 1. GET DOWNLOAD PROGRESS
+  // 2. DOWNLOAD BINARY FILE
+  // 3. ARRAY BUFFER TO BASE64
+  // 4. LIST FILES IN DATA DIRECTORY
+  // 5. OPEN MBTILES FILE
+  // 6. GET VECTOR TILE
+
+  // 1. GET DOWNLOAD PROGRESS ////////////////////////////////
   getDownloadProgress() {
     return this.downloadProgress.asObservable(); // 🔹 Allow components to subscribe
   }
 
+  // 2. DOWNLOAD BINARY FILE ////////////////////////
   async downloadBinaryFile(url: string, filePath: string, onProgress: (progress: number) => void): Promise<void> {
     try {
       await Filesystem.deleteFile({
@@ -87,13 +107,14 @@ export class ServerService {
     });
   }
 
+  // 3. ARRAY BUFFER TO BASE64 ///////////////////////
   private arrayBufferToBase64(buffer: Uint8Array): string {
     let binary = '';
     buffer.forEach((byte) => (binary += String.fromCharCode(byte)));
     return btoa(binary);
   }
 
-  // Method to list files in the data directory
+  // 4. LIST FILES IN DATA DIRECTORY ///////////////////////
   async listFilesInDataDirectory(): Promise<string[]> {
     try {
       const result = await Filesystem.readdir({
@@ -107,18 +128,7 @@ export class ServerService {
     }
   }
 
-  /*
-  async getMbtilesPath(): Promise<string> {
-    const fileUri = await Filesystem.getUri({
-      path: 'catalonia.mbtiles',
-      directory: Directory.Data,
-    });
-    console.log('MBTiles path:', fileUri.uri);
-    // Convert 'file://' URI to a native file path
-    return fileUri.uri.replace('file://', '');
-  }
-  */
-
+  // 5. OPEN MBTILES FILE ///////////////////////
   async openMbtiles(mbtilesFile: string) {
     try {
       // If the database is already open with the same path, do nothing
@@ -154,6 +164,7 @@ export class ServerService {
     }
   }
 
+  // 6. GET VECTOR TILE ///////////////////////
   async getVectorTile(zoom: number, x: number, y: number): Promise<ArrayBuffer | null> {
     if (!this.db) {
       console.error('❌ Database connection is not open.');
@@ -180,7 +191,6 @@ export class ServerService {
       return null;
     }
   }
-
 
 }
 

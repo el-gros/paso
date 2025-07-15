@@ -28,8 +28,6 @@ export class FunctionsService {
   // Optional UI refresh callback, can be set by the consumer of this service
   refreshCollectionUI?: () => void;
 
-  //lag: number = global.lag; // 8
-
   constructor(
     private storage: Storage,
     private toastController: ToastController,
@@ -48,17 +46,22 @@ export class FunctionsService {
     6. storeGet
     7. storeRem
     8. check
-    ?? 9. computeExtremes
-    10. displayToast
-    11. uncheckAll
-    ** 12. getCurrentPosition
-    13. retrieveTrack
-    14. showAlert
-    15. createReadonlyLabel
-    16. goHome
-    17. computeMinMaxProperty
-    18. setStrokeStyle
-    19. editTrack
+    9. displayToast
+    10. uncheckAll
+    11. getCurrentPosition
+    12. retrieveTrack
+    13. showAlert
+    xxxxxx 14. createReadonlyLabel
+    xxxxxx 15. goHome
+    16. computeMinMaxProperty
+    17. setStrokeStyle
+    18. editTrack
+    19. editWaypoint
+    20. gotoPage
+    21. getColoredPin
+    22. createPinStyle
+    23. adjustCoordinatesAndProperties
+    24. sanitize
   */
 
   // 1. COMPUTES DISTANCES /////////////////////////////////////
@@ -129,7 +132,7 @@ export class FunctionsService {
   }
 
   // 5. STORAGE SET ///////////////////
-  async storeSet(key: string, object: any ) {
+  async storeSet(key: string, object: any ): Promise<void> {
     await this.storage.set(key, object)
   }
 
@@ -139,7 +142,7 @@ export class FunctionsService {
   }
 
   // 7. STORAGE REMOVE //////////////////////////
-  async storeRem(key: string) {
+  async storeRem(key: string): Promise<void> {
     await this.storage.remove(key);
   }
 
@@ -156,7 +159,7 @@ export class FunctionsService {
     return defaultValue;
   }
 
-  // 10. DISPLAY TOAST //////////////////////////////
+  // 9. DISPLAY TOAST //////////////////////////////
   async displayToast(message: string) {
     const toast = await this.toastController.create({
       message,
@@ -168,7 +171,7 @@ export class FunctionsService {
     await toast.present();
   }
 
-  // 11. UNCHECK ALL ///////////////////////////////////////////
+  // 10. UNCHECK ALL ///////////////////////////////////////////
   async uncheckAll() {
     for (const item of global.collection) {
       if ('isChecked' in item) {
@@ -178,7 +181,7 @@ export class FunctionsService {
     await this.storeSet('collection', global.collection);
   }
 
-  // 12. GET CURRENT POSITION //////////////////////////////////
+  // 11. GET CURRENT POSITION //////////////////////////////////
   async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | undefined> {
     try {
       const position = await Geolocation.getCurrentPosition({
@@ -192,7 +195,7 @@ export class FunctionsService {
     }
   }
 
-  // 13. RETRIEVE ARCHIVED TRACK //////////////////////////
+  // 12. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
     // Retrieve track
@@ -206,7 +209,7 @@ export class FunctionsService {
     return track;
   }
 
-  // 14. SHOW ALERT ///////////////////////////////////
+  // 13. SHOW ALERT ///////////////////////////////////
   async showAlert(cssClass: string, header: string, message: string,
     inputs: any, buttons: any, action: string
   ) {
@@ -220,8 +223,8 @@ export class FunctionsService {
     return await alert.present();
   }
 
-  // 15. CREATE READ-ONDLY LABEL
-  createReadonlyLabel(name: string, value: string): any {
+  // 14. CREATE READ-ONDLY LABEL
+  /* createReadonlyLabel(name: string, value: string): any {
     return {
       type: 'text',
       name: name,
@@ -229,14 +232,14 @@ export class FunctionsService {
       cssClass: 'alert-label',
       attributes: { readonly: true }
     };
-  }
+  } */
 
-  // 16. GO HOME ///////////////////////////////
-  goHome() {
+  // 15. GO HOME ///////////////////////////////
+  /* goHome() {
     this.router.navigate(['tab1']);
-  }
+  } */
 
-  // 17. COMPUTE MAXIMUM AND MINIMUM OF A PROPERTY /////
+  // 16. COMPUTE MAXIMUM AND MINIMUM OF A PROPERTY /////
   async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
     if (data.length === 0) {
       throw new Error('Data array is empty.');
@@ -253,7 +256,7 @@ export class FunctionsService {
     };
   }
 
-  // 18. SET STROKE STYLE /////////////////////////////////////////
+  // 17. SET STROKE STYLE /////////////////////////////////////////
   setStrokeStyle(color: string): Style {
     return new Style({ stroke: new Stroke({
       color: color,
@@ -261,12 +264,7 @@ export class FunctionsService {
     });
   }
 
-  // Private sanitize helper for consistent sanitization
-  private sanitize(input: string): string {
-    return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-  }
-
-  // 19. EDIT TRACK DETAILS //////////////////////////////
+  // 18. EDIT TRACK DETAILS //////////////////////////////
   async editTrack(selectedIndex: number, backgroundColor: string, edit: boolean) {
     // Extract selected track details
     const selectedTrack = global.collection[selectedIndex];
@@ -295,25 +293,27 @@ export class FunctionsService {
     if (data) {
       let { action, name, place, description } = data;
       if (action === 'ok') {
+        // Sanitize all returned user inputs before saving or displaying
+        name = this.sanitize(name);
+        place = this.sanitize(place);
+        description = this.sanitize(description);
         if (!name) name = 'No name'
         Object.assign(selectedTrack, {
-          name: this.sanitize(name),
-          place: this.sanitize(place),
-          description: this.sanitize(description)
+          name,
+          place,
+          description
         });
         await this.storeSet('collection', global.collection);
         const track = await this.storeGet(global.key);
         if (track) {
           Object.assign(track.features[0].properties, {
-            name: this.sanitize(name),
-            place: this.sanitize(place),
-            description: this.sanitize(description)
+            name,
+            place,
+            description
           });
           await this.storeSet(global.key, track);
         }
-        // Explicitly refresh or notify UI/state here
-        // Example: emit an event, call a refresh method, or update an observable
-        this.refreshCollectionUI?.(); // or use a Subject/BehaviorSubject to notify subscribers
+        this.refreshCollectionUI?.();
       }
     }
   }
@@ -347,11 +347,12 @@ export class FunctionsService {
     }
   }
 
-  // 14. GO TO PAGE ... //////////////////////////////
+  // 20. GO TO PAGE ... //////////////////////////////
   async gotoPage(option: string) {
     this.router.navigate([option]);
   }
 
+  // 21. GET COLORED PIN //////////////////////////
   getColoredPin(color: string): string {
     const svgTemplate = `
       <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
@@ -371,6 +372,7 @@ export class FunctionsService {
     return `data:image/svg+xml;base64,${encoded}`;
   }
 
+  // 22. CREATE PIN STYLE //////////////////////////
   createPinStyle(color: string): Style {
     return new Style({
       image: new Icon({
@@ -381,6 +383,7 @@ export class FunctionsService {
     });
   }
 
+  // 23. ADJUST COORDINATES AND PROPERTIES //////////////////////////
   async adjustCoordinatesAndProperties(
     coordinates: [number, number][],
     properties: Data[],
@@ -395,42 +398,57 @@ export class FunctionsService {
     ) {
       throw new Error('Input arrays must be of equal length and contain more than one element.');
     }
-    const newCoordinates: [number, number][] = [];
-    const newProperties: Data[] = [];
+    // Estimate the maximum possible size for preallocation
+    let estimatedSize = coordinates.length;
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const distance = properties[i + 1].distance - properties[i].distance;
+      if (distance > maxDistance) {
+        estimatedSize += Math.ceil(distance / maxDistance) - 1;
+      }
+    }
+    const newCoordinates: [number, number][] = new Array(estimatedSize);
+    const newProperties: Data[] = new Array(estimatedSize);
+    let idx = 0;
     for (let i = 0; i < coordinates.length - 1; i++) {
       const [lon1, lat1] = coordinates[i];
       const [lon2, lat2] = coordinates[i + 1];
       const prop1 = properties[i];
       const prop2 = properties[i + 1];
-      // Add original point
-      newCoordinates.push([lon1, lat1]);
-      newProperties.push({ ...prop1 });
-      // Compute distance
-      const distance = prop2.distance - prop1.distance
+      newCoordinates[idx] = [lon1, lat1];
+      newProperties[idx] = { ...prop1 };
+      idx++;
+      const distance = prop2.distance - prop1.distance;
       if (distance > maxDistance) {
         const numIntermediatePoints = Math.ceil(distance / maxDistance) - 1;
         for (let j = 1; j <= numIntermediatePoints; j++) {
           const fraction = j / (numIntermediatePoints + 1);
-          // Interpolate coordinates
           const interpolatedLon = lon1 + fraction * (lon2 - lon1);
           const interpolatedLat = lat1 + fraction * (lat2 - lat1);
-          newCoordinates.push([interpolatedLon, interpolatedLat]);
-          // Interpolate properties linearly
+          newCoordinates[idx] = [interpolatedLon, interpolatedLat];
           const interp = (a: number, b: number) => a + fraction * (b - a);
-          newProperties.push({
+          newProperties[idx] = {
             altitude: interp(prop1.altitude, prop2.altitude),
             speed: interp(prop1.speed, prop2.speed),
             time: interp(prop1.time, prop2.time),
             compSpeed: interp(prop1.compSpeed, prop2.compSpeed),
             distance: interp(prop1.distance, prop2.distance),
-          });
+          };
+          idx++;
         }
       }
     }
-    // Add the last point and its properties
-    newCoordinates.push(coordinates[coordinates.length - 1]);
-    newProperties.push({ ...properties[properties.length - 1] });
-    return { newCoordinates, newProperties };
+    newCoordinates[idx] = coordinates[coordinates.length - 1];
+    newProperties[idx] = { ...properties[properties.length - 1] };
+    // Trim arrays to actual used size
+    return {
+      newCoordinates: newCoordinates.slice(0, idx + 1),
+      newProperties: newProperties.slice(0, idx + 1)
+    };
+  }
+
+  // 24. SANITIZE INPUT /////////////////////////////////////////
+  private sanitize(input: string): string {
+    return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [], FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'svg', 'math'], FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'oninput', 'onchange'] }).trim();
   }
 
 }

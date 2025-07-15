@@ -14,20 +14,18 @@ ion-toolbar {
 
 /* Button Styling */
 .header-button {
-  --background: rgb(255, 221, 221);
-  --color: black;
-  --padding-start: 8px;
-  --padding-end: 8px;
+  --background: rgb(255, 100, 100);
+  --padding: 10px;
   --border-radius: 50%;
   width: 55px;
   height: 55px;
-  margin-right: 10px;
+  margin: 10px;
 }
 
 /* Icon Styling */
 ion-icon {
   font-size: 22px;
-  color: black;
+  color: white;
 }
 
 // ion-checkbox
@@ -68,8 +66,8 @@ div{
 }
 
 ion-fab-button {
-  --background: rgb(255, 221, 221) !important;
-  --color: black
+  --background: rgb(255, 100, 100) !important;
+  --color: white !important;
 }
 
 .custom-content {

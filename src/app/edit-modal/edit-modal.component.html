@@ -15,7 +15,7 @@
   <div class="modal-message" *ngIf="edit">
     <strong>{{ name }}:</strong>
   </div>
-  
+
   <div *ngIf="edit"
     class="modal-name white"
     contenteditable="true"
@@ -46,7 +46,7 @@
   <div class="modal-message">
     <strong>{{ description }}:</strong>
   </div>
-  
+
   <div *ngIf="edit"
     class="modal-description white"
     overFlow="hidden"
@@ -61,7 +61,7 @@
     overFlow="hidden"
     contenteditable="false"
     aria-label="Non-editable message section"
-    [innerHTML]="modalEdit.description">    
+    [innerHTML]="modalEdit.description">
   </div>
 
 </ion-content>
@@ -73,10 +73,10 @@
     <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
   </ion-buttons>
 
-  <ion-button 
-  (click)="toggleEdit()" 
-  *ngIf="!edit" 
-  fill="clear" 
+  <ion-button
+  (click)="toggleEdit()"
+  *ngIf="!edit"
+  fill="clear"
   class="modal-edit-button">
   <ion-icon name="create" class="modal-large-icon"></ion-icon>
 </ion-button>

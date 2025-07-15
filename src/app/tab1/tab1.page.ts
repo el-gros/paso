@@ -31,6 +31,7 @@ import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
+//import { LanguageService } from '../services/language.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
@@ -326,6 +327,7 @@ export class Tab1Page {
 
   constructor(
     public fs: FunctionsService,
+//    public ls: LanguageService,
     public ts: TrackService,
     public server: ServerService,
     private router: Router,
@@ -408,6 +410,7 @@ export class Tab1Page {
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
       this.determineLanguage();
+//      this.ls.determineLanguage()
       // Determine line color
       this.determineColors();
       // elements shown, elements hidden
@@ -494,6 +497,7 @@ export class Tab1Page {
       await this.changeMapProvider();
       // Audio alert
       this.selectedAudioAlert = await this.fs.check(this.selectedAudioAlert, 'audioAlert');
+      global.audioAlert = this.selectedAudioAlert;
       // Altitude method
       this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
       // Display current track (updates color)
@@ -1341,7 +1345,7 @@ async displayCurrentTrack() {
     this.status = await this.onRoute() || 'black';
     this.ts.setStatus(this.status);
     // If audio alerts are off, return
-    if (this.selectedAudioAlert == 'off') return;
+    if (global.audioAlert == 'off') return;
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);

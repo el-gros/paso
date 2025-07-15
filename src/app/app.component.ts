@@ -3,7 +3,6 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 
-
 @Component({
     selector: 'app-root',
     templateUrl: 'app.component.html',
@@ -14,10 +13,10 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
 
-  constructor() {      
+  constructor() {
     this.lockToPortrait();
   }
-  
+
   async lockToPortrait() {
     try {
       await ScreenOrientation.lock({ orientation: 'portrait' });

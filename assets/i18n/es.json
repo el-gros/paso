@@ -1,0 +1,13 @@
+{
+  "SETTINGS": {
+    "CURRENT_TRACK": "Trayecto actual",
+    "REFERENCE_TRACK": "Trayecto de referencia",
+    "BASE_MAP": "Mapa base",
+    "LANGUAGE": "Idioma",
+    "CHANGE_COLOR": "Cambiar color",
+    "UPLOAD_MAPS": "Cargar mapas",
+    "REMOVE_MAPS": "Eliminar mapas",
+    "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
+    "AUDIO_ALERT": "Alerta sonora"
+  }
+}

@@ -36,7 +36,6 @@ interface LanguageOption {
 })
 
 export class SettingsPage implements OnDestroy {
-[x: string]: any;
   downloadProgress = 0; // To show download progress
   isDownloading = false; // 🔹 Controls progress bar
   private progressSubscription?: Subscription; // 🔹 Store subscription
@@ -115,24 +114,47 @@ export class SettingsPage implements OnDestroy {
   }
 
   /*
+  1. ionViewWillEnter
   2. selectColor
-  3. ionViewWillEnter
-  4. selectBaseMap
-  5. onLanguageChange
-  6. onMapChange
-  7. openColorPopover
-  8. onCurrentChange
-  9. onArchivedChange
-  9b.
-  10. onMapUploadChange
-  11. onMapRemoveChange
-  12. mapUpload
-  13. cleanupSubscription
-  14. checkMaps
-  15. removeMapFile
-  16. ngOnDestroy
-  17. updateColor
+  3. selectBaseMap
+  4. onLanguageChange
+  5. onMapChange
+  6. openColorPopover
+  7. onCurrentChange
+  8. onArchivedChange
+  9. onAltitudeChange
+  10. onAlertChange
+  11. onMapUploadChange
+  12. onMapRemoveChange
+  13. mapUpload
+  14. cleanupSubscription
+  15. checkMaps
+  16. removeMapFile
+  17. ngOnDestroy
+  18. updateColor
   */
+
+    // 1. IONVIEWWILLENTER /////////////////////////////
+  async ionViewWillEnter() {
+    // Check maps
+    await this.checkMaps();
+    // Set language
+    this.selectedLanguage.code = global.languageCode;
+    this.selectedLanguage.index = global.languageIndex;
+    if (global.languageIndex == 0) this.selectedLanguage.name = 'Català'
+    else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
+    else this.selectedLanguage.name = 'English';
+    console.log(this.selectedLanguage)
+    // Set map
+    this.selectedMap = await this.fs.storeGet('mapProvider') || ''
+    // Set colors
+    this.archivedColor = global.archivedColor;
+    this.currentColor = global.currentColor;
+    // Set altitude
+    this.selectedAltitude = await this.fs.storeGet('altitude') || 'GPS'
+    // Set audio
+    this.selectedAudioAlert = await this.fs.storeGet('audioAlert') || 'on'
+  }
 
   // 2. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
@@ -177,28 +199,7 @@ export class SettingsPage implements OnDestroy {
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, '');
   }
 
-  // 3. IONVIEWWILLENTER /////////////////////////////
-  async ionViewWillEnter() {
-    // Check maps
-    await this.checkMaps();
-    // Set language in radio group
-    this.selectedLanguage.code = global.languageCode;
-    this.selectedLanguage.index = global.languageIndex;
-    if (global.languageIndex == 0) this.selectedLanguage.name = 'Català'
-    else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
-    else this.selectedLanguage.name = 'English';
-    console.log(this.selectedLanguage)
-    // Set map
-    this.selectedMap = await this.fs.storeGet('mapProvider') || ''
-    // Set colors
-    this.archivedColor = global.archivedColor;
-    this.currentColor = global.currentColor;
-    // Set altitude
-    // this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
-    this.selectedAltitude = await this.fs.storeGet('altitude') || ''
-  }
-
-  // 4. SELECT MAP ////////////////////////////////
+  // 3. SELECT MAP ////////////////////////////////
   async selectBaseMap(baseMap: any) {
     console.log(baseMap)
     // Store the map provider
@@ -207,7 +208,7 @@ export class SettingsPage implements OnDestroy {
     this.fs.gotoPage('tab1')
   }
 
-  // 5. LANGUAGE CHANGE ///////////////////////////////////////
+  // 4. LANGUAGE CHANGE ///////////////////////////////////////
   async onLanguageChange(code: string) {
     this.selectedLanguage.code = code;
     const picked = this.languages.find((l: { code: string; }) => l.code === code);
@@ -220,13 +221,13 @@ export class SettingsPage implements OnDestroy {
     await this.fs.storeSet('language', this.selectedLanguage.code)
   }
 
-  // 6. MAP CHANGE ///////////////////////////////////////
+  // 5. MAP CHANGE ///////////////////////////////////////
   async onMapChange(map: string) {
     this.selectedMap = map;
     await this.fs.storeSet('mapProvider', this.selectedMap)
   }
 
-  // 7. COLOR POPOVER ///////////////////////////////////////
+  // 6. COLOR POPOVER ///////////////////////////////////////
   async openColorPopover(ev: Event, type: 'current' | 'archived') {
     const popover = await this.popoverController.create({
       component: ColorPopoverComponent,
@@ -244,43 +245,44 @@ export class SettingsPage implements OnDestroy {
     await popover.present();
   }
 
-  // 8. CURRENT COLOR CHANGE /////////////////////
+  // 7. CURRENT COLOR CHANGE /////////////////////
   async onCurrentChange(color: string) {
     this.currentColor = color;
     global.currentColor = color;
     await this.fs.storeSet('currentColor', color);
   }
 
-  // 9. ARCHIVED COLOR CHANGE ///////////////////////////////////////
+  // 8. ARCHIVED COLOR CHANGE ///////////////////////////////////////
   async onArchivedChange(color: string) {
     this.archivedColor = color;
     global.archivedColor = color;
     await this.fs.storeSet('archivedColor', global.archivedColor);
   }
 
-  // 9b. ALTITUDE METHOD CHANGE /////////////////////////
+  // 9. ALTITUDE METHOD CHANGE /////////////////////////
   async onAltitudeChange(method: string) {
     this.selectedAltitude = method;
     await this.fs.storeSet('altitude', this.selectedAltitude);
   }
 
-  // 9c. AUDIO ALERT CHANGE /////////////////////////
+  // 10. AUDIO ALERT CHANGE /////////////////////////
   async onAudioAlertChange(position: string) {
     this.selectedAudioAlert = position;
+    global.audioAlert = position;
     await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
   }
 
-  // 10. MAP UPLOAD //////////////////////////////////////////
+  // 11. MAP UPLOAD //////////////////////////////////////////
   async onMapUploadChange(map: string) {
     this.mapUploadSubject.next(map);
   }
 
-  // 11. MAP REMOVE //////////////////////////////////////////
+  // 12. MAP REMOVE //////////////////////////////////////////
   async onMapRemoveChange(map: string) {
     this.mapRemoveSubject.next(map);
   }
 
- // 12. MAP UPLOAD /////////////////////////////////////////
+ // 13. MAP UPLOAD /////////////////////////////////////////
  async mapUpload(url:string, filePath: string) {
     this.isDownloading = true; // 🔹 Show progress bar
     // Subscribe to progress updates
@@ -301,7 +303,7 @@ export class SettingsPage implements OnDestroy {
     });
   }
 
-  // 13. CLEAN SUBSCRIPTION ////////////////////////
+  // 14. CLEAN SUBSCRIPTION ////////////////////////
   private cleanupSubscription() {
     if (this.progressSubscription) {
       this.progressSubscription.unsubscribe();
@@ -314,7 +316,7 @@ export class SettingsPage implements OnDestroy {
     this.fs.displayToast(toast[global.languageIndex]);
   }
 
-  // 14. CHECK MAPS //////////////////////////
+  // 15. CHECK MAPS //////////////////////////
   async checkMaps() {
     // Files in Data directory
     const filesInDataDirectory = await this.server.listFilesInDataDirectory();
@@ -334,7 +336,7 @@ export class SettingsPage implements OnDestroy {
     console.log('Base maps', this.baseMaps);
   }
 
-  // 15. REMOVE MAP /////////////////////////////////
+  // 16. REMOVE MAP /////////////////////////////////
   async removeMapFile(filename: string) {
     try {
       await Filesystem.deleteFile({
@@ -353,7 +355,7 @@ export class SettingsPage implements OnDestroy {
     }
   }
 
-  // 16. ON DESTROY //////////////////////////////
+  // 17. ON DESTROY //////////////////////////////
   ngOnDestroy() {
     if (this.progressSubscription) {
       this.progressSubscription.unsubscribe();
@@ -369,7 +371,7 @@ export class SettingsPage implements OnDestroy {
     }
   }
 
-  // 17. UPDATE COLOR ////////////////////////////////
+  // 18. UPDATE COLOR ////////////////////////////////
   async updateColor(type: 'current' | 'archived', color: string) {
     // Only allow colors from the predefined list
     if (!this.colors.includes(color)) {
@@ -387,7 +389,5 @@ export class SettingsPage implements OnDestroy {
       await this.fs.storeSet('archivedColor', color);
     }
   }
-
-
 
 }

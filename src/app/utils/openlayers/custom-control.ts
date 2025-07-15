@@ -1,3 +1,12 @@
+/**
+ * CustomControl is an OpenLayers control that provides UI buttons to activate or deactivate real-time location tracking on the map.
+ * When activated, it centers the map on the user's current position and displays a styled marker, updating the location at regular intervals.
+ * The control manages its own vector layer and source for rendering the location marker, and interacts with FunctionsService to obtain geolocation data.
+ *
+ * @extends Control
+ * @param fs FunctionsService instance for geolocation and utility methods.
+ */
+
 import { Control } from 'ol/control';
 import { Feature } from 'ol';
 import VectorSource from 'ol/source/Vector';

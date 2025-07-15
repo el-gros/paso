@@ -54,15 +54,17 @@ export class Tab2Page {
     1. ionViewDidEnter()
     2. onChange()
     3. editTrack()
-    4. -----
-    5. deleteTracks()
-    6. displayTrack()
-    7. yesDeleteTracks()
-    8. geoJsonToGpx()
-    9.  exportTrack()
-    10. displayAllTracks()
-    11. ionViewWillLeave()
-    12. removeSearch()
+    4. deleteTracks()
+    5. displayTrack()
+    6. yesDeleteTracks()
+    7. geoJsonToGpx()
+    8.  exportTrack()
+    9. displayAllTracks()
+    10. ionViewWillLeave()
+    11. removeSearch()
+    12. openMenu()
+    13. selectOption()
+    14. resetSelection()
   */
 
   // 1. ON VIEW DID ENTER ////////////
@@ -97,7 +99,7 @@ export class Tab2Page {
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
 
-  // 5. DELETE TRACK(S) //////////////////////////
+  // 4. DELETE TRACK(S) //////////////////////////
   async deleteTracks() {
     const cancel = ['Cancel.lar', 'Cancelar', 'Cancel'];
     const headers = ["Confirma l'esborrat", "Confirma el borrado","Confirm deletion"];
@@ -129,14 +131,14 @@ export class Tab2Page {
     this.yesDeleteTracks();
   }
 
-  // 6. DISPLAY TRACK ///////////////////////////
+  // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
     if (active) global.layerVisibility = 'archived'
     else global.layerVisibility = 'none'
     this.router.navigate(['tab1']);
   }
 
-  // 7. CONFIRM, YES, DELETE TRACKS ////////////////////////
+  // 6. CONFIRM, YES, DELETE TRACKS ////////////////////////
   async yesDeleteTracks() {
     // Separate items into "to-remove" and "to-keep" categories
     const { toRemove, toKeep } = global.collection.reduce(
@@ -162,7 +164,7 @@ export class Tab2Page {
     await this.fs.displayToast(toast[global.languageIndex]);
   }
 
-  // 8. GEOJSON TO GPX //////////////////////
+  // 7. GEOJSON TO GPX //////////////////////
   async geoJsonToGpx(feature: any): Promise<string> {
     // Format timestamp into ISO 8601 format
     const formatDate = (timestamp: number): string => {
@@ -204,7 +206,7 @@ export class Tab2Page {
     return gpxText;
   }
 
-  // 9. EXPORT TRACK //////////////////////////
+  // 8. EXPORT TRACK //////////////////////////
   async exportTrack() {
     var track: Track | undefined;
     const dialogTitles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
@@ -248,33 +250,36 @@ export class Tab2Page {
     }
   }
 
-  // 10. DISPLAY ALL TRACKS ///////////////////////
+  // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
     if (active) global.layerVisibility = 'multi'
     else global.layerVisibility = 'none'
     this.router.navigate(['tab1']);
   }
 
-  // 11. ION VIEW WILL LEAVE
+  // 10. ION VIEW WILL LEAVE
   async ionViewWillLeave() {
     await this.fs.storeSet('collection', global.collection);
   }
 
-  // 12. REMOVE SEARCH LAYER
+  // 11. REMOVE SEARCH LAYER
   removeSearch() {
     global.removeSearch = true;
     this.router.navigate(['tab1']);
   }
 
+  // 12. OPEN MENU ///////////////////////
   openMenu() {
     this.menu.open();
   }
 
+  // 13. SELECT OPTION FROM MENU ////////////
   selectOption(option: string) {
     console.log('Selected:', option);
     this.menu.close();
   }
 
+  // 14. RESET RELECTION ///////////////
   async resetSelection() {
     await this.fs.uncheckAll();
     this.numChecked = 0;

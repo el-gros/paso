@@ -1,3 +1,8 @@
+/**
+ * Service for managing and sharing track and status data across the application.
+ * Provides observables and methods to set and get the current track, archived track, and status.
+ * Uses BehaviorSubject for reactive state management.
+ */
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
@@ -6,14 +11,23 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class TrackService {
 
+  // 1. SET CURRENT TRACK
+  // 2. GET CURRENT TRACK
+  // 3. SET ARCHIVED TRACK
+  // 4. GET ARCHIVED TRACK
+  // 5. SET STATUS
+  // 6. GET STATUS
+
   // currentTrack
   private currentTrackSource = new BehaviorSubject<any>(null);
   currentTrack$ = this.currentTrackSource.asObservable();
 
+  // 1. SET CURRENT TRACK /////////////////////////
   setCurrentTrack(track: any) {
     this.currentTrackSource.next(track);
   }
 
+  // 2. GET CURRENT TRACK /////////////////////////
   getCurrentTrack() {
     return this.currentTrackSource.value;
   }
@@ -22,10 +36,12 @@ export class TrackService {
   private archivedTrackSource = new BehaviorSubject<any>(null);
   archivedTrack$ = this.archivedTrackSource.asObservable();
 
+  // 3. SET ARCHIVED TRACK /////////////////////////
   setArchivedTrack(track: any) {
     this.archivedTrackSource.next(track);
   }
 
+  // 4. GET ARCHIVED TRACK /////////////////////////
   getArchivedTrack() {
     return this.archivedTrackSource.value;
   }
@@ -34,10 +50,12 @@ export class TrackService {
   private statusSource = new BehaviorSubject<'black' | 'red' | 'green'>('black');
   status$ = this.statusSource.asObservable();
 
+  // 5. SET STATUS /////////////////////////
   setStatus(status: 'black' | 'red' | 'green') {
     this.statusSource.next(status);
   }
 
+  // 6. GET STATUS /////////////////////////
   getStatus(): 'black' | 'red' | 'green' {
     return this.statusSource.value;
   }
