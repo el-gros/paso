@@ -6,6 +6,7 @@
  */
 
 import { FunctionsService } from '../services/functions.service';
+import { LanguageService } from '../services/language.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
@@ -80,6 +81,7 @@ export class SettingsPage implements OnDestroy {
   private mapRemoveSubscription?: Subscription;
 
   constructor(
+    private languageService: LanguageService,
     public fs: FunctionsService,
     public server: ServerService,
     public modalController: ModalController,
@@ -210,6 +212,7 @@ export class SettingsPage implements OnDestroy {
 
   // 4. LANGUAGE CHANGE ///////////////////////////////////////
   async onLanguageChange(code: string) {
+    await this.languageService.setLanguage(code);
     this.selectedLanguage.code = code;
     const picked = this.languages.find((l: { code: string; }) => l.code === code);
     if (picked) {

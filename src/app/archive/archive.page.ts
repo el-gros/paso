@@ -18,26 +18,19 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { MenuController } from '@ionic/angular';
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+
 @Component({
     selector: 'app-archive',
     templateUrl: 'archive.page.html',
     styleUrls: ['archive.page.scss'],
-    imports: [CommonModule, IonicModule, FormsModule]
+    imports: [CommonModule, IonicModule, FormsModule, TranslateModule]
 })
 export class Tab2Page {
 
   numChecked: number = 0;
   num: number = 0;
-  title = ['Trajectes','Trayectos', 'Tracks'];
-  export = ['EXPORTAR TRAJECTE','EXPORTAR TRAYECTO','EXPORT TRACK'];
-  all = ['MOSTRAR TOTS','MOSTRAR TODOS','DISPLAY ALL'];
-  hideAll = ['AMAGAR TOTS','ESCONDER TODOS','HIDE ALL'];
-  remove = ['ESBORRAR TRAJECTES','ELIMINAR TRAYECTOS','REMOVE TRACKS'];
-  edit = ['EDITAR TRAJECTE','EDITAR TRAYECTO','EDIT TRACK'];
-  hide = ['AMAGAR REFERÈNCIA','ESCONDER REFERENCIA','HIDE REFERENCE'];
-  display = ['MOSTRAR REFERÈNCIA','MOSTRAR REFERENCIA','SHOW REFERENCE'];
-  search = ['ESBORRAR CERCA', 'BORRAR BÚSQUEDA', 'REMOVE SEARCH'];
-  get languageIndex(): number { return global.languageIndex; }
   get layerVisibility(): string { return global.layerVisibility; }
   get presentSearch(): boolean { return global.presentSearch; }
   get archivedPresent(): boolean { return global.archivedPresent; }
@@ -47,7 +40,9 @@ export class Tab2Page {
     public fs: FunctionsService,
     private alertController: AlertController,
     private router: Router,
-    private menu: MenuController
+    private menu: MenuController,
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) {  }
 
   /* FUNCTIONS
@@ -98,20 +93,18 @@ export class Tab2Page {
     const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
-
-  // 4. DELETE TRACK(S) //////////////////////////
+ ////////////////////////
   async deleteTracks() {
-    const cancel = ['Cancel.lar', 'Cancelar', 'Cancel'];
-    const headers = ["Confirma l'esborrat", "Confirma el borrado","Confirm deletion"];
-    const messages = ["S'esborraran definitivament els trajectes marcats", "Se borrarán definitivamente los trayectos marcados",
-      "The selected track(s) will be definitely removed"];
+    const cancel = this.translate.instant('ARCHIVE.CANCEL');
+    const header = this.translate.instant('ARCHIVE.HEADER');
+    const message = this.translate.instant('ARCHIVE.MESSAGE');
     // create alert control
     const alert = await this.alertController.create({
       cssClass: 'alert redAlert',
-      header: headers[global.languageIndex],
-      message: messages[global.languageIndex],
+      header,
+      message,
       buttons: [{
-        text: cancel[global.languageIndex],
+        text: cancel,
         role: 'cancel',
         cssClass: 'alert-cancel-button',
         handler: this.onCancelDeleteTracks.bind(this)
@@ -160,8 +153,8 @@ export class Tab2Page {
     this.numChecked = 0;
     global.key = "null"
     // informretrievetrack
-    const toast = ["S'han esborrat els trajectes seleccionats",'Se han borrado los trayectos seleccionados','The selected tracks have been removed'];
-    await this.fs.displayToast(toast[global.languageIndex]);
+    const toast3 = this.translate.instant('ARCHIVE.TOAST3');
+    await this.fs.displayToast(toast3);
   }
 
   // 7. GEOJSON TO GPX //////////////////////
@@ -209,7 +202,7 @@ export class Tab2Page {
   // 8. EXPORT TRACK //////////////////////////
   async exportTrack() {
     var track: Track | undefined;
-    const dialogTitles = ['Compartiu només per Gmail','Compartir sólo por Gail','Share with Gmail only']
+    const dialog_title = this.translate.instant('ARCHIVE.DIALOG_TITLE');
     function sanitizeFilename(name: string): string {
       return name.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
     }
@@ -219,8 +212,10 @@ export class Tab2Page {
     var gpxText = await this.geoJsonToGpx(track.features?.[0]);
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
     const file: string = `${sanitizedName}.gpx`;
+    const toast1 = this.translate.instant('ARCHIVE.TOAST1');
+    const toast2 = this.translate.instant('ARCHIVE.TOAST2');
     try {
-      // Write the file to the Data directory
+      // Write the file to                           the Data directory
       const result = await Filesystem.writeFile({
         path: file,
         data: gpxText,
@@ -232,21 +227,19 @@ export class Tab2Page {
         path: file,
         directory: Directory.External,
       });
-      const titles = ['Compartir un trajecte', 'Compartir un trayexto', 'Share a track'];
-      const texts = ['Aquí teniu el trajecte sol.licitat', 'Este es el trayecto solicitado', 'Here is the file you requested']
+      const title = this.translate.instant('ARCHIVE.TITLE');
+      const text = this.translate.instant('ARCHIVE.TEXT');
       await Share.share({
-        title: titles[global.languageIndex],
-        text: texts[global.languageIndex],
+        title,
+        text,
         url: fileUri.uri,
-        dialogTitle: dialogTitles[global.languageIndex],
+        dialogTitle: dialog_title
       });
       // Show success toast
-      const toast = ["S'ha compartit correctament el trajecte",'El trayecto se ha compartido correctamente','Track exported and shared successfully!']
-      await this.fs.displayToast(toast[global.languageIndex]);
+      await this.fs.displayToast(toast1);
     } catch (e) {
       // Show error toast
-      const toast = ["L'exportació ha fallat", 'Ha fallado la exportación','Exportation failed']
-      await this.fs.displayToast(toast[global.languageIndex]);
+      await this.fs.displayToast(toast2);
     }
   }
 
@@ -284,6 +277,10 @@ export class Tab2Page {
     await this.fs.uncheckAll();
     this.numChecked = 0;
     global.key = "null";
+  }
+
+  onInit() {
+    const lang = this.languageService.getCurrentLanguage();
   }
 
 }

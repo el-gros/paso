@@ -1,37 +1,30 @@
-/*
 import { TestBed } from '@angular/core/testing';
-import { TranslateModule } from '@ngx-translate/core';
-//import { LanguageService } from './language.service';
 import { FunctionsService } from './functions.service';
 
-describe('LanguageService', () => {
-//  let service: LanguageService;
-  let fsSpy: jasmine.SpyObj<FunctionsService>;
+describe('FunctionsService', () => {
+  let service: FunctionsService;
 
   beforeEach(() => {
-    fsSpy = jasmine.createSpyObj('FunctionsService', ['storeGet', 'storeSet']);
-    fsSpy.storeGet.and.resolveTo('es');
-    fsSpy.storeSet.and.resolveTo();
-
     TestBed.configureTestingModule({
-      imports: [TranslateModule.forRoot()],
       providers: [
- //       LanguageService,
- //       { provide: FunctionsService, useValue: fsSpy }
+        FunctionsService,
+        {
+          provide: Storage,
+          useValue: {
+            get: jasmine.createSpy().and.returnValue(Promise.resolve('en')),
+            set: jasmine.createSpy().and.returnValue(Promise.resolve()),
+            create: jasmine.createSpy().and.returnValue(Promise.resolve()),
+          }
+        }
       ]
     });
- //   service = TestBed.inject(LanguageService);
+
+    service = TestBed.inject(FunctionsService);
   });
 
-  /*
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should set and get language', async () => {
-    await service.setLanguage('es');
-    expect(service.getCurrentLangValue()).toBe('es');
-    expect(fsSpy.storeSet).toHaveBeenCalledWith('lang', 'es');
-  });
-
-});*/
+  // Add more tests here for storeGet/storeSet/etc.
+});

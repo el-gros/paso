@@ -1,0 +1,61 @@
+{
+  "SETTINGS": {
+    "CURRENT_TRACK": "Trayecto actual",
+    "REFERENCE_TRACK": "Trayecto de referencia",
+    "BASE_MAP": "Mapa base",
+    "LANGUAGE": "Idioma",
+    "CHANGE_COLOR": "Cambiar color",
+    "UPLOAD_MAPS": "Cargar mapas",
+    "REMOVE_MAPS": "Eliminar mapas",
+    "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
+    "AUDIO_ALERT": "Alerta sonora"
+  },
+
+    "ARCHIVE": {
+    "TRACKS": "Trayectos",
+    "EXPORT_TRACK": "EXPORTAR TRAYECTO",
+    "DISPLAY_ALL": "MOSTRAR TODOS",
+    "HIDE_ALL": "ESCONDER TODOS",
+    "REMOVE_TRACKS": "ELIMINAR TRAYECTOS",
+    "EDIT_TRACK": "EDITAR TRAYECTO",
+    "HIDE_REFERENCE": "ESCONDER REFERENCIA",
+    "SHOW_REFERENCE": "MOSTRAR REFERENCIA",
+    "REMOVE_SEARCH": "ELIMINAR BÚSQUEDA",
+    "CANCEL": "Cancelar",
+    "HEADER": "Confirma el borrado",
+    "MESSAGE": "Se borrarán definitivamente los trayectos marcados",
+    "TITLE": "Compartir un trayecto",
+    "TEXT": "Este es el trayecto solicitado",
+    "DIALOG_TITLE": "Compartir sólo por Gmail",
+    "TOAST1": "El trayecto se ha compartido correctamente!",
+    "TOAST2": "Ha fallado la exportación",
+    "TOAST3": "Los trayectos seleccionados han sido eliminados"
+  },
+
+  "CANVAS": {
+    "ARCTITLE": "TRAYECTO DE REFERENCIA",
+    "CURTITLE": "TRAYECTO ACTUAL",
+    "DISTANCE": "Distancia",
+    "EGAIN": "Desnivel positivo",
+    "ELOSS": "Desnivel negativo",
+    "TIME": "Tiempo",
+    "MOTIONTIME": "Tiempo en movimiento",
+    "POINTS": "Puntos grabados",
+    "ALTITUDE": "Altitud actual",
+    "SPEED": "Velocidad actual",
+    "AVGSPEED": "Velocidad media",
+    "MOTIONAVGSPEED": "Vel. media en movimiento",
+    "CANVASALTITUDE": "ALTITUD (m) vs DISTANCIA (km)",
+    "CANVASSPEED": "VELOCIDAD (km/h) vs TIEMPO"
+  },
+
+  "EDIT_MODAL": {
+    "HEADER": "Editar datos del trayecto",
+    "NAME": "Nombre",
+    "PLACE": "Lugar",
+    "DESCRIPTION": "Descripción",
+    "CANCEL": "Cancelar"
+  }
+
+}
+

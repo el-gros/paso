@@ -1,0 +1,59 @@
+{
+  "SETTINGS": {
+    "CURRENT_TRACK": "Trajecte actual",
+    "REFERENCE_TRACK": "Trajecte de referència",
+    "BASE_MAP": "Mapa base",
+    "LANGUAGE": "Idioma",
+    "CHANGE_COLOR": "Canviar color",
+    "UPLOAD_MAPS": "Carregar mapes",
+    "REMOVE_MAPS": "Eliminar mapes",
+    "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
+    "AUDIO_ALERT": "Alerta sonora"
+  },
+  "ARCHIVE": {
+    "TRACKS": "Trajectes",
+    "EXPORT_TRACK": "EXPORTAR TRAJECTE",
+    "DISPLAY_ALL": "MOSTRAR TOTS",
+    "HIDE_ALL": "AMAGAR TOTS",
+    "REMOVE_TRACKS": "ELIMINAR TRAJECTES",
+    "EDIT_TRACK": "EDITAR TRAJECTE",
+    "HIDE_REFERENCE": "AMAGAR REFERÈNCIA",
+    "SHOW_REFERENCE": "MOSTRAR REFERÈNCIA",
+    "REMOVE_SEARCH": "ESBORRAR CERCA",
+    "CANCEL": "Cancel·lar",
+    "HEADER": "Confirma l'esborrat",
+    "MESSAGE": "S'esborraran definitivament els trajectes marcats",
+    "TITLE": "Compartir un trajecte",
+    "TEXT": "Aquí teniu el trajecte sol·licitat",
+    "DIALOG_TITLE": "Compartiu només per Gmail",
+    "TOAST1": "S'ha compartit correctament el trajecte",
+    "TOAST2": "L'exportació ha fallat",
+    "TOAST3": "S'han esborrat els trajectes seleccionats"
+  },
+
+  "CANVAS": {
+    "ARCTITLE": "TRAJECTE DE REFERÈNCIA",
+    "CURTITLE": "TRAJECTE ACTUAL",
+    "DISTANCE": "Distància",
+    "EGAIN": "Desnivell positiu",
+    "ELOSS": "Desnivell negatiu",
+    "TIME": "Temps",
+    "MOTIONTIME": "Temps en moviment",
+    "POINTS": "Punts gravats",
+    "ALTITUDE": "Altitud actual",
+    "SPEED": "Velocitat actual",
+    "AVGSPEED": "Velocitat mitjana",
+    "MOTIONAVGSPEED": "Vel. mitjana en moviment",
+    "CANVASALTITUDE": "ALTITUD (m) vs DISTÀNCIA (km)",
+    "CANVASSPEED": "VELOCITAT (km/h) vs TEMPS"
+  },
+
+  "EDIT_MODAL": {
+    "HEADER": "Editeu les dades del trajecte",
+    "NAME": "Nom",
+    "PLACE": "Lloc",
+    "DESCRIPTION": "Descripció",
+    "CANCEL": "Cancel·lar"
+  }
+}
+

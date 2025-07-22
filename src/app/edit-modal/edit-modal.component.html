@@ -1,6 +1,6 @@
 <ion-header class="modal-header">
   <div class="modal-title" *ngIf="edit">
-    <strong>{{ header }}</strong>
+    <strong>{{ 'EDIT_MODAL.HEADER' | translate }}</strong>
   </div>
 
   <div class="modal-title" *ngIf="!edit">
@@ -13,7 +13,7 @@
 
 <ion-content class="modal-content">
   <div class="modal-message" *ngIf="edit">
-    <strong>{{ name }}:</strong>
+    <strong>{{ 'EDIT_MODAL.NAME' | translate }}:</strong>
   </div>
 
   <div *ngIf="edit"
@@ -25,7 +25,7 @@
   </div>
 
   <div class="modal-message">
-    <strong>{{ place }}:</strong>
+    <strong>{{ 'EDIT_MODAL.PLACE' | translate }}:</strong>
   </div>
 
   <div *ngIf="edit"
@@ -44,7 +44,7 @@
   </div>
 
   <div class="modal-message">
-    <strong>{{ description }}:</strong>
+    <strong>{{ 'EDIT_MODAL.DESCRIPTION' | translate }}:</strong>
   </div>
 
   <div *ngIf="edit"

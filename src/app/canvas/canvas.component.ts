@@ -17,6 +17,8 @@ import { Router } from '@angular/router';
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 register();
 
 @Component({
@@ -25,28 +27,13 @@ register();
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
   //imports: [CommonModule, IonFab, IonContent, IonFabButton, IonIcon],
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, TranslateModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class CanvasComponent implements OnInit, OnDestroy {
 
   currentTrack: Track | undefined = undefined;
   archivedTrack: Track | undefined = undefined;
-
-  arcTitle = ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'];
-  curTitle = ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'];
-  distance = ['Distància','Distancia','Distance'];
-  eGain = ['Desnivell positiu','Desnivel positivo','Elevation gain'];
-  eLoss = ['Desnivell negatiu','Desnivel negativo','Elevation loss'];
-  time = ['Temps', 'Tiempo','Time'];
-  motionTime = ['Temps en moviment','Tiempo en movimiento','In-motion time'];
-  points = ['Punts gravats','Puntos grabados','Recorded points'];
-  altitude = ['Altitud actual','Altitud actual','Current altitude'];
-  speed = ['Velocitat actual','Velocidad actual','Current speed'];
-  avgSpeed = ['Velocitat mitjana','Velocidad nedia','Average speed'];
-  motionAvgSpeed = ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'];
-  canvasAltitude = ['ALTITUD (m) vs DISTÀNCIA (km)','ALTITUD (m) vs DISTANCIA (km)','ALTITUDE (m) vs DISTANCE (km)'];
-  canvasSpeed = ['VELOCITAT (km/h) vs TEMPS','VELOCIDAD (km/h) vs TIEMPO','SPEED (km/h) vs TIME'];
 
   status: 'black' | 'red' | 'green' = 'black';
   currentAverageSpeed: number | undefined = undefined;
@@ -65,14 +52,15 @@ export class CanvasComponent implements OnInit, OnDestroy {
   margin: number = 10;
 
   layerVisibility = global.layerVisibility;
-  languageIndex = global.languageIndex;
 
   private subscriptions: Subscription = new Subscription();
 
   constructor(
     private router: Router,
     public fs: FunctionsService,
-    public ts: TrackService
+    public ts: TrackService,
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) { }
 
   // 1. ngOnInit()
@@ -120,7 +108,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   async ionViewWillEnter() {
     // Variables
     this.layerVisibility = global.layerVisibility;
-    this.languageIndex = global.languageIndex;
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
   }
 

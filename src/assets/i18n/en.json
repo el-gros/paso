@@ -1,0 +1,62 @@
+{
+  "SETTINGS": {
+    "CURRENT_TRACK": "Current track",
+    "REFERENCE_TRACK": "Reference track",
+    "BASE_MAP": "Base map",
+    "LANGUAGE": "Language",
+    "CHANGE_COLOR": "Change color",
+    "UPLOAD_MAPS": "Upload maps",
+    "REMOVE_MAPS": "Remove maps",
+    "SAVED_TRACK_ALTITUDE": "Saved track altitude",
+    "AUDIO_ALERT": "Audio alert"
+  },
+
+  "ARCHIVE": {
+    "TRACKS": "Tracks",
+    "EXPORT_TRACK": "EXPORT TRACK",
+    "DISPLAY_ALL": "DISPLAY ALL",
+    "HIDE_ALL": "HIDE ALL",
+    "REMOVE_TRACKS": "REMOVE TRACKS",
+    "EDIT_TRACK": "EDIT TRACK",
+    "HIDE_REFERENCE": "HIDE REFERENCE",
+    "SHOW_REFERENCE": "SHOW REFERENCE",
+    "REMOVE_SEARCH": "REMOVE SEARCH",
+    "CANCEL": "Cancel",
+    "HEADER": "Confirm deletion",
+    "MESSAGE": "The selected tracks will be permanently deleted",
+    "TITLE": "Share a track",
+    "TEXT": "Here is the file you requested",
+    "DIALOG_TITLE": "Share with Gmail only",
+    "TOAST1": "Track exported and shared successfully!",
+    "TOAST2": "Exportation failed",
+    "TOAST3": "The selected tracks have been removed"
+  },
+
+  "CANVAS": {
+    "ARCTITLE": "REFERENCE TRACK",
+    "CURTITLE": "CURRENT TRACK",
+    "DISTANCE": "Distance",
+    "EGAIN": "Elevation gain",
+    "ELOSS": "Elevation loss",
+    "TIME": "Time",
+    "MOTIONTIME": "In-motion time",
+    "POINTS": "Recorded points",
+    "ALTITUDE": "Current altitude",
+    "SPEED": "Current speed",
+    "AVGSPEED": "Average speed",
+    "MOTIONAVGSPEED": "In-motion average speed",
+    "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
+    "CANVASSPEED": "SPEED (km/h) vs TIME"
+  },
+
+  "EDIT_MODAL": {
+    "HEADER": "Edit track details",
+    "NAME": "Name",
+    "PLACE": "Place",
+    "DESCRIPTION": "Description",
+    "CANCEL": "Cancel"
+  }
+
+}
+
+

@@ -1,14 +1,21 @@
 {
   "java.enabled": false,
-  "java.project.excludeFolders": [
-    "**/node_modules"
+  "java.project.excludePaths": [
+    "**/node_modules",
+    "**/android",
+    "**/ios"
   ],
   "files.exclude": {
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/android": true,
+    "**/ios": true
   },
   "search.exclude": {
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/android": true,
+    "**/ios": true
   },
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "automatic"
 }
+
 

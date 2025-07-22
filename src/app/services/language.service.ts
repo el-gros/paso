@@ -12,10 +12,10 @@ export class LanguageService {
     private translate: TranslateService,
     private fs: FunctionsService
   ) {
-    this.fs.storeGet('lang').then((storedLang) => {
-      const lang = storedLang || 'en';
-      this.setLanguage(lang);
-    });
+//    this.fs.storeGet('lang').then((storedLang) => {
+//      const lang = storedLang || 'en';
+//      this.setLanguage(lang);
+//    });
   }
 
   getCurrentLanguage() {
@@ -28,7 +28,7 @@ export class LanguageService {
 
   async setLanguage(lang: string) {
     await this.fs.storeSet('lang', lang);
-    this.translate.use(lang);
+    this.translate.use(lang)
     this.currentLang$.next(lang);
   }
 

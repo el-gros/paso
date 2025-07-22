@@ -1,4 +1,4 @@
-/**
+/*
  * Main page component for managing and displaying GPS tracks, map layers, and user interactions.
  *
  * Handles track recording, editing, storage, and visualization using OpenLayers and Ionic UI.
@@ -31,7 +31,6 @@ import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
-//import { LanguageService } from '../services/language.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
@@ -71,6 +70,8 @@ import TileState from 'ol/TileState';
 import { Tile } from 'ol';
 import pako from 'pako';
 import BaseLayer from 'ol/layer/Base';
+import { TranslateModule } from '@ngx-translate/core';
+import { LanguageService } from '../services/language.service'; // <-- Add this import
 const vectorFormat = new MVT();
 useGeographic();
 register();
@@ -250,7 +251,7 @@ function interpolateStops(stops: [number, number][], zoom: number): number {
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
     styleUrls: ['tab1.page.scss'],
-    imports: [IonicModule, CommonModule, FormsModule],
+    imports: [IonicModule, CommonModule, FormsModule, TranslateModule ],
     providers: [DecimalPipe, DatePipe],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -327,7 +328,6 @@ export class Tab1Page {
 
   constructor(
     public fs: FunctionsService,
-//    public ls: LanguageService,
     public ts: TrackService,
     public server: ServerService,
     private router: Router,
@@ -335,7 +335,8 @@ export class Tab1Page {
     private zone: NgZone,
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
-    private nominatimService: NominatimService
+    private nominatimService: NominatimService,
+    private languageService: LanguageService
   ) {
   }
 
@@ -410,7 +411,7 @@ export class Tab1Page {
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
       this.determineLanguage();
-//      this.ls.determineLanguage()
+      this.languageService.determineLanguage();
       // Determine line color
       this.determineColors();
       // elements shown, elements hidden

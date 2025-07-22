@@ -13,13 +13,8 @@ import { CommonModule } from '@angular/common';
 import { global } from '../../environments/environment';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
-
-// Move language label arrays to constants outside the component class
-const HEADERS = ['Editeu les dades del trajecte', 'Editar datos del trayecto', 'Edit Track Details'];
-const NAMES = ['Nom','Nombre','Name'];
-const PLACES = ['Lloc','Lugar','Place'];
-const DESCRIPTIONS = ['Descripció','Descripción','Description'];
-const CANCELS = ['Cancel.lar', 'Cancelar', 'Cancel'];
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 // Define interface for modalEdit input
 interface ModalEditData {
@@ -32,7 +27,7 @@ interface ModalEditData {
     selector: 'app-edit-modal',
     templateUrl: './edit-modal.component.html',
     styleUrls: ['./edit-modal.component.scss'],
-    imports: [CommonModule, IonicModule],
+    imports: [CommonModule, IonicModule, TranslateModule],
     standalone: true
 })
 
@@ -51,11 +46,13 @@ export class EditModalComponent  implements OnInit, OnChanges {
 
   constructor(
     private modalController: ModalController,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) { }
 
   // 1. ON INIT
-  // 2. ON VIEW WILL ENTER
+
   // 3. ON NAME CHANGE
   // 4. ON PLACE CHANGE
   // 5. ON DESCRIPTION CHANGE
@@ -73,15 +70,6 @@ export class EditModalComponent  implements OnInit, OnChanges {
     this.editableName = this.modalEdit.name;
     this.editablePlace = this.modalEdit.place;
     this.editableDescription = this.modalEdit.description;
-  }
-
-  // 2. ON VIEW WILL ENTER /////////////////
-  ionViewWillEnter() {
-    this.header = HEADERS[global.languageIndex];
-    this.name = NAMES[global.languageIndex];
-    this.place = PLACES[global.languageIndex];
-    this.description = DESCRIPTIONS[global.languageIndex];
-    this.cancel = CANCELS[global.languageIndex];
   }
 
   // 3. ON NAME CHANGE /////////////////////
