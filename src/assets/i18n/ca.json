@@ -8,8 +8,18 @@
     "UPLOAD_MAPS": "Carregar mapes",
     "REMOVE_MAPS": "Eliminar mapes",
     "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
-    "AUDIO_ALERT": "Alerta sonora"
+    "AUDIO_ALERT": "Alerta sonora",
+    "COLOR_LIST": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],
+    "COLORS2": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],
+    "CURRENT_HEADER": "Trajecte actual",
+    "ARCHIVED_HEADER": "Trajecte de referència",
+    "MESSAGE": "Tria el color del trajecte",
+    "TOAST_REMOVEMAP": "El mapa s'ha eliminat",
+    "TOAST_UPLOADMAP": "El mapa s'ha carregat correctament",
+    "TOAST_FAILED_REMOVEMAP": "No s'ha pogut eliminar el mapa",
+    "CANCEL": "Cancel·lar"
   },
+
   "ARCHIVE": {
     "TRACKS": "Trajectes",
     "EXPORT_TRACK": "EXPORTAR TRAJECTE",
@@ -28,7 +38,9 @@
     "DIALOG_TITLE": "Compartiu només per Gmail",
     "TOAST1": "S'ha compartit correctament el trajecte",
     "TOAST2": "L'exportació ha fallat",
-    "TOAST3": "S'han esborrat els trajectes seleccionats"
+    "TOAST3": "S'han esborrat els trajectes seleccionats",
+    "TOAST4": "Error al carregar la col·lecció",
+    "TOAST5": "Error al carregar el trajecte"
   },
 
   "CANVAS": {
@@ -54,6 +66,50 @@
     "PLACE": "Lloc",
     "DESCRIPTION": "Descripció",
     "CANCEL": "Cancel·lar"
+  },
+
+  "WPT": {
+    "HEADER": "Editeu el punt de ruta",
+    "NAME": "Nom",
+    "COMMENT": "Comentari",
+    "ALTITUDE": "Altitud"
+  },
+
+  "SEARCH": {
+    "TITLE.SEARCH": "Trobeu la ubicació",
+    "TITLE.GUIDE": "Trobeu la millor ruta",
+    "PLACEHOLDER.SEARCH": "Nom del lloc",
+    "PLACEHOLDER.GUIDE": "Inici",
+    "TRANSPORTATION_MEANS": [
+      "En cotxe", "En bicicleta", "A peu", "Senderisme", "En cadira de rodes"
+    ],
+    "CURRENT_LOCATION": "Posició actual",
+    "UNKNOWN_LOCATION": "No s'ha pogut obtenir la posició actual",
+    "NOTICE1": "Introduïu un punt d'inici...",
+    "NOTICE2": "... o seleccioneu posició actual",
+    "TOAST1":"No s'ha trobat cap ruta",
+    "NETWORK_ERROR": "Error de xarxa",
+    "DESTINATION": "Destinació"
+  },
+
+  "MAP": {
+    "TOAST1": "El trajecte actual s'ha esborrat",
+    "NOTICE": "S'està seguint la vostra ubicació",
+    "STOP_HEADER": "Finalitzar el trajecte",
+    "DELETE_HEADER": "Esborrar el trajecte",
+    "STOP_MESSAGE": "Esteu segur que voleu finalitzar el trajecte?",
+    "DELETE_MESSAGE": "Esteu segur que voleu eliminar el trajecte?",
+    "IMPORTED": "El fitxer s'ha importat correctament",
+    "NOT_IMPORTED": "No s'ha importat cap fitxer",
+    "SAVED": "El fitxer s'ha desat correctament",
+    "WPT_ADDED": "S'ha afegit el punt de pas",
+    "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
+    "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
+    "TRACK_FINISHED": "El trajecte actual ha finalitzat",
+    "YES": "Sí"
   }
+
 }
+
+
 

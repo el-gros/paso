@@ -6,7 +6,6 @@
  */
 
 import { FunctionsService } from '../services/functions.service';
-import { LanguageService } from '../services/language.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
@@ -19,6 +18,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { ColorPopoverComponent } from '../color-popover/color-popover.component';
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 register();
 
@@ -32,7 +33,7 @@ interface LanguageOption {
     selector: 'app-settings',
     templateUrl: 'settings.page.html',
     styleUrls: ['settings.page.scss'],
-    imports: [IonicModule, CommonModule, FormsModule],
+    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
     providers: [DecimalPipe, DatePipe],
 })
 
@@ -40,17 +41,6 @@ export class SettingsPage implements OnDestroy {
   downloadProgress = 0; // To show download progress
   isDownloading = false; // 🔹 Controls progress bar
   private progressSubscription?: Subscription; // 🔹 Store subscription
-  title: any = [
-    ['Trajecte actual', 'Trayecto actual', 'Current track'],
-    ['Trajecte de referència', 'Trayecto de referencia','Reference track'],
-    ['Mapa base','Mapa base', 'Base map'],
-    ['Idioma','Idioma', 'Language'],
-    ['CANVIAR COLOR','CAMBIAR COLOR','CHANGE COLOR'],
-    ['Carregar mapes', 'Cargar mapas', 'Upload maps'],
-    ['Eliminar mapes', 'Eliminar mapas', 'Remove maps'],
-    ['Altitud del trajecte guardat', 'Altitud del trayecto guardado', 'Altitude of saved track'],
-    ['Alerta sonora', 'Alerta sonora', 'Audio alert']
-  ];
   // Language
   languages: LanguageOption[] = [
     { name: 'Català', code: 'ca', index: 0 },
@@ -80,12 +70,21 @@ export class SettingsPage implements OnDestroy {
   private mapUploadSubscription?: Subscription;
   private mapRemoveSubscription?: Subscription;
 
+  get cancelButton() {
+    return {
+      text: this.translate.instant('SETTINGS.CANCEL'), // <-- uses translation key
+      role: 'cancel',
+      cssClass: 'alert-cancel-button',
+    };
+  }
+
   constructor(
-    private languageService: LanguageService,
     public fs: FunctionsService,
     public server: ServerService,
     public modalController: ModalController,
-    private popoverController: PopoverController
+    private popoverController: PopoverController,
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) {
 
     // Debounced map upload
@@ -102,11 +101,11 @@ export class SettingsPage implements OnDestroy {
     // Debounced map remove
     this.mapRemoveSubscription = this.mapRemoveSubject.pipe(debounceTime(500)).subscribe(async (map: string) => {
       const mapWithExtension = map + '.mbtiles';
-      const toast = ["El mapa s'ha eliminat",'El mapa se ha eliminado','The map has been removed']
+      const toast_removeMap = this.translate.instant('SETTINGS.TOAST_REMOVEMAP');
       const match = global.offlineMaps.find((item: any) => item.filename === mapWithExtension);
       if (match) {
         await this.removeMapFile(match.filename);
-        this.fs.displayToast(toast[global.languageIndex]);
+        this.fs.displayToast(toast_removeMap);
       }
       else {
         console.log('No matching map found.');
@@ -141,12 +140,15 @@ export class SettingsPage implements OnDestroy {
     // Check maps
     await this.checkMaps();
     // Set language
-    this.selectedLanguage.code = global.languageCode;
+    /* this.selectedLanguage.code = global.languageCode;
     this.selectedLanguage.index = global.languageIndex;
     if (global.languageIndex == 0) this.selectedLanguage.name = 'Català'
     else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
     else this.selectedLanguage.name = 'English';
-    console.log(this.selectedLanguage)
+    console.log(this.selectedLanguage) */
+    const code = this.languageService.getCurrentLangValue();
+    this.selectedLanguage = this.languages.find(lang => lang.code === code);
+        
     // Set map
     this.selectedMap = await this.fs.storeGet('mapProvider') || ''
     // Set colors
@@ -161,27 +163,22 @@ export class SettingsPage implements OnDestroy {
   // 2. SELECT COLOR ////////////////////////////////////////
   async selectColor(currArch: string) {
     // Define variables
-    const messages = ['Tria el color del trajecte','Elige el color del trayecto', 'Set the track color']
-    const currHeader = ['Trajecte actual','Trayecto actual', 'Current Track']
-    const archHeader = ['Trajecte de referència','Trayecto de referencia', 'Reference Track']
-    const colors2: string[][] = [
-      ['carmesí', 'vermell', 'taronja', 'daurat', 'groc', 'magenta', 'morat', 'llima', 'verd', 'cian', 'blau'],
-      ['carmesí', 'rojo', 'naranja', 'oro', 'amarillo', 'magenta', 'púrpura', 'lima', 'verde', 'cian', 'azul'],
-      ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
-    ]
-    const inputs: AlertInput[] = colors2[2].map((color, index) => ({
+    const message = this.translate.instant('SETTINGS.MESSAGE');
+    const color_list = this.translate.instant('SETTINGS.COLOR_LIST');
+    const current_header = this.translate.instant('SETTINGS.CIRRENT_HEADER');
+    const archived_header = this.translate.instant('SETTINGS.ARCHIVED_HEADER');
+    const inputs: AlertInput[] = color_list.map((color: any, index: string | number) => ({
       name: color,
       type: 'radio' as const,
-      label: colors2[global.languageIndex][index], // Use the label from the selected language
+      label: color_list[index], // Use the label from the selected language
       value: color, // Value comes from colors2[2]
       checked: currArch === 'Current' ? global.currentColor === color : global.archivedColor === color,
       cssClass: `color-option-${color}` // Style based on the value from colors2[2]
     }));
     const cssClass = 'alert primaryAlert';
-    const header = currArch === 'Current' ? currHeader[global.languageIndex] : archHeader[global.languageIndex]
-    const message = messages[global.languageIndex]
+    const header = currArch === 'Current' ? current_header : archived_header
     const buttons = [
-      global.cancelButton,
+      this.cancelButton,
       {
         text: 'Ok',
         cssClass: 'alert-button',
@@ -213,15 +210,17 @@ export class SettingsPage implements OnDestroy {
   // 4. LANGUAGE CHANGE ///////////////////////////////////////
   async onLanguageChange(code: string) {
     await this.languageService.setLanguage(code);
+    this.selectedLanguage = this.languages.find((l) => l.code === code);
+    /* await this.languageService.setLanguage(code);
     this.selectedLanguage.code = code;
     const picked = this.languages.find((l: { code: string; }) => l.code === code);
     if (picked) {
       this.selectedLanguage.index = picked.index;
       this.selectedLanguage.name  = picked.name;
-      global.languageIndex = this.selectedLanguage.index
-      global.languageCode = this.selectedLanguage.code
+      //global.languageIndex = this.selectedLanguage.index
+      //global.languageCode = this.selectedLanguage.code
     }
-    await this.fs.storeSet('language', this.selectedLanguage.code)
+    await this.fs.storeSet('lang', this.selectedLanguage.code)*/
   }
 
   // 5. MAP CHANGE ///////////////////////////////////////
@@ -315,8 +314,7 @@ export class SettingsPage implements OnDestroy {
     this.isDownloading = false; // 🔹 Hide progress bar
     this.downloadProgress = 0; // Reset progress
     // Toast
-    const toast = ["El mapa s'ha carregat correctament",'El mapa se ha cargado con éxito','Map successfully uploaded']
-    this.fs.displayToast(toast[global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('SETTINGS.TOAST_UPLOADMAP'));
   }
 
   // 15. CHECK MAPS //////////////////////////
@@ -347,13 +345,13 @@ export class SettingsPage implements OnDestroy {
         directory: Directory.Data,
       });
       // Toast for success
-      const toast = ["El mapa s'ha eliminat correctament", "El mapa se ha eliminado con éxito", "Map successfully removed"];
-      this.fs.displayToast(toast[global.languageIndex]);
+      const toast_removeMap = this.translate.instant('SETTINGS.TOAST_REMOVEMAP');
+      this.fs.displayToast(toast_removeMap);
       await this.checkMaps();
     } catch (error) {
       // Toast for error
-      const errorToast = ["Error eliminant el mapa", "Error eliminando el mapa", "Error removing map"];
-      this.fs.displayToast(errorToast[global.languageIndex]);
+      const toast_failed_removeMap = this.translate.instant('SETTINGS.TOAST_FAILED_REMOVEMAP');
+      this.fs.displayToast(toast_failed_removeMap);
       console.error(`Error removing file ${filename}:`, error);
     }
   }

@@ -199,12 +199,7 @@ export class FunctionsService {
   async retrieveTrack() {
     var track: Track | undefined;
     // Retrieve track
-    if (global.key != "null") {
-      track = await this.storeGet(global.key)
-      // If track can not be retrieved
-      const toast = ["El trajecte seleccionat no s'ha pogut recuperar",'El trayecto seleccionado no se ha podido recuperar','The selected track could not be retrieved']
-      if (!track) this.displayToast(toast[global.languageIndex]);
-    }
+    if (global.key != "null") track = await this.storeGet(global.key);
     // Return the retrieved track
     return track;
   }

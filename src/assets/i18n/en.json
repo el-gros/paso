@@ -8,7 +8,15 @@
     "UPLOAD_MAPS": "Upload maps",
     "REMOVE_MAPS": "Remove maps",
     "SAVED_TRACK_ALTITUDE": "Saved track altitude",
-    "AUDIO_ALERT": "Audio alert"
+    "AUDIO_ALERT": "Audio alert",
+    "COLOR_LIST": ["crimson", "red", "orange", "gold", "yellow", "magenta", "purple", "lime", "green", "cyan", "blue"],
+    "CURRENT_HEADER": "Current track",
+    "ARCHIVED_HEADER": "Reference track",
+    "MESSAGE": "Set the track color",
+    "TOAST_REMOVEMAP": "The map has been removed",
+    "TOAST_UPLOADMAP": "Map successfully uploaded",
+    "TOAST_FAILED_REMOVEMAP": "Failed to remove the map",
+    "CANCEL": "Cancel"
   },
 
   "ARCHIVE": {
@@ -29,7 +37,8 @@
     "DIALOG_TITLE": "Share with Gmail only",
     "TOAST1": "Track exported and shared successfully!",
     "TOAST2": "Exportation failed",
-    "TOAST3": "The selected tracks have been removed"
+    "TOAST3": "The selected tracks have been removed",
+    "TOAST4": "Error loading collection"
   },
 
   "CANVAS": {
@@ -55,8 +64,46 @@
     "PLACE": "Place",
     "DESCRIPTION": "Description",
     "CANCEL": "Cancel"
+  },
+
+  "WPT": {
+    "HEADER": "Editar punto de ruta",
+    "NAME": "Nombre",
+    "COMMENT": "Comentario",
+    "ALTITUDE": "Altitud"
+  },
+
+  "SEARCH": {
+    "TITLE_SEARCH": "Find location",
+    "TITLE_GUIDE": "Find the best route",
+    "PLACEHOLDER_SEARCH": "Enter place name",
+    "PLACEHOLDER_GUIDE": "Start",
+    "TRANSPORTATION_MEANS": ["By car", "Cycling", "Walking", "Hiking", "In a wheelchair"],
+    "CURRENT_LOCATION": "Current location",
+    "UNKNOWN_LOCATION": "Could not obtain current location",
+    "NOTICE1": "Enter a starting point...",
+    "NOTICE2": "... or select current location",
+    "TOAST1": "No route found",
+    "NETWORK_ERROR": "Network error",
+    "DESTINATION": "Destination"
+  },
+
+  "MAP": {
+    "TOAST1": "The current track has been removed",
+    "NOTICE": "Tracking your location",
+    "STOP_HEADER": "Stop the track",
+    "DELETE_HEADER": "Delete the track",
+    "STOP_MESSAGE": "Are you sure you want to stop the track?",
+    "DELETE_MESSAGE": "Are you sure you want to delete the track?",
+    "IMPORTED": "The file has been imported successfully",
+    "NOT_IMPORTED": "No file imported",
+    "SAVED": "File saved successfully",
+    "WPT_ADDED": "The waypoint has been added",
+    "NO_FILE_SELECTED": "No file selected",
+    "CURRENT_TRACK_DELETED": "The current track has been deleted",
+    "TRACK_FINISHED": "The current track has finished",
+    "YES": "Yes"
   }
 
 }
-
 

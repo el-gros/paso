@@ -16,6 +16,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface LocationResult {
   lon: number;
@@ -34,7 +36,7 @@ interface Route {
     selector: 'app-search-modal',
     templateUrl: './search-modal.component.html',
     styleUrls: ['./search-modal.component.scss'],
-    imports: [CommonModule, IonicModule, FormsModule]
+    imports: [CommonModule, IonicModule, FormsModule, TranslateModule]
 })
 
 export class SearchModalComponent implements OnInit {
@@ -58,40 +60,12 @@ export class SearchModalComponent implements OnInit {
   notice2: string = '';
   trackName: string = '';
 
-  // Constants for localization
-  private readonly TITLES = {
-    search: ['Trobeu la ubicació', 'Encuentra la ubicación', 'Find location'],
-    guide: ['Trobeu la millor ruta', 'Encuentra la mejor ruta', 'Find the best route']
-  };
-  private readonly PLACEHOLDERS = {
-    search: ['Nom del lloc', 'Nombre del lugar', 'Enter place name'],
-    guide: ['Inici', 'Inicio', 'Start']
-  };
-  private readonly TRANSPORTATION_MEANS = [
-    ['En cotxe', 'En bicicleta', 'A peu', 'Senderisme', 'En cadira de rodes'],
-    ['En coche', 'En bicicleta', 'A pie', 'Senderismo', 'En silla de ruedas'],
-    ['By car', 'Cycling', 'Walking', 'Hiking', 'In a wheelchair']
-  ];
-  private readonly CURRENT_LOCATION = [
-    'Posició actual', 'Posición actual', 'Current location'
-  ];
-  private readonly NOTICES = {
-    notice1: [
-      "Introduïu un punt d'inici...",
-      'Introducir un punto de inicio...',
-      'Enter a starting point...'
-    ],
-    notice2: [
-      "... o seleccioneu posició actual",
-      'o seleccionar la posición actual',
-      '... or select current location'
-    ]
-  };
-
   constructor(
     private modalController: ModalController,
     private fs: FunctionsService,
-    private http: HttpClient
+    private http: HttpClient,
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) { }
 
 // 1. NGONINIT
@@ -106,20 +80,20 @@ export class SearchModalComponent implements OnInit {
 ngOnInit(): void {
   // Case of search
   if (global.comingFrom === 'search') {
-    this.title = this.TITLES.search[global.languageIndex];
-    this.placeholder = this.PLACEHOLDERS.search[global.languageIndex];
+    this.title = this.translate.instant('SEARCH.TITLE_SEARCH');
+    this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_SEARCH');
   }
   // Case of guide
   else if (global.comingFrom === 'guide') {
-    this.title = this.TITLES.guide[global.languageIndex];
-    this.placeholder = this.PLACEHOLDERS.guide[global.languageIndex];
+    this.title = this.translate.instant('SEARCH.TITLE_GUIDE');
+    this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_GUIDE');
     this.showCurrent = true;
   }
   // Translations
-  this.transportation = this.TRANSPORTATION_MEANS[global.languageIndex];
-  this.currentLocation = this.CURRENT_LOCATION[global.languageIndex];
-  this.notice1 = this.NOTICES.notice1[global.languageIndex];
-  this.notice2 = this.NOTICES.notice2[global.languageIndex];
+  this.transportation = this.translate.instant('SEARCH.TRANSPORTATION_MEANS');
+  this.currentLocation = this.translate.instant('SEARCH.CURRENT_LOCATION');
+  this.notice1 = this.translate.instant('SEARCH.NOTICE1');
+  this.notice2 = this.translate.instant('SEARCH.NOTICE2');
 }
 
 // 2. SEARCH LOCATION ///////////////////////////////////////////
@@ -133,7 +107,7 @@ async searchLocation() {
     this.showCurrent = false;
   } catch (error) {
     console.error('Error fetching geocoding data:', error);
-    this.fs.displayToast(['Error de xarxa', 'Error de red', 'Network error'][global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
   } finally {
     this.loading = false;
   }
@@ -158,8 +132,7 @@ async selectLocation(location: LocationResult | null) {
       else {
         this.trackName = 'o';
       }
-      let placeholders = ['Destinació','Destino','Destination']
-      this.placeholder = placeholders[global.languageIndex];
+      this.placeholder = this.translate.instant('SEARCH.DESTINATION');
       this.num = 1;
       return
     }
@@ -197,13 +170,11 @@ async request() {
       response.trackName = this.trackName;
       this.modalController.dismiss({ response });
     } else {
-      const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found'];
-      this.fs.displayToast(toast[global.languageIndex]);
+      this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
       this.modalController.dismiss();
     }
   } catch (error) {
-    const toast = ["No s'ha trobat cap ruta",'No se ha encontrado ninguna ruta','No route found'];
-    this.fs.displayToast(toast[global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
     this.modalController.dismiss();
   } finally {
     this.loading = false;
@@ -230,7 +201,7 @@ async onCurrentLocationChange(event: any): Promise<void> {
       }
     }
     if (!currentLocation) {
-      this.fs.displayToast(['No s\'ha pogut obtenir la posició actual', 'No se pudo obtener la posición actual', 'Could not obtain current location'][global.languageIndex]);
+      this.fs.displayToast(this.translate.instant('SEARCH.UNKNOWN_LOCATION'));
       this.loading = false;
       return;
     }

@@ -3,6 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';
 import { FunctionsService } from './functions.service'; // adjust the path if needed
 import { Device } from '@capacitor/device';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
@@ -12,10 +13,16 @@ export class LanguageService {
     private translate: TranslateService,
     private fs: FunctionsService
   ) {
-//    this.fs.storeGet('lang').then((storedLang) => {
-//      const lang = storedLang || 'en';
-//      this.setLanguage(lang);
-//    });
+    this.initLanguage();
+  }
+
+  private async initLanguage() {
+    const storedLang = await this.fs.storeGet('lang');
+    if (storedLang) {
+      await this.setLanguage(storedLang);
+    } else {          
+      await this.determineLanguage();
+    }
   }
 
   getCurrentLanguage() {
@@ -28,7 +35,7 @@ export class LanguageService {
 
   async setLanguage(lang: string) {
     await this.fs.storeSet('lang', lang);
-    this.translate.use(lang)
+    await firstValueFrom(this.translate.use(lang));
     this.currentLang$.next(lang);
   }
 

@@ -70,8 +70,8 @@ import TileState from 'ol/TileState';
 import { Tile } from 'ol';
 import pako from 'pako';
 import BaseLayer from 'ol/layer/Base';
-import { TranslateModule } from '@ngx-translate/core';
-import { LanguageService } from '../services/language.service'; // <-- Add this import
+import { LanguageService } from '../services/language.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 const vectorFormat = new MVT();
 useGeographic();
 register();
@@ -323,8 +323,15 @@ export class Tab1Page {
   selectedAltitude: string = 'GPS'; // Default altitude method
   selectedAudioAlert: string = 'on'; // Default audio alert
 
-  get languageIndex(): number { return global.languageIndex; }
+  //get languageIndex(): number { return global.languageIndex; }
   get state(): string { return global.state; }
+  get cancelButton() {
+    return {
+      text: this.translate.instant('SETTINGS.CANCEL'), 
+      role: 'cancel',
+      cssClass: 'alert-cancel-button',
+    };
+  }
 
   constructor(
     public fs: FunctionsService,
@@ -336,7 +343,8 @@ export class Tab1Page {
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
     private nominatimService: NominatimService,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private translate: TranslateService
   ) {
   }
 
@@ -410,7 +418,7 @@ export class Tab1Page {
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
-      this.determineLanguage();
+      //this.determineLanguage();
       this.languageService.determineLanguage();
       // Determine line color
       this.determineColors();
@@ -510,28 +518,20 @@ export class Tab1Page {
         if (this.archivedTrack) {
           console.log(this.archivedTrack)
           this.ts.setArchivedTrack(this.archivedTrack);
-          //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
-        }
-         // assign visibility
-        if (this.multiLayer) this.multiLayer.setVisible(false);
-        // iF archived track is available...
-        if (this.archivedTrack) {
-          console.log('3', this.archivedTrack)
-          // Display ar
-          // chived track
+          // Display archived track
           await this.displayArchivedTrack();
-          console.log('4');
           // Set map view for archived track if no current track
-          if (!this.currentTrack) {
-            await this.setMapView(this.archivedTrack);
-          }
+          if (!this.currentTrack) await this.setMapView(this.archivedTrack);
         }
+        // assign visibility
+        if (this.multiLayer) this.multiLayer.setVisible(false);
       }
       else if (global.layerVisibility == 'multi') {
         // hide archived track
         try {
           if (this.archivedLayer) this.archivedLayer.setVisible(false);
-        } catch (error) {}
+        } 
+        catch (error) {}
         this.status = 'black'
         this.ts.setStatus(this.status);
         // display all tracks
@@ -605,10 +605,9 @@ async displayCurrentTrack() {
       await ForegroundService.requestManageOverlayPermission();
     }
     // start foreground service
-    const notice = ["S'està seguint la vostra ubicazció", "Rastreando tu posición", "Tracking your location"]
     await ForegroundService.startForegroundService({
       id: 1234,
-      title: notice[global.languageIndex],
+      title: this.translate.instant('MAP.NOTICE'),
       body: '',
       smallIcon: 'splash.png',
     });
@@ -641,7 +640,7 @@ async displayCurrentTrack() {
     // Start Background Geolocation watcher
     BackgroundGeolocation.addWatcher({
       backgroundMessage: '',
-      backgroundTitle: notice[global.languageIndex],
+      backgroundTitle: this.translate.instant('MAP.NOTICE'),
       requestPermissions: true,
       stale: false,
       distanceFilter: this.distanceFilter
@@ -671,8 +670,7 @@ async displayCurrentTrack() {
     this.ts.setCurrentTrack(this.currentTrack);
     if (this.currentLayer) this.currentLayer.setVisible(false);
     // Toast
-    const toast = ["El trajecte actual s'ha esborrat",'El trayecto actual se ha eliminado','The current track has been removed']
-    this.fs.displayToast(toast[global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
 
   // 9. STOP TRACKING //////////////////////////////////
@@ -707,34 +705,19 @@ async displayCurrentTrack() {
     // set map view
     await this.setMapView(this.currentTrack);
     // Toast
-    const toast = ['El trajecte actual ha finalitzat','El trayecto actual ha finalizado','The current track is now finished']
-    this.fs.displayToast(toast[global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
 
   // 10. CONFIRM TRACK DELETION OR STOP TRACKING
   async confirm(which: string) {
-    const stopHeader = ['Finalitzar el trajecte', 'Finalizar el trayecto', 'Stop the track']
-    const delHeader = ['Esborrar el trajecte', 'Borrar el trayecto', 'Delete the track']
-    const stopMessage = [
-      'Esteu segur que voleu finalitzar el trajecte?',
-      '¿Estás seguro de que quieres finalizar el trayecto?',
-      'Are you sure you want to stop the track'
-    ]
-    const delMessage = [
-      'Esteu segur que voleu eliminar el trajecte?',
-      '¿Estás seguro de que quieres eliminar el trayecto?',
-      'Are you sure you want to delete the track'
-    ]
-    const header = which === 'stop' ? stopHeader[global.languageIndex] : delHeader[global.languageIndex]
-    const message = which === 'stop' ? stopMessage[global.languageIndex] : delMessage[global.languageIndex]
-    console.log('header', header)
-    const text = ['Si','Si','Yes']
+    const header = which === 'stop' ? this.translate.instant('MAP.STOP_HEADER') : this.translate.instant('MAP.DELETE_HEADER');
+    const message = which === 'stop' ? this.translate.instant('MAP.STOP_MESSAGE') : this.translate.instant('MAP.DELETE_MESSAGE');
     const cssClass = 'alert greenishAlert';
     const inputs: never[] = [];
     const buttons =  [
-      global.cancelButton,
+      this.cancelButton,
       {
-        text: text[global.languageIndex],
+        text:  this.translate.instant('MAP.YES'),
         cssClass: 'alert-ok-button',
         handler: async () => {
           if (which === 'delete') {
@@ -824,8 +807,7 @@ async displayCurrentTrack() {
     global.collection.push(trackDef);
     await this.fs.storeSet('collection', global.collection);
     // Toast
-    const toast = ['Fitxer guardat correctament', 'Fichero guardado correctamente','File saved successfully']
-    this.fs.displayToast(toast[global.languageIndex]);
+    this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
     global.state = 'saved'
     this.show('alert', 'none');
@@ -1611,21 +1593,17 @@ async displayCurrentTrack() {
         if (typeof fileContent.data === 'string') {
           // Parse GPX file content
           await this.parseGpx(fileContent.data);
-          const toast = ["El fitxer s'ha importat correctament","El fichero se ha importado correctamente",'File uploaded successfully']
-          this.fs.displayToast(toast[global.languageIndex]);
+          this.fs.displayToast(this.translate.instant('MAP.IMPORTED'));
         }
         else {
           console.log('not a string')
-          const toast = ["No s'ha importat cap fitxer","No se ha importado ningún fichero", 'No file uploaded']
-          this.fs.displayToast(toast[global.languageIndex]);
+          this.fs.displayToast(this.translate.instant('MAP.NOT_IMPORTED'));
         }
       } catch (error) {
-        const toast = ["No s'ha pogut importar el fitxer", 'No se ha podido importar el fichero','Failed to upload file']
-        this.fs.displayToast(toast[global.languageIndex]);
+        this.fs.displayToast(this.translate.instant('MAP.NOT_IMPORTED'));
       }
     } else {
-      const toast = ["No s'ha seleccionat cap fitxer", 'No se ha seleccionado ningún fichero','No file selected']
-      this.fs.displayToast(toast[global.languageIndex]);
+      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'));
     }
   }
 
@@ -1776,6 +1754,7 @@ async displayCurrentTrack() {
   }
 
   // 50. DETERMINE LANGUAGE //////////////////
+  /*
   async determineLanguage() {
     try {
       const info = await Device.getLanguageCode();
@@ -1791,7 +1770,7 @@ async displayCurrentTrack() {
     } catch (error) {
       console.error('Error determining language:', error);
     }
-  }
+  } */
 
   // 51. DETERMINE COLORS ///////////////////////////////////////
   async determineColors() {
@@ -1826,8 +1805,7 @@ async displayCurrentTrack() {
       this.currentTrack.features[0].waypoints?.push(waypoint);
       this.ts.setCurrentTrack(this.currentTrack);
       // Toast
-      const toast = ["S'ha afegit el punt de pas",'Se ha añadido el punto de paso','The waypoint has been added']
-      this.fs.displayToast(toast[global.languageIndex]);
+      this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'));
     }
   }
 

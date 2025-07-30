@@ -2,7 +2,7 @@
 
 <!-- Language selector -->
 <ion-item lines="none" class="top-margin-selector">
-  <ion-label>{{title[3][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.LANGUAGE' | translate}}</ion-label>
   <ion-select
     [value]="selectedLanguage.code"
     (ionChange)="onLanguageChange($event.detail.value)"
@@ -17,7 +17,7 @@
 
 <!-- Map selector -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{title[2][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.BASE_MAP' | translate}}</ion-label>
   <ion-select
     [value]="selectedMap"
     (ionChange)="onMapChange($event.detail.value)"
@@ -32,7 +32,7 @@
 
 <!-- Current track color selection -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{ title[0][selectedLanguage.index] }}</ion-label>
+  <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
   <ion-button fill="clear" (click)="openColorPopover($event, 'current')">
     <div class="color-display">
       <div class="color-line" [ngStyle]="{ 'background-color': currentColor }"></div>
@@ -43,7 +43,7 @@
 
 <!-- Archived track color selection -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{ title[1][selectedLanguage.index] }}</ion-label>
+  <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
   <ion-button fill="clear" (click)="openColorPopover($event, 'archived')">
     <div class="color-display">
       <div class="color-line" [ngStyle]="{ 'background-color': archivedColor }"></div>
@@ -54,7 +54,7 @@
 
 <!-- Audio alert on / off -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{title[8][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.AUDIO_ALERT' | translate}}</ion-label>
   <ion-select
     [value]="selectedAudioAlert"
     (ionChange)="onAudioAlertChange($event.detail.value)"
@@ -69,7 +69,7 @@
 
 <!-- Altitude method selector -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{title[7][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.SAVED_TRACK_ALTITUDE' | translate}}</ion-label>
   <ion-select
     [value]="selectedAltitude"
     (ionChange)="onAltitudeChange($event.detail.value)"
@@ -84,7 +84,7 @@
 
 <!-- Upload offline maps -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{title[5][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.UPLOAD_MAPS' | translate}}</ion-label>
   <ion-select
     [value]=""
     (ionChange)="onMapUploadChange($event.detail.value)"
@@ -99,7 +99,7 @@
 
 <!-- Remove offline maps -->
 <ion-item lines="none" class="selector">
-  <ion-label>{{title[6][selectedLanguage.index]}}</ion-label>
+  <ion-label>{{'SETTINGS.REMOVE_MAPS' | translate}}</ion-label>
   <ion-select
     [value]=""
     (ionChange)="onMapRemoveChange($event.detail.value)"

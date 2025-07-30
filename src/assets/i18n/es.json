@@ -8,10 +8,18 @@
     "UPLOAD_MAPS": "Cargar mapas",
     "REMOVE_MAPS": "Eliminar mapas",
     "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
-    "AUDIO_ALERT": "Alerta sonora"
+    "AUDIO_ALERT": "Alerta sonora",
+    "COLOR_LIST": ["carmesí", "rojo", "naranja", "dorado", "amarillo", "magenta", "morado", "lima", "verde", "cian", "azul"],
+    "CURRENT_HEADER": "Trayecto actual",
+    "ARCHIVED_HEADER": "Trayecto de referencia",
+    "MESSAGE": "Elige el color del trayecto",
+    "TOAST_REMOVEMAP": "El mapa se ha eliminado",
+    "TOAST_UPLOADMAP": "El mapa se ha cargado con éxito",
+    "TOAST_FAILED_REMOVEMAP": "No se ha podido eliminar el mapa",
+    "CANCEL": "Cancelar"
   },
 
-    "ARCHIVE": {
+  "ARCHIVE": {
     "TRACKS": "Trayectos",
     "EXPORT_TRACK": "EXPORTAR TRAYECTO",
     "DISPLAY_ALL": "MOSTRAR TODOS",
@@ -29,9 +37,11 @@
     "DIALOG_TITLE": "Compartir sólo por Gmail",
     "TOAST1": "El trayecto se ha compartido correctamente!",
     "TOAST2": "Ha fallado la exportación",
-    "TOAST3": "Los trayectos seleccionados han sido eliminados"
+    "TOAST3": "Los trayectos seleccionados han sido eliminados",
+    "TOAST4": "Error al cargar la colección",
+    "TOAST5": "Error al cargar el trayecto"
   },
-
+  
   "CANVAS": {
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
     "CURTITLE": "TRAYECTO ACTUAL",
@@ -55,6 +65,45 @@
     "PLACE": "Lugar",
     "DESCRIPTION": "Descripción",
     "CANCEL": "Cancelar"
+  },
+
+  "WPT": {
+    "HEADER": ["Editeu el punt de ruta", "Editar el punto de ruta", "Edit Waypoint"],
+    "NAME": ["Nom", "Nombre", "Name"],
+    "COMMENT": ["Comentari", "Comentario", "Comment"],
+    "ALTITUDE": ["Altitud", "Altitud", "Altitude"]
+  },
+
+  "SEARCH": {
+    "TITLE_SEARCH": "Encuentra la ubicación",
+    "TITLE_GUIDE": "Encuentra la mejor ruta",
+    "PLACEHOLDER_SEARCH": "Nombre del lugar",
+    "PLACEHOLDER_GUIDE": "Inicio",
+    "TRANSPORTATION_MEANS": ["En coche", "En bicicleta", "A pie", "Senderismo", "En silla de ruedas"],
+    "CURRENT_LOCATION": "Posiciónactual",
+    "UNKNOWN_LOCATION": "No se ha podido obtener la ubicación actual",
+    "NOTICE1": "Introducir un punto de inicio...",
+    "NOTICE2": "... o seleccioneu posició actual",
+    "TOAST1": "No se ha encontrado ninguna ruta",
+    "NETWORK_ERROR": "Error de red",
+    "DESTINATION": "Destino"
+  },
+
+  "MAP": {
+    "TOAST1": "El trayecto actual se ha eliminado",
+    "NOTICE": "Rastreando tu posición",
+    "STOP_HEADER": "Finalizar el trayecto",
+    "DELETE_HEADER": "Eliminar el trayecto",
+    "STOP_MESSAGE": "¿Estás seguro de que quieres finalizar el trayecto?",
+    "DELETE_MESSAGE": "¿Estás seguro de que quieres eliminar el trayecto?",
+    "IMPORTED": "El archivo se ha importado correctamente",
+    "NOT_IMPORTED": "No se ha importado ningún archivo",
+    "SAVED": "Archivo guardado correctamente",
+    "WPT_ADDED": "Se ha añadido el punto de paso",
+    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
+    "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
+    "TRACK_FINISHED": "El trayecto actual ha finalizado",
+    "YES": "Sí"
   }
 
 }

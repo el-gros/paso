@@ -71,7 +71,7 @@ export class Tab2Page {
       }
       this.resetSelection();
     } catch (error) {
-      await this.fs.displayToast('Error loading collection');
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST4'));
       console.error('ionViewDidEnter error:', error);
     }
   }
@@ -153,8 +153,7 @@ export class Tab2Page {
     this.numChecked = 0;
     global.key = "null"
     // informretrievetrack
-    const toast3 = this.translate.instant('ARCHIVE.TOAST3');
-    await this.fs.displayToast(toast3);
+    await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST3'));
   }
 
   // 7. GEOJSON TO GPX //////////////////////
@@ -207,7 +206,10 @@ export class Tab2Page {
       return name.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
     }
     track = await this.fs.retrieveTrack();
-    if (!track) return;
+    if (!track) {
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
+      return;
+    }
     await this.fs.uncheckAll();
     var gpxText = await this.geoJsonToGpx(track.features?.[0]);
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
@@ -227,19 +229,17 @@ export class Tab2Page {
         path: file,
         directory: Directory.External,
       });
-      const title = this.translate.instant('ARCHIVE.TITLE');
-      const text = this.translate.instant('ARCHIVE.TEXT');
       await Share.share({
-        title,
-        text,
+        title: this.translate.instant('ARCHIVE.TITLE'),
+        text: this.translate.instant('ARCHIVE.TEXT'),
         url: fileUri.uri,
         dialogTitle: dialog_title
       });
       // Show success toast
-      await this.fs.displayToast(toast1);
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
     } catch (e) {
       // Show error toast
-      await this.fs.displayToast(toast2);
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
     }
   }
 
