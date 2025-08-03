@@ -15,16 +15,18 @@ import { Style, Circle as CircleStyle, Fill } from 'ol/style';
 import VectorLayer from 'ol/layer/Vector';
 import { FunctionsService } from '../../services/functions.service'; // Location service
 import { global } from '../../../environments/environment';
+import { MapService } from '../../services/map.service';
 
 export class CustomControl extends Control {
   private map: any;
   private vectorSource: VectorSource;
   private vectorLayer: VectorLayer<any>;
   private isActive: boolean = false;
-  private fs: FunctionsService;
   private updateInterval: any; // To store the interval ID
 
-  constructor(fs: FunctionsService) {
+  constructor(
+    private mapService: MapService
+  ) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';
     element.style.display = 'flex';
@@ -63,8 +65,6 @@ export class CustomControl extends Control {
       target: undefined,
     });
 
-    this.fs = fs;
-
     this.vectorSource = new VectorSource<Feature<Geometry>>({});
     this.vectorLayer = new VectorLayer({
       source: this.vectorSource,
@@ -82,7 +82,7 @@ export class CustomControl extends Control {
     // Disable the activate button
     activateButton.disabled = true;
     // get coordinates
-    const coordinates = await this.fs.getCurrentPosition(true, 1000);
+    const coordinates = await this.mapService.getCurrentPosition(true, 1000);
     // center map
     if (coordinates) this.updateLocation(coordinates);
     // create layer (if it does not exist)
@@ -150,7 +150,7 @@ export class CustomControl extends Control {
   // 5. START LOCATION UPDATES /////////////////////////
   private startLocationUpdates() {
     this.updateInterval = setInterval(async () => {
-      const coordinates = await this.fs.getCurrentPosition(true, 1000);
+      const coordinates = await this.mapService.getCurrentPosition(true, 1000);
       if (coordinates) this.updateLocation(coordinates);
     }, 5000); // Update every 5 seconds
   }

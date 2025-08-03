@@ -18,7 +18,7 @@ import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-
+import { MapService } from '../services/map.service';
 interface LocationResult {
   lon: number;
   lat: number;
@@ -65,7 +65,8 @@ export class SearchModalComponent implements OnInit {
     private fs: FunctionsService,
     private http: HttpClient,
     private languageService: LanguageService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    public mapService: MapService
   ) { }
 
 // 1. NGONINIT
@@ -192,9 +193,9 @@ async onCurrentLocationChange(event: any): Promise<void> {
     this.loading = true;
     const maxRetries = 5;
     let attempts = 0;
-    let currentLocation: [number, number] | undefined = undefined;
+    let currentLocation: [number, number] | null= null;
     while (!currentLocation && attempts < maxRetries) {
-      currentLocation = await this.fs.getCurrentPosition(true, 2000);
+      currentLocation = await this.mapService.getCurrentPosition(true, 2000);
       if (!currentLocation) {
         attempts++;
         await new Promise(resolve => setTimeout(resolve, 500));

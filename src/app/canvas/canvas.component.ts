@@ -10,7 +10,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { global } from '../../environments/environment';
-import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';

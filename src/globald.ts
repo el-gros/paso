@@ -67,14 +67,17 @@ export interface TrackDefinition {
   description: string,
   isChecked: boolean
 }
-
-//export interface Extremes {
-//  minX: number;
-//  minY: number;
-//  maxX: number;
-//  maxY: number;
-//}
-
+export interface StyleJSON {
+  layers: Array<{
+    type: string;
+    'source-layer': string;
+    filter?: any[];
+    minzoom?: number | { [rank: number]: number };
+    maxzoom?: number;
+    paint?: { [key: string]: any };
+    layout?: { [key: string]: any };
+  }>;
+}
 export interface Map {
   filename?: string;
   url?: string;

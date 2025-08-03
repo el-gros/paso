@@ -26,7 +26,6 @@ register();
 interface LanguageOption {
   name: string;
   code: string;
-  index: number;
 }
 
 @Component({
@@ -43,11 +42,11 @@ export class SettingsPage implements OnDestroy {
   private progressSubscription?: Subscription; // 🔹 Store subscription
   // Language
   languages: LanguageOption[] = [
-    { name: 'Català', code: 'ca', index: 0 },
-    { name: 'Español', code: 'es', index: 1 },
-    { name: 'English', code: 'en', index: 2 }
+    { name: 'Català', code: 'ca' },
+    { name: 'Español', code: 'es' },
+    { name: 'English', code: 'en' }
   ];
-  selectedLanguage: any = {name:'English', code:'en', index:2}
+  selectedLanguage: any = {name:'English', code:'en'}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
@@ -140,15 +139,8 @@ export class SettingsPage implements OnDestroy {
     // Check maps
     await this.checkMaps();
     // Set language
-    /* this.selectedLanguage.code = global.languageCode;
-    this.selectedLanguage.index = global.languageIndex;
-    if (global.languageIndex == 0) this.selectedLanguage.name = 'Català'
-    else if (global.languageIndex == 1) this.selectedLanguage.name = 'Español'
-    else this.selectedLanguage.name = 'English';
-    console.log(this.selectedLanguage) */
     const code = this.languageService.getCurrentLangValue();
     this.selectedLanguage = this.languages.find(lang => lang.code === code);
-        
     // Set map
     this.selectedMap = await this.fs.storeGet('mapProvider') || ''
     // Set colors
@@ -211,16 +203,6 @@ export class SettingsPage implements OnDestroy {
   async onLanguageChange(code: string) {
     await this.languageService.setLanguage(code);
     this.selectedLanguage = this.languages.find((l) => l.code === code);
-    /* await this.languageService.setLanguage(code);
-    this.selectedLanguage.code = code;
-    const picked = this.languages.find((l: { code: string; }) => l.code === code);
-    if (picked) {
-      this.selectedLanguage.index = picked.index;
-      this.selectedLanguage.name  = picked.name;
-      //global.languageIndex = this.selectedLanguage.index
-      //global.languageCode = this.selectedLanguage.code
-    }
-    await this.fs.storeSet('lang', this.selectedLanguage.code)*/
   }
 
   // 5. MAP CHANGE ///////////////////////////////////////

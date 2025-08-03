@@ -1,252 +1,58 @@
-/*
- * Main page component for managing and displaying GPS tracks, map layers, and user interactions.
- *
- * Handles track recording, editing, storage, and visualization using OpenLayers and Ionic UI.
- * Supports multiple map providers, real-time location tracking, archived track management,
- * waypoint handling, and user notifications. Integrates with device features for background
- * tasks, file import, and language detection. Provides methods for map interaction, track
- * statistics computation, and UI feedback.
- */
+/**
+Main component for the first tab of the application, handling map display, GPS tracking, track management, and user interactions.
+Integrates map rendering, real-time location tracking, GPX import/export, audio alerts, and multilingual support.
+Provides methods for starting/stopping tracking, managing tracks and waypoints, handling map events, and updating UI state.
+*/
 
-// IMPORTS /////////////////////////////////
 import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import { Router } from '@angular/router';
 import { PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
-import View from 'ol/View';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import OSM from 'ol/source/OSM';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { Location, Bounds, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Location, StyleJSON, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
+import { MapService } from '../services/map.service';
 import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
-import { Zoom, ScaleLine, Rotate, OverviewMap } from 'ol/control'
 import { App } from '@capacitor/app';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
-import { fromLonLat } from 'ol/proj';
-import { Coordinate } from 'ol/coordinate';
-import Polyline from 'ol/format/Polyline.js';
-import XYZ from 'ol/source/XYZ';
-import VectorTileLayer from 'ol/layer/VectorTile';
 import VectorTileSource from 'ol/source/VectorTile';
-import { Capacitor } from '@capacitor/core';
 import MVT from 'ol/format/MVT';
-import { TileGrid, createXYZ } from 'ol/tilegrid';
-import LayerRenderer from 'ol/renderer/Layer';
+import { TileGrid } from 'ol/tilegrid';
 import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
-import { Device } from '@capacitor/device';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
-import Text from 'ol/style/Text';
-import { nodeModuleNameResolver } from 'typescript';
 import { FeatureLike } from 'ol/Feature';
-import Layer from 'ol/renderer/Layer';
-import { CustomControl } from '../utils/openlayers/custom-control'; // Adjust path if needed
 import VectorTile from 'ol/VectorTile';
 import RenderFeature from 'ol/render/Feature';
 import TileState from 'ol/TileState';
-import { Tile } from 'ol';
 import pako from 'pako';
-import BaseLayer from 'ol/layer/Base';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 const vectorFormat = new MVT();
 useGeographic();
 register();
 
-// INTERFACES /////////////////////////////
-interface StyleJSON {
-  layers: Array<{
-    type: string;
-    'source-layer': string;
-    filter?: any[];
-    minzoom?: number | { [rank: number]: number };
-    maxzoom?: number;
-    paint?: { [key: string]: any };
-    layout?: { [key: string]: any };
-  }>;
-}
-
-// STYLE FUNCTIONS ////////////////////////
-const getZoomFromResolution = (resolution: number): number => {
-  if (typeof resolution !== 'number' || resolution <= 0) {
-    throw new Error('Invalid resolution value');
-  }
-  return Math.log2(156543.03 / resolution);
-};
-
-const getPaintValue = (paint: any, key: string, fallback: any) => paint?.[key] ?? fallback;
-
-const styleFunction = (feature: FeatureLike, resolution: number) => {
-  const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
-  const classLayer = feature.get('class');
-  const styleJSON: StyleJSON | undefined = global && typeof global.maptiler_terrain_modified === 'object'
-    ? global.maptiler_terrain_modified
-    : undefined;
-  if (!styleJSON || !Array.isArray(styleJSON.layers)) {
-    // Optionally log an error or warning here
-    return new Style({});
-  }
-  const zoom = getZoomFromResolution(resolution);
-  for (const layerStyle of styleJSON.layers) {
-    if (layerStyle['source-layer'] !== sourceLayer) continue;
-    // Apply feature filter before styling
-    if (layerStyle.filter && !evaluateFilter(layerStyle.filter, feature)) continue;
-    let computedMinZoom = 0; // Default to 0 if undefined
-    if (typeof layerStyle.minzoom === 'object') {
-      const rank = feature.get('rank') || 0; // Default rank to 0 if undefined
-      // Sort the minzoom keys in ascending order (to handle arbitrary input like "2": 9, "5": 11, etc.)
-      const sortedKeys = Object.keys(layerStyle.minzoom)
-        .map(Number) // Convert to number
-        .sort((a, b) => a - b); // Sort in ascending order
-      // Find the correct zoom level based on the rank
-      for (let i = 0; i < sortedKeys.length; i++) {
-        const rankStop = sortedKeys[i];
-        const nextRankStop = sortedKeys[i + 1];
-        if (rank <= rankStop) {
-          computedMinZoom = layerStyle.minzoom[rankStop];
-          break;
-        }
-        // If rank is larger than the last key, default to the max zoom value
-        if (nextRankStop === undefined) {
-          computedMinZoom = layerStyle.minzoom[rankStop];
-        }
-      }
-    } else if (typeof layerStyle.minzoom === 'number') {
-      computedMinZoom = layerStyle.minzoom;
-    }
-    // Apply minzoom and maxzoom filtering
-    if (zoom < computedMinZoom) continue;
-    if (layerStyle.maxzoom !== undefined && zoom > layerStyle.maxzoom) continue;
-    switch (layerStyle.type) {
-      case 'fill':
-        return new Style({
-          fill: new Fill({
-            color: getPaintValue(layerStyle.paint, 'fill-color', '#000000'),
-          }),
-        });
-      case 'line': {
-        const rawLineWidth = getPaintValue(layerStyle.paint, 'line-width', undefined);
-        let lineWidth = 1; // Default width
-        if (Array.isArray(rawLineWidth)) {
-          const stops = extractStops(rawLineWidth);
-          if (stops.length > 0) {
-            lineWidth = interpolateStops(stops, zoom); // Use zoom level to adjust line width
-          }
-        } else if (typeof rawLineWidth === 'number') {
-          lineWidth = rawLineWidth;
-        }
-        // Apply calculated line width
-        return new Style({
-          stroke: new Stroke({
-            color: getPaintValue(layerStyle.paint, 'line-color', '#000000'),
-            width: Math.max(lineWidth, 1), // Ensure minimum width is 1
-          }),
-        });
-      }
-      case 'symbol': {
-        // Read text size from layer, default to 10px if not specified
-        const textSizeRaw = layerStyle.layout?.['text-size'] || 10; // Default to 10 if not provided
-        // Ensure textSize is a number
-        let textSize = typeof textSizeRaw === 'number' ? textSizeRaw : 10;
-        return new Style({
-          text: new Text({
-            text: (feature.get('name') || feature.get('rawName') || 'Unknown').replace(/\n/g, ' '),
-            font: `bold ${textSize}px sans-serif`, // Use textSize from layer
-            fill: new Fill({ color: getPaintValue(layerStyle.paint, 'text-color', '#000000') }),
-            stroke: new Stroke({ color: getPaintValue(layerStyle.paint, 'text-halo-color', '#FFFFFF'), width: 2 }),
-            scale: Math.max(textSize / 10, 1), // Prevent too-large scaling
-          }),
-        });
-      }
-      default:
-        continue;
-    }
-  }
-  // Default return value to prevent errors
-  return new Style({});
-};
-
-function extractStops(expression: any[]): [number, number][] {
-  if (Array.isArray(expression) && expression.length > 4 && expression[0] === "interpolate") {
-    const stops: [number, number][] = [];
-    for (let i = 3; i < expression.length; i += 2) {
-      const stop: [number, number] = [Number(expression[i]), Number(expression[i + 1])]; // Convert to numbers
-      // Check if both values are numbers
-      if (!isNaN(stop[0]) && !isNaN(stop[1])) {
-        stops.push(stop);
-      }
-    }
-    return stops;
-  }
-  return [];
-}
-
-function evaluateFilter(filter: any[], feature: FeatureLike): boolean {
-  if (!Array.isArray(filter) || filter.length === 0) return true; // No filter = always matches
-  if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; // Ignore invalid filters
-  const properties = feature.getProperties() || {}; // Ensure properties exist
-  function matchCondition(condition: any[]): boolean {
-    if (!Array.isArray(condition) || condition.length < 2) return false;
-    const [operator, field, ...values] = condition;
-    const value = properties[field] ?? null;
-    if (operator === "==") return value === values[0];
-    if (operator === "!=") return value !== values[0];
-    if (operator === ">") return typeof value === 'number' && value > values[0];
-    if (operator === ">=") return typeof value === 'number' && value >= values[0];
-    if (operator === "<") return typeof value === 'number' && value < values[0];
-    if (operator === "<=") return typeof value === 'number' && value <= values[0];
-    if (operator === "in") return values.includes(value); // FIXED
-    if (operator === "!in") return !values.includes(value); // FIXED
-    if (operator === "has") return field in properties;
-    if (operator === "!has") return !(field in properties);
-    return false; // Unknown operator
-  }
-  if (filter[0] === "all") {
-    return filter.slice(1).every(matchCondition);
-  } else if (filter[0] === "any") {
-    return filter.slice(1).some(matchCondition);
-  } else if (filter[0] === "none") {
-    return !filter.slice(1).some(matchCondition);
-  }
-  return matchCondition(filter); // Direct condition
-}
-
-function interpolateStops(stops: [number, number][], zoom: number): number {
-  if (!Array.isArray(stops) || stops.length === 0) return 1; // Default value if stops is empty
-  for (let i = 0; i < stops.length - 1; i++) {
-    const [z1, v1] = stops[i];
-    const [z2, v2] = stops[i + 1];
-    if (zoom >= z1 && zoom <= z2) {
-      return v1 + ((zoom - z1) / (z2 - z1)) * (v2 - v1);
-    }
-  }
-  return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
-}
-
-// DEFINE COMPONENT /////////////////////////
 @Component({
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
@@ -294,40 +100,25 @@ export class Tab1Page {
   archivedLayer: VectorLayer<VectorSource> | undefined;
   multiLayer: VectorLayer<VectorSource> | undefined;
   foreground: boolean = true;
-  //extremes: Extremes | undefined
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
   language: 'ca' | 'es' | 'en' | 'other' = 'other';
   popText: [string, string, number] | undefined = undefined;
   intervalId: any = null;
-  arcTitle = ['TRAJECTE DE REFERÈNCIA','TRAYECTO DE REFERENCIA','REFERENCE TRACK'];
-  curTitle = ['TRAJECTE ACTUAL','TRAYECTO ACTUAL','CURRENT TRACK'];
-  distance = ['Distància','Distancia','Distance'];
-  eGain = ['Desnivell positiu','Desnivel positivo','Elevation gain'];
-  eLoss = ['Desnivell negatiu','Desnivel negativo','Elevation loss'];
-  time = ['Temps', 'Tiempo','Time'];
-  motionTime = ['Temps en moviment','Tiempo en movimiento','In-motion time'];
-  points = ['Punts gravats','Puntos grabados','Recorded points'];
-  altitude = ['Altitud actual','Altitud actual','Current altitude'];
-  speed = ['Velocitat actual','Velocidad actual','Current speed'];
-  avgSpeed = ['Velocitat mitjana','Velocidad nedia','Average speed'];
-  motionAvgSpeed = ['Vel. mitjana en moviment','Vel. nedia en movimiento.','In-motion average speed'];
   appStateListener?: PluginListenerHandle;
   greenPin?: Style;
   redPin?: Style;
   bluePin?: Style;
   yellowPin?: Style;
   blackPin?: Style;
-
   selectedAltitude: string = 'GPS'; // Default altitude method
   selectedAudioAlert: string = 'on'; // Default audio alert
 
-  //get languageIndex(): number { return global.languageIndex; }
   get state(): string { return global.state; }
   get cancelButton() {
     return {
-      text: this.translate.instant('SETTINGS.CANCEL'), 
+      text: this.translate.instant('SETTINGS.CANCEL'),
       role: 'cancel',
       cssClass: 'alert-cancel-button',
     };
@@ -335,9 +126,9 @@ export class Tab1Page {
 
   constructor(
     public fs: FunctionsService,
+    public mapService: MapService,
     public ts: TrackService,
     public server: ServerService,
-    private router: Router,
     public storage: Storage,
     private zone: NgZone,
     private cd: ChangeDetectorRef,
@@ -352,32 +143,28 @@ export class Tab1Page {
 
   1. ngOnInit
   2. listenToAppStateChanges
-  3b. addFileListener
-  3c. onDestroy
+  3. addFileListener
   4. ionViewDidEnter
-  ** 5. centerAllTracks
-  ** 6. displayCurrentTrack
-  7. startTracking
-  ** 8. removeTrack
-  9. stopTracking
-  10. confirm
-  11. setTrackDetails
-  12. showValidationAlert
-  13. saveFile
-  14. buildGeoJson
-  15. onRoute
-  16. show
+  5. startTracking
+  6. removeTrack
+  7. stopTracking
+  8. confirm
+  9. setTrackDetails
+  10. showValidationAlert
+  11. saveFile
+  12. buildGeoJson
+  13. onRoute
+  14. show
+  15. onDestroy
+  16. displayArchivedTrack
+  17. firstPoint
 
-  ** 19. displayArchivedTrack
-  20. setMapView
-  21. firstPoint
   22. createMap
   23. filterAltitude
-  ** 24. createLayers
+  24. createLayers
   25. displayAllTracks
   26. handleMapClick()
 
-  ??? 27. computeDistances()
   28. checkWhetherOnRoute()
 
   38. fixWrongOrder()
@@ -392,7 +179,7 @@ export class Tab1Page {
   47. startBeepInterval()
   48. startBeepInterval()
   49. changeMapProvider()
-  50. determineLanguage()
+
   51. determineColors()
   52. waypoint()
   53. setWaypointAltitude()
@@ -400,11 +187,11 @@ export class Tab1Page {
   55. uide()
 
   57. addSearchLayer()
-  58. removeLayer()
 
   */
 
   // 1. ON INIT ////////////////////////////////
+
   async ngOnInit() {
     try {
       // Listen for state changes
@@ -435,6 +222,7 @@ export class Tab1Page {
   }
 
   // 2. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
+
   async listenToAppStateChanges() {
     this.appStateListener = await App.addListener('appStateChange', async (state) => {
       if (!this.currentTrack) return;
@@ -452,7 +240,8 @@ export class Tab1Page {
     });
   }
 
-  // 3b. LISTENING FOR OPEN EVENTS
+  // 3. LISTENING FOR OPEN EVENTS
+
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
@@ -468,27 +257,14 @@ export class Tab1Page {
         await this.displayArchivedTrack();
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
-          await this.setMapView(this.archivedTrack);
+          this.mapService.setMapView(this.map, this.archivedTrack);
         }
       }
     });
   }
 
-  // 3c. ON DESTROY ////////////////////////
-  ngOnDestroy(): void {
-    // Remove app state listener
-    if (this.appStateListener) {
-      this.appStateListener.remove();
-      this.appStateListener = undefined;
-    }
-    // Clear beep interval
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-      this.beepInterval = null;
-    }
-  }
-
   // 4. ION VIEW DID ENTER
+
   async ionViewDidEnter() {
     while (!global.ngOnInitFinished) {
       await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
@@ -496,7 +272,7 @@ export class Tab1Page {
     try {
       // Remove search
       if (global.removeSearch) {
-        await this.removeLayer('searchLayerId');
+        await this.mapService.removeLayer(this.map, 'searchLayerId');
         global.presentSearch = false;
         global.removeSearch = false;
       }
@@ -510,7 +286,7 @@ export class Tab1Page {
       // Altitude method
       this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
       // Display current track (updates color)
-      if (this.currentTrack && this.map) await this.displayCurrentTrack();
+      if (this.currentTrack && this.map) await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
       // archived visible
       if (global.layerVisibility == 'archived') {
         // retrieve archived track
@@ -521,7 +297,7 @@ export class Tab1Page {
           // Display archived track
           await this.displayArchivedTrack();
           // Set map view for archived track if no current track
-          if (!this.currentTrack) await this.setMapView(this.archivedTrack);
+          if (!this.currentTrack) await this.mapService.setMapView(this.map, this.archivedTrack);
         }
         // assign visibility
         if (this.multiLayer) this.multiLayer.setVisible(false);
@@ -530,14 +306,14 @@ export class Tab1Page {
         // hide archived track
         try {
           if (this.archivedLayer) this.archivedLayer.setVisible(false);
-        } 
+        }
         catch (error) {}
         this.status = 'black'
         this.ts.setStatus(this.status);
         // display all tracks
         await this.displayAllTracks();
         // center all tracks
-        if (!this.currentTrack) await this.centerAllTracks();
+        if (!this.currentTrack) await this.mapService.centerAllTracks(this.map);
       }
       else {
         this.status = 'black';
@@ -548,47 +324,15 @@ export class Tab1Page {
       }
       // center current track
       if (this.currentTrack) {
-        await this.setMapView(this.currentTrack);
+        await this.mapService.setMapView(this.map, this.currentTrack);
       }
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
     }
   }
 
-  // 5. CENTER ALL TRACKS
-  async centerAllTracks() {
-    // get current position
-    let currentPosition: [number, number] | undefined = await this.fs.getCurrentPosition(false, 1000);
-    // center map
-    if (currentPosition) {
-      if (this.map) {
-        this.map.getView().setCenter(currentPosition);
-        this.map.getView().setZoom(8);
-      }
-    }
-  }
+  // 5. START TRACKING /////////////////////////////////
 
-  // 6. DISPLAY CURRENT TRACK
-async displayCurrentTrack() {
-    // Ensure current track and map exist
-    if (!this.currentTrack || !this.map || !this.currentFeature || !this.currentMarkers?.[1]) return;
-    // Number of points in the track
-    const coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
-    const num = coordinates?.length ?? 0;
-    // Ensure there are enough points to display
-    if (num < 2) return;
-    // Set line geometry and style
-    this.currentFeature.setGeometry(new LineString(coordinates));
-    this.currentFeature.setStyle(this.fs.setStrokeStyle(global.currentColor));
-    // Set the last point as the marker geometry
-    this.currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
-    // Adjust map view at specific intervals
-    if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
-      await this.setMapView(this.currentTrack);
-    }
-  }
-
-  // 7. START TRACKING /////////////////////////////////
   async startTracking() {
     // In case there is something wrong
     if (!this.currentLayer) return;
@@ -658,7 +402,8 @@ async displayCurrentTrack() {
     global.state = 'tracking';
   }
 
-  // 8. REMOVE TRACK ///////////////////////////////////
+  // 6. REMOVE TRACK ///////////////////////////////////
+
   async removeTrack() {
     // show / hide elements
     global.state = 'inactive'
@@ -673,7 +418,8 @@ async displayCurrentTrack() {
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
 
-  // 9. STOP TRACKING //////////////////////////////////
+  // 7. STOP TRACKING //////////////////////////////////
+
   async stopTracking() {
     console.log('initiate stop tracking')
     // show / hide elements
@@ -703,12 +449,13 @@ async displayCurrentTrack() {
     // Set waypoint altitude
     await this.setWaypointAltitude()
     // set map view
-    await this.setMapView(this.currentTrack);
+    await this.mapService.setMapView(this.map, this.currentTrack);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
 
-  // 10. CONFIRM TRACK DELETION OR STOP TRACKING
+  // 8. CONFIRM TRACK DELETION OR STOP TRACKING
+
   async confirm(which: string) {
     const header = which === 'stop' ? this.translate.instant('MAP.STOP_HEADER') : this.translate.instant('MAP.DELETE_HEADER');
     const message = which === 'stop' ? this.translate.instant('MAP.STOP_MESSAGE') : this.translate.instant('MAP.DELETE_MESSAGE');
@@ -732,7 +479,8 @@ async displayCurrentTrack() {
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
   }
 
-  // 11. SET TRACK NAME, TIME, DESCRIPTION, ...
+  // 9. SET TRACK NAME, TIME, DESCRIPTION, ...
+
   async setTrackDetails() {
     const modalEdit = {
       name: '',
@@ -760,7 +508,8 @@ async displayCurrentTrack() {
     }
   }
 
-  // 12. NO NAME TO SAVE ////////////////////////////////////
+  // 10. NO NAME TO SAVE ////////////////////////////////////
+
   async showValidationAlert() {
     const cssClass = 'alert greenishAlert'
     const header = 'Validation Error'
@@ -771,7 +520,8 @@ async displayCurrentTrack() {
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
   }
 
-  // 13. SAVE FILE ////////////////////////////////////////
+  // 11. SAVE FILE ////////////////////////////////////////
+
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
     // altitud method
@@ -813,7 +563,8 @@ async displayCurrentTrack() {
     this.show('alert', 'none');
   }
 
-  // 14. BUILD GEOJSON ////////////////////////////////////
+  // 12. BUILD GEOJSON ////////////////////////////////////
+
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return false;
@@ -838,7 +589,8 @@ async displayCurrentTrack() {
     return true;
   }
 
-  // 15. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
+  // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
+
   async onRoute() {
     // Return 'black' if conditions aren't met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility != 'archived') return 'black';
@@ -860,12 +612,6 @@ async displayCurrentTrack() {
       if (point[0] < bbox[0] - bounding || point[0] > bbox[2] + bounding ||
         point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
     }
-    //if (this.extremes) {
-    //  if (point[0] < this.extremes.minX - bounding || point[0] > this.extremes.maxX + bounding ||
-    //      point[1] < this.extremes.minY - bounding || point[1] > this.extremes.maxY + bounding) {
-    //    return 'red';
-    //  }
-    //}
     // Forward search
     for (let i = this.lastN; i < archivedCoordinates.length; i += reduction) {
       const point2 = archivedCoordinates[i];
@@ -892,7 +638,8 @@ async displayCurrentTrack() {
     return 'red';
   }
 
-  // 16. SHOW / HIDE ELEMENTS /////////////////////////////////
+  // 14. SHOW / HIDE ELEMENTS /////////////////////////////////
+
   async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
     const obj = document.getElementById(id);
     if (obj) {
@@ -900,7 +647,23 @@ async displayCurrentTrack() {
     }
   }
 
-  // 19. DISPLAY AN ARCHIVED TRACK /////////////////////////
+  // 15. ON DESTROY ////////////////////////
+
+  ngOnDestroy(): void {
+    // Remove app state listener
+    if (this.appStateListener) {
+      this.appStateListener.remove();
+      this.appStateListener = undefined;
+    }
+    // Clear beep interval
+    if (this.beepInterval) {
+      clearInterval(this.beepInterval);
+      this.beepInterval = null;
+    }
+  }
+
+  // 16. DISPLAY AN ARCHIVED TRACK /////////////////////////
+
   async displayArchivedTrack() {
     // Ensure the map and archived track exist
     if (!this.map || !this.archivedTrack || !this.archivedLayer) return;
@@ -914,7 +677,7 @@ async displayCurrentTrack() {
     if (num === 0) return;
     // Update archived feature with a new geometry and style
     this.archivedFeature.setGeometry(new LineString(coordinates));
-    this.archivedFeature.setStyle(this.fs.setStrokeStyle(global.archivedColor));
+    this.archivedFeature.setStyle(this.mapService.setStrokeStyle(global.archivedColor));
     if (this.archivedMarkers.length >= 3) {
       this.archivedMarkers[0].setGeometry(new Point(coordinates[0]));
       this.archivedMarkers[0].setStyle(this.greenPin);
@@ -931,33 +694,7 @@ async displayCurrentTrack() {
     }
   }
 
-  // 20. SET MAP VIEW /////////////////////////////////////////
-  async setMapView(track: any) {
-    const boundaries = track.features[0].bbox;
-    if (!boundaries) return;
-    // Set a minimum area
-    const minVal = 0.002;
-    if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
-      const centerX = 0.5 * (boundaries[0] + boundaries[2]);
-      const centerY = 0.5 * (boundaries[1] + boundaries[3]);
-      boundaries[0] = centerX - minVal / 2;
-      boundaries[2] = centerX + minVal / 2;
-      boundaries[1] = centerY - minVal / 2;
-      boundaries[3] = centerY + minVal / 2;
-    }
-    // map view
-    setTimeout(() => {
-      if (this.map) {
-        this.map.getView().fit(boundaries, {
-          size: this.map.getSize(),
-          padding: [50, 50, 50, 50],
-          duration: 1000  // Optional: animation duration in milliseconds
-        });
-      }
-    })
-  }
-
-  // 21. FIRST POINT OF THE TRACK /////////////////////////////
+  // 17. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
     // Initialize current track
     this.currentTrack = {
@@ -1026,77 +763,27 @@ async displayCurrentTrack() {
       }
     } catch (error) {}
     // Set current track
-    //this.currentTrack.features[0].properties.totalNumber = 1;
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
   // 22. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
-      // Current position
-      var currentPosition = null;
-      if (this.mapProvider != 'catalonia') currentPosition = await this.fs.getCurrentPosition(false, 1000);
-      // Create layers
-      await this.createLayers();
-      let olLayer;
-      let credits = '';
-      // Select map
-      switch (this.mapProvider) {
-        case 'OpenStreetMap':
-          credits = '© OpenStreetMap contributors';
-          olLayer = new TileLayer({ source: new OSM() });
-          break;
-        case 'OpenTopoMap':
-          credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-          olLayer = new TileLayer({ source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }) });
-          break;
-        case 'ICGC':
-          credits = 'Institut Cartogràfic i Geològic de Catalunya';
-          olLayer = new TileLayer({ source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }) });
-          break;
-        case 'IGN':
-          credits = 'Instituto Geográfico Nacional (IGN)';
-          olLayer = new TileLayer({
-            source: new XYZ({
-              url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-            }),
-          });
-        break;
-        case 'catalonia':
-          credits = '© MapTiler © OpenStreetMap contributors'
-          await this.server.openMbtiles('catalonia.mbtiles');
-          const sourceResult = await this.createSource();
-          if (sourceResult) olLayer = new VectorTileLayer({ source: sourceResult, style: styleFunction });
-          break;
-        default:
-          credits = '© OpenStreetMap contributors';
-          olLayer = new TileLayer({ source: new OSM() });
-          break;
-      }
-      // set zoom levels
-      var minZoom = 0;
-      var maxZoom = 19;
-      if (this.mapProvider == 'catalonia') {
-        var minZoom = 6;
-        var maxZoom = 14;
-      }
-      // Create view
-      if (!currentPosition) currentPosition = [2, 41]
-      const view = new View({ center: currentPosition, zoom: 9, minZoom: minZoom, maxZoom: maxZoom });
-      //if (!currentPosition) view.setCenter([2, 41]);
-      // Create map
-      this.map = new Map({
-        target: 'map',
-        layers: ([olLayer, this.currentLayer, this.archivedLayer, this.multiLayer].filter(l => l !== undefined) as any[]),
-        view: view,
-        controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this.fs)],
+      await this.createLayers(); // your existing method, or move to service
+      const { map } = await this.mapService.createMap({
+        mapProvider: this.mapProvider,
+        currentLayer: this.currentLayer,
+        archivedLayer: this.archivedLayer,
+        multiLayer: this.multiLayer,
+        server: this.server,
+        createSource: this.createSource.bind(this), // pass the method as dependency
+        getCurrentPosition: this.mapService.getCurrentPosition.bind(this.mapService),
+        showCredits: this.fs.displayToast.bind(this.fs),
       });
-      // Display information
-      this.fs.displayToast(credits);
-      // Handle click events
+      this.map = map;
       this.map.on('click', this.handleMapClick.bind(this));
     } catch (error) {
-        console.error('Error creating map:', error);
+      console.error('Error creating map:', error);
     }
   }
 
@@ -1132,32 +819,29 @@ async displayCurrentTrack() {
   }
 
   // 24. CREATE LAYERS /////////////////////////////
-  async createLayers() {
-    // Create pin styles
-    this.greenPin = this.fs.createPinStyle('green');
-    this.redPin = this.fs.createPinStyle('red');
-    this.bluePin = this.fs.createPinStyle('blue');
-    this.yellowPin = this.fs.createPinStyle('yellow');
-    this.blackPin = this.fs.createPinStyle('black');
-    // Create features to display the current track
-    this.currentFeature= new Feature();
-    this.currentMarkers = [new Feature(), new Feature(), new Feature()];
-    // create features to hold multiple track and markers
-    this.multiFeature = new Feature();
-    this.multiMarker = new Feature();
-    // create features to display the archived track
-    this.archivedFeature = new Feature();
-    this.archivedMarkers = [new Feature(), new Feature(), new Feature()];
-    this.archivedWaypoints = new Feature();
-    // Vector sources for current, archived and multiple tracks
-    var csource = new VectorSource({ features: [this.currentFeature, ...this.currentMarkers] });
-    var asource = new VectorSource({ features: [this.archivedFeature, ...this.archivedMarkers, this.archivedWaypoints] });
-    var msource = new VectorSource({ features: [this.multiFeature, this.multiMarker] });
-    // layers for current, archived and multiple tracks
-    this.currentLayer = new VectorLayer({source: csource});
-    this.archivedLayer = new VectorLayer({source: asource});
-    this.multiLayer = new VectorLayer({source: msource});
-  }
+async createLayers() {
+  const { pinStyles, features, layers } = this.mapService.createLayers();
+
+  // Assign to component fields
+  this.greenPin = pinStyles.greenPin;
+  this.redPin = pinStyles.redPin;
+  this.bluePin = pinStyles.bluePin;
+  this.yellowPin = pinStyles.yellowPin;
+  this.blackPin = pinStyles.blackPin;
+
+  this.currentFeature = features.currentFeature as Feature<LineString>;
+  this.currentMarkers = features.currentMarkers as Feature<Point>[];
+  this.multiFeature = features.multiFeature as Feature<MultiLineString>;
+  this.multiMarker = features.multiMarker as Feature<MultiPoint>;
+  this.archivedFeature = features.archivedFeature as Feature<LineString>;
+  this.archivedMarkers = features.archivedMarkers as Feature<Point>[];
+  this.archivedWaypoints = features.archivedWaypoints as Feature<MultiPoint>;
+
+  this.currentLayer = layers.currentLayer;
+  this.archivedLayer = layers.archivedLayer;
+  this.multiLayer = layers.multiLayer;
+}
+
 
   // 25. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
@@ -1192,7 +876,7 @@ async displayCurrentTrack() {
       this.multiMarker.setStyle(this.greenPin);
     }
     // Apply styles to the features
-    this.multiFeature.setStyle(this.fs.setStrokeStyle('black'));
+    this.multiFeature.setStyle(this.mapService.setStrokeStyle('black'));
     // Set visibility of multiLayer
     if (this.multiLayer) {
       this.multiLayer.setVisible(true);
@@ -1227,7 +911,7 @@ async displayCurrentTrack() {
                     }
                     global.layerVisibility = 'archived';
                     await this.displayArchivedTrack();
-                    await this.setMapView(this.archivedTrack);
+                    await this.mapService.setMapView(this.map, this.archivedTrack);
                   }
                 }
               });
@@ -1632,7 +1316,7 @@ async displayCurrentTrack() {
     await this.htmlValues();
     console.log('6',this.currentTrack)
     // display the current track
-    await this.displayCurrentTrack();
+    await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
@@ -1679,98 +1363,25 @@ async displayCurrentTrack() {
   // 49. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
     const previousProvider = this.mapProvider;
-    console.log('Previous map provider: ', previousProvider)
-    let credits = '';
+    // Validate and possibly normalize the new value
     this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-    console.log('Current map provider: ', this.mapProvider)
-    if (previousProvider === this.mapProvider) return;
-    console.log('Previous map provider: ', previousProvider, ' changes to: ', this.mapProvider)
-    // Find and remove the existing base layer
-    if (!this.map) return;
-    var olLayers = this.map.getLayers();
-    let newBaseLayer = null;
-    // Determine new base layer
-    if (this.mapProvider === 'OpenStreetMap') {
-      credits = '© OpenStreetMap contributors';
-      newBaseLayer = new TileLayer({ source: new OSM() });
-    } else if (this.mapProvider === 'OpenTopoMap') {
-      credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-      newBaseLayer = new TileLayer({
-        source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
-      });
-    } else if (this.mapProvider === 'ICGC') {
-      credits = 'Institut Cartogràfic i Geològic de Catalunya';
-      newBaseLayer = new TileLayer({
-        source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }),
-      });
-    } else if (this.mapProvider === 'IGN') {
-      credits = 'Instituto Geográfico Nacional (IGN)';
-      newBaseLayer = new TileLayer({
-        source: new XYZ({
-          url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-        }),
-      });
-    } else if (this.mapProvider === 'catalonia') {
-      if (this.map) {
-        this.map.getView().setCenter([2, 41]);
-        this.map.getView().setZoom(8);
+    const { newProvider } = await this.mapService.updateMapProvider({
+      map: this.map,
+      currentProvider: previousProvider,
+      mapProvider: this.mapProvider,
+      server: this.server,
+      createSource: this.createSource.bind(this),
+      fs: this.fs,
+      onFadeEffect: () => {
+        const el = document.getElementById('map');
+        if (el) {
+          el.classList.add('fade-in');
+          setTimeout(() => el.classList.remove('fade-in'), 500);
+        }
       }
-      // Load vector tiles for Catalonia
-      credits = '© MapTiler © OpenStreetMap contributors';
-      await this.server.openMbtiles('catalonia.mbtiles');
-      console.log('Catalonia MBTiles database opened');
-      const sourceResult = await this.createSource();
-      if (sourceResult) newBaseLayer = new VectorTileLayer({
-        source: sourceResult,
-        style: styleFunction
-      });
-    }
-    // If newBaseLayer has been created, replace the old base layer with it
-    if (newBaseLayer && this.map) {
-      this.map.removeLayer(olLayers.item(0));
-      this.map.getLayers().insertAt(0, newBaseLayer);
-    }
-    else {
-      console.log('The new base layer has not been created or map is undefined');
-      return;
-    }
-    // Apply the fade-in effect
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-        mapContainer.classList.add('fade-in');
-        setTimeout(() => mapContainer.classList.remove('fade-in'), 500);
-    }
-    // Report change
-    await this.fs.displayToast(`${credits}`);
-    // Change max / min zoom
-    var minZoom = 0;
-    var maxZoom = 19;
-    if (this.mapProvider == 'Catalonia') {
-      var minZoom = 6;
-      var maxZoom = 14;
-    }
-    this.map.getView().setMinZoom(minZoom);
-    this.map.getView().setMaxZoom(maxZoom);
+    });
+    this.mapProvider = newProvider; // store the final confirmed value
   }
-
-  // 50. DETERMINE LANGUAGE //////////////////
-  /*
-  async determineLanguage() {
-    try {
-      const info = await Device.getLanguageCode();
-      let deviceLanguage = info.value.split('-')[0]; // Extract the base language code
-      console.log('Device Language:', deviceLanguage);
-      // Check if there is a replacement
-      deviceLanguage = await this.fs.check(deviceLanguage, 'language');
-      // Map the device language and assign index
-      if (deviceLanguage === 'ca') global.languageIndex = 0
-      else if (deviceLanguage === 'es') global.languageIndex = 1
-      else global.languageIndex = 2;
-      global.languageCode = deviceLanguage
-    } catch (error) {
-      console.error('Error determining language:', error);
-    }
-  } */
 
   // 51. DETERMINE COLORS ///////////////////////////////////////
   async determineColors() {
@@ -1875,7 +1486,7 @@ async displayCurrentTrack() {
       // Coordinates
       const rawCoordinates = data.response.features[0].geometry.coordinates;
       // Compute distances
-      const distances: number[] = await this.computeCumulativeDistances(rawCoordinates)
+      const distances: number[] = await this.fs.computeCumulativeDistances(rawCoordinates)
       console.log('distances', distances)
       // Compute times
       const times: number[] = await this.createTimes(data, date, distances);
@@ -1884,7 +1495,7 @@ async displayCurrentTrack() {
       var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
       // compute speed
       const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
-      const rawProperties: Data[] = await this.fillProperties(distances, altSlopes.altitudes, times, speed);
+      const rawProperties: Data[] = await this.fs.fillProperties(distances, altSlopes.altitudes, times, speed);
       // Increase the number of coordinates
       const num = rawCoordinates.length;
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
@@ -1926,7 +1537,7 @@ async displayCurrentTrack() {
       if (this.archivedLayer) this.archivedLayer.setVisible(true);  // No need for await
       global.layerVisibility = 'archived';
       await this.displayArchivedTrack();
-      await this.setMapView(this.archivedTrack);
+      await this.mapService.setMapView(this.map, this.archivedTrack);
       this.archivedTrack.features[0].properties.date = date;
       const dateKey = JSON.stringify(date);
       await this.fs.storeSet(dateKey, this.archivedTrack);
@@ -1947,7 +1558,7 @@ async displayCurrentTrack() {
   async addSearchLayer(feature: Feature<Geometry>) {
     if (!this.map) return;
     // Remove previous search
-    await this.removeLayer('searchLayerId');
+    await this.mapService.removeLayer(this.map, 'searchLayerId');
     global.presentSearch = false;
     global.removeSearch = false;
     // Style function to differentiate geometry types
@@ -1966,7 +1577,7 @@ async displayCurrentTrack() {
           }),
         });
       } else {
-        return this.fs.setStrokeStyle('black'); // Black line for other geometries
+        return this.mapService.setStrokeStyle('black'); // Black line for other geometries
       }
     };
     // Create a vector source with the feature
@@ -1978,16 +1589,6 @@ async displayCurrentTrack() {
     searchLayer.set('id', 'searchLayerId');
     this.map.addLayer(searchLayer);
     global.presentSearch = true;
-  }
-
-  // 58. REMOVE LAYER ////////////////////////////////////
-  async removeLayer(id: string) {
-    // Remove the existing search layer if it exists
-    if (!this.map) return;
-    const existingLayer = this.map.getLayers().getArray().find((layer: { get: (arg0: string) => string; }) => layer.get('id') === id);
-    if (existingLayer) {
-      this.map.removeLayer(existingLayer);
-    }
   }
 
   async morningTask() {
@@ -2008,7 +1609,7 @@ async displayCurrentTrack() {
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.displayCurrentTrack();
+        await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -2016,7 +1617,6 @@ async displayCurrentTrack() {
       }
     });
   }
-
   async createSource() {
     try {
       // Create vector tile source
@@ -2029,7 +1629,7 @@ async displayCurrentTrack() {
           tileSize: [256, 256],
         }),
         // Tile load function
-        tileLoadFunction: async (tile) => {
+            tileLoadFunction: async (tile) => {
           const vectorTile = tile as VectorTile<RenderFeature>;
           const [z, x, y] = vectorTile.getTileCoord();
           try {
@@ -2102,35 +1702,6 @@ async displayCurrentTrack() {
       }
     }
     return { gain, loss };
-  }
-
-  // COMPUTE CYUMULATIVE DISTANCES
-  async computeCumulativeDistances(
-    rawCoordinates: [number, number][]
-  ): Promise<number[]> {
-    const distances: number[] = [0];
-    for (let i = 1; i < rawCoordinates.length; i++) {
-      const [lon1, lat1] = rawCoordinates[i - 1];
-      const [lon2, lat2] = rawCoordinates[i];
-      const segmentDistance = await this.fs.computeDistance(lon1, lat1, lon2, lat2);
-      const cumulativeDistance = distances[i - 1] + segmentDistance;
-      distances.push(cumulativeDistance);
-    }
-    return distances;
-  }
-
-  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined, times: number[], speed: number): Promise<Data[] > {
-    if (!distances || !altitudes || distances.length !== altitudes.length) {
-      return [];
-    }
-    const result: Data[] = distances.map((distance, i) => ({
-      altitude: altitudes[i],
-      speed: speed,
-      time: times[i],
-      compSpeed: speed,
-      distance: distance,
-    }));
-    return result;
   }
 
   async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {

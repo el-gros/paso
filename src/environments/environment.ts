@@ -4,8 +4,7 @@ import { Map } from '../globald';
 export var global: any = {
   lag: 8 as number,
   layerVisibility: 'archived' as string,
-  //languageIndex: 2 as 0 | 1 | 2,
-  archivedPresent: false as boolean,
+  achivedPresent: false as boolean,
   currentColor: 'orange' as string,
   archivedColor: 'green' as string,
   collection: [] as TrackDefinition [],

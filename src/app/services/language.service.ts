@@ -1,3 +1,11 @@
+/**
+ * Service for managing application language settings.
+ * 
+ * Initializes the language based on stored preferences or device settings,
+ * provides observables for the current language, and allows updating and persisting
+ * the selected language using TranslateService and FunctionsService.
+ */
+
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';

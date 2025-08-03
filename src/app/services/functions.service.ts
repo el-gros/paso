@@ -1,9 +1,7 @@
 /**
- * Service providing utility functions for geospatial calculations, data formatting, storage management, UI interactions, and track/waypoint editing.
+ * Injectable service providing utility functions for geospatial calculations, data formatting, persistent storage, UI interactions, and editing of tracks and waypoints.
  *
- * Includes methods for computing distances, formatting time, filtering speed data, manipulating GeoJSON tracks, managing persistent storage, displaying toasts and alerts, navigating routes, editing track and waypoint details, and generating styled map pins.
- *
- * Integrates with Ionic storage, modal, toast, and alert controllers, and uses organization-specific modules for geolocation and data models.
+ * Integrates with Ionic controllers, modals, and organization-specific data models. Includes methods for distance computation, time formatting, speed filtering, GeoJSON manipulation, storage management, toast and alert display, navigation, editing modals, map pin styling, and input sanitization.
  */
 
 import DOMPurify from 'dompurify';
@@ -16,8 +14,6 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
-import { Geolocation } from '@capacitor/geolocation';
-import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
 
 @Injectable({
   providedIn: 'root'
@@ -48,18 +44,15 @@ export class FunctionsService {
     8. check
     9. displayToast
     10. uncheckAll
-    11. getCurrentPosition
+
     12. retrieveTrack
     13. showAlert
-    xxxxxx 14. createReadonlyLabel
-    xxxxxx 15. goHome
     16. computeMinMaxProperty
-    17. setStrokeStyle
+
     18. editTrack
     19. editWaypoint
     20. gotoPage
-    21. getColoredPin
-    22. createPinStyle
+
     23. adjustCoordinatesAndProperties
     24. sanitize
   */
@@ -181,20 +174,6 @@ export class FunctionsService {
     await this.storeSet('collection', global.collection);
   }
 
-  // 11. GET CURRENT POSITION //////////////////////////////////
-  async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | undefined> {
-    try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: highAccuracy,
-        timeout: timeout
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    } catch (error) {
-      console.error('Error getting current position:', error);
-      return undefined;
-    }
-  }
-
   // 12. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
@@ -218,22 +197,6 @@ export class FunctionsService {
     return await alert.present();
   }
 
-  // 14. CREATE READ-ONDLY LABEL
-  /* createReadonlyLabel(name: string, value: string): any {
-    return {
-      type: 'text',
-      name: name,
-      value: value,
-      cssClass: 'alert-label',
-      attributes: { readonly: true }
-    };
-  } */
-
-  // 15. GO HOME ///////////////////////////////
-  /* goHome() {
-    this.router.navigate(['tab1']);
-  } */
-
   // 16. COMPUTE MAXIMUM AND MINIMUM OF A PROPERTY /////
   async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
     if (data.length === 0) {
@@ -249,14 +212,6 @@ export class FunctionsService {
       min: Math.min(...values),
       max: Math.max(...values)
     };
-  }
-
-  // 17. SET STROKE STYLE /////////////////////////////////////////
-  setStrokeStyle(color: string): Style {
-    return new Style({ stroke: new Stroke({
-      color: color,
-      width: 5 })
-    });
   }
 
   // 18. EDIT TRACK DETAILS //////////////////////////////
@@ -347,37 +302,6 @@ export class FunctionsService {
     this.router.navigate([option]);
   }
 
-  // 21. GET COLORED PIN //////////////////////////
-  getColoredPin(color: string): string {
-    const svgTemplate = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
-        <g>
-          <path fill="${color}" d="M146.667,0C94.903,0,52.946,41.957,52.946,93.721c0,22.322,7.849,42.789,20.891,58.878
-            c4.204,5.178,11.237,13.331,14.903,18.906c21.109,32.069,48.19,78.643,56.082,116.864c1.354,6.527,2.986,6.641,4.743,0.212
-            c5.629-20.609,20.228-65.639,50.377-112.757c3.595-5.619,10.884-13.483,15.409-18.379c6.554-7.098,12.009-15.224,16.154-24.084
-            c5.651-12.086,8.882-25.466,8.882-39.629C240.387,41.962,198.43,0,146.667,0z M146.667,144.358
-            c-28.892,0-52.313-23.421-52.313-52.313c0-28.887,23.421-52.307,52.313-52.307s52.313,23.421,52.313,52.307
-            C198.98,120.938,175.559,144.358,146.667,144.358z"/>
-          <circle fill="${color}" cx="146.667" cy="90.196" r="21.756"/>
-        </g>
-      </svg>
-    `.trim();
-    // Encode safely as base64
-    const encoded = window.btoa(unescape(encodeURIComponent(svgTemplate)));
-    return `data:image/svg+xml;base64,${encoded}`;
-  }
-
-  // 22. CREATE PIN STYLE //////////////////////////
-  createPinStyle(color: string): Style {
-    return new Style({
-      image: new Icon({
-        src: this.getColoredPin(color),
-        anchor: [0.5, 1],
-        scale: 0.05
-      })
-    });
-  }
-
   // 23. ADJUST COORDINATES AND PROPERTIES //////////////////////////
   async adjustCoordinatesAndProperties(
     coordinates: [number, number][],
@@ -444,6 +368,35 @@ export class FunctionsService {
   // 24. SANITIZE INPUT /////////////////////////////////////////
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [], FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'svg', 'math'], FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'oninput', 'onchange'] }).trim();
+  }
+
+  // COMPUTE CYUMULATIVE DISTANCES
+  async computeCumulativeDistances(
+    rawCoordinates: [number, number][]
+  ): Promise<number[]> {
+    const distances: number[] = [0];
+    for (let i = 1; i < rawCoordinates.length; i++) {
+      const [lon1, lat1] = rawCoordinates[i - 1];
+      const [lon2, lat2] = rawCoordinates[i];
+      const segmentDistance = this.computeDistance(lon1, lat1, lon2, lat2);
+      const cumulativeDistance = distances[i - 1] + segmentDistance;
+      distances.push(cumulativeDistance);
+    }
+    return distances;
+  }
+
+  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined, times: number[], speed: number): Promise<Data[] > {
+    if (!distances || !altitudes || distances.length !== altitudes.length) {
+      return [];
+    }
+    const result: Data[] = distances.map((distance, i) => ({
+      altitude: altitudes[i],
+      speed: speed,
+      time: times[i],
+      compSpeed: speed,
+      distance: distance,
+    }));
+    return result;
   }
 
 }
