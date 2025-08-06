@@ -87,3 +87,41 @@ export interface Map {
   name: string,
   image?: string,
 }
+
+export interface ModalEditData {
+  name: string;
+  place: string;
+  description: string;
+}
+
+export interface LocationResult {
+  lon: number;
+  lat: number;
+  name: string;
+  [key: string]: any;
+}
+
+export interface Route {
+  features: any[]; // Replace `any` with a more specific type if available
+  trackName?: string;
+  [key: string]: any;
+}
+
+export interface LanguageOption {
+  name: string;
+  code: string;
+}
+
+export interface NominatimSearchResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+export interface NominatimReverseResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  address: Record<string, string>;
+}

@@ -200,12 +200,11 @@ export class Tab2Page {
 
   // 8. EXPORT TRACK //////////////////////////
   async exportTrack() {
-    var track: Track | undefined;
+    // Helper to sanitize file names for cross-platform compatibility
+    const sanitizeFilename = (name: string): string =>
+      (name ?? 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
     const dialog_title = this.translate.instant('ARCHIVE.DIALOG_TITLE');
-    function sanitizeFilename(name: string): string {
-      return name.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-    }
-    track = await this.fs.retrieveTrack();
+    const track = await this.fs.retrieveTrack();
     if (!track) {
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
       return;
@@ -272,7 +271,7 @@ export class Tab2Page {
     this.menu.close();
   }
 
-  // 14. RESET RELECTION ///////////////
+  // 14. RESET SELECTION ///////////////
   async resetSelection() {
     await this.fs.uncheckAll();
     this.numChecked = 0;

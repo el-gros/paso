@@ -19,18 +19,7 @@ import { FunctionsService } from '../services/functions.service';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MapService } from '../services/map.service';
-interface LocationResult {
-  lon: number;
-  lat: number;
-  name: string;
-  [key: string]: any;
-}
-
-interface Route {
-  features: any[]; // Replace `any` with a more specific type if available
-  trackName?: string;
-  [key: string]: any;
-}
+import { LocationResult, Route } from '../../globald';
 
 @Component({
     selector: 'app-search-modal',

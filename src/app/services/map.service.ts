@@ -12,7 +12,7 @@ import Point from 'ol/geom/Point';
 import { global } from '../../environments/environment';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Feature from 'ol/Feature';
-import { Geometry } from 'ol/geom';
+import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { FeatureLike } from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -436,6 +436,104 @@ export class MapService {
     return { newProvider: mapProvider };
   }
 
+  // 13. DISPLAY AN ARCHIVED TRACK
+  async displayArchivedTrack({
+    map,
+    archivedTrack,
+    archivedLayer,
+    archivedFeature,
+    archivedMarkers,
+    archivedWaypoints,
+    greenPin,
+    redPin,
+    yellowPin,
+    archivedColor
+  }: {
+    map: any,
+    archivedTrack: any,
+    archivedLayer: any,
+    archivedFeature: Feature,
+    archivedMarkers: Feature[],
+    archivedWaypoints?: Feature,
+    greenPin: any,
+    redPin: any,
+    yellowPin: any,
+    archivedColor: any
+  }): Promise<void> {
+    if (!map || !archivedTrack || !archivedLayer) return;
+    console.log('33', archivedTrack);
+    archivedLayer.setVisible(true);
+    const coordinates = archivedTrack.features[0].geometry.coordinates;
+    const num = coordinates.length;
+    if (num === 0) return;
+    archivedFeature.setGeometry(new LineString(coordinates));
+    archivedFeature.setStyle(this.setStrokeStyle(archivedColor));
+    if (archivedMarkers.length >= 3) {
+      archivedMarkers[0].setGeometry(new Point(coordinates[0]));
+      archivedMarkers[0].setStyle(greenPin);
+      archivedMarkers[2].setGeometry(new Point(coordinates[num - 1]));
+      archivedMarkers[2].setStyle(redPin);
+    }
+    const waypoints = archivedTrack.features[0].waypoints || [];
+    const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
+    if (archivedWaypoints) {
+      archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
+      archivedWaypoints.set('waypoints', waypoints);
+      archivedWaypoints.setStyle(yellowPin);
+    }
+  }
+
+  // 14. DISPLAY ALL TRACKS
+  async displayAllTracks({
+    fs,
+    collection,
+    multiFeature,
+    multiMarker,
+    greenPin,
+    multiLayer,
+  }: {
+    fs: any;
+    collection: any[];
+    multiFeature: Feature;
+    multiMarker?: Feature;
+    greenPin: any;
+    multiLayer?: any;
+  }) {
+    let key: any;
+    let track: any;
+    const multiLine: any[] = [];
+    const multiPoint: any[] = [];
+    const multiKey: any[] = [];
+    for (const item of collection) {
+      key = item.date;
+      track = await fs.storeGet(JSON.stringify(key));
+      if (!track) {
+        await fs.storeRem(key);
+        continue;
+      }
+      const coord = track.features[0]?.geometry?.coordinates;
+      console.log('coord', coord);
+      if (coord) {
+        multiLine.push(coord);
+        multiPoint.push(coord[0]);
+        multiKey.push(item.date);
+      }
+    }
+    multiFeature.setGeometry(new MultiLineString(multiLine));
+    if (multiMarker) {
+      multiMarker.setGeometry(new MultiPoint(multiPoint));
+      multiMarker.set('multikey', multiKey);
+      multiMarker.setStyle(greenPin);
+    }
+    multiFeature.setStyle(this.setStrokeStyle('black'));
+    if (multiLayer) {
+      multiLayer.setVisible(true);
+    }
+  }
+
 }
+
+
+
 
 

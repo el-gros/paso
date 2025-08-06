@@ -20,13 +20,10 @@ import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageOption } from '../../globald';
 
 register();
 
-interface LanguageOption {
-  name: string;
-  code: string;
-}
 
 @Component({
     selector: 'app-settings',

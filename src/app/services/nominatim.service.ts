@@ -7,20 +7,8 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { catchError } from 'rxjs/operators';
+import { NominatimReverseResult, NominatimSearchResult } from '../../globald';
 
-interface NominatimSearchResult {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-}
-interface NominatimReverseResult {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address: Record<string, string>;
-}
 
 @Injectable({
   providedIn: 'root',

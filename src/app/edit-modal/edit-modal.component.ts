@@ -15,13 +15,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-
-// Define interface for modalEdit input
-interface ModalEditData {
-  name: string;
-  place: string;
-  description: string;
-}
+import { ModalEditData } from '../../globald';
 
 @Component({
     selector: 'app-edit-modal',

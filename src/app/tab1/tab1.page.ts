@@ -156,12 +156,11 @@ export class Tab1Page {
   13. onRoute
   14. show
   15. onDestroy
-  16. displayArchivedTrack
+  16. showArchivedTrack
   17. firstPoint
-
-  22. createMap
-  23. filterAltitude
-  24. createLayers
+  18. createMap
+  19. filterAltitude
+  20. createLayers
   25. displayAllTracks
   26. handleMapClick()
 
@@ -254,7 +253,7 @@ export class Tab1Page {
       if (this.archivedTrack) {
         this.ts.setArchivedTrack(this.archivedTrack);
         // Display archived track
-        await this.displayArchivedTrack();
+        await this.showArchivedTrack();
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
           this.mapService.setMapView(this.map, this.archivedTrack);
@@ -295,7 +294,7 @@ export class Tab1Page {
           console.log(this.archivedTrack)
           this.ts.setArchivedTrack(this.archivedTrack);
           // Display archived track
-          await this.displayArchivedTrack();
+          await this.showArchivedTrack();
           // Set map view for archived track if no current track
           if (!this.currentTrack) await this.mapService.setMapView(this.map, this.archivedTrack);
         }
@@ -311,7 +310,14 @@ export class Tab1Page {
         this.status = 'black'
         this.ts.setStatus(this.status);
         // display all tracks
-        await this.displayAllTracks();
+        await this.mapService.displayAllTracks({
+          fs: this.fs,
+          collection: global.collection,
+          multiFeature: this.multiFeature,
+          multiMarker: this.multiMarker,
+          greenPin: this.greenPin,
+          multiLayer: this.multiLayer,
+        });
         // center all tracks
         if (!this.currentTrack) await this.mapService.centerAllTracks(this.map);
       }
@@ -662,36 +668,21 @@ export class Tab1Page {
     }
   }
 
-  // 16. DISPLAY AN ARCHIVED TRACK /////////////////////////
+  // 16. SHOW ARCHIVED TRACK
 
-  async displayArchivedTrack() {
-    // Ensure the map and archived track exist
-    if (!this.map || !this.archivedTrack || !this.archivedLayer) return;
-    console.log('33', this.archivedTrack);
-    // Set the layer visible
-    this.archivedLayer.setVisible(true);
-    // Build coordinates array
-    const coordinates = this.archivedTrack.features[0].geometry.coordinates;
-    const num = coordinates.length;
-    // Ensure coordinates are available
-    if (num === 0) return;
-    // Update archived feature with a new geometry and style
-    this.archivedFeature.setGeometry(new LineString(coordinates));
-    this.archivedFeature.setStyle(this.mapService.setStrokeStyle(global.archivedColor));
-    if (this.archivedMarkers.length >= 3) {
-      this.archivedMarkers[0].setGeometry(new Point(coordinates[0]));
-      this.archivedMarkers[0].setStyle(this.greenPin);
-      this.archivedMarkers[2].setGeometry(new Point(coordinates[num - 1]));
-      this.archivedMarkers[2].setStyle(this.redPin);
-    }
-    // Display waypoints
-    const waypoints = this.archivedTrack.features[0].waypoints || []
-    const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
-    if (this.archivedWaypoints) {
-      this.archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
-      this.archivedWaypoints.set('waypoints', waypoints);
-      this.archivedWaypoints.setStyle(this.yellowPin);
-    }
+  async showArchivedTrack() {
+    await this.mapService.displayArchivedTrack({
+      map: this.map,
+      archivedTrack: this.archivedTrack,
+      archivedLayer: this.archivedLayer,
+      archivedFeature: this.archivedFeature,
+      archivedMarkers: this.archivedMarkers,
+      archivedWaypoints: this.archivedWaypoints,
+      greenPin: this.greenPin,
+      redPin: this.redPin,
+      yellowPin: this.yellowPin,
+      archivedColor: global.archivedColor
+    });
   }
 
   // 17. FIRST POINT OF THE TRACK /////////////////////////////
@@ -766,7 +757,7 @@ export class Tab1Page {
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
-  // 22. CREATE MAP ////////////////////////////////////////
+  // 18. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
       await this.createLayers(); // your existing method, or move to service
@@ -787,7 +778,7 @@ export class Tab1Page {
     }
   }
 
-  // 23. FI8LTER ALTITUDE /////////////////////////////
+  // 19. FILTER ALTITUDE /////////////////////////////
   async filterAltitude(track: any, final: number) {
     if (!track) return;
     // number of points
@@ -818,7 +809,7 @@ export class Tab1Page {
     }
   }
 
-  // 24. CREATE LAYERS /////////////////////////////
+  // 20. CREATE LAYERS /////////////////////////////
 async createLayers() {
   const { pinStyles, features, layers } = this.mapService.createLayers();
 
@@ -842,7 +833,7 @@ async createLayers() {
   this.multiLayer = layers.multiLayer;
 }
 
-
+/*
   // 25. DISPLAY ALL ARCHIVED TRACKS
   async displayAllTracks() {
     var key: any;
@@ -881,7 +872,7 @@ async createLayers() {
     if (this.multiLayer) {
       this.multiLayer.setVisible(true);
     }
-  }
+  }*/
 
   // 26. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
@@ -910,8 +901,8 @@ async createLayers() {
                       if (this.multiLayer) this.multiLayer.setVisible(false);
                     }
                     global.layerVisibility = 'archived';
-                    await this.displayArchivedTrack();
-                    await this.mapService.setMapView(this.map, this.archivedTrack);
+                    await this.showArchivedTrack();
+                    this.mapService.setMapView(this.map, this.archivedTrack);
                   }
                 }
               });
@@ -1536,8 +1527,8 @@ async createLayers() {
       if (this.multiLayer) this.multiLayer.setVisible(false);
       if (this.archivedLayer) this.archivedLayer.setVisible(true);  // No need for await
       global.layerVisibility = 'archived';
-      await this.displayArchivedTrack();
-      await this.mapService.setMapView(this.map, this.archivedTrack);
+      await this.showArchivedTrack();
+      this.mapService.setMapView(this.map, this.archivedTrack);
       this.archivedTrack.features[0].properties.date = date;
       const dateKey = JSON.stringify(date);
       await this.fs.storeSet(dateKey, this.archivedTrack);
@@ -1728,3 +1719,5 @@ async createLayers() {
   }
 
 }
+
+
