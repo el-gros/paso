@@ -4,7 +4,7 @@
 
 
   <ion-fab slot="fixed" horizontal="center" vertical="top">
-    <ion-row> 
+    <ion-row>
       <ion-fab-button *ngIf="state == 'inactive'" id='start' (click)="startTracking()">
         <ion-icon name="play"></ion-icon>
       </ion-fab-button>
@@ -21,19 +21,24 @@
         <ion-icon name="trash"></ion-icon>
       </ion-fab-button>
 
-      <div style="width: 150px;"></div>
+      <div style="width: 120px;"></div>
 
       <ion-fab-button id='search' (click)="search()">
-        <ion-icon name="search"></ion-icon>
+        <ion-icon name="pin"></ion-icon>
       </ion-fab-button>
       <ion-fab-button id='help' (click)="guide()">
         <ion-icon name="help"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button id='search' (click)="mapService.cycleZoom()">
+        <ion-icon name="search"></ion-icon>
       </ion-fab-button>
     </ion-row>
   </ion-fab>
 
   <ion-content>
-    <div id="map"></div>
+    <div id="map-wrapper">
+      <div id="map"></div>
+    </div>
   </ion-content>
 
   <!-- space for android controls -->

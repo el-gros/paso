@@ -44,9 +44,7 @@ export class SearchModalComponent implements OnInit {
   selectedTransportation: string = '';
   selectedCurrent: string = '';
   transportation: string[] = ['','','','','']
-  currentLocation: string = '';
-  notice1: string = '';
-  notice2: string = '';
+
   trackName: string = '';
 
   constructor(
@@ -81,9 +79,6 @@ ngOnInit(): void {
   }
   // Translations
   this.transportation = this.translate.instant('SEARCH.TRANSPORTATION_MEANS');
-  this.currentLocation = this.translate.instant('SEARCH.CURRENT_LOCATION');
-  this.notice1 = this.translate.instant('SEARCH.NOTICE1');
-  this.notice2 = this.translate.instant('SEARCH.NOTICE2');
 }
 
 // 2. SEARCH LOCATION ///////////////////////////////////////////

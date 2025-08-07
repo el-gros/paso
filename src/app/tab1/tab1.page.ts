@@ -161,36 +161,32 @@ export class Tab1Page {
   18. createMap
   19. filterAltitude
   20. createLayers
-  25. displayAllTracks
-  26. handleMapClick()
-
-  28. checkWhetherOnRoute()
-
-  38. fixWrongOrder()
-
-  40. ionViewWillLeave()
-  41. playBeep()
-  42. playDoubleBeep()
-  43. parseGpx()
-  44. processUrl()
-  45. foregroundTask()
-  46. backgroundTask()
-  47. startBeepInterval()
-  48. startBeepInterval()
-  49. changeMapProvider()
-
-  51. determineColors()
-  52. waypoint()
-  53. setWaypointAltitude()
-  54. search()
-  55. uide()
-
-  57. addSearchLayer()
+  21. handleMapClick
+  22. computeDistances
+  23. htmValues
+  24. checkWhetherOnRoute
+  25. fixWrongOrder
+  26. ionViewWillLeave
+  27. playBeep
+  28. playDoubleBeep
+  29. parseGpx
+  30. processUrl
+  31. foregroundTask
+  32. backgroundTask
+  33. startBeepInterval
+  34. stopBeepInterval
+  35. changeMapProvider
+  36. determineColors
+  37. waypoint
+  38. setWaypointAltitude
+  39. search
+  40. guide
+  41. addSearchLayer
+  42. morningTask
 
   */
 
   // 1. ON INIT ////////////////////////////////
-
   async ngOnInit() {
     try {
       // Listen for state changes
@@ -221,7 +217,6 @@ export class Tab1Page {
   }
 
   // 2. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
-
   async listenToAppStateChanges() {
     this.appStateListener = await App.addListener('appStateChange', async (state) => {
       if (!this.currentTrack) return;
@@ -240,7 +235,6 @@ export class Tab1Page {
   }
 
   // 3. LISTENING FOR OPEN EVENTS
-
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
@@ -263,7 +257,6 @@ export class Tab1Page {
   }
 
   // 4. ION VIEW DID ENTER
-
   async ionViewDidEnter() {
     while (!global.ngOnInitFinished) {
       await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
@@ -338,7 +331,6 @@ export class Tab1Page {
   }
 
   // 5. START TRACKING /////////////////////////////////
-
   async startTracking() {
     // In case there is something wrong
     if (!this.currentLayer) return;
@@ -409,7 +401,6 @@ export class Tab1Page {
   }
 
   // 6. REMOVE TRACK ///////////////////////////////////
-
   async removeTrack() {
     // show / hide elements
     global.state = 'inactive'
@@ -425,7 +416,6 @@ export class Tab1Page {
   }
 
   // 7. STOP TRACKING //////////////////////////////////
-
   async stopTracking() {
     console.log('initiate stop tracking')
     // show / hide elements
@@ -461,7 +451,6 @@ export class Tab1Page {
   }
 
   // 8. CONFIRM TRACK DELETION OR STOP TRACKING
-
   async confirm(which: string) {
     const header = which === 'stop' ? this.translate.instant('MAP.STOP_HEADER') : this.translate.instant('MAP.DELETE_HEADER');
     const message = which === 'stop' ? this.translate.instant('MAP.STOP_MESSAGE') : this.translate.instant('MAP.DELETE_MESSAGE');
@@ -486,7 +475,6 @@ export class Tab1Page {
   }
 
   // 9. SET TRACK NAME, TIME, DESCRIPTION, ...
-
   async setTrackDetails() {
     const modalEdit = {
       name: '',
@@ -515,7 +503,6 @@ export class Tab1Page {
   }
 
   // 10. NO NAME TO SAVE ////////////////////////////////////
-
   async showValidationAlert() {
     const cssClass = 'alert greenishAlert'
     const header = 'Validation Error'
@@ -527,7 +514,6 @@ export class Tab1Page {
   }
 
   // 11. SAVE FILE ////////////////////////////////////////
-
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
     // altitud method
@@ -570,7 +556,6 @@ export class Tab1Page {
   }
 
   // 12. BUILD GEOJSON ////////////////////////////////////
-
   async buildGeoJson(location: Location) {
     // excessive uncertainty / no altitude measured
     if (location.accuracy > this.threshold) return false;
@@ -596,7 +581,6 @@ export class Tab1Page {
   }
 
   // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
-
   async onRoute() {
     // Return 'black' if conditions aren't met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility != 'archived') return 'black';
@@ -645,7 +629,6 @@ export class Tab1Page {
   }
 
   // 14. SHOW / HIDE ELEMENTS /////////////////////////////////
-
   async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
     const obj = document.getElementById(id);
     if (obj) {
@@ -654,7 +637,6 @@ export class Tab1Page {
   }
 
   // 15. ON DESTROY ////////////////////////
-
   ngOnDestroy(): void {
     // Remove app state listener
     if (this.appStateListener) {
@@ -669,7 +651,6 @@ export class Tab1Page {
   }
 
   // 16. SHOW ARCHIVED TRACK
-
   async showArchivedTrack() {
     await this.mapService.displayArchivedTrack({
       map: this.map,
@@ -767,7 +748,7 @@ export class Tab1Page {
         archivedLayer: this.archivedLayer,
         multiLayer: this.multiLayer,
         server: this.server,
-        createSource: this.createSource.bind(this), // pass the method as dependency
+        //createSource: this.createSource.bind(this), // pass the method as dependency
         getCurrentPosition: this.mapService.getCurrentPosition.bind(this.mapService),
         showCredits: this.fs.displayToast.bind(this.fs),
       });
@@ -809,17 +790,15 @@ export class Tab1Page {
     }
   }
 
-  // 20. CREATE LAYERS /////////////////////////////
+// 20. CREATE LAYERS /////////////////////////////
 async createLayers() {
   const { pinStyles, features, layers } = this.mapService.createLayers();
-
   // Assign to component fields
   this.greenPin = pinStyles.greenPin;
   this.redPin = pinStyles.redPin;
   this.bluePin = pinStyles.bluePin;
   this.yellowPin = pinStyles.yellowPin;
   this.blackPin = pinStyles.blackPin;
-
   this.currentFeature = features.currentFeature as Feature<LineString>;
   this.currentMarkers = features.currentMarkers as Feature<Point>[];
   this.multiFeature = features.multiFeature as Feature<MultiLineString>;
@@ -827,54 +806,12 @@ async createLayers() {
   this.archivedFeature = features.archivedFeature as Feature<LineString>;
   this.archivedMarkers = features.archivedMarkers as Feature<Point>[];
   this.archivedWaypoints = features.archivedWaypoints as Feature<MultiPoint>;
-
   this.currentLayer = layers.currentLayer;
   this.archivedLayer = layers.archivedLayer;
   this.multiLayer = layers.multiLayer;
 }
 
-/*
-  // 25. DISPLAY ALL ARCHIVED TRACKS
-  async displayAllTracks() {
-    var key: any;
-    var track: any;
-    var multiLine: any = [];
-    let multiPoint = [];
-    let multiKey = [];
-    // Loop through each item in the collection
-    for (const item of global.collection) {
-      key = item.date;
-      track = await this.fs.storeGet(JSON.stringify(key));
-      // If the track does not exist, remove the key and skip this iteration
-      if (!track) {
-        await this.fs.storeRem(key);
-        continue;
-      }
-      // Extract coordinates and add to multiLine and multiPoint
-      const coord = track.features[0]?.geometry?.coordinates;
-      console.log('coord', coord)
-      if (coord) {
-        multiLine.push(coord);
-        multiPoint.push(coord[0]);
-        multiKey.push(item.date);
-      }
-    }
-    // Set geometries for multiFeature and multiMarker
-    this.multiFeature.setGeometry(new MultiLineString(multiLine));
-    if (this.multiMarker) {
-      this.multiMarker.setGeometry(new MultiPoint(multiPoint));
-      this.multiMarker.set('multikey', multiKey)
-      this.multiMarker.setStyle(this.greenPin);
-    }
-    // Apply styles to the features
-    this.multiFeature.setStyle(this.mapService.setStrokeStyle('black'));
-    // Set visibility of multiLayer
-    if (this.multiLayer) {
-      this.multiLayer.setVisible(true);
-    }
-  }*/
-
-  // 26. HANDLE MAP CLICK //////////////////////////////
+  // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     switch(global.layerVisibility) {
       case 'multi':
@@ -955,7 +892,7 @@ async createLayers() {
     }
   }
 
-  // 27. COMPUTE DISTANCES //////////////////////////////////////
+  // 22. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
     if (!this.currentTrack) return;
     // get coordinates and data arrays
@@ -977,7 +914,7 @@ async createLayers() {
     }
   }
 
-  // 36. GET VALUES TO SHOW ON THE TABLE ////////////////////////////////////
+  // 23. GET VALUES TO SHOW ON THE TABLE ////////////////////////////////////
   async htmlValues() {
     if (!this.currentTrack) return;
     // Get the data array
@@ -993,7 +930,7 @@ async createLayers() {
     this.ts.setCurrentTrack(this.currentTrack);
   }
 
-  // 28. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
+  // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.archivedTrack || global.layerVisibility !== 'archived') return;
@@ -1014,7 +951,7 @@ async createLayers() {
     }
   }
 
-  // 38. CASE OF LOCATIONS IN WRONG ORDER
+  // 25. CASE OF LOCATIONS IN WRONG ORDER
   async fixWrongOrder(location:Location) {
     if (!this.currentTrack || location.time === undefined) return;
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
@@ -1036,12 +973,12 @@ async createLayers() {
     }
   }
 
-  // 40. ON LEAVE ////////////////////////////
+  // 26. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
     global.archivedPresent = !!this.archivedTrack;
   }
 
-  // 41. PLAY A BEEP /////////////////////////////////////
+  // 27. PLAY A BEEP /////////////////////////////////////
   async playBeep(freq: number, time: number, volume: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1068,7 +1005,7 @@ async createLayers() {
     };
   }
 
-  // 42. PLAY A DOUBLE BEEP
+  // 28. PLAY A DOUBLE BEEP
   async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1100,7 +1037,7 @@ async createLayers() {
     };
   }
 
-  // 43. PARSE CONTENT OF A GPX FILE ////////////////////////
+  // 29. PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpx(gpxText: string) {
     let waypoints: Waypoint[] = [];
     let track: Track = {
@@ -1255,7 +1192,7 @@ async createLayers() {
     console.log('collection', global.collection)
   }
 
-  // 44. PROCESS FILE AFTER TAPPING ON IT /////////////
+  // 30. PROCESS FILE AFTER TAPPING ON IT /////////////
   async processUrl(data: any) {
     if (data.url) {
       try {
@@ -1282,7 +1219,7 @@ async createLayers() {
     }
   }
 
-  // 45. FOREGROUND TASK ////////////////////////
+  // 31. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
     // fill the track
     const locationNew: boolean = await this.buildGeoJson(location);
@@ -1315,7 +1252,7 @@ async createLayers() {
     console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
   }
 
-  // 46. BACKGROUND TASK /////////////////////////////////////
+  // 32. BACKGROUND TASK /////////////////////////////////////
   async backgroundTask(location: Location) {
     const taskId = await BackgroundTask.beforeExit(async () => {
       try {
@@ -1331,7 +1268,7 @@ async createLayers() {
     });
   }
 
-  // 47. START BEEP INTERVAL /////////////////////
+  // 33. START BEEP INTERVAL /////////////////////
   startBeepInterval() {
     // Clear any existing interval to avoid duplicates
     if (this.beepInterval) {
@@ -1343,7 +1280,7 @@ async createLayers() {
     }, 120000); // 120000 milliseconds = 120 seconds
   }
 
-  // 48. STOP BEEP INTERVAL ////////////////////////////
+  // 34. STOP BEEP INTERVAL ////////////////////////////
   stopBeepInterval() {
     if (this.beepInterval) {
       clearInterval(this.beepInterval);
@@ -1351,7 +1288,7 @@ async createLayers() {
     }
   }
 
-  // 49. CHANGE MAP PROVIDER /////////////////////
+  // 35. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
     const previousProvider = this.mapProvider;
     // Validate and possibly normalize the new value
@@ -1361,7 +1298,7 @@ async createLayers() {
       currentProvider: previousProvider,
       mapProvider: this.mapProvider,
       server: this.server,
-      createSource: this.createSource.bind(this),
+      //createSource: this.createSource.bind(this),
       fs: this.fs,
       onFadeEffect: () => {
         const el = document.getElementById('map');
@@ -1374,7 +1311,7 @@ async createLayers() {
     this.mapProvider = newProvider; // store the final confirmed value
   }
 
-  // 51. DETERMINE COLORS ///////////////////////////////////////
+  // 36. DETERMINE COLORS ///////////////////////////////////////
   async determineColors() {
     try {
       global.archivedColor = await this.fs.check(global.archivedColor, 'archivedColor');
@@ -1384,7 +1321,7 @@ async createLayers() {
     }
   }
 
-  // 52. ADD WAYPOINT ////////////////////////////////////
+  // 37. ADD WAYPOINT ////////////////////////////////////
   async waypoint() {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
@@ -1411,7 +1348,7 @@ async createLayers() {
     }
   }
 
-  // 53. SET WAYPOINT ALTITUDE ////////////////////////////////////////
+  // 38. SET WAYPOINT ALTITUDE ////////////////////////////////////////
   async setWaypointAltitude() {
     if (!this.currentTrack) return;
     // Retrieve waypoints
@@ -1423,7 +1360,7 @@ async createLayers() {
     console.log(this.currentTrack)
   }
 
-  // 54. SEARCH SITE /////////////////////////////////////////
+  // 39. SEARCH SITE /////////////////////////////////////////
   async search() {
     global.comingFrom = 'search';
     // Create modal
@@ -1454,7 +1391,7 @@ async createLayers() {
     };
   }
 
-  // 55. SEARCH ROUTE /////////////////////////////////////////////
+  // 40. SEARCH ROUTE /////////////////////////////////////////////
   async guide() {
     global.comingFrom = 'guide';
     // Create modal
@@ -1545,43 +1482,18 @@ async createLayers() {
     }
   }
 
-  // 57. ADD LAYER TO DISPLAY SITE /////////////////////////
+  // 41. ADD SEARCH LAYER
   async addSearchLayer(feature: Feature<Geometry>) {
     if (!this.map) return;
-    // Remove previous search
-    await this.mapService.removeLayer(this.map, 'searchLayerId');
-    global.presentSearch = false;
-    global.removeSearch = false;
-    // Style function to differentiate geometry types
-    const styleFunction = (featureLike: FeatureLike) => {
-      const geometryType = featureLike.getGeometry()?.getType();
-      if (geometryType === 'Point') {
-        return this.blackPin;
-      } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        return new Style({
-          stroke: new Stroke({
-            color: 'black', // Black outline
-            width: 2, // Adjust the width if needed
-          }),
-          fill: new Fill({
-            color: 'rgba(128, 128, 128, 0.5)', // Pale grey fill (50% opacity)
-          }),
-        });
-      } else {
-        return this.mapService.setStrokeStyle('black'); // Black line for other geometries
-      }
-    };
-    // Create a vector source with the feature
-    const searchLayer = new VectorLayer({
-      source: new VectorSource({ features: [feature] }),
-      style: styleFunction ,
+    await this.mapService.addSearchLayer({
+      map: this.map,
+      feature,
+      blackPin: this.blackPin,
+      setStrokeStyle: this.mapService.setStrokeStyle.bind(this.mapService),
     });
-    // Assign a unique ID to the layer and add it to the map
-    searchLayer.set('id', 'searchLayerId');
-    this.map.addLayer(searchLayer);
-    global.presentSearch = true;
   }
 
+  // 42. MORNING TASK
   async morningTask() {
     // Run updates outside of Angular's zone to avoid change detection overhead
     this.zone.runOutsideAngular(async () => {
@@ -1608,49 +1520,7 @@ async createLayers() {
       }
     });
   }
-  async createSource() {
-    try {
-      // Create vector tile source
-      return new VectorTileSource({
-        format: new MVT(),
-        tileClass: VectorTile,
-        tileGrid: new TileGrid({
-          extent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-          resolutions: Array.from({ length: 20 }, (_, z) => 156543.03392804097 / Math.pow(2, z)),
-          tileSize: [256, 256],
-        }),
-        // Tile load function
-            tileLoadFunction: async (tile) => {
-          const vectorTile = tile as VectorTile<RenderFeature>;
-          const [z, x, y] = vectorTile.getTileCoord();
-          try {
-            // Get vector tile
-            const rawData = await this.server.getVectorTile(z, x, y);
-            if (!rawData?.byteLength) {
-              vectorTile.setLoader(() => {});
-              vectorTile.setState(TileState.EMPTY);
-              return;
-            }
-            // Decompress
-            const decompressed = pako.inflate(new Uint8Array(rawData));
-            // Read features
-            const features = new MVT().readFeatures(decompressed, {
-              extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-              featureProjection: 'EPSG:3857',
-            });
-            // Set features to vector tile
-            vectorTile.setFeatures(features);
-          } catch (error) {
-            vectorTile.setState(TileState.ERROR);
-          }
-        },
-        tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
-      });
-    } catch (e) {
-      console.error('Error in createSource:', e);
-      return null;
-    }
-  }
+
 
   // COMPUTE ALTITUDES
   async getAltitudes(rawCoordinates: [number, number][]): Promise<number[]> {

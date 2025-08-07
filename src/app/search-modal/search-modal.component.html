@@ -10,7 +10,7 @@
 <ion-content class="nodal-content">
 
   <!-- Notice -->
-  <div class="notice" *ngIf="showCurrent">{{notice1}}</div>
+  <div class="notice" *ngIf="showCurrent">{{'SEARCH.NOTICE1' | translate}}</div>
 
   <!-- Find location -->
   <ion-row *ngIf="showSelection">
@@ -34,13 +34,13 @@
   </ion-row>
 
   <!-- Notice -->
-  <div class="notice" *ngIf="showCurrent">{{notice2}}</div>
+  <div class="notice" *ngIf="showCurrent">{{'SEARCH.NOTICE2' | translate}}</div>
 
   <!-- Current location -->
   <ion-list id="current" *ngIf="showCurrent">
     <ion-radio-group [(ngModel)]="selectedCurrent" (ionChange)="onCurrentLocationChange($event)">
       <ion-item lines="none" class="full-width-item">
-        <ion-label class="full-width-label">{{currentLocation}}</ion-label>
+        <ion-label class="full-width-label">{{'SEARCH.CURRENT_LOCATION' | translate}}</ion-label>
         <ion-radio color="warning" value="current" class="full-width-radio"></ion-radio>
       </ion-item>
     </ion-radio-group>

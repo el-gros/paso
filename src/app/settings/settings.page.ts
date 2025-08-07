@@ -44,7 +44,7 @@ export class SettingsPage implements OnDestroy {
     { name: 'English', code: 'en' }
   ];
   selectedLanguage: any = {name:'English', code:'en'}
-  onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'IGN'];
+  onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
   selectedMap: string = '';

@@ -76,10 +76,10 @@
   },
 
   "SEARCH": {
-    "TITLE.SEARCH": "Trobeu la ubicació",
-    "TITLE.GUIDE": "Trobeu la millor ruta",
-    "PLACEHOLDER.SEARCH": "Nom del lloc",
-    "PLACEHOLDER.GUIDE": "Inici",
+    "TITLE_SEARCH": "Trobeu la ubicació",
+    "TITLE_GUIDE": "Trobeu la millor ruta",
+    "PLACEHOLDER_SEARCH": "Nom del lloc",
+    "PLACEHOLDER_GUIDE": "Inici",
     "TRANSPORTATION_MEANS": [
       "En cotxe", "En bicicleta", "A peu", "Senderisme", "En cadira de rodes"
     ],

@@ -5,6 +5,7 @@
  */
 
 import { StyleService } from '../services/style.service';
+import { ServerService } from '../services/server.service';
 import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
 import LineString from 'ol/geom/LineString';
@@ -19,9 +20,15 @@ import VectorSource from 'ol/source/Vector';
 import TileLayer from 'ol/layer/Tile';
 import { OSM, XYZ } from 'ol/source';
 import VectorTileLayer from 'ol/layer/VectorTile';
-import { View } from 'ol';
+import { VectorTile, View } from 'ol';
 import { Rotate, ScaleLine, Zoom } from 'ol/control';
 import { CustomControl } from '../utils/openlayers/custom-control';
+import MVT from 'ol/format/MVT';
+import { TileGrid } from 'ol/tilegrid';
+import RenderFeature from 'ol/render/Feature';
+import TileState from 'ol/TileState';
+import pako from 'pako';
+import VectorTileSource from 'ol/source/VectorTile';
 
 // 1. setMapView
 // 2. displayCurrentTrack
@@ -35,14 +42,23 @@ import { CustomControl } from '../utils/openlayers/custom-control';
 // 10. createLayers
 // 11. createMap
 // 12. updateMapProvider
+// 13. displayArchivedTrack
+// 14. displayAllTracks
+// 15. addSearchLayer
+// 16. createSource
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
 
+  scaleSteps = [1, 1.75, 3.5];
+  currentScaleIndex = 0;
+  mapWrapperElement: HTMLElement | null = null;
+
   constructor(
-    private styleService: StyleService
+    private styleService: StyleService,
+    private server: ServerService
   ) { }
 
   // 1. SET MAP VIEW /////////////////////////////////////////
@@ -94,7 +110,7 @@ export class MapService {
   }
 
   // 3. ADD LAYER TO DISPLAY SITE /////////////////////////
-
+/*
   async addSearchLayer(map: Map | undefined, feature: Feature<Geometry>, blackPin: Style) {
     if (!map) return;
     // Remove previous search
@@ -129,7 +145,7 @@ export class MapService {
     searchLayer.set('id', 'searchLayerId');
     map.addLayer(searchLayer);
     global.presentSearch = true;
-  }
+  }*/
 
   // 4. REMOVE LAYER ////////////////////////////////////
 
@@ -272,7 +288,7 @@ export class MapService {
     archivedLayer: any;
     multiLayer: any;
     server: any;
-    createSource: () => Promise<any>;
+    //createSource: () => Promise<any>;
     getCurrentPosition: (force: boolean, timeout: number) => Promise<[number, number] | null>;
     showCredits: (credits: string) => void;
     target?: string;
@@ -283,7 +299,7 @@ export class MapService {
       archivedLayer,
       multiLayer,
       server,
-      createSource,
+      //createSource,
       getCurrentPosition,
       showCredits,
       target = 'map',
@@ -303,6 +319,10 @@ export class MapService {
         credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
         olLayer = new TileLayer({ source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }) });
         break;
+      case 'German_OSM':
+        credits = '© OpenStreetMap contributors';
+        olLayer = new TileLayer({ source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }) });
+        break;
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
         olLayer = new TileLayer({ source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }) });
@@ -318,7 +338,7 @@ export class MapService {
       case 'catalonia':
         credits = '© MapTiler © OpenStreetMap contributors';
         await server.openMbtiles('catalonia.mbtiles');
-        const sourceResult = await createSource();
+        const sourceResult = await this.createSource(server);
         if (sourceResult) {
           olLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
@@ -350,6 +370,7 @@ export class MapService {
       controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this)],
     });
     showCredits(credits);
+    this.mapWrapperElement = document.getElementById('map-wrapper');
     return { map, credits };
   }
 
@@ -360,7 +381,6 @@ export class MapService {
     currentProvider: string;
     mapProvider: string;
     server: any;
-    createSource: () => Promise<any>;
     fs: any;
     onFadeEffect?: () => void;
   }): Promise<{ newProvider: string }> {
@@ -369,7 +389,6 @@ export class MapService {
       currentProvider,
       mapProvider,
       server,
-      createSource,
       fs,
       onFadeEffect
     } = options;
@@ -386,6 +405,12 @@ export class MapService {
         credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
         newBaseLayer = new TileLayer({
           source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
+        });
+        break;
+      case 'German_OSM':
+        credits = '© OpenStreetMap contributors';
+        newBaseLayer = new TileLayer({
+          source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }),
         });
         break;
       case 'ICGC':
@@ -407,7 +432,7 @@ export class MapService {
         map.getView().setCenter([2, 41]);
         map.getView().setZoom(8);
         await server.openMbtiles('catalonia.mbtiles');
-        const sourceResult = await createSource();
+        const sourceResult = await this.createSource(server);
         if (sourceResult) {
           newBaseLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
@@ -529,6 +554,104 @@ export class MapService {
     if (multiLayer) {
       multiLayer.setVisible(true);
     }
+  }
+
+  // 15. ADD SEARCH LAYER ////////////////////////////////
+  async addSearchLayer({
+    map,
+    feature,
+    blackPin,
+    setStrokeStyle,
+  }: {
+    map: any;
+    feature: Feature<Geometry>;
+    blackPin?: Style;
+    setStrokeStyle: (color: string) => Style;
+  }): Promise<void> {
+    if (!map) return;
+    // Remove previous search layer
+    await this.removeLayer(map, 'searchLayerId');
+    global.presentSearch = false;
+    global.removeSearch = false;
+    const styleFunction = (featureLike: FeatureLike) => {
+      const geometryType = featureLike.getGeometry()?.getType();
+      if (geometryType === 'Point') {
+        return blackPin ?? setStrokeStyle('black'); // fallback to stroke style if blackPin is undefined
+      } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+        return new Style({
+          stroke: new Stroke({
+            color: 'black',
+            width: 2,
+          }),
+          fill: new Fill({
+            color: 'rgba(128, 128, 128, 0.5)',
+          }),
+        });
+      } else {
+        return setStrokeStyle('black');
+      }
+    };
+    const searchLayer = new VectorLayer({
+      source: new VectorSource({ features: [feature] }),
+      style: styleFunction,
+    });
+    searchLayer.set('id', 'searchLayerId');
+    map.addLayer(searchLayer);
+    global.presentSearch = true;
+  }
+
+  // 16. CREATE SOURCE //////////////////////////////
+  async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer> }): Promise<VectorTileSource | null> {
+    try {
+      return new VectorTileSource({
+        format: new MVT(),
+        tileClass: VectorTile,
+        tileGrid: new TileGrid({
+          extent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
+          resolutions: Array.from({ length: 20 }, (_, z) => 156543.03392804097 / Math.pow(2, z)),
+          tileSize: [256, 256],
+        }),
+        tileLoadFunction: (tile) => {
+          const vectorTile = tile as VectorTile<RenderFeature>;
+          const [z, x, y] = vectorTile.getTileCoord();
+
+          vectorTile.setLoader(async () => {
+            try {
+              const rawData = await server.getVectorTile(z, x, y);
+              if (!rawData?.byteLength) {
+                vectorTile.setFeatures([]);
+                vectorTile.setState(TileState.EMPTY);
+                return;
+              }
+
+              const decompressed = pako.inflate(new Uint8Array(rawData));
+              const features = new MVT().readFeatures(decompressed, {
+                extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
+                featureProjection: 'EPSG:3857',
+              });
+
+              vectorTile.setFeatures(features);
+            } catch (error) {
+              vectorTile.setState(TileState.ERROR);
+            }
+          });
+        },
+        tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
+      });
+    } catch (e) {
+      console.error('Error in createSource:', e);
+      return null;
+    }
+  }
+
+  async cycleZoom(): Promise<void> {
+    if (!this.mapWrapperElement) {
+      console.warn('Map wrapper element not found');
+      return;
+    }
+    this.currentScaleIndex = (this.currentScaleIndex + 1) % this.scaleSteps.length;
+    const scale = this.scaleSteps[this.currentScaleIndex];
+    this.mapWrapperElement.style.transform = `scale(${scale})`;
   }
 
 }
