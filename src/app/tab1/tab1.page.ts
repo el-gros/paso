@@ -1,10 +1,11 @@
 /**
-Main component for the first tab of the application, handling map display, GPS tracking, track management, and user interactions.
-Integrates map rendering, real-time location tracking, GPX import/export, audio alerts, and multilingual support.
-Provides methods for starting/stopping tracking, managing tracks and waypoints, handling map events, and updating UI state.
-*/
+ * Main component for the application's first tab, responsible for map display, GPS tracking, and track management.
+ * Integrates map rendering, real-time location tracking, GPX import/export, audio alerts, and multilingual support.
+ * Provides methods for starting/stopping tracking, managing tracks and waypoints, handling map events, and updating UI state.
+ * Relies on organization-specific services for map, storage, geolocation, and translation functionalities.
+ */
 
-import { Component, NgZone, Injectable, OnDestroy } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { PluginListenerHandle, registerPlugin } from "@capacitor/core";
@@ -18,23 +19,20 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { Location, StyleJSON, Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Location, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
-import { Circle as CircleStyle, Fill, Stroke, Icon, Style, Circle } from 'ol/style';
+import { Circle as CircleStyle, Style } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { App } from '@capacitor/app';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
-import VectorTileSource from 'ol/source/VectorTile';
-import MVT from 'ol/format/MVT';
-import { TileGrid } from 'ol/tilegrid';
-import { Filesystem, Directory, Encoding, ReadFileResult } from '@capacitor/filesystem';
+import { Filesystem, Encoding } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -42,14 +40,9 @@ import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
-import { FeatureLike } from 'ol/Feature';
-import VectorTile from 'ol/VectorTile';
-import RenderFeature from 'ol/render/Feature';
-import TileState from 'ol/TileState';
-import pako from 'pako';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-const vectorFormat = new MVT();
+
 useGeographic();
 register();
 
@@ -103,9 +96,6 @@ export class Tab1Page {
   status: 'black' | 'red' | 'green' = 'black'
   audioCtx: AudioContext | null = null;
   beepInterval: any;
-  language: 'ca' | 'es' | 'en' | 'other' = 'other';
-  popText: [string, string, number] | undefined = undefined;
-  intervalId: any = null;
   appStateListener?: PluginListenerHandle;
   greenPin?: Style;
   redPin?: Style;
@@ -183,6 +173,8 @@ export class Tab1Page {
   40. guide
   41. addSearchLayer
   42. morningTask
+  43. gettitudes
+  44. getAltitudesFromMap
 
   */
 
@@ -200,7 +192,6 @@ export class Tab1Page {
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
-      //this.determineLanguage();
       this.languageService.determineLanguage();
       // Determine line color
       this.determineColors();
@@ -1417,7 +1408,7 @@ async createLayers() {
       const distances: number[] = await this.fs.computeCumulativeDistances(rawCoordinates)
       console.log('distances', distances)
       // Compute times
-      const times: number[] = await this.createTimes(data, date, distances);
+      const times: number[] = await this.fs.createTimes(data, date, distances);
       console.log(times);
       // Get altitudes and compute elevation gain and loss
       var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
@@ -1521,8 +1512,7 @@ async createLayers() {
     });
   }
 
-
-  // COMPUTE ALTITUDES
+  // 43. COMPUTE ALTITUDES
   async getAltitudes(rawCoordinates: [number, number][]): Promise<number[]> {
     const requestBody = {
       locations: rawCoordinates.map(([lon, lat]) => ({
@@ -1550,37 +1540,11 @@ async createLayers() {
     }
   }
 
-  // COMPUTE ELEVATION GAIN AND LOSS
-  async computeElevationGainAndLoss(altitudes: number[]): Promise<{ gain: number; loss: number; }> {
-    let gain = 0;
-    let loss = 0;
-    for (let i = 1; i < altitudes.length; i++) {
-      const diff = altitudes[i] - altitudes[i - 1];
-      if (diff > 0) {
-        gain += diff;
-      } else if (diff < 0) {
-        loss -= diff; // Subtracting a negative to get positive loss
-      }
-    }
-    return { gain, loss };
-  }
-
-  async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
-    const totalDistance = data.response.features[0].properties.summary.distance;
-    const totalDuration = data.response.features[0].properties.summary.duration * 1000; // in ms
-    const endTime = date.getTime(); // in ms
-    const startTime = endTime - totalDuration;
-      return distances.map(d => {
-      const ratio = d / totalDistance;
-      const timeOffset = ratio * totalDuration;
-      return Math.round(startTime + timeOffset); // in ms
-    });
-  }
-
+  // 44. GET ALTITUDES FROM MAP /////////////////////////////////
   async getAltitudesFromMap(coordinates: [number, number][] ) {
     try {
       const altitudes = await this.getAltitudes(coordinates)
-      const slopes = await this.computeElevationGainAndLoss(altitudes)
+      const slopes = await this.fs.computeElevationGainAndLoss(altitudes)
       return {altitudes: altitudes, slopes: slopes}
     }
     catch {

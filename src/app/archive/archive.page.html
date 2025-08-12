@@ -12,16 +12,23 @@
 <ion-content class="custom-content">
   <div class="ion-content-scroll-host">
     <ion-list>
-      <ion-item *ngFor="let item of collection">
-
-        <ion-checkbox justify="space-between" [(ngModel)]="item.isChecked" (ionChange)="onChange()">
-          <div [ngClass]="(item.isChecked) ? 'checked' : 'unchecked'">
-            {{item.name}}<br>
-            {{item.date | date: 'dd-MM-yyyy HH:mm' }}<br>
-            {{item.place}}
-          </div>
-        </ion-checkbox>
-      </ion-item>
+      @for (item of collection; track item) {
+        <ion-item>
+          <ion-checkbox
+            slot="start"
+            justify="space-between"
+            [(ngModel)]="item.isChecked"
+            (ionChange)="onChange()"
+            labelPlacement="end"
+          >
+            <ion-label [ngClass]="item.isChecked ? 'checked' : 'unchecked'">
+              {{ item.name }}<br>
+              {{ item.date | date: 'dd-MM-yyyy HH:mm' }}<br>
+              {{ item.place }}
+            </ion-label>
+          </ion-checkbox>
+        </ion-item>
+      }
     </ion-list>
   </div>
     <div class='empty'></div>

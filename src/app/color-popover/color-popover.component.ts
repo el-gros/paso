@@ -10,7 +10,7 @@
  */
 import { Component, Input } from '@angular/core';
 import { IonicModule, PopoverController } from '@ionic/angular';
-import { CommonModule } from '@angular/common'; // 👈 Required for *ngIf, *ngFor, ngClass
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-color-popover',

@@ -1,6 +1,6 @@
 /**
  * Service for managing application language settings.
- * 
+ *
  * Initializes the language based on stored preferences or device settings,
  * provides observables for the current language, and allows updating and persisting
  * the selected language using TranslateService and FunctionsService.
@@ -24,11 +24,19 @@ export class LanguageService {
     this.initLanguage();
   }
 
+  /*
+   initLanguage
+   getCurrentLanguage
+   getCurrentLangValue
+   setLanguage
+   determineLanguage
+  */
+
   private async initLanguage() {
     const storedLang = await this.fs.storeGet('lang');
     if (storedLang) {
       await this.setLanguage(storedLang);
-    } else {          
+    } else {
       await this.determineLanguage();
     }
   }

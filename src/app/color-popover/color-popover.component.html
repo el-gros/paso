@@ -1,14 +1,15 @@
 <ion-list>
-  <ion-item
-    button
-    *ngFor="let color of colors"
-    (click)="selectColor(color)"
-    [ngClass]="{ 'selected-item': currentColor === color }"
-    style="--padding-start: 0; --inner-padding-end: 0;"
-    class="ion-justify-content-center"
-  >
-    <div class="color-preview" [style.backgroundColor]="color"></div>
-  </ion-item>
+  @for (color of colors; track color) {
+    <ion-item
+      button
+      (click)="selectColor(color)"
+      [ngClass]="{ 'selected-item': currentColor === color }"
+      style="--padding-start: 0; --inner-padding-end: 0;"
+      class="ion-justify-content-center"
+    >
+      <div class="color-preview" [style.backgroundColor]="color"></div>
+    </ion-item>
+  }
 </ion-list>
 
 

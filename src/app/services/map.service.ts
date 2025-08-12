@@ -5,7 +5,6 @@
  */
 
 import { StyleService } from '../services/style.service';
-import { ServerService } from '../services/server.service';
 import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
 import LineString from 'ol/geom/LineString';
@@ -32,7 +31,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 
 // 1. setMapView
 // 2. displayCurrentTrack
-// 3. addSearchLaye
+
 // 4. removeLayer
 // 5. setStrokeStyle
 // 6. getCurrentPosition
@@ -46,6 +45,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 // 14. displayAllTracks
 // 15. addSearchLayer
 // 16. createSource
+// 17. cycleZoom
 
 @Injectable({
   providedIn: 'root'
@@ -58,7 +58,6 @@ export class MapService {
 
   constructor(
     private styleService: StyleService,
-    private server: ServerService
   ) { }
 
   // 1. SET MAP VIEW /////////////////////////////////////////
@@ -108,44 +107,6 @@ export class MapService {
       await this.setMapView(map, currentTrack);
     }
   }
-
-  // 3. ADD LAYER TO DISPLAY SITE /////////////////////////
-/*
-  async addSearchLayer(map: Map | undefined, feature: Feature<Geometry>, blackPin: Style) {
-    if (!map) return;
-    // Remove previous search
-    await this.removeLayer(map, 'searchLayerId');
-    global.presentSearch = false;
-    global.removeSearch = false;
-    // Style function to differentiate geometry types
-    const getcurrentposition = (featureLike: FeatureLike) => {
-      const geometryType = featureLike.getGeometry()?.getType();
-      if (geometryType === 'Point') {
-        return blackPin;
-      } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        return new Style({
-          stroke: new Stroke({
-            color: 'black', // Black outline
-            width: 2, // Adjust the width if needed
-          }),
-          fill: new Fill({
-            color: 'rgba(128, 128, 128, 0.5)', // Pale grey fill (50% opacity)
-          }),
-        });
-      } else {
-        return this.setStrokeStyle('black'); // Black line for other geometries
-      }
-    };
-    // Create a vector source with the feature
-    const searchLayer = new VectorLayer({
-      source: new VectorSource({ features: [feature] }),
-      style: this.styleService.styleFunction ,
-    });
-    // Assign a unique ID to the layer and add it to the map
-    searchLayer.set('id', 'searchLayerId');
-    map.addLayer(searchLayer);
-    global.presentSearch = true;
-  }*/
 
   // 4. REMOVE LAYER ////////////////////////////////////
 
@@ -288,7 +249,6 @@ export class MapService {
     archivedLayer: any;
     multiLayer: any;
     server: any;
-    //createSource: () => Promise<any>;
     getCurrentPosition: (force: boolean, timeout: number) => Promise<[number, number] | null>;
     showCredits: (credits: string) => void;
     target?: string;
@@ -614,7 +574,6 @@ export class MapService {
         tileLoadFunction: (tile) => {
           const vectorTile = tile as VectorTile<RenderFeature>;
           const [z, x, y] = vectorTile.getTileCoord();
-
           vectorTile.setLoader(async () => {
             try {
               const rawData = await server.getVectorTile(z, x, y);
@@ -623,13 +582,13 @@ export class MapService {
                 vectorTile.setState(TileState.EMPTY);
                 return;
               }
-
               const decompressed = pako.inflate(new Uint8Array(rawData));
-              const features = new MVT().readFeatures(decompressed, {
+              const safeBuffer = new Uint8Array(decompressed.length);
+              safeBuffer.set(decompressed);
+              const features = new MVT().readFeatures(safeBuffer.buffer, {
                 extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
                 featureProjection: 'EPSG:3857',
               });
-
               vectorTile.setFeatures(features);
             } catch (error) {
               vectorTile.setState(TileState.ERROR);
@@ -644,6 +603,7 @@ export class MapService {
     }
   }
 
+  // 17. CYCLE ZOOM //////////////////////////////
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
       console.warn('Map wrapper element not found');

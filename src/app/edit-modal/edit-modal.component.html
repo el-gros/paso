@@ -1,84 +1,95 @@
 <ion-header class="modal-header">
-  <div class="modal-title" *ngIf="edit">
-    <strong>{{ 'EDIT_MODAL.HEADER' | translate }}</strong>
-  </div>
-
-  <div class="modal-title" *ngIf="!edit">
-    <strong>{{ modalEdit.name }}</strong>
-  </div>
+  @if (edit) {
+    <div class="modal-title">
+      <strong>{{ 'EDIT_MODAL.HEADER' | translate }}</strong>
+    </div>
+  } @else {
+    <div class="modal-title">
+      <strong>{{ modalEdit.name }}</strong>
+    </div>
+  }
 
   <!-- Divider -->
-  <hr class="modal-divider"/>
+  <hr class="modal-divider" />
 </ion-header>
 
 <ion-content class="modal-content">
-  <div class="modal-message" *ngIf="edit">
-    <strong>{{ 'EDIT_MODAL.NAME' | translate }}:</strong>
-  </div>
+  @if (edit) {
+    <div class="modal-message">
+      <strong>{{ 'EDIT_MODAL.NAME' | translate }}:</strong>
+    </div>
 
-  <div *ngIf="edit"
-    class="modal-name white"
-    contenteditable="true"
-    aria-label="Editable message section"
-    (input)="onNameChange($event)">
-    {{modalEdit.name}}
-  </div>
+    <div
+      class="modal-name white"
+      contenteditable="true"
+      aria-label="Editable message section"
+      (input)="onNameChange($event)">
+      {{ modalEdit.name }}
+    </div>
+  }
 
   <div class="modal-message">
     <strong>{{ 'EDIT_MODAL.PLACE' | translate }}:</strong>
   </div>
 
-  <div *ngIf="edit"
-    class="modal-name white"
-    contenteditable="true"
-    aria-label="Editable message section"
-    (input)="onPlaceChange($event)">
-    {{modalEdit.place}}
-  </div>
-
-  <div *ngIf="!edit"
-    class="modal-name"
-    contenteditable="false"
-    aria-label="Non-editable message section">
-    {{modalEdit.place}}
-  </div>
+  @if (edit) {
+    <div
+      class="modal-name white"
+      contenteditable="true"
+      aria-label="Editable message section"
+      (input)="onPlaceChange($event)">
+      {{ modalEdit.place }}
+    </div>
+  } @else {
+    <div
+      class="modal-name"
+      contenteditable="false"
+      aria-label="Non-editable message section">
+      {{ modalEdit.place }}
+    </div>
+  }
 
   <div class="modal-message">
     <strong>{{ 'EDIT_MODAL.DESCRIPTION' | translate }}:</strong>
   </div>
 
-  <div *ngIf="edit"
-    class="modal-description white"
-    overFlow="hidden"
-    contenteditable="true"
-    aria-label="Editable message section"
-    [innerHTML]="modalEdit.description"
-    (input)="onDescriptionChange($event)">
-  </div>
-
-  <div *ngIf="!edit"
-    class="modal-description"
-    overFlow="hidden"
-    contenteditable="false"
-    aria-label="Non-editable message section"
-    [innerHTML]="modalEdit.description">
-  </div>
-
+  @if (edit) {
+    <div
+      class="modal-description white"
+      style="overflow: hidden;"
+      contenteditable="true"
+      aria-label="Editable message section"
+      [innerHTML]="modalEdit.description"
+      (input)="onDescriptionChange($event)">
+    </div>
+  } @else {
+    <div
+      class="modal-description"
+      style="overflow: hidden;"
+      contenteditable="false"
+      aria-label="Non-editable message section"
+      [innerHTML]="modalEdit.description">
+    </div>
+  }
 </ion-content>
 
 <ion-footer class="modal-footer">
-
-  <ion-buttons class="modal-buttons" *ngIf="edit">
-    <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
-    <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
-  </ion-buttons>
-
-  <ion-button
-  (click)="toggleEdit()"
-  *ngIf="!edit"
-  fill="clear"
-  class="modal-edit-button">
-  <ion-icon name="create" class="modal-large-icon"></ion-icon>
-</ion-button>
-
+  @if (edit) {
+    <ion-buttons class="modal-buttons">
+      <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">
+        OK
+      </ion-button>
+      <br />
+      <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">
+        {{ cancel }}
+      </ion-button>
+    </ion-buttons>
+  } @else {
+    <ion-button
+      (click)="toggleEdit()"
+      fill="clear"
+      class="modal-edit-button">
+      <ion-icon name="create" class="modal-large-icon"></ion-icon>
+    </ion-button>
+  }
 </ion-footer>

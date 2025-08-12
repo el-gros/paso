@@ -1,15 +1,15 @@
 /**
- * Tab2Page component for managing and displaying archived tracks.
+ * Archive page component for managing archived tracks.
  *
- * Handles track selection, editing, deletion, exporting to GPX, and sharing.
- * Provides multi-language support for UI labels and messages.
- * Integrates with global state and organization-specific services for storage, alerts, and navigation.
- * Includes methods for batch operations, menu handling, and resetting selection state.
+ * Provides functionality to view, edit, delete, export, and display archived tracks,
+ * including conversion to GPX format and sharing via device capabilities.
+ * Integrates with translation, language, and storage services, and supports menu actions.
+ * Handles UI state for checked tracks and layer visibility.
  */
 
 import { Component } from '@angular/core';
 import { IonicModule, AlertController } from '@ionic/angular';
-import { Track, TrackDefinition, Waypoint } from '../../globald';
+import { TrackDefinition, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -30,7 +30,6 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 export class Tab2Page {
 
   numChecked: number = 0;
-  num: number = 0;
   get layerVisibility(): string { return global.layerVisibility; }
   get presentSearch(): boolean { return global.presentSearch; }
   get archivedPresent(): boolean { return global.archivedPresent; }
@@ -60,6 +59,7 @@ export class Tab2Page {
     12. openMenu()
     13. selectOption()
     14. resetSelection()
+    15. onInit()
   */
 
   // 1. ON VIEW DID ENTER ////////////
@@ -93,7 +93,8 @@ export class Tab2Page {
     const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
- ////////////////////////
+
+  // 4. DELETE TRACKS /////////////////////////////
   async deleteTracks() {
     const cancel = this.translate.instant('ARCHIVE.CANCEL');
     const header = this.translate.instant('ARCHIVE.HEADER');
@@ -107,21 +108,13 @@ export class Tab2Page {
         text: cancel,
         role: 'cancel',
         cssClass: 'alert-cancel-button',
-        handler: this.onCancelDeleteTracks.bind(this)
+        handler: () => { this.resetSelection(); }
       }, {
         text: 'OK',
         cssClass: 'alert-ok-button',
-        handler: this.onConfirmDeleteTracks.bind(this)
+        handler: () => { this.yesDeleteTracks(); }
       }]
     });    await alert.present();
-  }
-
-  private async onCancelDeleteTracks() {
-    await this.resetSelection();
-  }
-
-  private onConfirmDeleteTracks() {
-    this.yesDeleteTracks();
   }
 
   // 5. DISPLAY TRACK ///////////////////////////
@@ -278,6 +271,7 @@ export class Tab2Page {
     global.key = "null";
   }
 
+  // 15. ON INIT //////////////////////////////////////
   onInit() {
     const lang = this.languageService.getCurrentLanguage();
   }

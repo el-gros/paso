@@ -1,69 +1,80 @@
 <ion-header class="modal-header">
-  <div class="modal-title" *ngIf="edit">
-    <strong>{{ 'WPT_HEADER' | translate }}</strong>
-  </div>
-
-  <div class="modal-title" *ngIf="!edit">
-    <strong>{{ wptEdit.name }}</strong>
-  </div>
+  @if (edit) {
+    <div class="modal-title">
+      <strong>{{ 'WPT_HEADER' | translate }}</strong>
+    </div>
+  } @else {
+    <div class="modal-title">
+      <strong>{{ wptEdit.name }}</strong>
+    </div>
+  }
 
   <!-- Divider -->
-  <hr class="modal-divider"/>
+  <hr class="modal-divider" />
 </ion-header>
 
 <ion-content class="modal-content">
-  <div class="modal-message" *ngIf="showAltitude">
-    <strong>{{ 'WPT_ALTITUDE' | translate }}: </strong>{{ wptEdit.altitude | number: '1.1-1' }} m
-  </div>
+  @if (showAltitude) {
+    <div class="modal-message">
+      <strong>{{ 'WPT_ALTITUDE' | translate }}: </strong>{{ wptEdit.altitude | number:'1.1-1' }} m
+    </div>
+  }
 
-  <div class="modal-message" *ngIf="edit">
-    <strong>{{ 'WPT_NAME' | translate }}:</strong>
-  </div>
+  @if (edit) {
+    <div class="modal-message">
+      <strong>{{ 'WPT_NAME' | translate }}:</strong>
+    </div>
 
-  <div *ngIf="edit"
-    class="modal-name white"
-    contenteditable="true"
-    aria-label="Editable message section"
-    (input)="onNameChange($event)">
-    {{wptEdit.name}}
-  </div>
+    <div
+      class="modal-name white"
+      contenteditable="true"
+      aria-label="Editable message section"
+      (input)="onNameChange($event)">
+      {{ wptEdit.name }}
+    </div>
+  }
 
   <div class="modal-message">
     <strong>{{ 'WPT_COMMENT' | translate }}:</strong>
   </div>
 
-  <div *ngIf="edit"
-    class="modal-description white"
-    overFlow="hidden"
-    contenteditable="true"
-    aria-label="Editable message section"
-    [innerHTML]="wptEdit.comment"
-    (input)="onCommentChange($event)">
-  </div>
-
-  <div *ngIf="!edit"
-    class="modal-description"
-    overFlow="hidden"
-    contenteditable="false"
-    aria-label="Non-editable message section"
-    [innerHTML]="wptEdit.comment">
-  </div>
-
+  @if (edit) {
+    <div
+      class="modal-description white"
+      style="overflow: hidden"
+      contenteditable="true"
+      aria-label="Editable message section"
+      [innerHTML]="wptEdit.comment"
+      (input)="onCommentChange($event)">
+    </div>
+  } @else {
+    <div
+      class="modal-description"
+      style="overflow: hidden"
+      contenteditable="false"
+      aria-label="Non-editable message section"
+      [innerHTML]="wptEdit.comment">
+    </div>
+  }
 </ion-content>
 
 <ion-footer class="modal-footer">
-
-  <ion-buttons class="modal-buttons" *ngIf="edit">
-    <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">OK</ion-button><br>
-    <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">{{cancel}}</ion-button>
-  </ion-buttons>
-
-  <ion-button
-  (click)="toggleEdit()"
-  *ngIf="!edit"
-  fill="clear"
-  class="modal-edit-button">
-  <ion-icon name="create" class="modal-large-icon"></ion-icon>
-</ion-button>
-
+  @if (edit) {
+    <ion-buttons class="modal-buttons">
+      <ion-button slot:end class="modal-confirm-button" (click)="dismissWithAction('ok')">
+        OK
+      </ion-button>
+      <br />
+      <ion-button slot:end class="modal-cancel-button" (click)="dismissWithAction('cancel')">
+        {{ cancel }}
+      </ion-button>
+    </ion-buttons>
+  } @else {
+    <ion-button
+      (click)="toggleEdit()"
+      fill="clear"
+      class="modal-edit-button">
+      <ion-icon name="create" class="modal-large-icon"></ion-icon>
+    </ion-button>
+  }
 </ion-footer>

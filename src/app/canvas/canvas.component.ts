@@ -26,7 +26,6 @@ register();
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  //imports: [CommonModule, IonFab, IonContent, IonFabButton, IonIcon],
   imports: [IonicModule, CommonModule, TranslateModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

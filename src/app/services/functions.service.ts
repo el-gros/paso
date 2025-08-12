@@ -44,11 +44,13 @@ export class FunctionsService {
     8. check
     9. displayToast
     10. uncheckAll
-
+    11. computeCumulativeDistances
     12. retrieveTrack
     13. showAlert
+    14. computeElevationGainAndLoss
+    15. fillProperties
     16. computeMinMaxProperty
-
+    17. createTimes
     18. editTrack
     19. editWaypoint
     20. gotoPage
@@ -174,6 +176,21 @@ export class FunctionsService {
     await this.storeSet('collection', global.collection);
   }
 
+  // 11. COMPUTE CUUMULATIVE DISTANCES
+  async computeCumulativeDistances(
+    rawCoordinates: [number, number][]
+  ): Promise<number[]> {
+    const distances: number[] = [0];
+    for (let i = 1; i < rawCoordinates.length; i++) {
+      const [lon1, lat1] = rawCoordinates[i - 1];
+      const [lon2, lat2] = rawCoordinates[i];
+      const segmentDistance = this.computeDistance(lon1, lat1, lon2, lat2);
+      const cumulativeDistance = distances[i - 1] + segmentDistance;
+      distances.push(cumulativeDistance);
+    }
+    return distances;
+  }
+
   // 12. RETRIEVE ARCHIVED TRACK //////////////////////////
   async retrieveTrack() {
     var track: Track | undefined;
@@ -197,6 +214,36 @@ export class FunctionsService {
     return await alert.present();
   }
 
+  // 14. COMPUTE ELEVATION GAIN & LOSS ///////////////////////
+  async computeElevationGainAndLoss(altitudes: number[]): Promise<{ gain: number; loss: number; }> {
+    let gain = 0;
+    let loss = 0;
+    for (let i = 1; i < altitudes.length; i++) {
+      const diff = altitudes[i] - altitudes[i - 1];
+      if (diff > 0) {
+        gain += diff;
+      } else if (diff < 0) {
+        loss -= diff; // Subtracting a negative to get positive loss
+      }
+    }
+    return { gain, loss };
+  }
+
+  // 15. FILL PROPERTIES ///////////////////////////////////////
+  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined, times: number[], speed: number): Promise<Data[] > {
+    if (!distances || !altitudes || distances.length !== altitudes.length) {
+      return [];
+    }
+    const result: Data[] = distances.map((distance, i) => ({
+      altitude: altitudes[i],
+      speed: speed,
+      time: times[i],
+      compSpeed: speed,
+      distance: distance,
+    }));
+    return result;
+  }
+
   // 16. COMPUTE MAXIMUM AND MINIMUM OF A PROPERTY /////
   async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
     if (data.length === 0) {
@@ -212,6 +259,19 @@ export class FunctionsService {
       min: Math.min(...values),
       max: Math.max(...values)
     };
+  }
+
+  // 17. CREATE TIMES /////////////////////////////////////////
+  async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
+    const totalDistance = data.response.features[0].properties.summary.distance;
+    const totalDuration = data.response.features[0].properties.summary.duration * 1000; // in ms
+    const endTime = date.getTime(); // in ms
+    const startTime = endTime - totalDuration;
+      return distances.map(d => {
+      const ratio = d / totalDistance;
+      const timeOffset = ratio * totalDuration;
+      return Math.round(startTime + timeOffset); // in ms
+    });
   }
 
   // 18. EDIT TRACK DETAILS //////////////////////////////
@@ -368,35 +428,6 @@ export class FunctionsService {
   // 24. SANITIZE INPUT /////////////////////////////////////////
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [], FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'svg', 'math'], FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'oninput', 'onchange'] }).trim();
-  }
-
-  // COMPUTE CYUMULATIVE DISTANCES
-  async computeCumulativeDistances(
-    rawCoordinates: [number, number][]
-  ): Promise<number[]> {
-    const distances: number[] = [0];
-    for (let i = 1; i < rawCoordinates.length; i++) {
-      const [lon1, lat1] = rawCoordinates[i - 1];
-      const [lon2, lat2] = rawCoordinates[i];
-      const segmentDistance = this.computeDistance(lon1, lat1, lon2, lat2);
-      const cumulativeDistance = distances[i - 1] + segmentDistance;
-      distances.push(cumulativeDistance);
-    }
-    return distances;
-  }
-
-  async fillProperties(distances: number[] | undefined, altitudes: number[] | undefined, times: number[], speed: number): Promise<Data[] > {
-    if (!distances || !altitudes || distances.length !== altitudes.length) {
-      return [];
-    }
-    const result: Data[] = distances.map((distance, i) => ({
-      altitude: altitudes[i],
-      speed: speed,
-      time: times[i],
-      compSpeed: speed,
-      distance: distance,
-    }));
-    return result;
   }
 
 }
