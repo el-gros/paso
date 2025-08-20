@@ -21,7 +21,8 @@
 
   "ARCHIVE": {
     "TRACKS": "Trayectos",
-    "EXPORT_TRACK": "EXPORTAR TRAYECTO",
+    "EXPORT_TRACK": "COMPARTIR TRAYECTO",
+    "EXPORT_FILE": "EXPORTAR ARCHIVO",
     "DISPLAY_ALL": "MOSTRAR TODOS",
     "HIDE_ALL": "ESCONDER TODOS",
     "REMOVE_TRACKS": "ELIMINAR TRAYECTOS",
@@ -41,7 +42,7 @@
     "TOAST4": "Error al cargar la colección",
     "TOAST5": "Error al cargar el trayecto"
   },
-  
+
   "CANVAS": {
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
     "CURTITLE": "TRAYECTO ACTUAL",

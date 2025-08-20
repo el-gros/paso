@@ -1,7 +1,9 @@
 ion-toolbar {
-  height: 85px;
+  height: 75px;
   display: flex;
-  align-items: center; /* This is good */
+  align-items: center;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 /* Title Styling */

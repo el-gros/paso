@@ -19,7 +19,7 @@
           </tr>
           <tr>
             <td>{{ 'CANVAS.EGAIN' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
+            <td>{{ currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>            <td>{{ currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
           </tr>
             <td>{{ 'CANVAS.ELOSS' | translate }}</td>
             <td>{{ currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
@@ -178,5 +178,4 @@
       </ion-fab-button>
     </ion-row>
   </ion-fab>
-
 

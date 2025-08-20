@@ -21,7 +21,8 @@
 
   "ARCHIVE": {
     "TRACKS": "Tracks",
-    "EXPORT_TRACK": "EXPORT TRACK",
+    "EXPORT_TRACK": "SHARE TRACK",
+    "EXPORT_FILE": "EXPORT FILE",
     "DISPLAY_ALL": "DISPLAY ALL",
     "HIDE_ALL": "HIDE ALL",
     "REMOVE_TRACKS": "REMOVE TRACKS",
@@ -38,7 +39,8 @@
     "TOAST1": "Track exported and shared successfully!",
     "TOAST2": "Exportation failed",
     "TOAST3": "The selected tracks have been removed",
-    "TOAST4": "Error loading collection"
+    "TOAST4": "Error loading collection",
+    "TOAST5": "Error loading track"
   },
 
   "CANVAS": {

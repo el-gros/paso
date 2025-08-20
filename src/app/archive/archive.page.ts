@@ -12,7 +12,6 @@ import { IonicModule, AlertController } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -38,7 +37,6 @@ export class Tab2Page {
   constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
-    private router: Router,
     private menu: MenuController,
     private languageService: LanguageService,
     private translate: TranslateService
@@ -74,6 +72,7 @@ export class Tab2Page {
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST4'));
       console.error('ionViewDidEnter error:', error);
     }
+    if (global.buildTrackImage) await this.shareImages();
   }
 
   // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
@@ -121,7 +120,7 @@ export class Tab2Page {
   async displayTrack(active: boolean) {
     if (active) global.layerVisibility = 'archived'
     else global.layerVisibility = 'none'
-    this.router.navigate(['tab1']);
+    this.fs.gotoPage('tab1');
   }
 
   // 6. CONFIRM, YES, DELETE TRACKS ////////////////////////
@@ -192,7 +191,7 @@ export class Tab2Page {
   }
 
   // 8. EXPORT TRACK //////////////////////////
-  async exportTrack() {
+  async exportTrackFile() {
     // Helper to sanitize file names for cross-platform compatibility
     const sanitizeFilename = (name: string): string =>
       (name ?? 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
@@ -206,10 +205,8 @@ export class Tab2Page {
     var gpxText = await this.geoJsonToGpx(track.features?.[0]);
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
     const file: string = `${sanitizedName}.gpx`;
-    const toast1 = this.translate.instant('ARCHIVE.TOAST1');
-    const toast2 = this.translate.instant('ARCHIVE.TOAST2');
     try {
-      // Write the file to                           the Data directory
+      // Write the file to the Data directory
       const result = await Filesystem.writeFile({
         path: file,
         data: gpxText,
@@ -239,7 +236,7 @@ export class Tab2Page {
   async displayAllTracks(active: boolean) {
     if (active) global.layerVisibility = 'multi'
     else global.layerVisibility = 'none'
-    this.router.navigate(['tab1']);
+    this.fs.gotoPage('tab1');
   }
 
   // 10. ION VIEW WILL LEAVE
@@ -250,7 +247,7 @@ export class Tab2Page {
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
     global.removeSearch = true;
-    this.router.navigate(['tab1']);
+    this.fs.gotoPage('tab1');
   }
 
   // 12. OPEN MENU ///////////////////////
@@ -274,6 +271,39 @@ export class Tab2Page {
   // 15. ON INIT //////////////////////////////////////
   onInit() {
     const lang = this.languageService.getCurrentLanguage();
+  }
+
+  async prepareImageExport() {
+    // Inform tab1 on action to do
+    global.buildTrackImage = true;
+    // Display archived track
+    await this.displayTrack(true);
+  }
+
+  async shareImages() {
+    try {
+      // Get file URIs from cache
+      const mapFile = await Filesystem.getUri({
+        path: 'map.png',
+        directory: Directory.Cache,
+      });
+      const slideFile = await Filesystem.getUri({
+        path: 'data.png',
+        directory: Directory.Cache,
+      });
+      // Share both
+      await Share.share({
+        title: this.translate.instant('ARCHIVE.TITLE'),
+        text: this.translate.instant('ARCHIVE.TEXT'),
+        dialogTitle: 'Share images',
+        files: [mapFile.uri, slideFile.uri], // send both files
+      });
+      // Cleanup (optional, if you don’t need them afterwards)
+      await Filesystem.deleteFile({ path: 'map.png', directory: Directory.Cache });
+      await Filesystem.deleteFile({ path: 'data.png', directory: Directory.Cache });
+    } catch (err) {
+      console.error('Failed to share images:', err);
+    }
   }
 
 }

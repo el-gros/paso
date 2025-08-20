@@ -9,7 +9,7 @@
  */
 
 import { firstValueFrom } from 'rxjs';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Component, OnInit } from '@angular/core';
 import { IonicModule, ModalController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
@@ -20,6 +20,7 @@ import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MapService } from '../services/map.service';
 import { LocationResult, Route } from '../../globald';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Component({
     selector: 'app-search-modal',
@@ -50,8 +51,7 @@ export class SearchModalComponent implements OnInit {
   constructor(
     private modalController: ModalController,
     private fs: FunctionsService,
-    private http: HttpClient,
-    private languageService: LanguageService,
+    private http: HttpClient, // <-- now you can use this.http
     private translate: TranslateService,
     public mapService: MapService
   ) { }
@@ -82,14 +82,23 @@ ngOnInit(): void {
 }
 
 // 2. SEARCH LOCATION ///////////////////////////////////////////
+
 async searchLocation() {
   if (!this.query) return;
   this.loading = true;
+
   const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
+
   try {
-    const response = await firstValueFrom(this.http.get<LocationResult[]>(url));
-    this.results = response ?? [];
+    const response = await CapacitorHttp.get({
+      url,
+      headers: { 'Accept': 'application/json' }
+    });
+
+    // response.data is already parsed JSON
+    this.results = response.data ?? [];
     this.showCurrent = false;
+
   } catch (error) {
     console.error('Error fetching geocoding data:', error);
     this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
@@ -137,27 +146,46 @@ dismissModal() {
   this.modalController.dismiss();
 }
 
-// 5. REQUEST ////////////////////////////
 async request() {
   this.loading = true;
+
   const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransportation}/geojson`;
   const body = {
     coordinates: [this.start, this.destination]
   };
-  const headers = new HttpHeaders({
-    'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
-    'Content-Type': 'application/json',
-    'Authorization': global.authorization
-  });
+
   try {
-    const response = await firstValueFrom(this.http.post<Route>(url, body, { headers }));
-    if (response && response.features && response.features.length > 0) {
-      response.trackName = this.trackName;
-      this.modalController.dismiss({ response });
+    let responseData: Route;
+
+    if (Capacitor.isNativePlatform()) {
+      // Native HTTP via Capacitor
+      const resp = await CapacitorHttp.post({
+        url,
+        headers: {
+          'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+          'Content-Type': 'application/json',
+          'Authorization': global.authorization
+        },
+        data: body
+      });
+      responseData = resp.data;
+    } else {
+      // Browser HTTP via Angular
+      const headers = new HttpHeaders({
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+        'Content-Type': 'application/json',
+        'Authorization': global.authorization
+      });
+      responseData = await firstValueFrom(this.http.post<Route>(url, body, { headers }));
+    }
+    if (responseData && responseData.features && responseData.features.length > 0) {
+      responseData.trackName = this.trackName;
+      this.modalController.dismiss({ response: responseData });
     } else {
       this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
       this.modalController.dismiss();
     }
+
   } catch (error) {
     this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
     this.modalController.dismiss();

@@ -13,12 +13,13 @@ import { global } from '../../environments/environment';
 import { Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import html2canvas from 'html2canvas';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 register();
 
 @Component({
@@ -55,7 +56,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription = new Subscription();
 
   constructor(
-    private router: Router,
     public fs: FunctionsService,
     public ts: TrackService,
     private languageService: LanguageService,
@@ -108,6 +108,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     // Variables
     this.layerVisibility = global.layerVisibility;
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
+    // If we are in exportation process...
+    if (global.buildTrackImage) await this.triggerExport();
   }
 
   // 4. COMPUTE AVERAGE SPEEDS AND TIMES
@@ -308,6 +310,35 @@ export class CanvasComponent implements OnInit, OnDestroy {
       return lastUnit;
     } finally {
       // Close canvas
+    }
+  }
+
+  async triggerExport(): Promise<void> {
+    // Find the second slide
+    const slide2 = document.querySelector('swiper-slide:nth-of-type(2)') as HTMLElement;
+    if (!slide2) {
+      console.error('Slide 2 not found');
+      return undefined;
+    }
+    // Render slide2 to canvas
+    const canvas = await html2canvas(slide2);
+    // Convert to base64 (strip prefix)
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64Data = dataUrl.split(',')[1];
+    try {
+      // Save directly as file (e.g. data.png)
+      const fileResult = await Filesystem.writeFile({
+        path: 'data.png',
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+      console.log('Slide 2 saved at:', fileResult.uri);
+      // Navigate to archive page
+      this.fs.gotoPage('archive');
+      return; // so you can use it later (Share, email…)
+    } catch (err) {
+      console.error('Failed to save slide 2 image:', err);
+      return;
     }
   }
 

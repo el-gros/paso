@@ -16,6 +16,8 @@ export var global: any = {
   locationUpdate: false as boolean,
   archivedTrack: undefined as Track | undefined,
   state: 'inactive' as 'inactive' | 'tracking' | 'stopped' | 'saved',
+  buildTrackImage: false as boolean,
+  mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
 
   // Dynamic getter for the cancel button
   get okButton() {

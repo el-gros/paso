@@ -32,7 +32,7 @@ import { App } from '@capacitor/app';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Filesystem, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -42,6 +42,7 @@ import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { CapacitorHttp } from '@capacitor/core';
 
 useGeographic();
 register();
@@ -188,7 +189,8 @@ export class Tab1Page {
       // Listen for app URL open events (e.g., file tap)
       this.addFileListener();
       // Check map provider
-      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+      if (!global.buildTrackImage) this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
+      else this.mapProvider = 'MapTiler_outdoor';
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
@@ -280,10 +282,11 @@ export class Tab1Page {
           // Display archived track
           await this.showArchivedTrack();
           // Set map view for archived track if no current track
-          if (!this.currentTrack) await this.mapService.setMapView(this.map, this.archivedTrack);
+          if (!this.currentTrack || global.buildTrackImage) this.mapService.setMapView(this.map, this.archivedTrack);
         }
         // assign visibility
         if (this.multiLayer) this.multiLayer.setVisible(false);
+        if (global.buildTrackImage) this.buildTrackImage()
       }
       else if (global.layerVisibility == 'multi') {
         // hide archived track
@@ -314,7 +317,7 @@ export class Tab1Page {
       }
       // center current track
       if (this.currentTrack) {
-        await this.mapService.setMapView(this.map, this.currentTrack);
+        this.mapService.setMapView(this.map, this.currentTrack);
       }
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
@@ -436,7 +439,7 @@ export class Tab1Page {
     // Set waypoint altitude
     await this.setWaypointAltitude()
     // set map view
-    await this.mapService.setMapView(this.map, this.currentTrack);
+    this.mapService.setMapView(this.map, this.currentTrack);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
@@ -1289,7 +1292,6 @@ async createLayers() {
       currentProvider: previousProvider,
       mapProvider: this.mapProvider,
       server: this.server,
-      //createSource: this.createSource.bind(this),
       fs: this.fs,
       onFadeEffect: () => {
         const el = document.getElementById('map');
@@ -1521,18 +1523,18 @@ async createLayers() {
       }))
     };
     try {
-      const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
-        method: 'POST',
+      const response = await CapacitorHttp.post({
+        url: 'https://api.open-elevation.com/api/v1/lookup',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        data: requestBody, // no need to JSON.stringify
       });
-      if (!response.ok) {
-        // Optionally, provide user feedback here
+      // Check status
+      if (response.status < 200 || response.status >= 300) {
         this.fs.displayToast('Failed to fetch elevation data.');
         return [];
       }
-      const data = await response.json();
-      return data.results.map((result: any) => result.elevation);
+      // `response.data` is already parsed JSON
+      return response.data.results.map((result: any) => result.elevation);
     } catch (error) {
       // Handle network or parsing errors gracefully
       this.fs.displayToast('Error retrieving elevation data.');
@@ -1550,6 +1552,61 @@ async createLayers() {
     catch {
       return {altitudes: null, slopes: null}
     }
+  }
+
+  async buildTrackImage() {
+    // Hide current track if it exists
+    const visible = this.currentLayer?.getVisible() || false;
+    if (this.currentLayer) this.currentLayer.setVisible(false);
+    // transform map to image
+    if (this.map) {
+      await this.exportMapToImage(this.map);
+    }
+    // Restore visibility of current track
+    if (this.currentLayer) this.currentLayer.setVisible(visible);
+    // Go to data page
+    this.fs.gotoPage('canvas');
+  }
+
+  async exportMapToImage(map: Map): Promise<void> {
+    return new Promise((resolve) => {
+      map.once('rendercomplete', async () => {
+        const mapCanvas = document.createElement('canvas');
+        const size = map.getSize();
+        if (!size) return resolve();
+        mapCanvas.width = size[0];
+        mapCanvas.height = size[1];
+        const ctx = mapCanvas.getContext('2d');
+        if (!ctx) return resolve();
+        Array.prototype.forEach.call(
+          document.querySelectorAll('.ol-layer canvas'),
+          (canvas: HTMLCanvasElement) => {
+            if (canvas.width > 0) {
+              const opacity =
+                (canvas.parentNode &&
+                  (canvas.parentNode as HTMLElement).style.opacity) || 1;
+              ctx.globalAlpha = Number(opacity);
+              ctx.drawImage(canvas, 0, 0);
+            }
+          }
+        );
+        // Convert canvas to base64 PNG
+        const dataUrl = mapCanvas.toDataURL('image/png');
+        const base64Data = dataUrl.split(',')[1]; // strip the "data:image/png;base64,"
+        try {
+          // Save to Capacitor Filesystem (cache directory)
+          await Filesystem.writeFile({
+            path: 'map.png',
+            data: base64Data,
+            directory: Directory.Cache,  // use Cache so OS can clean up later
+          });
+        } catch (err) {
+          console.error('Failed to save map image:', err);
+        }
+        resolve();
+      });
+      map.renderSync();
+    });
   }
 
 }

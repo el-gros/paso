@@ -31,13 +31,15 @@
       }
     </ion-list>
   </div>
-    <div class='empty'></div>
+<!--    <div class='empty'></div> -->
+  <div class="safe-area"></div>
 
   <ion-menu side="start" contentId="main-content">
     <ion-content>
       <ion-list>
         <ion-item class="menu-button" button [disabled]='(!presentSearch)' (click)="removeSearch()">{{'ARCHIVE.REMOVE_SEARCH' | translate}}</ion-item>
-        <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="exportTrack()">{{'ARCHIVE.EXPORT_TRACK' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="exportTrackFile()">{{'ARCHIVE.EXPORT_TRACK' | translate}}</ion-item>
+ <!--       <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="prepareImageExport()">{{'ARCHIVE.EXPORT_FILE' | translate}}</ion-item> -->
         <ion-item class="menu-button" button [disabled]="(layerVisibility == 'multi')" (click)="displayAllTracks(true)">{{'ARCHIVE.DISPLAY_ALL' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]="(layerVisibility != 'multi')" (click)="displayAllTracks(false)">{{'ARCHIVE.HIDE_ALL' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked == 0)' (click)="deleteTracks()">{{'ARCHIVE.REMOVE_TRACKS' | translate}}</ion-item>

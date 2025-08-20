@@ -283,6 +283,21 @@ export class MapService {
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({ source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }) });
         break;
+      case "MapTiler_streets":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
+        break;
+      case "MapTiler_outdoor":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
+        break;
+      case "MapTiler_satellite":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
+        break;
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
         olLayer = new TileLayer({ source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }) });
@@ -372,6 +387,24 @@ export class MapService {
         newBaseLayer = new TileLayer({
           source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }),
         });
+        break;
+      case "MapTiler_streets":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        newBaseLayer = new TileLayer({
+          source: new XYZ({ url: `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
+        break;
+      case "MapTiler_outdoor":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        newBaseLayer = new TileLayer({
+          source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
+        break;
+      case "MapTiler_satellite":
+        credits = '© MapTiler © OpenStreetMap contributors';
+        newBaseLayer = new TileLayer({
+          source: new XYZ({ url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          crossOrigin: 'anonymous' }) });
         break;
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';

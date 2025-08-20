@@ -20,7 +20,7 @@ import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 })
 
 export class FunctionsService {
-
+    private images: { [key: string]: string } = {};
   // Optional UI refresh callback, can be set by the consumer of this service
   refreshCollectionUI?: () => void;
 

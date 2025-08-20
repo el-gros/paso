@@ -136,7 +136,7 @@
 
 // GREENISH ALERT ////////////////////////////////////
     .greenishAlert{
-      --background: #a8ff9f !important;
+      --background: #B5FFAC !important;
     }
 
 // RED ALERT ////////////////////////////////////
@@ -328,15 +328,17 @@
   position: fixed;
   bottom: 0;
   left: 0;
+  right: 0;
   width: 100%;
-  height: env(safe-area-inset-bottom);
+  height: 50px;
   background-color: #ccc; /* light gray */
   z-index: 10;
 }
 
 /* Ensure FAB stays above the gray bar and not overlapped */
 .bottom-safe {
-  margin-bottom: env(safe-area-inset-bottom);
+  /*margin-bottom: env(safe-area-inset-bottom);*/
+  margin-bottom: 50px;
   z-index: 20;
 }
 
