@@ -224,6 +224,11 @@ export class Tab2Page {
         url: fileUri.uri,
         dialogTitle: dialog_title
       });
+      // ✅ Delete the file afterwards
+      await Filesystem.deleteFile({
+        path: file,
+        directory: Directory.External,
+      });
       // Show success toast
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
     } catch (e) {
@@ -301,6 +306,8 @@ export class Tab2Page {
       // Cleanup (optional, if you don’t need them afterwards)
       await Filesystem.deleteFile({ path: 'map.png', directory: Directory.Cache });
       await Filesystem.deleteFile({ path: 'data.png', directory: Directory.Cache });
+      // finish exportation
+      global.buildTrackImage = false;
     } catch (err) {
       console.error('Failed to share images:', err);
     }

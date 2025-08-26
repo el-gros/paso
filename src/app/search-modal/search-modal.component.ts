@@ -148,46 +148,36 @@ dismissModal() {
 
 async request() {
   this.loading = true;
-
   const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransportation}/geojson`;
   const body = {
     coordinates: [this.start, this.destination]
   };
-
   try {
     let responseData: Route;
-
-    if (Capacitor.isNativePlatform()) {
-      // Native HTTP via Capacitor
-      const resp = await CapacitorHttp.post({
-        url,
-        headers: {
-          'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
-          'Content-Type': 'application/json',
-          'Authorization': global.authorization
-        },
-        data: body
-      });
-      responseData = resp.data;
-    } else {
-      // Browser HTTP via Angular
-      const headers = new HttpHeaders({
+    // Always native HTTP on Android
+    const resp = await CapacitorHttp.post({
+      url,
+      headers: {
         'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
         'Content-Type': 'application/json',
         'Authorization': global.authorization
-      });
-      responseData = await firstValueFrom(this.http.post<Route>(url, body, { headers }));
-    }
+      },
+      data: body
+    });
+    responseData = resp.data;
+    responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+    console.log('response', responseData)
     if (responseData && responseData.features && responseData.features.length > 0) {
       responseData.trackName = this.trackName;
       this.modalController.dismiss({ response: responseData });
     } else {
+      console.log('some problem')
       this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
       this.modalController.dismiss();
     }
-
   } catch (error) {
     this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
+    console.log('dismiss empty')
     this.modalController.dismiss();
   } finally {
     this.loading = false;

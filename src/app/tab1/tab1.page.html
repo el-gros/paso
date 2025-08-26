@@ -1,7 +1,7 @@
 
   <!-- buttons to select start / stop recording or save track -->
 
-  <ion-fab slot="fixed" horizontal="center" vertical="top">
+  <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe" >
     <ion-row>
       @if (state == 'inactive') {
         <ion-fab-button id="start" (click)="startTracking()">
@@ -27,7 +27,7 @@
         </ion-fab-button>
       }
 
-      <div style="width: 120px;"></div>
+      <div style="width: 40px;"></div>
 
       <ion-fab-button id='search' (click)="search()">
         <ion-icon name="pin"></ion-icon>

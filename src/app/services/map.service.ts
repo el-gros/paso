@@ -104,7 +104,7 @@ export class MapService {
     currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
-      await this.setMapView(map, currentTrack);
+      this.setMapView(map, currentTrack);
     }
   }
 

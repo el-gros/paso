@@ -8,7 +8,7 @@
 import { Component, NgZone } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import { PluginListenerHandle, registerPlugin } from "@capacitor/core";
+import { Capacitor, PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
 import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
@@ -184,8 +184,6 @@ export class Tab1Page {
     try {
       // Listen for state changes
       this.listenToAppStateChanges();
-      // create storage
-      await this.storage.create();
       // Listen for app URL open events (e.g., file tap)
       this.addFileListener();
       // Check map provider
@@ -480,7 +478,7 @@ export class Tab1Page {
     const modal = await this.modalController.create({
       component: EditModalComponent,
       componentProps: { modalEdit, edit },
-      cssClass: ['modal-class','yellow-class'] ,
+      cssClass: ['modal-class','green-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
     await modal.present();
@@ -1401,7 +1399,7 @@ async createLayers() {
     const date = new Date();
     var trackName = ''
     if (data) {
-      console.log(data.response)
+      console.log("got from modal", data)
       trackName = data.response.trackName;
       var slopes = {gain: NaN, loss: NaN}
       // Coordinates
@@ -1472,6 +1470,7 @@ async createLayers() {
       };
       // add new track definition and save collection
       global.collection.push(trackDef);
+      await this.fs.storeSet('collection', global.collection);
     }
   }
 
@@ -1558,6 +1557,12 @@ async createLayers() {
     // Hide current track if it exists
     const visible = this.currentLayer?.getVisible() || false;
     if (this.currentLayer) this.currentLayer.setVisible(false);
+    // Set zoom
+    const scale = 1;
+    const mapWrapperElement: HTMLElement | null = document.getElementById('map-wrapper');
+    if (mapWrapperElement) {
+      mapWrapperElement.style.transform = `scale(${scale})`;
+    }
     // transform map to image
     if (this.map) {
       await this.exportMapToImage(this.map);
@@ -1568,42 +1573,43 @@ async createLayers() {
     this.fs.gotoPage('canvas');
   }
 
-  async exportMapToImage(map: Map): Promise<void> {
+  async exportMapToImage(map: Map): Promise<string | undefined> {
     return new Promise((resolve) => {
       map.once('rendercomplete', async () => {
-        const mapCanvas = document.createElement('canvas');
         const size = map.getSize();
-        if (!size) return resolve();
-        mapCanvas.width = size[0];
-        mapCanvas.height = size[1];
+        if (!size) return resolve(undefined);
+        // Use device screen size instead of map canvas size
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const mapCanvas = document.createElement('canvas');
+        mapCanvas.width = width;
+        mapCanvas.height = height;
         const ctx = mapCanvas.getContext('2d');
-        if (!ctx) return resolve();
+        if (!ctx) return resolve(undefined);
         Array.prototype.forEach.call(
-          document.querySelectorAll('.ol-layer canvas'),
-          (canvas: HTMLCanvasElement) => {
+          document.querySelectorAll<HTMLCanvasElement>('.ol-layer canvas'),
+          (canvas) => {
             if (canvas.width > 0) {
               const opacity =
-                (canvas.parentNode &&
-                  (canvas.parentNode as HTMLElement).style.opacity) || 1;
+                (canvas.parentNode as HTMLElement)?.style.opacity || '1';
               ctx.globalAlpha = Number(opacity);
-              ctx.drawImage(canvas, 0, 0);
+              // Draw scaled into device resolution
+              ctx.drawImage(canvas, 0, 0, width, height);
             }
           }
         );
-        // Convert canvas to base64 PNG
         const dataUrl = mapCanvas.toDataURL('image/png');
-        const base64Data = dataUrl.split(',')[1]; // strip the "data:image/png;base64,"
+        const base64Data = dataUrl.split(',')[1];
         try {
-          // Save to Capacitor Filesystem (cache directory)
           await Filesystem.writeFile({
             path: 'map.png',
             data: base64Data,
-            directory: Directory.Cache,  // use Cache so OS can clean up later
+            directory: Directory.Cache,
           });
         } catch (err) {
           console.error('Failed to save map image:', err);
         }
-        resolve();
+        resolve(dataUrl); // return for preview
       });
       map.renderSync();
     });

@@ -21,6 +21,7 @@ import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 
 export class FunctionsService {
     private images: { [key: string]: string } = {};
+    private _storage: Storage | null = null;
   // Optional UI refresh callback, can be set by the consumer of this service
   refreshCollectionUI?: () => void;
 
@@ -58,6 +59,10 @@ export class FunctionsService {
     23. adjustCoordinatesAndProperties
     24. sanitize
   */
+
+  async init() {
+    this._storage = await this.storage.create();
+  }
 
   // 1. COMPUTES DISTANCES /////////////////////////////////////
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -128,17 +133,17 @@ export class FunctionsService {
 
   // 5. STORAGE SET ///////////////////
   async storeSet(key: string, object: any ): Promise<void> {
-    await this.storage.set(key, object)
+    return this._storage?.set(key, object)
   }
 
   // 6. STORAGE GET /////////////////////
   async storeGet(key: string ) {
-    return await this.storage.get(key);
+    return this._storage?.get(key);
   }
 
   // 7. STORAGE REMOVE //////////////////////////
   async storeRem(key: string): Promise<void> {
-    await this.storage.remove(key);
+    return this._storage?.remove(key);
   }
 
   // 8. CHECK IN STORAGE //////////////////////////

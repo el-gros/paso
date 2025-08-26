@@ -20,6 +20,8 @@ import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import html2canvas from 'html2canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
+import * as htmlToImage from 'html-to-image';
 register();
 
 @Component({
@@ -108,8 +110,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     // Variables
     this.layerVisibility = global.layerVisibility;
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
-    // If we are in exportation process...
-    if (global.buildTrackImage) await this.triggerExport();
+    if (global.buildTrackImage) this.triggerExport();
   }
 
   // 4. COMPUTE AVERAGE SPEEDS AND TIMES
@@ -313,32 +314,32 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  async triggerExport(): Promise<void> {
-    // Find the second slide
-    const slide2 = document.querySelector('swiper-slide:nth-of-type(2)') as HTMLElement;
-    if (!slide2) {
-      console.error('Slide 2 not found');
-      return undefined;
-    }
-    // Render slide2 to canvas
-    const canvas = await html2canvas(slide2);
-    // Convert to base64 (strip prefix)
-    const dataUrl = canvas.toDataURL('image/png');
-    const base64Data = dataUrl.split(',')[1];
+  async triggerExport() {
     try {
-      // Save directly as file (e.g. data.png)
-      const fileResult = await Filesystem.writeFile({
+      const exportArea = document.querySelector('#exportArea') as HTMLElement;
+      if (!exportArea) {
+        console.error('Export area not found');
+        return;
+      }
+
+      const dataUrl = await htmlToImage.toPng(exportArea, {
+        backgroundColor: '#ffffff',
+        style: {
+          width: `${exportArea.scrollWidth}px`,
+          height: `${exportArea.scrollHeight}px`,
+        }
+      });
+
+      await Filesystem.writeFile({
         path: 'data.png',
-        data: base64Data,
+        data: dataUrl.split(',')[1], // strip base64 prefix
         directory: Directory.Cache,
       });
-      console.log('Slide 2 saved at:', fileResult.uri);
-      // Navigate to archive page
+
+      console.log('Export saved as data.png');
       this.fs.gotoPage('archive');
-      return; // so you can use it later (Share, email…)
     } catch (err) {
-      console.error('Failed to save slide 2 image:', err);
-      return;
+      console.error('Failed to export area:', err);
     }
   }
 

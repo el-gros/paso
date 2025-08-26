@@ -176,6 +176,13 @@
   }
 }
 
+.green-class{
+  --background: rgb(192, 255, 192);
+  ion-content {
+    --background: rgb(192, 255, 192);
+  }
+}
+
 .red-class {
   --background: rgb(255, 221, 221); /* Light yellow background */
   ion-content {
@@ -339,6 +346,11 @@
 .bottom-safe {
   /*margin-bottom: env(safe-area-inset-bottom);*/
   margin-bottom: 50px;
+  z-index: 20;
+}
+
+.top-safe {
+  margin-top: 25px;
   z-index: 20;
 }
 
