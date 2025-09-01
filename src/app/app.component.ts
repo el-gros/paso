@@ -3,19 +3,22 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { FunctionsService } from './services/functions.service'; // <-- adjust path as needed
+import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
   imports: [IonicModule, CommonModule],
-  providers: []
+  providers: [SocialSharing, FilePath]
 })
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
 
   constructor(
-    private fs: FunctionsService   // <-- inject service
+    private fs: FunctionsService,
+    private socialSharing: SocialSharing
   ) {
     this.lockToPortrait();
     this.initStorage();            // <-- call storage init on startup
@@ -38,4 +41,21 @@ export class AppComponent {
       console.error('Failed to initialize storage:', err);
     }
   }
+
+    async shareFiles() {
+    try {
+      const mapFile = 'file:///storage/emulated/0/Android/data/your.app/files/map.png';
+      const dataFile = 'file:///storage/emulated/0/Android/data/your.app/files/data.png';
+
+      // WhatsApp: only supports ONE file at a time
+      await this.socialSharing.shareViaWhatsApp('Here is the map', mapFile);
+
+      // if you want to send the second one separately:
+      await this.socialSharing.shareViaWhatsApp('Here is the data', dataFile);
+
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  }
+
 }

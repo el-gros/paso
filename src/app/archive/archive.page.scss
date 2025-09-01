@@ -1,9 +1,9 @@
 ion-toolbar {
-  height: 75px;
-  display: flex;
-  align-items: center;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  height: 95px;
+  display: flex;                /* enable flex */
+  justify-content: space-between; /* title left, buttons right */
+  align-items: center;          /* vertical centering */
+  padding: 0 20px;              /* horizontal padding only */
 }
 
 /* Title Styling */
@@ -11,7 +11,9 @@ ion-toolbar {
   font-size: 16px;
   font-family: 'Arial, sans-serif';
   font-weight: bold;
-  margin-left: 10px;
+  display: flex;
+  align-items: center;  /* vertical centering within toolbar */
+  height: 100%;
 }
 
 /* Button Styling */
@@ -21,7 +23,7 @@ ion-toolbar {
   --border-radius: 50%;
   width: 55px;
   height: 55px;
-  margin: 10px;
+//  margin-right: 15px;
 }
 
 /* Icon Styling */

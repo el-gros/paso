@@ -107,13 +107,6 @@ export class Tab1Page {
   selectedAudioAlert: string = 'on'; // Default audio alert
 
   get state(): string { return global.state; }
-  get cancelButton() {
-    return {
-      text: this.translate.instant('SETTINGS.CANCEL'),
-      role: 'cancel',
-      cssClass: 'alert-cancel-button',
-    };
-  }
 
   constructor(
     public fs: FunctionsService,
@@ -187,8 +180,7 @@ export class Tab1Page {
       // Listen for app URL open events (e.g., file tap)
       this.addFileListener();
       // Check map provider
-      if (!global.buildTrackImage) this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-      else this.mapProvider = 'MapTiler_outdoor';
+      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
       // retrieve collection
       global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
@@ -284,7 +276,7 @@ export class Tab1Page {
         }
         // assign visibility
         if (this.multiLayer) this.multiLayer.setVisible(false);
-        if (global.buildTrackImage) this.buildTrackImage()
+        if (global.buildTrackImage) await this.buildTrackImage()
       }
       else if (global.layerVisibility == 'multi') {
         // hide archived track
@@ -449,7 +441,11 @@ export class Tab1Page {
     const cssClass = 'alert greenishAlert';
     const inputs: never[] = [];
     const buttons =  [
-      this.cancelButton,
+      {
+        text: this.translate.instant('SETTINGS.CANCEL'),
+        role: 'cancel',
+        cssClass: 'alert-cancel-button'
+      },
       {
         text:  this.translate.instant('MAP.YES'),
         cssClass: 'alert-ok-button',
@@ -733,6 +729,11 @@ export class Tab1Page {
   // 18. CREATE MAP ////////////////////////////////////////
   async createMap() {
     try {
+      // 🔹 Clean up old map if it exists
+      if (this.map) {
+        this.map.setTarget(undefined); // detach from DOM and free controls
+        this.map = undefined;
+      }
       await this.createLayers(); // your existing method, or move to service
       const { map } = await this.mapService.createMap({
         mapProvider: this.mapProvider,
@@ -1554,65 +1555,107 @@ async createLayers() {
   }
 
   async buildTrackImage() {
-    // Hide current track if it exists
+  try {
+    // Give Angular time to finish ngOnInit
+    await new Promise(resolve => setTimeout(resolve, 150));
+    // Save current visibility
     const visible = this.currentLayer?.getVisible() || false;
-    if (this.currentLayer) this.currentLayer.setVisible(false);
-    // Set zoom
+    if (this.currentLayer) {
+      this.currentLayer.setVisible(false);
+    }
+    // Center map on archived track
+    this.mapService.setMapView(this.map, this.archivedTrack);
+    // Optional: adjust zoom/scale if needed
     const scale = 1;
     const mapWrapperElement: HTMLElement | null = document.getElementById('map-wrapper');
     if (mapWrapperElement) {
       mapWrapperElement.style.transform = `scale(${scale})`;
     }
-    // transform map to image
+    // Convert map to image
+    let success = false;
     if (this.map) {
-      await this.exportMapToImage(this.map);
+      success = await this.exportMapToImage(this.map);
     }
     // Restore visibility of current track
-    if (this.currentLayer) this.currentLayer.setVisible(visible);
-    // Go to data page
-    this.fs.gotoPage('canvas');
+    if (this.currentLayer) {
+      this.currentLayer.setVisible(visible);
+    }
+    // Restore map provider
+    await this.fs.storeSet('mapProvider', global.savedMapProvider);
+    // Handle result
+    if (success) {
+      this.fs.gotoPage('canvas');
+    } else {
+      global.buildTrackImage = false;
+      await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
+      this.fs.gotoPage('archive');
+    }
+  } catch (err) {
+    console.error('buildTrackImage failed:', err);
+    global.buildTrackImage = false;
+    await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
+    this.fs.gotoPage('archive');
   }
+}
 
-  async exportMapToImage(map: Map): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      map.once('rendercomplete', async () => {
-        const size = map.getSize();
-        if (!size) return resolve(undefined);
-        // Use device screen size instead of map canvas size
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const mapCanvas = document.createElement('canvas');
-        mapCanvas.width = width;
-        mapCanvas.height = height;
-        const ctx = mapCanvas.getContext('2d');
-        if (!ctx) return resolve(undefined);
-        Array.prototype.forEach.call(
-          document.querySelectorAll<HTMLCanvasElement>('.ol-layer canvas'),
-          (canvas) => {
-            if (canvas.width > 0) {
-              const opacity =
-                (canvas.parentNode as HTMLElement)?.style.opacity || '1';
-              ctx.globalAlpha = Number(opacity);
-              // Draw scaled into device resolution
-              ctx.drawImage(canvas, 0, 0, width, height);
-            }
-          }
-        );
-        const dataUrl = mapCanvas.toDataURL('image/png');
-        const base64Data = dataUrl.split(',')[1];
-        try {
-          await Filesystem.writeFile({
-            path: 'map.png',
-            data: base64Data,
-            directory: Directory.Cache,
-          });
-        } catch (err) {
-          console.error('Failed to save map image:', err);
-        }
-        resolve(dataUrl); // return for preview
+  async exportMapToImage(map: Map): Promise<boolean> {
+    // Wait for full map render
+    const waitForRenderComplete = (map: Map): Promise<void> => {
+      return new Promise((resolve) => {
+        map.once('rendercomplete', () => {
+          // add a slight delay for WebGL/vector layers
+          setTimeout(() => resolve(), 300);
+        });
+        map.renderSync();
       });
-      map.renderSync();
-    });
+    };
+    try {
+      // Ensure map is sized & rendered correctly
+      map.updateSize();
+      await waitForRenderComplete(map);
+      const width = map.getSize()?.[0] ?? window.innerWidth;
+      const height = map.getSize()?.[1] ?? window.innerHeight;
+      const mapCanvas = document.createElement('canvas');
+      mapCanvas.width = width;
+      mapCanvas.height = height;
+      const ctx = mapCanvas.getContext('2d');
+      if (!ctx) throw new Error('No 2D rendering context');
+      // Composite all OL layer canvases
+      document.querySelectorAll<HTMLCanvasElement>('.ol-layer canvas').forEach((canvas) => {
+        if (canvas.width > 0) {
+          const opacity = (canvas.parentNode as HTMLElement)?.style.opacity || '1';
+          ctx.globalAlpha = Number(opacity);
+          // respect transform from OL
+          const transform = canvas.style.transform;
+          if (transform && transform.startsWith('matrix')) {
+            const matrix = transform.match(/^matrix\(([^)]+)\)$/);
+            if (matrix) {
+              const values = matrix[1].split(',').map(Number);
+              // setTransform expects 6 numbers: a, b, c, d, e, f
+              ctx.setTransform(values[0], values[1], values[2], values[3], values[4], values[5]);
+            }
+          } else {
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
+          }
+          ctx.drawImage(canvas, 0, 0);
+        }
+      });
+      // Reset any transform
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1.0;
+      // Export as PNG
+      const dataUrl = mapCanvas.toDataURL('image/png');
+      const base64Data = dataUrl.split(',')[1];
+      await Filesystem.writeFile({
+        path: 'map.png',
+        data: base64Data,
+        directory: Directory.Cache, // Cache is more reliable than External
+      });
+      return true; // success
+    } catch (err) {
+      console.error('Failed to export map image:', err);
+      return false;
+    }
   }
 
 }

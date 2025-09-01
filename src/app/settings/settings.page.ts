@@ -66,14 +66,6 @@ export class SettingsPage implements OnDestroy {
   private mapUploadSubscription?: Subscription;
   private mapRemoveSubscription?: Subscription;
 
-  get cancelButton() {
-    return {
-      text: this.translate.instant('SETTINGS.CANCEL'), // <-- uses translation key
-      role: 'cancel',
-      cssClass: 'alert-cancel-button',
-    };
-  }
-
   constructor(
     public fs: FunctionsService,
     public server: ServerService,
@@ -167,7 +159,11 @@ export class SettingsPage implements OnDestroy {
     const cssClass = 'alert primaryAlert';
     const header = currArch === 'Current' ? current_header : archived_header
     const buttons = [
-      this.cancelButton,
+      {
+        text: this.translate.instant('SETTINGS.CANCEL'),
+        role: 'cancel',
+        cssClass: 'alert-cancel-button'
+      },
       {
         text: 'Ok',
         cssClass: 'alert-button',

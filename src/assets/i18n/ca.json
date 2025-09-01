@@ -107,7 +107,8 @@
     "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
     "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
     "TRACK_FINISHED": "El trajecte actual ha finalitzat",
-    "YES": "Sí"
+    "YES": "Sí",
+    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge"
   }
 
 }

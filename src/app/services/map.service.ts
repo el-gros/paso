@@ -81,7 +81,7 @@ export class MapService {
         map.getView().fit(boundaries, {
           size: map.getSize(),
           padding: [50, 50, 50, 50],
-          duration: 1000  // Optional: animation duration in milliseconds
+          duration: 100  // Optional: animation duration in milliseconds
         });
       }
     })
@@ -124,7 +124,7 @@ export class MapService {
   setStrokeStyle(color: string): Style {
     return new Style({ stroke: new Stroke({
       color: color,
-      width: 5 })
+      width: 3 })
     });
   }
 
@@ -191,7 +191,7 @@ export class MapService {
       image: new Icon({
         src: this.getColoredPin(color),
         anchor: [0.5, 1],
-        scale: 0.05
+        scale: 0.025
       })
     });
   }
@@ -335,6 +335,7 @@ export class MapService {
     const view = new View({
       center: currentPosition,
       zoom: 9,
+      projection: 'EPSG:3857',
       minZoom,
       maxZoom,
     });

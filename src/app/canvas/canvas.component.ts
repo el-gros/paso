@@ -110,7 +110,18 @@ export class CanvasComponent implements OnInit, OnDestroy {
     // Variables
     this.layerVisibility = global.layerVisibility;
     console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
-    if (global.buildTrackImage) this.triggerExport();
+    if (global.buildTrackImage) {
+      var success: boolean = false;
+      success = await this.triggerExport();
+      if (success) {
+        this.fs.gotoPage('archive');
+      } else {
+        // End process
+        global.buildTrackImage = false;
+        await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
+        this.fs.gotoPage('archive');
+      }
+    }
   }
 
   // 4. COMPUTE AVERAGE SPEEDS AND TIMES
@@ -314,14 +325,15 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  async triggerExport() {
+  async triggerExport(): Promise<boolean> {
     try {
       const exportArea = document.querySelector('#exportArea') as HTMLElement;
       if (!exportArea) {
         console.error('Export area not found');
-        return;
+        return false;
       }
-
+      // ensure rendering is finished
+      await new Promise(r => setTimeout(r, 100));
       const dataUrl = await htmlToImage.toPng(exportArea, {
         backgroundColor: '#ffffff',
         style: {
@@ -329,17 +341,18 @@ export class CanvasComponent implements OnInit, OnDestroy {
           height: `${exportArea.scrollHeight}px`,
         }
       });
-
+      const filename = 'data.png'; // avoid overwrite issues
       await Filesystem.writeFile({
-        path: 'data.png',
-        data: dataUrl.split(',')[1], // strip base64 prefix
+        path: filename,
+        data: dataUrl.split(',')[1],
         directory: Directory.Cache,
       });
-
-      console.log('Export saved as data.png');
-      this.fs.gotoPage('archive');
+      await new Promise(r => setTimeout(r, 200));  // small delay
+      console.log(`Export saved as ${filename}`);
+      return true;
     } catch (err) {
       console.error('Failed to export area:', err);
+      return false;
     }
   }
 

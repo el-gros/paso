@@ -104,7 +104,8 @@
     "NO_FILE_SELECTED": "No file selected",
     "CURRENT_TRACK_DELETED": "The current track has been deleted",
     "TRACK_FINISHED": "The current track has finished",
-    "YES": "Yes"
+    "YES": "Yes",
+    "TOIMAGE_FAILED": "Failed to generate image"
   }
 
 }

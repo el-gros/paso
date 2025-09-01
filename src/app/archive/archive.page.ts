@@ -19,6 +19,8 @@ import { FunctionsService } from '../services/functions.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 @Component({
     selector: 'app-archive',
@@ -39,7 +41,9 @@ export class Tab2Page {
     private alertController: AlertController,
     private menu: MenuController,
     private languageService: LanguageService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private socialSharing: SocialSharing,
+    private filePath: FilePath
   ) {  }
 
   /* FUNCTIONS
@@ -104,7 +108,7 @@ export class Tab2Page {
       header,
       message,
       buttons: [{
-        text: cancel,
+        text: this.translate.instant('SETTINGS.CANCEL'),
         role: 'cancel',
         cssClass: 'alert-cancel-button',
         handler: () => { this.resetSelection(); }
@@ -224,11 +228,8 @@ export class Tab2Page {
         url: fileUri.uri,
         dialogTitle: dialog_title
       });
-      // ✅ Delete the file afterwards
-      await Filesystem.deleteFile({
-        path: file,
-        directory: Directory.External,
-      });
+      // Cleanup files
+      await this.cleanupGpxFiles(file);
       // Show success toast
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
     } catch (e) {
@@ -281,13 +282,17 @@ export class Tab2Page {
   async prepareImageExport() {
     // Inform tab1 on action to do
     global.buildTrackImage = true;
+    // Save current map provider
+    global.savedMapProvider = await this.fs.storeGet('mapProvider')
+    // Set map to avoid CORS
+    await this.fs.storeSet('mapProvider', 'MapTiler_outdoor');
     // Display archived track
     await this.displayTrack(true);
   }
 
   async shareImages() {
     try {
-      // Get file URIs from cache
+      // 1. Get file URIs from cache
       const mapFile = await Filesystem.getUri({
         path: 'map.png',
         directory: Directory.Cache,
@@ -296,21 +301,61 @@ export class Tab2Page {
         path: 'data.png',
         directory: Directory.Cache,
       });
-      // Share both
-      await Share.share({
-        title: this.translate.instant('ARCHIVE.TITLE'),
-        text: this.translate.instant('ARCHIVE.TEXT'),
-        dialogTitle: 'Share images',
-        files: [mapFile.uri, slideFile.uri], // send both files
-      });
-      // Cleanup (optional, if you don’t need them afterwards)
-      await Filesystem.deleteFile({ path: 'map.png', directory: Directory.Cache });
-      await Filesystem.deleteFile({ path: 'data.png', directory: Directory.Cache });
-      // finish exportation
-      global.buildTrackImage = false;
+
+      const mapUri = mapFile.uri;       // ✅ keep as-is
+      const slideUri = slideFile.uri;   // ✅ keep as-is
+
+      console.log('share-ready files:', mapUri, slideUri);
+
+      // 3. Try sharing both files with Capacitor Share
+      try {
+        await Share.share({
+          title: 'Track export',
+          text: 'Here are the images',
+          files: [mapUri, slideUri], // try to send both
+          dialogTitle: 'Share images',
+        });
+        console.log('Shared both files together ✅');
+      } catch (shareErr) {
+        console.warn('Multi-file share failed, falling back:', shareErr);
+   // Convert to absolute native paths (WhatsApp won’t accept content:// URIs)
+        const mapPath = await this.filePath.resolveNativePath(mapUri);
+        const slidePath = await this.filePath.resolveNativePath(slideUri);
+        // 4. Fallback: share separately via WhatsApp
+        await this.socialSharing.shareViaWhatsApp('Here is the map', mapPath, undefined);
+        await this.socialSharing.shareViaWhatsApp('Here is the data', slidePath, undefined);
+        console.log('Shared files one by one via WhatsApp ✅');
+      }
+
+      global.buildTrackImage = false; // finish exportation
     } catch (err) {
       console.error('Failed to share images:', err);
     }
   }
+
+  async cleanupGpxFiles(fileName: string) {
+    try {
+      const result = await Filesystem.readdir({
+        path: '',
+        directory: Directory.External,
+      });
+
+      for (const file of result.files) {
+        if (file.name.endsWith('.gpx') || file.name.endsWith('.GPX')) {
+          if (file.name !== fileName) {
+            console.log('Deleting:', file.name);
+            await Filesystem.deleteFile({
+              path: file.name,
+              directory: Directory.External,
+            });
+          }
+        }
+      }
+
+      console.log('Cleanup finished.');
+    } catch (err) {
+      console.error('Error cleaning GPX files:', err);
+    }
+  }  
 
 }

@@ -104,7 +104,8 @@
     "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
     "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
     "TRACK_FINISHED": "El trayecto actual ha finalizado",
-    "YES": "Sí"
+    "YES": "Sí",
+    "TOIMAGE_FAILED": "No se ha podido generar la imagen"
   }
 
 }
