@@ -10,7 +10,6 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Capacitor, PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
-import { FormsModule } from '@angular/forms';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
@@ -51,7 +50,7 @@ register();
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
     styleUrls: ['tab1.page.scss'],
-    imports: [IonicModule, CommonModule, FormsModule, TranslateModule ],
+    imports: [IonicModule, CommonModule, TranslateModule ],
     providers: [DecimalPipe, DatePipe],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -105,6 +104,7 @@ export class Tab1Page {
   blackPin?: Style;
   selectedAltitude: string = 'GPS'; // Default altitude method
   selectedAudioAlert: string = 'on'; // Default audio alert
+  selectedAlert: string = 'on'; // Default alert
 
   get state(): string { return global.state; }
 
@@ -136,7 +136,7 @@ export class Tab1Page {
   9. setTrackDetails
   10. showValidationAlert
   11. saveFile
-  12. buildGeoJson
+  12. nextPoints
   13. onRoute
   14. show
   15. onDestroy
@@ -255,6 +255,9 @@ export class Tab1Page {
       if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
+      // Alert
+      this.selectedAlert = await this.fs.check(this.selectedAlert, 'alert');
+      global.audioAlert = this.selectedAlert;
       // Audio alert
       this.selectedAudioAlert = await this.fs.check(this.selectedAudioAlert, 'audioAlert');
       global.audioAlert = this.selectedAudioAlert;
@@ -364,24 +367,34 @@ export class Tab1Page {
       console.log('Notification permission already granted.');
     }
     // Start Background Geolocation watcher
-    BackgroundGeolocation.addWatcher({
-      backgroundMessage: '',
-      backgroundTitle: this.translate.instant('MAP.NOTICE'),
-      requestPermissions: true,
-      stale: false,
-      distanceFilter: this.distanceFilter
-    }, async (location: Location, error: Error) => {
-      if (error) return;
-      if (location) {
-        if (this.foreground) await this.foregroundTask(location)
-        else {
-          // Performs background task
-          await this.backgroundTask(location)
-        }
+    BackgroundGeolocation.addWatcher(
+      { backgroundMessage: '',
+        backgroundTitle: this.translate.instant('MAP.NOTICE'),
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: this.distanceFilter
+      },
+      async (location: Location, error: Error) => {
+        if (error) return;
+        const success = await this.checkLocation(location);
+        if (!success) return;
+        if (this.foreground) await this.foregroundTask(location);
+        else await this.backgroundTask(location);
       }
-    }).then((value: any) => this.watcherId = value);
+    ).then((value: any) => this.watcherId = value);
     // show / hide UI elements
     global.state = 'tracking';
+  }
+
+  // 5 bis. CHECK LOCATION //////////////////////////////////
+  async checkLocation(location: Location) {
+    // excessive uncertainty / no altitude or time measured
+    if (location.accuracy > this.threshold ||
+      location.altitude == null || location.altitude == undefined ||
+      location.altitude == 0 ||
+      location.altitudeAccuracy > this.altitudeThreshold ||
+      !location.time) return false;
+    else return true;
   }
 
   // 6. REMOVE TRACK ///////////////////////////////////
@@ -543,26 +556,24 @@ export class Tab1Page {
     this.show('alert', 'none');
   }
 
-  // 12. BUILD GEOJSON ////////////////////////////////////
-  async buildGeoJson(location: Location) {
-    // excessive uncertainty / no altitude measured
-    if (location.accuracy > this.threshold) return false;
-    if (location.altitude == null || location.altitude == undefined) return false;
-    if (location.altitude == 0) return false;
-    if (location.altitudeAccuracy > this.altitudeThreshold) return false;
+  // 12. NEXT POINTS ////////////////////////////////////
+  async nextPoints(location: Location) {
+    // Compute previous time and altitude
+    let num: number = this.currentTrack?.features[0].geometry.coordinates.length || 0;
+    const previousTime = this.currentTrack?.features[0]?.geometry?.properties?.data[num-1]?.time || 0;
+    const previousAltitude = this.currentTrack?.features[0]?.geometry?.properties?.data[num-1]?.altitude || 0;
+    // Wrong order
+    if (previousTime > location.time) return false;
+    // Avoid altitude differences greater than 50m unless gps has been stopped
+    if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
+      location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
+    }
     // m/s to km/h
     location.speed = location.speed * 3.6
-    // initial point
-    if (!this.currentTrack) {
-      await this.firstPoint(location);
-      return false;
-    }
-    // check for the locations order...
-    await this.fixWrongOrder(location);
     // add location
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
-    if (this.archivedTrack) {
+    if (this.archivedTrack && global.alert == 'on') {
       await this.checkWhetherOnRoute();
     }
     return true;
@@ -945,7 +956,7 @@ async createLayers() {
   }
 
   // 25. CASE OF LOCATIONS IN WRONG ORDER
-  async fixWrongOrder(location:Location) {
+  /* async fixWrongOrder(location:Location) {
     if (!this.currentTrack || location.time === undefined) return;
     let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
     // Check and fix location order by comparing timestamps
@@ -964,7 +975,7 @@ async createLayers() {
         break;
       }
     }
-  }
+  } */
 
   // 26. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
@@ -1214,10 +1225,14 @@ async createLayers() {
 
   // 31. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
-    // fill the track
-    const locationNew: boolean = await this.buildGeoJson(location);
-    // no new point..
-    if (!locationNew) return;
+    if (this.currentTrack) {
+      const locationNew: boolean = await this.nextPoints(location);
+      if (!locationNew) return;
+    }
+    else {
+      await this.firstPoint(location);
+      return;
+    }
     // new point..
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
@@ -1231,11 +1246,9 @@ async createLayers() {
         this.speedFiltered + 1
       );
     }
-    console.log('5',this.currentTrack)
     this.speedFiltered = num - 1;
     // html values
     await this.htmlValues();
-    console.log('6',this.currentTrack)
     // display the current track
     await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
     // Ensure UI updates are reflected
@@ -1249,8 +1262,14 @@ async createLayers() {
   async backgroundTask(location: Location) {
     const taskId = await BackgroundTask.beforeExit(async () => {
       try {
-        // Perform the task
-        const locationNew: boolean = await this.buildGeoJson(location);
+        if (this.currentTrack) {
+          const locationNew: boolean = await this.nextPoints(location);
+          if (!locationNew) return;
+        }
+        else {
+          await this.firstPoint(location);
+          return;
+        }
       } catch (error) {
         console.error('Error in background task:', error);
       }
@@ -1649,7 +1668,7 @@ async createLayers() {
       await Filesystem.writeFile({
         path: 'map.png',
         data: base64Data,
-        directory: Directory.Cache, // Cache is more reliable than External
+        directory: Directory.ExternalCache, // Cache is more reliable than External
       });
       return true; // success
     } catch (err) {

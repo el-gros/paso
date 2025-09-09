@@ -7,7 +7,7 @@
 import DOMPurify from 'dompurify';
 import { global } from 'src/environments/environment';
 import { Track, Location, Data, Waypoint, Bounds } from 'src/globald';
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
@@ -29,7 +29,7 @@ export class FunctionsService {
     private storage: Storage,
     private toastController: ToastController,
     private alertController: AlertController,
-    private router: Router,
+    @Inject(Router) private router: Router,
     private modalController: ModalController,
   ) {
   }

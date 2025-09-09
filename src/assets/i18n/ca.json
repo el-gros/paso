@@ -8,6 +8,7 @@
     "UPLOAD_MAPS": "Carregar mapes",
     "REMOVE_MAPS": "Eliminar mapes",
     "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
+    "ALERT": "Alerta",
     "AUDIO_ALERT": "Alerta sonora",
     "COLOR_LIST": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],
     "COLORS2": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],

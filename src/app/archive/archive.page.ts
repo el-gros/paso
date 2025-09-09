@@ -21,12 +21,13 @@ import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
+import { File } from '@awesome-cordova-plugins/file/ngx';
 
 @Component({
     selector: 'app-archive',
     templateUrl: 'archive.page.html',
-    styleUrls: ['archive.page.scss'],
-    imports: [CommonModule, IonicModule, FormsModule, TranslateModule]
+    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
+    styleUrls: ['archive.page.scss']
 })
 export class Tab2Page {
 
@@ -43,7 +44,8 @@ export class Tab2Page {
     private languageService: LanguageService,
     private translate: TranslateService,
     private socialSharing: SocialSharing,
-    private filePath: FilePath
+    private filePath: FilePath,
+    private file: File
   ) {  }
 
   /* FUNCTIONS
@@ -210,23 +212,19 @@ export class Tab2Page {
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
     const file: string = `${sanitizedName}.gpx`;
     try {
-      // Write the file to the Data directory
-      const result = await Filesystem.writeFile({
-        path: file,
+      // 3. Save into public Downloads folder
+      const savedFile = await Filesystem.writeFile({
+        path: file,       // 👈 goes into /storage/emulated/0/Download
         data: gpxText,
-        directory: Directory.External,
+        directory: Directory.ExternalCache,
+        recursive: true,
         encoding: Encoding.UTF8,
       });
-      // Find file URI
-      const fileUri = await Filesystem.getUri({
-        path: file,
-        directory: Directory.External,
-      });
-      await Share.share({
-        title: this.translate.instant('ARCHIVE.TITLE'),
-        text: this.translate.instant('ARCHIVE.TEXT'),
-        url: fileUri.uri,
-        dialogTitle: dialog_title
+      console.log(savedFile.uri)
+      await this.socialSharing.shareWithOptions({
+        //message: this.translate.instant('ARCHIVE.TEXT'),
+        files: [savedFile.uri],
+        chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
       // Cleanup files
       await this.cleanupGpxFiles(file);
@@ -295,38 +293,27 @@ export class Tab2Page {
       // 1. Get file URIs from cache
       const mapFile = await Filesystem.getUri({
         path: 'map.png',
-        directory: Directory.Cache,
+        directory: Directory.ExternalCache,
       });
       const slideFile = await Filesystem.getUri({
         path: 'data.png',
-        directory: Directory.Cache,
+        directory: Directory.ExternalCache,
       });
-
       const mapUri = mapFile.uri;       // ✅ keep as-is
       const slideUri = slideFile.uri;   // ✅ keep as-is
-
       console.log('share-ready files:', mapUri, slideUri);
-
       // 3. Try sharing both files with Capacitor Share
       try {
-        await Share.share({
-          title: 'Track export',
-          text: 'Here are the images',
-          files: [mapUri, slideUri], // try to send both
-          dialogTitle: 'Share images',
-        });
-        console.log('Shared both files together ✅');
+        await this.socialSharing.share(
+          undefined,
+          this.translate.instant('ARCHIVE.TEXT'),
+          [mapUri, slideUri],
+          undefined
+        );
       } catch (shareErr) {
         console.warn('Multi-file share failed, falling back:', shareErr);
-   // Convert to absolute native paths (WhatsApp won’t accept content:// URIs)
-        const mapPath = await this.filePath.resolveNativePath(mapUri);
-        const slidePath = await this.filePath.resolveNativePath(slideUri);
-        // 4. Fallback: share separately via WhatsApp
-        await this.socialSharing.shareViaWhatsApp('Here is the map', mapPath, undefined);
-        await this.socialSharing.shareViaWhatsApp('Here is the data', slidePath, undefined);
-        console.log('Shared files one by one via WhatsApp ✅');
+        global.buildTrackImage = false;
       }
-
       global.buildTrackImage = false; // finish exportation
     } catch (err) {
       console.error('Failed to share images:', err);
@@ -337,7 +324,7 @@ export class Tab2Page {
     try {
       const result = await Filesystem.readdir({
         path: '',
-        directory: Directory.External,
+        directory: Directory.ExternalCache,
       });
 
       for (const file of result.files) {
@@ -346,7 +333,7 @@ export class Tab2Page {
             console.log('Deleting:', file.name);
             await Filesystem.deleteFile({
               path: file.name,
-              directory: Directory.External,
+              directory: Directory.ExternalCache,
             });
           }
         }
@@ -356,6 +343,15 @@ export class Tab2Page {
     } catch (err) {
       console.error('Error cleaning GPX files:', err);
     }
-  }  
+  }
 
 }
+
+/* for images
+async requestImagePermission() {
+  const status = await Permissions.query({ name: 'photos' });
+  if (status.state !== 'granted') {
+    await Permissions.request({ name: 'photos' });
+  }
+}
+*/

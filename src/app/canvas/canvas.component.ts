@@ -345,7 +345,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
       await Filesystem.writeFile({
         path: filename,
         data: dataUrl.split(',')[1],
-        directory: Directory.Cache,
+        directory: Directory.ExternalCache,
       });
       await new Promise(r => setTimeout(r, 200));  // small delay
       console.log(`Export saved as ${filename}`);

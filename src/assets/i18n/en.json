@@ -8,6 +8,7 @@
     "UPLOAD_MAPS": "Upload maps",
     "REMOVE_MAPS": "Remove maps",
     "SAVED_TRACK_ALTITUDE": "Saved track altitude",
+    "ALERT": "Alert",
     "AUDIO_ALERT": "Audio alert",
     "COLOR_LIST": ["crimson", "red", "orange", "gold", "yellow", "magenta", "purple", "lime", "green", "cyan", "blue"],
     "CURRENT_HEADER": "Current track",

@@ -24,6 +24,8 @@ export var global: any = {
   buildTrackImage: false as boolean,
   mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
   savedMapProvider: '' as string,
+  alert: 'on' as string,               // Alert on/off
+  audioAlert: 'on' as string,          // Audio alert on/off
 
   // Dynamic getter for the cancel button
 

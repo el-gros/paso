@@ -52,6 +52,21 @@
     </ion-button>
   </ion-item>
 
+  <!-- Alert on /off -->
+  <ion-item lines="none" class="selector">
+    <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
+    <ion-select
+      [value]="selectedAlert"
+      (ionChange)="onAlertChange($event.detail.value)"
+      interface="popover"
+      slot="end"
+    >
+      @for (alert of alerts; track alert) {
+        <ion-select-option [value]="alert">{{ alert }}</ion-select-option>
+      }
+    </ion-select>
+  </ion-item>
+
   <!-- Audio alert on / off -->
   <ion-item lines="none" class="selector">
     <ion-label>{{ 'SETTINGS.AUDIO_ALERT' | translate }}</ion-label>
@@ -61,7 +76,7 @@
       interface="popover"
       slot="end"
     >
-      @for (alert of alerts; track alert) {
+      @for (alert of audioAlerts; track alert) {
         <ion-select-option [value]="alert">{{ alert }}</ion-select-option>
       }
     </ion-select>

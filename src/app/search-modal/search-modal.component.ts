@@ -26,7 +26,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
     selector: 'app-search-modal',
     templateUrl: './search-modal.component.html',
     styleUrls: ['./search-modal.component.scss'],
-    imports: [CommonModule, IonicModule, FormsModule, TranslateModule]
+    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
 })
 
 export class SearchModalComponent implements OnInit {

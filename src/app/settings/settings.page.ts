@@ -9,7 +9,6 @@ import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms'
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
@@ -29,7 +28,7 @@ register();
     selector: 'app-settings',
     templateUrl: 'settings.page.html',
     styleUrls: ['settings.page.scss'],
-    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
+    imports: [IonicModule, CommonModule, TranslateModule ],
     providers: [DecimalPipe, DatePipe],
 })
 
@@ -53,9 +52,12 @@ export class SettingsPage implements OnDestroy {
   archivedColor: string = global.archivedColor;
   currentColor: string = global.currentColor;
   colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
+  // Alert
+  selectedAlert: string = 'on';
+  alerts: string[] = ['on', 'off'];
   // Audio alert
   selectedAudioAlert: string = 'on';
-  alerts: string[] = ['on', 'off'];
+  audioAlerts: string[] = ['on', 'off'];
   // Altitudes
   selectedAltitude: string = 'GPS';
   altitudes: string[] = ['GPS', 'DEM'];
@@ -137,6 +139,8 @@ export class SettingsPage implements OnDestroy {
     this.currentColor = global.currentColor;
     // Set altitude
     this.selectedAltitude = await this.fs.storeGet('altitude') || 'GPS'
+    // Set alert
+    this.selectedAlert = await this.fs.storeGet('alert') || 'on'
     // Set audio
     this.selectedAudioAlert = await this.fs.storeGet('audioAlert') || 'on'
   }
@@ -240,6 +244,17 @@ export class SettingsPage implements OnDestroy {
   async onAltitudeChange(method: string) {
     this.selectedAltitude = method;
     await this.fs.storeSet('altitude', this.selectedAltitude);
+  }
+
+  // 9 bis. ALERT CHANGE /////////////////////////
+  async onAlertChange(position: string) {
+    this.selectedAlert = position;
+    global.alert = position;
+    await this.fs.storeSet('alert', this.selectedAlert);
+    // on alert change, audioAlert also changes
+    this.selectedAudioAlert = position;
+    global.audioAlert = position;
+    await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
   }
 
   // 10. AUDIO ALERT CHANGE /////////////////////////
