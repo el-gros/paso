@@ -6,8 +6,8 @@
  */
 
 import { Component, NgZone } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { SharedImports } from '../shared-imports';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { Capacitor, PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
@@ -40,8 +40,11 @@ import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { CapacitorHttp } from '@capacitor/core';
+import { HttpParams, HttpHeaders, HttpClient } from '@angular/common/http';
+import { map, Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 useGeographic();
 register();
@@ -50,7 +53,7 @@ register();
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
     styleUrls: ['tab1.page.scss'],
-    imports: [IonicModule, CommonModule, TranslateModule ],
+    imports: [SharedImports],
     providers: [DecimalPipe, DatePipe],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -105,6 +108,7 @@ export class Tab1Page {
   selectedAltitude: string = 'GPS'; // Default altitude method
   selectedAudioAlert: string = 'on'; // Default audio alert
   selectedAlert: string = 'on'; // Default alert
+  selectedGeocodingService = 'nominatim'; // Default geocoding service
 
   get state(): string { return global.state; }
 
@@ -119,7 +123,8 @@ export class Tab1Page {
     private modalController: ModalController,
     private nominatimService: NominatimService,
     private languageService: LanguageService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private http: HttpClient
   ) {
   }
 
@@ -225,7 +230,7 @@ export class Tab1Page {
       await this.processUrl(data);
       global.layerVisibility = 'archived'
       // assign visibility
-      if (this.multiLayer) this.multiLayer.setVisible(false);
+      this.multiLayer?.setVisible(false);
       // iF an archived track has been parsed...
       if (this.archivedTrack) {
         this.ts.setArchivedTrack(this.archivedTrack);
@@ -257,10 +262,13 @@ export class Tab1Page {
       await this.changeMapProvider();
       // Alert
       this.selectedAlert = await this.fs.check(this.selectedAlert, 'alert');
-      global.audioAlert = this.selectedAlert;
+      global.alert = this.selectedAlert;
       // Audio alert
       this.selectedAudioAlert = await this.fs.check(this.selectedAudioAlert, 'audioAlert');
       global.audioAlert = this.selectedAudioAlert;
+      // Geocoding Service
+      this.selectedGeocodingService = await this.fs.check(this.selectedGeocodingService, 'geocoding');
+      global.geocoding = this.selectedGeocodingService;
       // Altitude method
       this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
       // Display current track (updates color)
@@ -278,15 +286,12 @@ export class Tab1Page {
           if (!this.currentTrack || global.buildTrackImage) this.mapService.setMapView(this.map, this.archivedTrack);
         }
         // assign visibility
-        if (this.multiLayer) this.multiLayer.setVisible(false);
+        this.multiLayer?.setVisible(false);
         if (global.buildTrackImage) await this.buildTrackImage()
       }
       else if (global.layerVisibility == 'multi') {
         // hide archived track
-        try {
-          if (this.archivedLayer) this.archivedLayer.setVisible(false);
-        }
-        catch (error) {}
+        this.archivedLayer?.setVisible(false);
         this.status = 'black'
         this.ts.setStatus(this.status);
         // display all tracks
@@ -305,8 +310,8 @@ export class Tab1Page {
         this.status = 'black';
         this.ts.setStatus(this.status);
         // Hide archived and multi layers
-        if (this.archivedLayer) this.archivedLayer.setVisible(false);
-        if (this.multiLayer) this.multiLayer.setVisible(false);
+        this.archivedLayer?.setVisible(false);
+        this.multiLayer?.setVisible(false);
       }
       // center current track
       if (this.currentTrack) {
@@ -407,7 +412,7 @@ export class Tab1Page {
     this.ts.setStatus(this.status);
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
-    if (this.currentLayer) this.currentLayer.setVisible(false);
+    this.currentLayer?.setVisible(false);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
@@ -638,15 +643,11 @@ export class Tab1Page {
   // 15. ON DESTROY ////////////////////////
   ngOnDestroy(): void {
     // Remove app state listener
-    if (this.appStateListener) {
-      this.appStateListener.remove();
-      this.appStateListener = undefined;
-    }
+    this.appStateListener?.remove();
+    this.appStateListener = undefined;
     // Clear beep interval
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-      this.beepInterval = null;
-    }
+    this.beepInterval?.remove();
+    this.beepInterval = undefined;
   }
 
   // 16. SHOW ARCHIVED TRACK
@@ -728,11 +729,7 @@ export class Tab1Page {
       this.currentMarkers[2].setStyle(undefined);
     }
     // Make the layer visible, with improved error handling
-    try {
-      if (this.currentLayer) {
-        this.currentLayer.setVisible(true);
-      }
-    } catch (error) {}
+    this.currentLayer?.setVisible(true);
     // Set current track
     this.ts.setCurrentTrack(this.currentTrack);
   }
@@ -838,9 +835,7 @@ async createLayers() {
                   if (this.archivedTrack) {
                     this.ts.setArchivedTrack(this.archivedTrack);
                     //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
-                    if (this.multiLayer) {
-                      if (this.multiLayer) this.multiLayer.setVisible(false);
-                    }
+                    this.multiLayer?.setVisible(false);
                     global.layerVisibility = 'archived';
                     await this.showArchivedTrack();
                     this.mapService.setMapView(this.map, this.archivedTrack);
@@ -1338,14 +1333,13 @@ async createLayers() {
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
     let point = this.currentTrack.features[0].geometry.coordinates[num-1];
     const addressObservable = this.nominatimService.reverseGeocode(point[1], point[0]);
-    const address = addressObservable ? await lastValueFrom(addressObservable) : { name: '', address_name: '' };
+    const address = addressObservable ? await lastValueFrom(addressObservable) : { name: '', display_name: '', short_name: '' };
     console.log(address)
     let waypoint: Waypoint = {
       longitude: point[0],
       latitude: point[1],
       altitude: num - 1, // At this moment, this value is the position of the point in the track
-      name: (address && 'name' in address ? address.name : (address as any)?.address_name ?? ''),
-      //comment: address.display_name
+      name: address?.short_name ?? address?.name ?? address?.display_name ?? '',
       comment: ''
     }
     const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(waypoint, false, true)
@@ -1472,8 +1466,8 @@ async createLayers() {
     if (this.archivedTrack) {
       await this.fs.uncheckAll();
       this.ts.setArchivedTrack(this.archivedTrack);
-      if (this.multiLayer) this.multiLayer.setVisible(false);
-      if (this.archivedLayer) this.archivedLayer.setVisible(true);  // No need for await
+      this.multiLayer?.setVisible(false);
+      this.archivedLayer?.setVisible(true);  // No need for await
       global.layerVisibility = 'archived';
       await this.showArchivedTrack();
       this.mapService.setMapView(this.map, this.archivedTrack);
@@ -1579,9 +1573,7 @@ async createLayers() {
     await new Promise(resolve => setTimeout(resolve, 150));
     // Save current visibility
     const visible = this.currentLayer?.getVisible() || false;
-    if (this.currentLayer) {
-      this.currentLayer.setVisible(false);
-    }
+    this.currentLayer?.setVisible(false);
     // Center map on archived track
     this.mapService.setMapView(this.map, this.archivedTrack);
     // Optional: adjust zoom/scale if needed
@@ -1596,9 +1588,7 @@ async createLayers() {
       success = await this.exportMapToImage(this.map);
     }
     // Restore visibility of current track
-    if (this.currentLayer) {
-      this.currentLayer.setVisible(visible);
-    }
+    this.currentLayer?.setVisible(visible);
     // Restore map provider
     await this.fs.storeSet('mapProvider', global.savedMapProvider);
     // Handle result
@@ -1676,6 +1666,122 @@ async createLayers() {
       return false;
     }
   }
+
+reverseGeocode(lat: number, lon: number): Observable<any | null> {
+  if (
+    typeof lat !== 'number' ||
+    typeof lon !== 'number' ||
+    isNaN(lat) || isNaN(lon) ||
+    lat < -90 || lat > 90 ||
+    lon < -180 || lon > 180
+  ) {
+    return throwError(() => new Error('Latitude and longitude must be valid numbers within their respective ranges.'));
+  }
+
+  // --- helpers ---
+  const buildNominatimShortName = (addr: any): string => {
+    if (!addr) return '(no name)';
+
+    // 1. POIs
+    if (addr.tourism) return addr.tourism;
+    if (addr.amenity) return addr.amenity;
+    if (addr.shop) return addr.shop;
+    if (addr.building) return addr.building;
+
+    // 2. Street + number + city
+    if (addr.road) {
+      let s = addr.road;
+      if (addr.house_number) s += ` ${addr.house_number}`;
+      if (addr.city || addr.town || addr.village) {
+        s += `, ${addr.city ?? addr.town ?? addr.village}`;
+      }
+      return s;
+    }
+
+    // 3. Settlements
+    if (addr.city) return addr.city;
+    if (addr.town) return addr.town;
+    if (addr.village) return addr.village;
+
+    // 4. Country fallback
+    return addr.country ?? '(no name)';
+  };
+
+  const buildMapTilerShortName = (f: any): string => {
+    if (!f) return '(no name)';
+    const main = f.text ?? '(no name)';
+    const city = f.context?.find((c: any) =>
+      c.id.startsWith('place') || c.id.startsWith('locality')
+    )?.text;
+    return city ? `${main}, ${city}` : main;
+  };
+
+  // --- build request ---
+  let url: string;
+  let options: any = {};
+
+  if (global.geocoding === 'mapTiler') {
+    url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
+    options = { observe: 'body' as const, responseType: 'json' as const };
+  } else {
+    url = `https://nominatim.openstreetmap.org/reverse`;
+    options = {
+      params: new HttpParams()
+        .set('lat', lat.toString())
+        .set('lon', lon.toString())
+        .set('format', 'json')
+        .set('addressdetails', '1')
+        .set('polygon_geojson', '1'),
+      headers: new HttpHeaders().set('User-Agent', 'YourAppName/1.0 (you@example.com)'),
+      observe: 'body' as const,
+      responseType: 'json' as const
+    };
+  }
+
+  // --- normalize ---
+  return this.http.get<any>(url, options).pipe(
+    map((response: any) => {
+      if (global.geocoding === 'mapTiler') {
+        const f = response?.features?.[0];
+        if (!f) return null;
+
+        const [lon, lat] = f.geometry.coordinates;
+
+        const bbox = f.bbox
+          ? [f.bbox[1], f.bbox[3], f.bbox[0], f.bbox[2]] // [south, north, west, east]
+          : [lat, lat, lon, lon];
+
+        return {
+          lat,
+          lon,
+          name: f.text ?? '(no name)',
+          display_name: f.place_name ?? f.text ?? '(no name)',
+          short_name: buildMapTilerShortName(f),
+          type: f.place_type?.[0] ?? 'unknown',
+          place_id: f.id ?? null,
+          boundingbox: bbox,
+          geojson: f.geometry
+        };
+      } else {
+        return {
+          lat: parseFloat(response.lat),
+          lon: parseFloat(response.lon),
+          name: response.display_name ?? '(no name)',
+          display_name: response.display_name ?? '(no name)',
+          short_name: buildNominatimShortName(response.address),
+          type: response.type ?? 'unknown',
+          place_id: response.place_id,
+          boundingbox: response.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
+          geojson: response.geojson ?? null
+        };
+      }
+    }),
+    catchError(error => {
+      console.error('Reverse geocoding error:', error);
+      return of(null);
+    })
+  );
+}
 
 }
 

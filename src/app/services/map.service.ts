@@ -28,6 +28,7 @@ import RenderFeature from 'ol/render/Feature';
 import TileState from 'ol/TileState';
 import pako from 'pako';
 import VectorTileSource from 'ol/source/VectorTile';
+import { applyStyle } from 'ol-mapbox-style';
 
 // 1. setMapView
 // 2. displayCurrentTrack
@@ -191,7 +192,7 @@ export class MapService {
       image: new Icon({
         src: this.getColoredPin(color),
         anchor: [0.5, 1],
-        scale: 0.025
+        scale: 0.035
       })
     });
   }
@@ -293,9 +294,9 @@ export class MapService {
         olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
           crossOrigin: 'anonymous' }) });
         break;
-      case "MapTiler_satellite":
+      case "MapTiler_hybrid":
         credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
           crossOrigin: 'anonymous' }) });
         break;
       case 'ICGC':
@@ -317,6 +318,17 @@ export class MapService {
         if (sourceResult) {
           olLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
+        break;
+      case 'MapTiler_v_outdoor':
+        credits = '© MapTiler © OpenStreetMap contributors';
+        olLayer = new VectorTileLayer({
+          source: new VectorTileSource({
+            format: new MVT(),
+            url: `https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=${global.mapTilerKey}`,
+            maxZoom: 14,
+          }),
+        });
+        applyStyle( olLayer, `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`  )
         break;
       default:
         credits = '© OpenStreetMap contributors';
@@ -401,10 +413,10 @@ export class MapService {
           source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
           crossOrigin: 'anonymous' }) });
         break;
-      case "MapTiler_satellite":
+      case "MapTiler_hybrid":
         credits = '© MapTiler © OpenStreetMap contributors';
         newBaseLayer = new TileLayer({
-          source: new XYZ({ url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+          source: new XYZ({ url: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
           crossOrigin: 'anonymous' }) });
         break;
       case 'ICGC':
@@ -427,9 +439,20 @@ export class MapService {
         map.getView().setZoom(8);
         await server.openMbtiles('catalonia.mbtiles');
         const sourceResult = await this.createSource(server);
-        if (sourceResult) {
+        if(sourceResult) {
           newBaseLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
+        break;
+      case 'MapTiler_v_outdoor':
+        credits = '© MapTiler © OpenStreetMap contributors';
+        newBaseLayer = new VectorTileLayer({
+          source: new VectorTileSource({
+            format: new MVT(),
+            url: `https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=${global.mapTilerKey}`,
+            maxZoom: 14,
+          })
+        });
+        applyStyle( newBaseLayer, `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`  )
         break;
     }
     if (newBaseLayer) {

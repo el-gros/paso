@@ -26,6 +26,7 @@ export var global: any = {
   savedMapProvider: '' as string,
   alert: 'on' as string,               // Alert on/off
   audioAlert: 'on' as string,          // Audio alert on/off
+  geocoding: 'nominatim' as string,
 
   // Dynamic getter for the cancel button
 

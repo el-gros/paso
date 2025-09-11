@@ -11,22 +11,21 @@
 import { firstValueFrom } from 'rxjs';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Component, OnInit } from '@angular/core';
-import { IonicModule, ModalController } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ModalController } from '@ionic/angular';
 import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { MapService } from '../services/map.service';
 import { LocationResult, Route } from '../../globald';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { SharedImports } from '../shared-imports';
 
 @Component({
     selector: 'app-search-modal',
     templateUrl: './search-modal.component.html',
     styleUrls: ['./search-modal.component.scss'],
-    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
+    imports: [SharedImports],
 })
 
 export class SearchModalComponent implements OnInit {
@@ -87,21 +86,87 @@ async searchLocation() {
   if (!this.query) return;
   this.loading = true;
 
-  const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
-
   try {
-    const response = await CapacitorHttp.get({
-      url,
-      headers: { 'Accept': 'application/json' }
-    });
+    let url: string;
+    let headers: any = { 'Accept': 'application/json' };
 
-    // response.data is already parsed JSON
-    this.results = response.data ?? [];
+    if (global.geocoding === 'mapTiler') {
+      // 🌍 MapTiler forward geocoding
+      url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
+    } else {
+      // 🌍 Nominatim forward geocoding (default)
+      url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
+      headers['User-Agent'] = 'YourAppName/1.0 (you@example.com)'; // required
+    }
+
+    const response = await CapacitorHttp.get({ url, headers });
+    console.log(`[${global.geocoding}] raw response:`, response.data);
+
+    if (global.geocoding === 'mapTiler') {
+      // ✅ Normalize MapTiler results
+      const features = response.data?.features ?? [];
+      this.results = features.map((f: any, idx: number) => {
+        const [lon, lat] = f.geometry.coordinates;
+
+        // compute bbox from geometry if not provided
+        const coords = f.geometry.type === 'Point'
+          ? [[lon, lat]]
+          : f.geometry.coordinates.flat(Infinity).reduce((acc: any[], v: any, i: number) => {
+              if (i % 2 === 0) acc.push([v]);
+              else acc[acc.length - 1].push(v);
+              return acc;
+            }, []);
+
+        const lons = coords.map((c: any) => c[0]);
+        const lats = coords.map((c: any) => c[1]);
+        const boundingbox = [
+          Math.min(...lats), // south
+          Math.max(...lats), // north
+          Math.min(...lons), // west
+          Math.max(...lons)  // east
+        ];
+
+        return {
+          lat,
+          lon,
+          name: f.text ?? '(no name)',
+          display_name: f.place_name ?? f.text ?? '(no name)',
+          short_name: f.text ?? f.place_name ?? '(no name)', // 👈 added
+          type: f.place_type?.[0] ?? 'unknown',
+          place_id: f.id ?? idx,
+          boundingbox,
+          geojson: f.geometry
+        };
+      });
+    } else {
+      // ✅ Normalize Nominatim results
+      const rawResults = Array.isArray(response.data) ? response.data : [];
+      this.results = rawResults.map((r: any) => {
+        const display = r.display_name ?? '(no name)';
+        const short = r.address?.road
+          ? [r.address.road, r.address.house_number].filter(Boolean).join(' ')
+          : (r.address?.city ?? r.address?.town ?? r.address?.village ?? display);
+
+        return {
+          lat: parseFloat(r.lat),
+          lon: parseFloat(r.lon),
+          name: display,
+          display_name: display,
+          short_name: short, // 👈 added
+          type: r.type ?? 'unknown',
+          place_id: r.place_id,
+          boundingbox: r.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
+          geojson: r.geojson ?? null
+        };
+      });
+    }
+
     this.showCurrent = false;
 
   } catch (error) {
-    console.error('Error fetching geocoding data:', error);
+    console.error(`Error fetching ${global.geocoding} geocoding data:`, error);
     this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
+    this.results = [];
   } finally {
     this.loading = false;
   }

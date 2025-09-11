@@ -15,7 +15,8 @@
     "**/android": true,
     "**/ios": true
   },
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "codium.codeCompletion.enable": false
 }
 
 

@@ -18,7 +18,8 @@
     "TOAST_REMOVEMAP": "El mapa s'ha eliminat",
     "TOAST_UPLOADMAP": "El mapa s'ha carregat correctament",
     "TOAST_FAILED_REMOVEMAP": "No s'ha pogut eliminar el mapa",
-    "CANCEL": "Cancel·lar"
+    "CANCEL": "Cancel·lar",
+    "GEOCODING": "Servei de geocodificació"
   },
 
   "ARCHIVE": {

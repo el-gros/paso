@@ -8,20 +8,20 @@
  * @input edit - Boolean flag to enable or disable editing.
  */
 
-import { IonicModule, ModalController } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
+import { ModalController } from '@ionic/angular';
+import { SharedImports } from '../shared-imports';
 import { global } from '../../environments/environment';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { ModalEditData } from '../../globald';
 
 @Component({
     selector: 'app-edit-modal',
     templateUrl: './edit-modal.component.html',
     styleUrls: ['./edit-modal.component.scss'],
-    imports: [CommonModule, IonicModule, TranslateModule],
+    imports: [SharedImports],
     standalone: true
 })
 

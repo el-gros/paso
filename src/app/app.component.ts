@@ -1,18 +1,16 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { FunctionsService } from './services/functions.service'; // <-- adjust path as needed
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { File } from '@awesome-cordova-plugins/file/ngx';
+import { SharedImports } from './shared-imports';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  imports: [IonicModule, CommonModule, FormsModule],
+  imports: [SharedImports],
   providers: [SocialSharing, FilePath, File]
 })
 export class AppComponent {

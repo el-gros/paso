@@ -7,8 +7,8 @@
 
 import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
-import { IonicModule, AlertController, LoadingController, AlertInput } from '@ionic/angular';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { AlertController, LoadingController, AlertInput } from '@ionic/angular';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
@@ -18,8 +18,9 @@ import { ColorPopoverComponent } from '../color-popover/color-popover.component'
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { LanguageOption } from '../../globald';
+import { SharedImports } from '../shared-imports';
 
 register();
 
@@ -28,7 +29,7 @@ register();
     selector: 'app-settings',
     templateUrl: 'settings.page.html',
     styleUrls: ['settings.page.scss'],
-    imports: [IonicModule, CommonModule, TranslateModule ],
+    imports: [SharedImports],
     providers: [DecimalPipe, DatePipe],
 })
 
@@ -43,7 +44,7 @@ export class SettingsPage implements OnDestroy {
     { name: 'English', code: 'en' }
   ];
   selectedLanguage: any = {name:'English', code:'en'}
-  onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_satellite', 'IGN'];
+  onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
   selectedMap: string = '';
@@ -58,6 +59,9 @@ export class SettingsPage implements OnDestroy {
   // Audio alert
   selectedAudioAlert: string = 'on';
   audioAlerts: string[] = ['on', 'off'];
+  // Geocoding service
+  selectedGeocodingService: string = 'nominatim';
+  geocodingServices: string[] = ['nominatim', 'maptiler']
   // Altitudes
   selectedAltitude: string = 'GPS';
   altitudes: string[] = ['GPS', 'DEM'];
@@ -143,6 +147,8 @@ export class SettingsPage implements OnDestroy {
     this.selectedAlert = await this.fs.storeGet('alert') || 'on'
     // Set audio
     this.selectedAudioAlert = await this.fs.storeGet('audioAlert') || 'on'
+    // Set geocoding service
+    this.selectedGeocodingService = await this.fs.storeGet('geocoding') || 'nominatim'
   }
 
   // 2. SELECT COLOR ////////////////////////////////////////
@@ -262,6 +268,13 @@ export class SettingsPage implements OnDestroy {
     this.selectedAudioAlert = position;
     global.audioAlert = position;
     await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
+  }
+
+  // 10bis. AUDIO ALERT CHANGE /////////////////////////
+  async onGeocodingServiceChange(position: string) {
+    this.selectedGeocodingService = position;
+    global.geocoding = position;
+    await this.fs.storeSet('geocoding', this.selectedGeocodingService);
   }
 
   // 11. MAP UPLOAD //////////////////////////////////////////

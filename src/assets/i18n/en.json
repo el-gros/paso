@@ -17,7 +17,8 @@
     "TOAST_REMOVEMAP": "The map has been removed",
     "TOAST_UPLOADMAP": "Map successfully uploaded",
     "TOAST_FAILED_REMOVEMAP": "Failed to remove the map",
-    "CANCEL": "Cancel"
+    "CANCEL": "Cancel",
+    "GEOCODING": "Geocoding service"
   },
 
   "ARCHIVE": {

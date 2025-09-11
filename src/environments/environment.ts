@@ -19,6 +19,7 @@ export var global: any = {
   buildTrackImage: false as boolean,
   mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
   savedMapProvider: '' as string,
+  geocoding: 'nominatim' as string,
 
   // Dynamic getter for the cancel button
   get okButton() {

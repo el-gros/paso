@@ -82,6 +82,21 @@
     </ion-select>
   </ion-item>
 
+  <!-- Geocoding service selector -->
+  <ion-item lines="none" class="selector">
+    <ion-label>{{ 'SETTINGS.GEOCODING' | translate }}</ion-label>
+    <ion-select
+      [value]="selectedGeocodingService"
+      (ionChange)="onGeocodingServiceChange($event.detail.value)"
+      interface="popover"
+      slot="end"
+    >
+      @for (service of geocodingServices; track service) {
+        <ion-select-option [value]="service">{{ service }}</ion-select-option>
+      }
+    </ion-select>
+  </ion-item>
+
   <!-- Altitude method selector -->
   <ion-item lines="none" class="selector">
     <ion-label>{{ 'SETTINGS.SAVED_TRACK_ALTITUDE' | translate }}</ion-label>

@@ -57,7 +57,7 @@
     <ion-list>
       @for (result of results; track result) {
         <ion-item (click)="selectLocation(result)">
-          {{ result['display_name']}}
+          {{ result['short_name']}}
         </ion-item>
       }
     </ion-list>

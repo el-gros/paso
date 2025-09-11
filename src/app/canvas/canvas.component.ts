@@ -7,17 +7,16 @@
  * supports multilingual labels and adapts canvas size to the viewport.
  */
 
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { global } from '../../environments/environment';
 import { Track, TrackDefinition, Data, Waypoint } from '../../globald';
-import { IonicModule } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
+import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import html2canvas from 'html2canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -29,7 +28,7 @@ register();
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, TranslateModule],
+  imports: [SharedImports],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class CanvasComponent implements OnInit, OnDestroy {
@@ -56,12 +55,11 @@ export class CanvasComponent implements OnInit, OnDestroy {
   layerVisibility = global.layerVisibility;
 
   private subscriptions: Subscription = new Subscription();
-
   constructor(
     public fs: FunctionsService,
     public ts: TrackService,
     private languageService: LanguageService,
-    private translate: TranslateService
+    @Inject(TranslateService) private translate: TranslateService
   ) { }
 
   // 1. ngOnInit()

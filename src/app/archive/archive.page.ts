@@ -8,17 +8,16 @@
  */
 
 import { Component } from '@angular/core';
-import { IonicModule, AlertController } from '@ionic/angular';
+import { AlertController } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { SharedImports } from '../shared-imports';
 import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { File } from '@awesome-cordova-plugins/file/ngx';
@@ -26,7 +25,7 @@ import { File } from '@awesome-cordova-plugins/file/ngx';
 @Component({
     selector: 'app-archive',
     templateUrl: 'archive.page.html',
-    imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
+    imports: [SharedImports],
     styleUrls: ['archive.page.scss']
 })
 export class Tab2Page {

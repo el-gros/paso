@@ -197,4 +197,19 @@ export class StyleService {
     return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
   }
 
+  /* styleMapTiler = (feature: FeatureLike, resolution: number) => {
+    const name = feature.get('name');
+    if (name) {
+      return new Style({
+        text: new Text({
+          text: name,
+          font: '20px Arial',   // 👈 adjust size/family here
+          fill: new Fill({ color: '#000' }),
+          stroke: new Stroke({ color: '#fff', width: 2 }),
+        }),
+      });
+    }
+    return undefined;
+  } */
+
 }

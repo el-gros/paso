@@ -1,7 +1,7 @@
 <ion-header class="modal-header">
   @if (edit) {
     <div class="modal-title">
-      <strong>{{ 'WPT_HEADER' | translate }}</strong>
+      <strong>{{ 'WPT.HEADER' | translate }}</strong>
     </div>
   } @else {
     <div class="modal-title">
@@ -16,13 +16,13 @@
 <ion-content class="modal-content">
   @if (showAltitude) {
     <div class="modal-message">
-      <strong>{{ 'WPT_ALTITUDE' | translate }}: </strong>{{ wptEdit.altitude | number:'1.1-1' }} m
+      <strong>{{ 'WPT.ALTITUDE' | translate }}: </strong>{{ wptEdit.altitude | number:'1.1-1' }} m
     </div>
   }
 
   @if (edit) {
     <div class="modal-message">
-      <strong>{{ 'WPT_NAME' | translate }}:</strong>
+      <strong>{{ 'WPT.NAME' | translate }}:</strong>
     </div>
 
     <div
@@ -35,7 +35,7 @@
   }
 
   <div class="modal-message">
-    <strong>{{ 'WPT_COMMENT' | translate }}:</strong>
+    <strong>{{ 'WPT.COMMENT' | translate }}:</strong>
   </div>
 
   @if (edit) {
