@@ -59,7 +59,9 @@
     "AVGSPEED": "Average speed",
     "MOTIONAVGSPEED": "In-motion average speed",
     "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
-    "CANVASSPEED": "SPEED (km/h) vs TIME"
+    "CANVASSPEED": "SPEED (km/h) vs TIME",
+    "FROM_START": "Distance from start",
+    "TO_END": "Distance to end"
   },
 
   "EDIT_MODAL": {

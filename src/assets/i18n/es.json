@@ -59,7 +59,9 @@
     "AVGSPEED": "Velocidad media",
     "MOTIONAVGSPEED": "Vel. media en movimiento",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTANCIA (km)",
-    "CANVASSPEED": "VELOCIDAD (km/h) vs TIEMPO"
+    "CANVASSPEED": "VELOCIDAD (km/h) vs TIEMPO",
+    "FROM_START": "Distancia desde el inicio",
+    "TO_END": "Distancia hasta el final"
   },
 
   "EDIT_MODAL": {

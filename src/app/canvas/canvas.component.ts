@@ -37,6 +37,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
   archivedTrack: Track | undefined = undefined;
 
   status: 'black' | 'red' | 'green' = 'black';
+  currentPoint: number = 0;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: string = '00:00:00';
@@ -92,6 +93,11 @@ export class CanvasComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.ts.status$.subscribe(async status => {
         this.status = status;
+      })
+    );
+    this.subscriptions.add(
+      this.ts.currentPoint$.subscribe(async currentPoint => {
+        this.currentPoint = currentPoint;
       })
     );
     if (this.archivedTrack) this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);

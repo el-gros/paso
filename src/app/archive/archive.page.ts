@@ -346,11 +346,4 @@ export class Tab2Page {
 
 }
 
-/* for images
-async requestImagePermission() {
-  const status = await Permissions.query({ name: 'photos' });
-  if (status.state !== 'granted') {
-    await Permissions.request({ name: 'photos' });
-  }
-}
-*/
+

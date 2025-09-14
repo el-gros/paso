@@ -34,6 +34,21 @@
                 <data android:scheme="content" />
                 <data android:pathPattern=".*\\.gpx" />
             </intent-filter>
+            <!-- Intent filter for opening KMZ files -->
+          <intent-filter>
+              <action android:name="android.intent.action.VIEW" />
+              <category android:name="android.intent.category.DEFAULT" />
+              <category android:name="android.intent.category.BROWSABLE" />
+
+              <!-- Schemes -->
+              <data android:scheme="file" />
+              <data android:scheme="content" />
+
+              <!-- MIME types -->
+              <data android:mimeType="application/vnd.google-earth.kmz" />
+              <data android:mimeType="application/zip" />
+              <data android:mimeType="application/octet-stream" />
+          </intent-filter>
         </activity>
         <provider
             android:authorities="${applicationId}.fileprovider"

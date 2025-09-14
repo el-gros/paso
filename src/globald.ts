@@ -112,5 +112,10 @@ export interface LanguageOption {
   code: string;
 }
 
-
+export interface ParsedPoint {
+  lat: number;
+  lon: number;
+  ele?: number;
+  time?: number;
+}
 

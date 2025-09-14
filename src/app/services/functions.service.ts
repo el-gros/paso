@@ -431,7 +431,7 @@ export class FunctionsService {
   }
 
   // 24. SANITIZE INPUT /////////////////////////////////////////
-  private sanitize(input: string): string {
+  public sanitize(input: string): string {
     return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [], FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'svg', 'math'], FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'oninput', 'onchange'] }).trim();
   }
 

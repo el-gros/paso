@@ -61,4 +61,18 @@ export class TrackService {
     return this.statusSource.value;
   }
 
+  // --- Current Point ---
+  private currentPointSource = new BehaviorSubject<number>(0);
+  currentPoint$ = this.currentPointSource.asObservable();
+
+  // 7. SET CURRENT POINT /////////////////////////
+  setCurrentPoint(point: number) {
+    this.currentPointSource.next(point);
+  }
+
+  // 8. GET CURRENT POINT /////////////////////////
+  getCurrentPoint(): number {
+    return this.currentPointSource.value;
+  }
+
 }

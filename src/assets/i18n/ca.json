@@ -60,7 +60,9 @@
     "AVGSPEED": "Velocitat mitjana",
     "MOTIONAVGSPEED": "Vel. mitjana en moviment",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTÀNCIA (km)",
-    "CANVASSPEED": "VELOCITAT (km/h) vs TEMPS"
+    "CANVASSPEED": "VELOCITAT (km/h) vs TEMPS",
+    "FROM_START": "Distància des de l'inici",
+    "TO_END": "Distància fins al final"
   },
 
   "EDIT_MODAL": {
