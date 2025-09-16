@@ -44,7 +44,6 @@ export class SearchModalComponent implements OnInit {
   selectedTransportation: string = '';
   selectedCurrent: string = '';
   transportation: string[] = ['','','','','']
-
   trackName: string = '';
 
   constructor(
@@ -100,7 +99,6 @@ async searchLocation() {
     }
 
     const response = await CapacitorHttp.get({ url, headers });
-    console.log(`[${global.geocoding}] raw response:`, response.data);
 
     if (global.geocoding === 'mapTiler') {
       // ✅ Normalize MapTiler results
@@ -174,34 +172,40 @@ async searchLocation() {
 
 // 3. SELECT LOCATION //////////////////////////////////////////
 async selectLocation(location: LocationResult | null) {
-  if (global.comingFrom  == 'search') {
-    console.log('Selected location', location)
-    this.modalController.dismiss({location: location ? { ...location, name: this.fs['sanitize'](location.name) } : location });
+  if (global.comingFrom == 'search') {
+    console.log('Selected location', location);
+    this.modalController.dismiss({
+      location: location
+        ? { ...location, name: this.fs['sanitize'](location.name) }
+        : location
+    });
     return;
-  }
-  else if (global.comingFrom  == 'guide') {
+  } else if (global.comingFrom == 'guide') {
     this.results = [];
-    this.query = '';
+
     if (this.num == 0) {
-      console.log('Selected location', location)
+      console.log('Selected location', location);
       if (location) {
-        this.start = [+location.lon,+location.lat]
-        this.trackName = this.fs['sanitize'](location.name);
-      }
-      else {
+        this.start = [+location.lon, +location.lat];
+        this.trackName = this.fs['sanitize'](this.query); // 👈 short
+      } else {
         this.trackName = 'o';
       }
+      this.query = '';
       this.placeholder = this.translate.instant('SEARCH.DESTINATION');
       this.num = 1;
-      return
+      return;
     }
+
     if (this.num == 1) {
-      console.log('Selected location', location)
-      this.trackName = this.trackName + ' - ' + this.fs['sanitize'](location!.name);
-      this.destination = [+location!.lon,+location!.lat]
+      console.log('Selected location', location);
+      const destName = this.fs['sanitize'](this.query);
+      this.trackName = `${this.trackName} - ${destName}`; // 👈 short track name
+      this.destination = [+location!.lon, +location!.lat];
       this.showSelection = false;
       this.showTransportation = true;
       this.selectedTransportation = '';
+      this.query = '';
     }
   }
 }
@@ -231,18 +235,17 @@ async request() {
     });
     responseData = resp.data;
     responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
-    console.log('response', responseData)
     if (responseData && responseData.features && responseData.features.length > 0) {
       responseData.trackName = this.trackName;
-      this.modalController.dismiss({ response: responseData });
+      this.modalController.dismiss({
+        response: responseData,
+      });
     } else {
-      console.log('some problem')
       this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
       this.modalController.dismiss();
     }
   } catch (error) {
     this.fs.displayToast(this.translate.instant('SEARCH.TOAST1'));
-    console.log('dismiss empty')
     this.modalController.dismiss();
   } finally {
     this.loading = false;

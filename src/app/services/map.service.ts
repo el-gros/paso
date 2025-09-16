@@ -29,6 +29,11 @@ import TileState from 'ol/TileState';
 import pako from 'pako';
 import VectorTileSource from 'ol/source/VectorTile';
 import { applyStyle } from 'ol-mapbox-style';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { ParsedPoint, Waypoint } from '../../globald';
+import { FunctionsService } from './functions.service';
 
 // 1. setMapView
 // 2. displayCurrentTrack
@@ -59,6 +64,8 @@ export class MapService {
 
   constructor(
     private styleService: StyleService,
+    private http: HttpClient,
+    private fs: FunctionsService
   ) { }
 
   // 1. SET MAP VIEW /////////////////////////////////////////
@@ -669,6 +676,216 @@ export class MapService {
     this.currentScaleIndex = (this.currentScaleIndex + 1) % this.scaleSteps.length;
     const scale = this.scaleSteps[this.currentScaleIndex];
     this.mapWrapperElement.style.transform = `scale(${scale})`;
+  }
+
+  reverseGeocode(lat: number, lon: number): Observable<any | null> {
+    if (
+      typeof lat !== 'number' ||
+      typeof lon !== 'number' ||
+      isNaN(lat) || isNaN(lon) ||
+      lat < -90 || lat > 90 ||
+      lon < -180 || lon > 180
+    ) {
+      return throwError(() => new Error('Latitude and longitude must be valid numbers within their respective ranges.'));
+    }
+
+    // --- helpers ---
+    const buildNominatimShortName = (addr: any): string => {
+      if (!addr) return '(no name)';
+
+      // 1. POIs
+      if (addr.tourism) return addr.tourism;
+      if (addr.amenity) return addr.amenity;
+      if (addr.shop) return addr.shop;
+      if (addr.building) return addr.building;
+
+      // 2. Street + number + city
+      if (addr.road) {
+        let s = addr.road;
+        if (addr.house_number) s += ` ${addr.house_number}`;
+        if (addr.city || addr.town || addr.village) {
+          s += `, ${addr.city ?? addr.town ?? addr.village}`;
+        }
+        return s;
+      }
+
+      // 3. Settlements
+      if (addr.city) return addr.city;
+      if (addr.town) return addr.town;
+      if (addr.village) return addr.village;
+
+      // 4. Country fallback
+      return addr.country ?? '(no name)';
+    };
+
+    const buildMapTilerShortName = (f: any): string => {
+      if (!f) return '(no name)';
+      const main = f.text ?? '(no name)';
+      const city = f.context?.find((c: any) =>
+        c.id.startsWith('place') || c.id.startsWith('locality')
+      )?.text;
+      return city ? `${main}, ${city}` : main;
+    };
+
+    // --- build request ---
+    let url: string;
+    let options: any = {};
+
+    if (global.geocoding === 'mapTiler') {
+      url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
+      options = { observe: 'body' as const, responseType: 'json' as const };
+    } else {
+      url = `https://nominatim.openstreetmap.org/reverse`;
+      options = {
+        params: new HttpParams()
+          .set('lat', lat.toString())
+          .set('lon', lon.toString())
+          .set('format', 'json')
+          .set('addressdetails', '1')
+          .set('polygon_geojson', '1'),
+        headers: new HttpHeaders().set('User-Agent', 'YourAppName/1.0 (you@example.com)'),
+        observe: 'body' as const,
+        responseType: 'json' as const
+      };
+    }
+
+    // --- normalize ---
+    return this.http.get<any>(url, options).pipe(
+      map((response: any) => {
+        if (global.geocoding === 'mapTiler') {
+          const f = response?.features?.[0];
+          if (!f) return null;
+
+          const [lon, lat] = f.geometry.coordinates;
+
+          const bbox = f.bbox
+            ? [f.bbox[1], f.bbox[3], f.bbox[0], f.bbox[2]] // [south, north, west, east]
+            : [lat, lat, lon, lon];
+
+          return {
+            lat,
+            lon,
+            name: f.text ?? '(no name)',
+            display_name: f.place_name ?? f.text ?? '(no name)',
+            short_name: buildMapTilerShortName(f),
+            type: f.place_type?.[0] ?? 'unknown',
+            place_id: f.id ?? null,
+            boundingbox: bbox,
+            geojson: f.geometry
+          };
+        } else {
+          return {
+            lat: parseFloat(response.lat),
+            lon: parseFloat(response.lon),
+            name: response.display_name ?? '(no name)',
+            display_name: response.display_name ?? '(no name)',
+            short_name: buildNominatimShortName(response.address),
+            type: response.type ?? 'unknown',
+            place_id: response.place_id,
+            boundingbox: response.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
+            geojson: response.geojson ?? null
+          };
+        }
+      }),
+      catchError(error => {
+        console.error('Reverse geocoding error:', error);
+        return of(null);
+      })
+    );
+  }
+
+  // PARSE CONTENT OF A GPX FILE ////////////////////////
+  async parseGpxXml(gpxText: string) {
+    let waypoints: Waypoint[] = [];
+    let trackPoints: ParsedPoint[] = [];
+    let trk: Element | null = null;
+    // Parse GPX data
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
+    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+      throw new Error('Invalid GPX file format.');
+    }
+    // Parse waypoints
+    const wptNodes = xmlDoc.getElementsByTagName("wpt");
+    for (const wpt of Array.from(wptNodes)) {
+      const latStr = wpt.getAttribute("lat");
+      const lonStr = wpt.getAttribute("lon");
+      if (!latStr || !lonStr) continue;
+      const latitude = parseFloat(latStr);
+      const longitude = parseFloat(lonStr);
+      const eleNode = wpt.getElementsByTagName("ele")[0];
+      const altitude = eleNode ? parseFloat(eleNode.textContent || "0") : 0;
+      const name = this.fs.sanitize(wpt.getElementsByTagName("name")[0]?.textContent || "");
+      let comment = this.fs.sanitize(wpt.getElementsByTagName("cmt")[0]?.textContent || "");
+      if (name === comment) comment = "";
+      waypoints.push({ latitude, longitude, altitude, name, comment });
+    }
+    // Extract first track
+    const tracks = xmlDoc.getElementsByTagName('trk');
+    if (!tracks.length) return { waypoints, trackPoints, trk: null };
+    trk = tracks[0];
+    const trackSegments = trk.getElementsByTagName('trkseg');
+    if (!trackSegments.length) return { waypoints, trackPoints, trk: null };
+    const trackSegment = trackSegments[0];
+    const trkptNodes = trackSegment.getElementsByTagName('trkpt');
+    for (const trkpt of Array.from(trkptNodes)) {
+      const lat = parseFloat(trkpt.getAttribute('lat') || "");
+      const lon = parseFloat(trkpt.getAttribute('lon') || "");
+      const ele = parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || "0");
+      const timeStr = trkpt.getElementsByTagName('time')[0]?.textContent;
+      const time = timeStr ? new Date(timeStr).getTime() : 0;
+      if (!isNaN(lat) && !isNaN(lon)) {
+        trackPoints.push({ lat, lon, ele, time });
+      }
+    }
+    return { waypoints, trackPoints, trk };
+  }
+
+  async parseKmlXml(xmlDoc: Document) {
+    let waypoints: Waypoint[] = [];
+    let trackPoints: { lat: number; lon: number; ele?: number; time?: number }[] = [];
+    let trk: Element | null = null;
+    // Extract Placemarks
+    const placemarks = xmlDoc.getElementsByTagName("Placemark");
+    for (const pm of Array.from(placemarks)) {
+      const name = pm.getElementsByTagName("name")[0]?.textContent || "";
+      const desc = pm.getElementsByTagName("description")[0]?.textContent || "";
+      // Waypoint → look for <Point>
+      const point = pm.getElementsByTagName("Point")[0];
+      if (point) {
+        const coordText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
+        if (coordText) {
+          const [lonStr, latStr, eleStr] = coordText.split(",");
+          waypoints.push({
+            latitude: parseFloat(latStr),
+            longitude: parseFloat(lonStr),
+            altitude: eleStr ? parseFloat(eleStr) : 0,
+            name: this.fs['sanitize']?.(name) ?? name,
+            comment: this.fs['sanitize']?.(desc) ?? desc,
+          });
+        }
+      }
+      // Track → look for <LineString>
+      const line = pm.getElementsByTagName("LineString")[0];
+      if (line) {
+        trk = pm; // keep Placemark as "track container"
+        const coordText = line.getElementsByTagName("coordinates")[0]?.textContent?.trim();
+        if (coordText) {
+          const coords = coordText.split(/\s+/);
+          for (const c of coords) {
+            const [lonStr, latStr, eleStr] = c.split(",");
+            if (!lonStr || !latStr) continue;
+            trackPoints.push({
+              lon: parseFloat(lonStr),
+              lat: parseFloat(latStr),
+              ele: eleStr ? parseFloat(eleStr) : 0,
+              time: 0, // KML usually doesn’t have per-point time → you can extend if needed
+            });
+          }
+        }
+      }
+    }
+    return { waypoints, trackPoints, trk };
   }
 
 }

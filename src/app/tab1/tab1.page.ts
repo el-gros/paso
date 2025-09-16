@@ -37,14 +37,10 @@ import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
-import { NominatimService } from '../services/nominatim.service';
 import { lastValueFrom } from 'rxjs';
 import { LanguageService } from '../services/language.service';
 import { TranslateService } from '@ngx-translate/core';
 import { CapacitorHttp } from '@capacitor/core';
-import { HttpParams, HttpHeaders, HttpClient } from '@angular/common/http';
-import { map, Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import JSZip from 'jszip';
 
 useGeographic();
@@ -92,13 +88,11 @@ export class Tab1Page {
   currentFeature: any;
   multiFeature: any;
   threshDist: number = 0.0000002;
-  //lastN: number = 0;
   currentLayer: VectorLayer<VectorSource> | undefined;
   archivedLayer: VectorLayer<VectorSource> | undefined;
   multiLayer: VectorLayer<VectorSource> | undefined;
   foreground: boolean = true;
   status: 'black' | 'red' | 'green' = 'black'
-  //currentPoint: number | undefined = undefined;
   currentPoint: number = 0;
   audioCtx: AudioContext | null = null;
   beepInterval: any;
@@ -124,10 +118,8 @@ export class Tab1Page {
     private zone: NgZone,
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
-    private nominatimService: NominatimService,
     private languageService: LanguageService,
     private translate: TranslateService,
-    private http: HttpClient
   ) {
   }
 
@@ -157,11 +149,11 @@ export class Tab1Page {
   22. computeDistances
   23. htmValues
   24. checkWhetherOnRoute
-  25. fixWrongOrder
-  26. ionViewWillLeave
-  27. playBeep
-  28. playDoubleBeep
-  29. parseGpx
+  25. ionViewWillLeave
+  26. playBeep
+  27. playDoubleBeep
+  28. computeTrackStats
+  29. saveTrack
   30. processUrl
   31. foregroundTask
   32. backgroundTask
@@ -300,9 +292,6 @@ export class Tab1Page {
         this.archivedLayer?.setVisible(false);
         this.status = 'black'
         this.ts.setStatus(this.status);
-        //this.currentPoint = undefined
-        //this.currentPoint = 0;
-        //this.ts.setCurrentPoint(this.currentPoint);
         // display all tracks
         await this.mapService.displayAllTracks({
           fs: this.fs,
@@ -318,9 +307,6 @@ export class Tab1Page {
       else {
         this.status = 'black';
         this.ts.setStatus(this.status);
-        //this.currentPoint = undefined
-        //this.currentPoint = 0;
-        //this.ts.setCurrentPoint(this.currentPoint);
         // Hide archived and multi layers
         this.archivedLayer?.setVisible(false);
         this.multiLayer?.setVisible(false);
@@ -338,19 +324,17 @@ export class Tab1Page {
   async startTracking() {
     // In case there is something wrong
     if (!this.currentLayer) return;
-    // Check-reqauest permissions
+    // Check-request permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
-      // If not, request the necessary permissions
       await ForegroundService.requestPermissions();
     }
     // Check if overlay permission is needed and granted
     const overlayPermissionGranted = await ForegroundService.checkManageOverlayPermission();
     if (!overlayPermissionGranted) {
-      // If not, request the overlay permission
       await ForegroundService.requestManageOverlayPermission();
     }
-    // start foreground service
+    // Start foreground service
     await ForegroundService.startForegroundService({
       id: 1234,
       title: this.translate.instant('MAP.NOTICE'),
@@ -361,7 +345,7 @@ export class Tab1Page {
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
     this.currentLayer.setVisible(false);
-    // initialize variables
+    // Initialize variables
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentMotionSpeed = undefined;
@@ -370,8 +354,8 @@ export class Tab1Page {
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
     this.computedDistances = 0;
-    this.audioCtx = new window.AudioContext
-    // request permission
+    this.audioCtx = new window.AudioContext();
+    // Request notification permission
     const { display } = await LocalNotifications.checkPermissions();
     if (display !== 'granted') {
       const permissionResult = await LocalNotifications.requestPermissions();
@@ -383,37 +367,31 @@ export class Tab1Page {
     } else {
       console.log('Notification permission already granted.');
     }
-    // Start Background Geolocation watcher
-/*    BackgroundGeolocation.addWatcher(
-      { backgroundMessage: '',
+    // ✅ Start Background Geolocation watcher (official API)
+    this.watcherId = await BackgroundGeolocation.addWatcher(
+      {
+        backgroundMessage: '',
         backgroundTitle: this.translate.instant('MAP.NOTICE'),
         requestPermissions: true,
         stale: false,
-        distanceFilter: this.distanceFilter
+        distanceFilter: this.distanceFilter,
       },
-      async (location: Location, error: Error) => {
-        if (error) return;
+      async (location: Location, error: any) => {
+        if (error) {
+          console.error('Geolocation error:', error);
+          return;
+        }
+        if (!location) return;
         const success = await this.checkLocation(location);
         if (!success) return;
-        if (this.foreground) await this.foregroundTask(location);
-        else await this.backgroundTask(location);
+        if (this.foreground) {
+          await this.foregroundTask(location);
+        } else {
+          await this.backgroundTask(location);
+        }
       }
-    ).then((value: any) => this.watcherId = value); */
-    const watcherId = await BackgroundGeolocation.addWatcher({
-      backgroundMessage: '',
-      backgroundTitle: this.translate.instant('MAP.NOTICE'),
-      requestPermissions: true,
-      stale: false,
-      distanceFilter: this.distanceFilter,
-    });
-    for await (const location of watcherId) {
-      if (!location) continue;
-      const success = await this.checkLocation(location);
-      if (!success) continue;
-      if (this.foreground) await this.foregroundTask(location);
-      else await this.backgroundTask(location);
-    }
-    // show / hide UI elements
+    );
+    // Update state
     global.state = 'tracking';
   }
 
@@ -476,7 +454,9 @@ export class Tab1Page {
     // Set waypoint altitude
     await this.setWaypointAltitude()
     // set map view
-    this.mapService.setMapView(this.map, this.currentTrack);
+    if (this.currentTrack?.features?.length) {
+      this.mapService.setMapView(this.map, this.currentTrack);
+    }
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
@@ -613,9 +593,6 @@ export class Tab1Page {
     else {
       this.status = 'black';
       this.ts.setStatus(this.status);
-      //this.currentPoint = undefined
-      //this.currentPoint = 0;
-      //this.ts.setCurrentPoint(this.currentPoint);
     }
     // Return
     return true;
@@ -670,8 +647,6 @@ export class Tab1Page {
       }
     }
     // No match found
-    //this.currentPoint = undefined;
-    //this.ts.setCurrentPoint(this.currentPoint);
     return 'red';
   }
 
@@ -993,34 +968,12 @@ async createLayers() {
     }
   }
 
-  // 25. CASE OF LOCATIONS IN WRONG ORDER
-  /* async fixWrongOrder(location:Location) {
-    if (!this.currentTrack || location.time === undefined) return;
-    let num = this.currentTrack.features[0].geometry.coordinates.length ?? 0;
-    // Check and fix location order by comparing timestamps
-    for (let i = num - 1; i > 0; i--) {
-      const previousTime = this.currentTrack.features[0]?.geometry?.properties?.data[i]?.time;
-      // If the previous time is greater than the new time, remove the previous entry
-      if (previousTime > location.time) {
-        this.currentTrack.features[0].geometry.coordinates.pop();
-        this.currentTrack.features[0].geometry.properties.data.pop();
-        this.altitudeFiltered = Math.max(0, this.altitudeFiltered - 1);
-        this.speedFiltered = Math.max(0, this.speedFiltered - 1);
-        this.averagedSpeed = Math.max(0, this.averagedSpeed - 1);
-        this.computedDistances = Math.max(0, this.computedDistances - 1);
-        this.ts.setCurrentTrack(this.currentTrack);
-      } else {
-        break;
-      }
-    }
-  } */
-
-  // 26. ON LEAVE ////////////////////////////
+  // 25. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
     global.archivedPresent = !!this.archivedTrack;
   }
 
-  // 27. PLAY A BEEP /////////////////////////////////////
+  // 26. PLAY A BEEP /////////////////////////////////////
   async playBeep(freq: number, time: number, volume: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1047,7 +1000,7 @@ async createLayers() {
     };
   }
 
-  // 28. PLAY A DOUBLE BEEP
+  // 27. PLAY A DOUBLE BEEP
   async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
     // Initialize audio context if not already created
     if (!this.audioCtx) {
@@ -1079,66 +1032,7 @@ async createLayers() {
     };
   }
 
-  // 29. PARSE CONTENT OF A GPX FILE ////////////////////////
-  private async parseGpxXml(gpxText: string) {
-    let waypoints: Waypoint[] = [];
-    let trackPoints: ParsedPoint[] = [];
-    let trk: Element | null = null;
-
-    // Parse GPX data
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
-
-    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-      throw new Error('Invalid GPX file format.');
-    }
-
-    // Parse waypoints
-    const wptNodes = xmlDoc.getElementsByTagName("wpt");
-    for (const wpt of Array.from(wptNodes)) {
-      const latStr = wpt.getAttribute("lat");
-      const lonStr = wpt.getAttribute("lon");
-      if (!latStr || !lonStr) continue;
-
-      const latitude = parseFloat(latStr);
-      const longitude = parseFloat(lonStr);
-      const eleNode = wpt.getElementsByTagName("ele")[0];
-      const altitude = eleNode ? parseFloat(eleNode.textContent || "0") : 0;
-
-      const name = this.fs.sanitize(wpt.getElementsByTagName("name")[0]?.textContent || "");
-      let comment = this.fs.sanitize(wpt.getElementsByTagName("cmt")[0]?.textContent || "");
-      if (name === comment) comment = "";
-
-      waypoints.push({ latitude, longitude, altitude, name, comment });
-    }
-
-    // Extract first track
-    const tracks = xmlDoc.getElementsByTagName('trk');
-    if (!tracks.length) return { waypoints, trackPoints, trk: null };
-
-    trk = tracks[0];
-    const trackSegments = trk.getElementsByTagName('trkseg');
-    if (!trackSegments.length) return { waypoints, trackPoints, trk: null };
-
-    const trackSegment = trackSegments[0];
-    const trkptNodes = trackSegment.getElementsByTagName('trkpt');
-
-    for (const trkpt of Array.from(trkptNodes)) {
-      const lat = parseFloat(trkpt.getAttribute('lat') || "");
-      const lon = parseFloat(trkpt.getAttribute('lon') || "");
-      const ele = parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || "0");
-      const timeStr = trkpt.getElementsByTagName('time')[0]?.textContent;
-      const time = timeStr ? new Date(timeStr).getTime() : 0;
-
-      if (!isNaN(lat) && !isNaN(lon)) {
-        trackPoints.push({ lat, lon, ele, time });
-      }
-    }
-
-    return { waypoints, trackPoints, trk };
-  }
-
-  // 29 bis. COMPUTE TRACK STATS
+  // 28. COMPUTE TRACK STATS /////////////////////////
   async computeTrackStats(
     trackPoints: ParsedPoint[],
     waypoints: Waypoint[],
@@ -1172,41 +1066,33 @@ async createLayers() {
         waypoints
       }]
     };
-
     // Initialize distance and bounding box
     let distance = 0;
     let lonMin = Infinity, latMin = Infinity;
     let lonMax = -Infinity, latMax = -Infinity;
-
     for (let k = 0; k < trackPoints.length; k++) {
       const { lat, lon, ele, time } = trackPoints[k];
       if (isNaN(lat) || isNaN(lon)) continue;
-
       // Update bounding box
       lonMin = Math.min(lonMin, lon);
       latMin = Math.min(latMin, lat);
       lonMax = Math.max(lonMax, lon);
       latMax = Math.max(latMax, lat);
-
       // Add coordinates
       track.features[0].geometry.coordinates.push([lon, lat]);
       const num = track.features[0].geometry.coordinates.length;
-
       // Distance
       if (k > 0) {
         const prev = trackPoints[k - 1];
         distance += await this.fs.computeDistance(prev.lon, prev.lat, lon, lat);
       }
-
       // Altitude
       let alt = ele ?? 0;
       if (alt === 0 && num > 1) {
         alt = track.features[0].geometry.properties.data[num - 2].altitude;
       }
-
       // Time
       const locTime = time || 0;
-
       // Store point data
       track.features[0].geometry.properties.data.push({
         altitude: alt,
@@ -1215,48 +1101,37 @@ async createLayers() {
         compSpeed: 0,
         distance: distance,
       });
-
       track.features[0].bbox = [lonMin, latMin, lonMax, latMax];
     }
-
     const num = track.features[0].geometry.properties.data.length ?? 0;
     track.features[0].properties.totalDistance = distance;
-
     if (num > 1) {
       track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(
         track.features[0].geometry.properties.data[num - 1].time -
         track.features[0].geometry.properties.data[0].time
       );
     }
-
     track.features[0].properties.totalNumber = num;
-
     // Post-process: filters
     try {
       this.fs.filterSpeed(track.features[0].geometry.properties.data, num - 1);
     } catch {}
-
     try {
       track.features[0].properties.totalElevationGain = 0;
       track.features[0].properties.totalElevationLoss = 0;
       await this.filterAltitude(track, num - 1);
       this.altitudeFiltered = 0;
     } catch {}
-
     // Second speed filter
     track.features[0].geometry.properties.data = await this.fs.filterSpeed(
-      track.features[0].geometry.properties.data,
-      1
-    );
-
+      track.features[0].geometry.properties.data, 1 );
     // Save date
     const date = new Date(track.features[0].geometry.properties.data[num - 1]?.time || Date.now());
     track.features[0].properties.date = date;
-
     return track;
   }
 
-  // 29 tris. SAVE TRACK INTO COLLECTION
+  // 29. SAVE TRACK INTO COLLECTION
   async saveTrack(track: Track) {
     const dateKey = JSON.stringify(track.features[0].properties.date);
     const existing = await this.fs.storeGet(dateKey);
@@ -1280,58 +1155,46 @@ async createLayers() {
       this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'));
       return;
     }
-
-try {
-  console.log('url', data);
-
-  // Try to extract extension from URL
-  let ext = data.url.split('.').pop()?.toLowerCase();
-
-  // Fallback: detect type from content if no extension (common with content:// URIs)
-  if (!ext || data.url.startsWith('content://')) {
     try {
-      const probe = await Filesystem.readFile({
-        path: data.url,
-      });
-
-      let sample = '';
-
-      if (typeof probe.data === 'string') {
-        // Native: base64 string
-        sample = atob(probe.data.substring(0, 100));
-      } else if (probe.data instanceof Blob) {
-        // Web: Blob
-        const text = await probe.data.text(); // read blob as text
-        sample = text.substring(0, 100);
+      console.log('url', data);
+      // Try to extract extension from URL
+      let ext = data.url.split('.').pop()?.toLowerCase();
+      // Fallback: detect type from content if no extension (common with content:// URIs)
+      if (!ext || data.url.startsWith('content://')) {
+        try {
+          const probe = await Filesystem.readFile({
+            path: data.url,
+          });
+          let sample = '';
+          if (typeof probe.data === 'string') {
+            // Native: base64 string
+            sample = atob(probe.data.substring(0, 100));
+          } else if (probe.data instanceof Blob) {
+            // Web: Blob
+            const text = await probe.data.text(); // read blob as text
+            sample = text.substring(0, 100);
+          }
+          // Decide type from sample
+          if (sample.includes('<gpx')) {
+            ext = 'gpx';
+          } else if (sample.includes('<kml')) {
+            ext = 'kml';
+          } else if (typeof probe.data === 'string' && probe.data.startsWith('UEsDB')) {
+            // Base64 of "PK" → ZIP → KMZ
+            ext = 'kmz';
+          } else {
+            ext = 'unknown';
+          }
+        } catch (probeErr) {
+          console.warn('Could not probe file type:', probeErr);
+          this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
+          return;
+        }
       }
-
-      // Decide type from sample
-      if (sample.includes('<gpx')) {
-        ext = 'gpx';
-      } else if (sample.includes('<kml')) {
-        ext = 'kml';
-      } else if (typeof probe.data === 'string' && probe.data.startsWith('UEsDB')) {
-        // Base64 of "PK" → ZIP → KMZ
-        ext = 'kmz';
-      } else {
-        ext = 'unknown';
-      }
-
-    } catch (probeErr) {
-      console.warn('Could not probe file type:', probeErr);
-      this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
-      return;
-    }
-  }
-
-  console.log('Detected ext:', ext);
-
-      console.log('Detected extension:', ext);
-
+      console.log('Detected ext:', ext);
       let waypoints: Waypoint[] = [];
       let trackPoints: ParsedPoint[] = [];
       let trk: Element | null = null;
-
       if (ext === 'gpx') {
         console.log('Processing GPX file');
         const fileContent = await Filesystem.readFile({
@@ -1339,7 +1202,7 @@ try {
           encoding: Encoding.UTF8,
         });
         console.log(fileContent);
-        ({ waypoints, trackPoints, trk } = await this.parseGpxXml(fileContent.data as string));
+        ({ waypoints, trackPoints, trk } = await this.mapService.parseGpxXml(fileContent.data as string));
       } else if (ext === 'kmz') {
         console.log('Processing KMZ file');
         const fileContent = await Filesystem.readFile({
@@ -1351,63 +1214,19 @@ try {
         this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
         return;
       }
-
       console.log('trk', trk);
-
       // ✅ Common track handling
       if (!trackPoints.length || !trk) {
         this.fs.displayToast(this.translate.instant('MAP.NO_TRACK'));
         return;
       }
-
       const track = await this.computeTrackStats(trackPoints, waypoints, trk);
       await this.saveTrack(track);
       this.archivedTrack = track;
       this.fs.displayToast(this.translate.instant('MAP.IMPORTED'));
-
     } catch (error) {
       console.error('Import failed:', error);
       this.fs.displayToast(this.translate.instant('MAP.NOT_IMPORTED'));
-    }
-  }
-
-  // 30 bis. PARSE KMZ ///////////////////////////////////////
-  async parseKmz(base64Data: string): Promise<{ waypoints: Waypoint[], trackPoints: ParsedPoint[], trk: Element | null }> {
-    try {
-      // Decode Base64 → ArrayBuffer
-      const binary = atob(base64Data);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-
-      // Load KMZ as zip
-      const zip = await JSZip.loadAsync(bytes);
-
-      // Find the first .kml file in the KMZ
-      const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-      if (!kmlFile) {
-        throw new Error('No KML file found inside KMZ.');
-      }
-
-      // Extract KML text
-      const kmlText = await zip.files[kmlFile].async('string');
-      if (!kmlText || !kmlText.includes('<kml')) {
-        throw new Error('Invalid KML content in KMZ.');
-      }
-
-      // Convert string → XML Document
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(kmlText, 'application/xml');
-
-      // Reuse your existing KML parser
-      return this.parseKmlXml(xmlDoc);
-
-    } catch (error) {
-      console.error('parseKmz failed:', error);
-      this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
-      return { waypoints: [], trackPoints: [], trk: null };
     }
   }
 
@@ -1525,7 +1344,7 @@ try {
     if (!this.currentTrack) return;
     const num: number = this.currentTrack.features[0].geometry.coordinates.length
     let point = this.currentTrack.features[0].geometry.coordinates[num-1];
-    const addressObservable = this.nominatimService.reverseGeocode(point[1], point[0]);
+    const addressObservable = this.mapService.reverseGeocode(point[1], point[0]);
     const address = addressObservable ? await lastValueFrom(addressObservable) : { name: '', display_name: '', short_name: '' };
     console.log(address)
     let waypoint: Waypoint = {
@@ -1606,17 +1425,19 @@ try {
     const date = new Date();
     var trackName = ''
     if (data) {
-      console.log("got from modal", data)
       trackName = data.response.trackName;
-      var slopes = {gain: NaN, loss: NaN}
+      console.log('trackName', trackName)
       // Coordinates
       const rawCoordinates = data.response.features[0].geometry.coordinates;
+      // Case of no route
+      if (!rawCoordinates || rawCoordinates?.length === 0) {
+        this.fs.displayToast(this.translate.instant('MAP.NO_ROUTE'));
+        return;
+      }
       // Compute distances
       const distances: number[] = await this.fs.computeCumulativeDistances(rawCoordinates)
-      console.log('distances', distances)
       // Compute times
       const times: number[] = await this.fs.createTimes(data, date, distances);
-      console.log(times);
       // Get altitudes and compute elevation gain and loss
       var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
       // compute speed
@@ -1860,122 +1681,6 @@ try {
     }
   }
 
-reverseGeocode(lat: number, lon: number): Observable<any | null> {
-  if (
-    typeof lat !== 'number' ||
-    typeof lon !== 'number' ||
-    isNaN(lat) || isNaN(lon) ||
-    lat < -90 || lat > 90 ||
-    lon < -180 || lon > 180
-  ) {
-    return throwError(() => new Error('Latitude and longitude must be valid numbers within their respective ranges.'));
-  }
-
-  // --- helpers ---
-  const buildNominatimShortName = (addr: any): string => {
-    if (!addr) return '(no name)';
-
-    // 1. POIs
-    if (addr.tourism) return addr.tourism;
-    if (addr.amenity) return addr.amenity;
-    if (addr.shop) return addr.shop;
-    if (addr.building) return addr.building;
-
-    // 2. Street + number + city
-    if (addr.road) {
-      let s = addr.road;
-      if (addr.house_number) s += ` ${addr.house_number}`;
-      if (addr.city || addr.town || addr.village) {
-        s += `, ${addr.city ?? addr.town ?? addr.village}`;
-      }
-      return s;
-    }
-
-    // 3. Settlements
-    if (addr.city) return addr.city;
-    if (addr.town) return addr.town;
-    if (addr.village) return addr.village;
-
-    // 4. Country fallback
-    return addr.country ?? '(no name)';
-  };
-
-  const buildMapTilerShortName = (f: any): string => {
-    if (!f) return '(no name)';
-    const main = f.text ?? '(no name)';
-    const city = f.context?.find((c: any) =>
-      c.id.startsWith('place') || c.id.startsWith('locality')
-    )?.text;
-    return city ? `${main}, ${city}` : main;
-  };
-
-  // --- build request ---
-  let url: string;
-  let options: any = {};
-
-  if (global.geocoding === 'mapTiler') {
-    url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
-    options = { observe: 'body' as const, responseType: 'json' as const };
-  } else {
-    url = `https://nominatim.openstreetmap.org/reverse`;
-    options = {
-      params: new HttpParams()
-        .set('lat', lat.toString())
-        .set('lon', lon.toString())
-        .set('format', 'json')
-        .set('addressdetails', '1')
-        .set('polygon_geojson', '1'),
-      headers: new HttpHeaders().set('User-Agent', 'YourAppName/1.0 (you@example.com)'),
-      observe: 'body' as const,
-      responseType: 'json' as const
-    };
-  }
-
-  // --- normalize ---
-  return this.http.get<any>(url, options).pipe(
-    map((response: any) => {
-      if (global.geocoding === 'mapTiler') {
-        const f = response?.features?.[0];
-        if (!f) return null;
-
-        const [lon, lat] = f.geometry.coordinates;
-
-        const bbox = f.bbox
-          ? [f.bbox[1], f.bbox[3], f.bbox[0], f.bbox[2]] // [south, north, west, east]
-          : [lat, lat, lon, lon];
-
-        return {
-          lat,
-          lon,
-          name: f.text ?? '(no name)',
-          display_name: f.place_name ?? f.text ?? '(no name)',
-          short_name: buildMapTilerShortName(f),
-          type: f.place_type?.[0] ?? 'unknown',
-          place_id: f.id ?? null,
-          boundingbox: bbox,
-          geojson: f.geometry
-        };
-      } else {
-        return {
-          lat: parseFloat(response.lat),
-          lon: parseFloat(response.lon),
-          name: response.display_name ?? '(no name)',
-          display_name: response.display_name ?? '(no name)',
-          short_name: buildNominatimShortName(response.address),
-          type: response.type ?? 'unknown',
-          place_id: response.place_id,
-          boundingbox: response.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
-          geojson: response.geojson ?? null
-        };
-      }
-    }),
-    catchError(error => {
-      console.error('Reverse geocoding error:', error);
-      return of(null);
-    })
-  );
-}
-
 async processKmz(data: any) {
   try {
     // 1. Read binary file
@@ -1995,7 +1700,7 @@ async processKmz(data: any) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(kmlText, 'application/xml');
     // 5. Extract waypoints and trackpoints
-    const { waypoints, trackPoints, trk } = await this.parseKmlXml(xmlDoc);
+    const { waypoints, trackPoints, trk } = await this.mapService.parseKmlXml(xmlDoc);
     if (!trackPoints.length || !trk) return;
     // 6. Compute and save track
     const track = await this.computeTrackStats(trackPoints, waypoints, trk);
@@ -2008,52 +1713,45 @@ async processKmz(data: any) {
   }
 }
 
-private async parseKmlXml(xmlDoc: Document) {
-  let waypoints: Waypoint[] = [];
-  let trackPoints: { lat: number; lon: number; ele?: number; time?: number }[] = [];
-  let trk: Element | null = null;
-  // Extract Placemarks
-  const placemarks = xmlDoc.getElementsByTagName("Placemark");
-  for (const pm of Array.from(placemarks)) {
-    const name = pm.getElementsByTagName("name")[0]?.textContent || "";
-    const desc = pm.getElementsByTagName("description")[0]?.textContent || "";
-    // Waypoint → look for <Point>
-    const point = pm.getElementsByTagName("Point")[0];
-    if (point) {
-      const coordText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
-      if (coordText) {
-        const [lonStr, latStr, eleStr] = coordText.split(",");
-        waypoints.push({
-          latitude: parseFloat(latStr),
-          longitude: parseFloat(lonStr),
-          altitude: eleStr ? parseFloat(eleStr) : 0,
-          name: this.fs['sanitize']?.(name) ?? name,
-          comment: this.fs['sanitize']?.(desc) ?? desc,
-        });
+// PARSE KMZ ///////////////////////////////////////
+  async parseKmz(base64Data: string): Promise<{ waypoints: Waypoint[], trackPoints: ParsedPoint[], trk: Element | null }> {
+    try {
+      // Decode Base64 → ArrayBuffer
+      const binary = atob(base64Data);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
       }
-    }
-    // Track → look for <LineString>
-    const line = pm.getElementsByTagName("LineString")[0];
-    if (line) {
-      trk = pm; // keep Placemark as "track container"
-      const coordText = line.getElementsByTagName("coordinates")[0]?.textContent?.trim();
-      if (coordText) {
-        const coords = coordText.split(/\s+/);
-        for (const c of coords) {
-          const [lonStr, latStr, eleStr] = c.split(",");
-          if (!lonStr || !latStr) continue;
-          trackPoints.push({
-            lon: parseFloat(lonStr),
-            lat: parseFloat(latStr),
-            ele: eleStr ? parseFloat(eleStr) : 0,
-            time: 0, // KML usually doesn’t have per-point time → you can extend if needed
-          });
-        }
+
+      // Load KMZ as zip
+      const zip = await JSZip.loadAsync(bytes);
+
+      // Find the first .kml file in the KMZ
+      const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
+      if (!kmlFile) {
+        throw new Error('No KML file found inside KMZ.');
       }
+
+      // Extract KML text
+      const kmlText = await zip.files[kmlFile].async('string');
+      if (!kmlText || !kmlText.includes('<kml')) {
+        throw new Error('Invalid KML content in KMZ.');
+      }
+
+      // Convert string → XML Document
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(kmlText, 'application/xml');
+
+      // Reuse your existing KML parser
+      return this.mapService.parseKmlXml(xmlDoc);
+
+    } catch (error) {
+      console.error('parseKmz failed:', error);
+      this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
+      return { waypoints: [], trackPoints: [], trk: null };
     }
   }
-  return { waypoints, trackPoints, trk };
-}
 
 }
 

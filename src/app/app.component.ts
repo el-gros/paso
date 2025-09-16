@@ -1,6 +1,6 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
-import { FunctionsService } from './services/functions.service'; // <-- adjust path as needed
+import { FunctionsService } from './services/functions.service';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { File } from '@awesome-cordova-plugins/file/ngx';

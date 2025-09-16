@@ -94,11 +94,23 @@ export interface ModalEditData {
   description: string;
 }
 
-export interface LocationResult {
+/* export interface LocationResult {
   lon: number;
   lat: number;
   name: string;
   [key: string]: any;
+} */
+
+export interface LocationResult {
+  lat: number;
+  lon: number;
+  name: string;
+  display_name: string;
+  short_name?: string;   // 👈 add this
+  type: string;
+  place_id: string | number;
+  boundingbox: number[];
+  geojson: any;
 }
 
 export interface Route {

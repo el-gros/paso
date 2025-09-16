@@ -25,6 +25,9 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
+/* Open layer styles */
+@import "~ol/ol.css";
+
 // ALERT ////////////////////////////////////
 .alert {
     --margin: auto; /* Center the modal */
