@@ -13,7 +13,6 @@ import { TrackDefinition, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { FunctionsService } from '../services/functions.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
@@ -21,6 +20,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { File } from '@awesome-cordova-plugins/file/ngx';
+import JSZip from "jszip";
 
 @Component({
     selector: 'app-archive',
@@ -210,8 +210,13 @@ export class Tab2Page {
     var gpxText = await this.geoJsonToGpx(track.features?.[0]);
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
     const file: string = `${sanitizedName}.gpx`;
+
+    // Generate KMZ file using geoJsonToKmz
+    const base64Kmz = await this.geoJsonToKmz(track.features?.[0]);
+    console.log('generated base64')
+    const kmzFile: string = `${sanitizedName}.kmz`;
     try {
-      // 3. Save into public Downloads folder
+      // Save gpx file into public Downloads folder
       const savedFile = await Filesystem.writeFile({
         path: file,       // 👈 goes into /storage/emulated/0/Download
         data: gpxText,
@@ -219,10 +224,17 @@ export class Tab2Page {
         recursive: true,
         encoding: Encoding.UTF8,
       });
-      console.log(savedFile.uri)
+      // Save kmz file into public Downloads folder
+      const savedKmzFile = await Filesystem.writeFile({
+        path: kmzFile,
+        data: base64Kmz,
+        directory: Directory.ExternalCache,
+        recursive: true,
+      });
+      console.log(savedKmzFile.uri)
       await this.socialSharing.shareWithOptions({
         //message: this.translate.instant('ARCHIVE.TEXT'),
-        files: [savedFile.uri],
+        files: [savedFile.uri, savedKmzFile.uri],
         chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
       // Cleanup files
@@ -342,6 +354,72 @@ export class Tab2Page {
     } catch (err) {
       console.error('Error cleaning GPX files:', err);
     }
+  }
+
+// GEOJSON TO KMZ //////////////////////
+
+  async geoJsonToKmz(feature: any): Promise<string> {
+    // Format timestamp into ISO 8601 format
+    const formatDate = (timestamp: number): string => {
+      const date = new Date(timestamp);
+      return date.toISOString();
+    };
+
+    // Escape unsafe XML characters
+    const escapeXml = (unsafe: string | undefined) =>
+      (unsafe ?? '').replace(/[<>&'"]/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+      }[c] as string));
+
+    // Initialize KML text
+    let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
+      <kml xmlns="http://www.opengis.net/kml/2.2">
+        <Document>
+          <name>${escapeXml(feature.properties?.name ?? "Track")}</name>`;
+    console.log('kmltext ', kmlText)
+    // Add waypoints
+    if (feature.waypoints && feature.waypoints.length > 0) {
+      feature.waypoints.forEach((wp: Waypoint) => {
+        const { latitude, longitude, altitude = '', name = '', comment = '' } = wp;
+        kmlText += `
+          <Placemark>
+            <name><![CDATA[${name.replace(/]]>/g, ']]]]><![CDATA[>')}]]></name>
+            <description><![CDATA[${comment.replace(/]]>/g, ']]]]><![CDATA[>')}]]></description>
+            <Point>
+              <coordinates>${longitude},${latitude},${altitude}</coordinates>
+            </Point>
+          </Placemark>`;
+      });
+    }
+    
+    // Add track (LineString with timestamps as gx:Track if desired)
+    kmlText += `
+      <Placemark>
+        <name>${escapeXml(feature.properties?.name ?? "Track")}</name>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>`;
+    
+    feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
+      const altitude = feature.geometry.properties.data[index]?.altitude || 0;
+      kmlText += `
+        ${coordinate[0]},${coordinate[1]},${altitude}`;
+    });
+
+    kmlText += `
+          </coordinates>
+        </LineString>
+      </Placemark>`;
+
+    kmlText += `
+        </Document>
+      </kml>`;
+    // Wrap into KMZ (ZIP)
+    const zip = new JSZip();
+    zip.file("doc.kml", kmlText);
+
+    // return base64 string
+    return await zip.generateAsync({ type: "base64" });
   }
 
 }
