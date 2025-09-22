@@ -6,7 +6,7 @@
 
 import DOMPurify from 'dompurify';
 import { global } from 'src/environments/environment';
-import { Track, Location, Data, Waypoint, Bounds } from 'src/globald';
+import { Track, Location, Data, Waypoint, Bounds, PartialSpeed } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -24,6 +24,7 @@ export class FunctionsService {
     private _storage: Storage | null = null;
   // Optional UI refresh callback, can be set by the consumer of this service
   refreshCollectionUI?: () => void;
+
 
   constructor(
     private storage: Storage,
@@ -268,11 +269,13 @@ export class FunctionsService {
 
   // 17. CREATE TIMES /////////////////////////////////////////
   async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
-    const totalDistance = data.response.features[0].properties.summary.distance;
+    console.log('1', data, date, distances)
+    const totalDistance = data.response.features[0].properties.summary.distance / 1000; // in Km
     const totalDuration = data.response.features[0].properties.summary.duration * 1000; // in ms
     const endTime = date.getTime(); // in ms
     const startTime = endTime - totalDuration;
-      return distances.map(d => {
+    console.log('2', totalDistance, totalDuration, startTime, endTime)
+    return distances.map(d => {
       const ratio = d / totalDistance;
       const timeOffset = ratio * totalDuration;
       return Math.round(startTime + timeOffset); // in ms
@@ -424,6 +427,7 @@ export class FunctionsService {
     newCoordinates[idx] = coordinates[coordinates.length - 1];
     newProperties[idx] = { ...properties[properties.length - 1] };
     // Trim arrays to actual used size
+    console.log(newCoordinates, newProperties);
     return {
       newCoordinates: newCoordinates.slice(0, idx + 1),
       newProperties: newProperties.slice(0, idx + 1)
@@ -431,8 +435,73 @@ export class FunctionsService {
   }
 
   // 24. SANITIZE INPUT /////////////////////////////////////////
-  public sanitize(input: string): string {
+  sanitize(input: string): string {
     return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [], FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'svg', 'math'], FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'oninput', 'onchange'] }).trim();
+  }
+
+
+  async computePartialSpeeds(track: any): Promise<PartialSpeed[]> {
+    function formatDuration(sec: number): string {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      return [h, m, s].map((v) => v.toString().padStart(2, "0")).join(":");
+    }
+
+    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
+    if (!data.length) return [];
+
+    const results: PartialSpeed[] = [];
+    let kmIndex = 1;                 // next whole-km boundary (in km)
+    let startDist = data[0].distance; // km
+    let startTime = data[0].time;     // ms
+
+    for (let i = 1; i < data.length; i++) {
+      const prev = data[i - 1];
+      const curr = data[i];
+
+      // skip if no distance progress in this segment
+      if (curr.distance <= prev.distance) continue;
+
+      while (curr.distance >= kmIndex) {
+        const targetDist = kmIndex; // in km
+        const denom = (curr.distance - prev.distance);
+        if (denom <= 0) break; // safety
+
+        const ratio = (targetDist - prev.distance) / denom;
+        const interpTime = prev.time + ratio * (curr.time - prev.time); // ms
+
+        const distKm = targetDist - startDist; // km covered since last boundary
+        const durMs = interpTime - startTime;   // ms
+        const durS = durMs / 1000;              // seconds
+
+        if (durS > 0 && distKm > 0) {
+          // speed in km/h
+          const speedKmh = (distKm * 3600) / durS;
+          const label = `${kmIndex - 1}-${kmIndex} km`;
+          results.push([label, formatDuration(Math.round(durS)), Number(speedKmh.toFixed(2))]);
+        }
+
+        startDist = targetDist;
+        startTime = interpTime;
+        kmIndex++;
+      }
+    }
+
+    // last fractional segment (no trailing 'km' in label)
+    const last = data[data.length - 1];
+    if (last.distance > startDist) {
+      const distKm = last.distance - startDist;
+      const durMs = last.time - startTime;
+      const durS = durMs / 1000;
+      if (durS > 0 && distKm > 0) {
+        const speedKmh = (distKm * 3600) / durS;
+        const label = `${kmIndex - 1}-end`; // no ' km'
+        results.push([label, formatDuration(Math.round(durS)), Number(speedKmh.toFixed(2))]);
+      }
+    }
+
+    return results;
   }
 
 }

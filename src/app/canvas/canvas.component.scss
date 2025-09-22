@@ -88,3 +88,16 @@ ion-fab-button {
     padding: 16px; // or whatever padding you want for the scrollable area
     --padding-bottom: 0; // prevent Ionics default bottom padding
   }
+
+  .partials {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* force equal column widths */
+  }
+
+.partials td {
+  width: 33%;         /* 3 equal columns */
+  text-align: left; /* optional */
+  padding-left: 8px;
+  padding-top: 2px;
+}

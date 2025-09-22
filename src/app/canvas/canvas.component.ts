@@ -10,16 +10,14 @@
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { global } from '../../environments/environment';
-import { Track, TrackDefinition, Data, Waypoint } from '../../globald';
+import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
 import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
-import { LanguageService } from '../services/language.service';
 import { TranslateService } from '@ngx-translate/core';
-import html2canvas from 'html2canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
+
 import * as htmlToImage from 'html-to-image';
 register();
 
@@ -52,15 +50,15 @@ export class CanvasComponent implements OnInit, OnDestroy {
   archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   margin: number = 10;
+  partialSpeeds: PartialSpeed[] = [];
 
-  layerVisibility = global.layerVisibility;
+  get layerVisibility(): string { return global.layerVisibility; }
 
   private subscriptions: Subscription = new Subscription();
   constructor(
     public fs: FunctionsService,
     public ts: TrackService,
-    private languageService: LanguageService,
-    @Inject(TranslateService) private translate: TranslateService
+    private translate: TranslateService
   ) { }
 
   // 1. ngOnInit()
@@ -88,6 +86,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.ts.archivedTrack$.subscribe(async archived => {
         this.archivedTrack = archived;
         this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
+        this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
+        console.log('partialSpeeds', this.partialSpeeds)
       })
     );
     this.subscriptions.add(
@@ -100,8 +100,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
         this.currentPoint = currentPoint;
       })
     );
-    if (this.archivedTrack) this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-    console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
   }
 
   // 2. ON DESTROY ///////////////////
@@ -112,8 +110,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
     // Variables
-    this.layerVisibility = global.layerVisibility;
-    console.log('I', this.currentTrack, this.archivedTrack, this.status, this.layerVisibility)
     if (global.buildTrackImage) {
       var success: boolean = false;
       success = await this.triggerExport();
@@ -328,7 +324,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
       // Close canvas
     }
   }
-
   async triggerExport(): Promise<boolean> {
     try {
       const exportArea = document.querySelector('#exportArea') as HTMLElement;

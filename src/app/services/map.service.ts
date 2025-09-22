@@ -37,21 +37,20 @@ import { FunctionsService } from './functions.service';
 
 // 1. setMapView
 // 2. displayCurrentTrack
-
-// 4. removeLayer
-// 5. setStrokeStyle
-// 6. getCurrentPosition
-// 7. centerAllTracks
-// 8. getColoredPin
-// 9. createPinStyle
-// 10. createLayers
-// 11. createMap
-// 12. updateMapProvider
-// 13. displayArchivedTrack
-// 14. displayAllTracks
-// 15. addSearchLayer
-// 16. createSource
-// 17. cycleZoom
+// 3. removeLayer
+// 4. setStrokeStyle
+// 5. getCurrentPosition
+// 6. centerAllTracks
+// 7. getColoredPin
+// 8. createPinStyle
+// 9. createLayers
+// 10. createMap
+// 11. updateMapProvider
+// 12. displayArchivedTrack
+// 13. displayAllTracks
+// 14. addSearchLayer
+// 15. createSource
+// 16. cycleZoom
 
 @Injectable({
   providedIn: 'root'
@@ -116,7 +115,7 @@ export class MapService {
     }
   }
 
-  // 4. REMOVE LAYER ////////////////////////////////////
+  // 3. REMOVE LAYER ////////////////////////////////////
 
   async removeLayer(map: Map | undefined, id: string) {
     // Remove the existing search layer if it exists
@@ -127,7 +126,7 @@ export class MapService {
     }
   }
 
-  // 5. SET STROKE STYLE //////////////////////////////////
+  // 4. SET STROKE STYLE //////////////////////////////////
 
   setStrokeStyle(color: string): Style {
     return new Style({ stroke: new Stroke({
@@ -136,7 +135,7 @@ export class MapService {
     });
   }
 
-  // 6. GET CURRENT POSITION //////////////////////////////////
+  // 5. GET CURRENT POSITION //////////////////////////////////
 
   async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | null> {
     try {
@@ -157,7 +156,7 @@ export class MapService {
     }
   }
 
-  // 7. CENTER ALL TRACKS
+  // 6. CENTER ALL TRACKS
 
   async centerAllTracks(map: Map | undefined): Promise<void> {
     // get current position
@@ -171,7 +170,7 @@ export class MapService {
     }
   }
 
-  // 8. GET COLORED PIN //////////////////////////
+  // 7. GET COLORED PIN //////////////////////////
 
   getColoredPin(color: string): string {
     const svgTemplate = `
@@ -192,7 +191,7 @@ export class MapService {
     return `data:image/svg+xml;base64,${encoded}`;
   }
 
-  // 9. CREATE PIN STYLE //////////////////////////
+  // 8. CREATE PIN STYLE //////////////////////////
 
   createPinStyle(color: string): Style {
     return new Style({
@@ -204,7 +203,7 @@ export class MapService {
     });
   }
 
-  // 10. CREATE LAYERS /////////////////////////////////////
+  // 9. CREATE LAYERS /////////////////////////////////////
 
   createLayers() {
     // Create pin styles
@@ -249,7 +248,7 @@ export class MapService {
     };
   }
 
-  // 11. CREATE MAP /////////////////////////////////////
+  // 10. CREATE MAP /////////////////////////////////////
 
   async createMap(options: {
     mapProvider: string;
@@ -369,7 +368,7 @@ export class MapService {
     return { map, credits };
   }
 
-  // 12. CHANGE MAP PROVIDER
+  // 11. CHANGE MAP PROVIDER
 
   async updateMapProvider(options: {
     map: any;
@@ -485,7 +484,8 @@ export class MapService {
     return { newProvider: mapProvider };
   }
 
-  // 13. DISPLAY AN ARCHIVED TRACK
+  // 12. DISPLAY AN ARCHIVED TRACK
+
   async displayArchivedTrack({
     map,
     archivedTrack,
@@ -532,7 +532,8 @@ export class MapService {
     }
   }
 
-  // 14. DISPLAY ALL TRACKS
+  // 13. DISPLAY ALL TRACKS
+
   async displayAllTracks({
     fs,
     collection,
@@ -580,7 +581,8 @@ export class MapService {
     }
   }
 
-  // 15. ADD SEARCH LAYER ////////////////////////////////
+  // 14. ADD SEARCH LAYER ////////////////////////////////
+
   async addSearchLayer({
     map,
     feature,
@@ -624,7 +626,8 @@ export class MapService {
     global.presentSearch = true;
   }
 
-  // 16. CREATE SOURCE //////////////////////////////
+  // 15. CREATE SOURCE //////////////////////////////
+
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer> }): Promise<VectorTileSource | null> {
     try {
       return new VectorTileSource({
@@ -667,7 +670,8 @@ export class MapService {
     }
   }
 
-  // 17. CYCLE ZOOM //////////////////////////////
+  // 16. CYCLE ZOOM //////////////////////////////
+  
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
       console.warn('Map wrapper element not found');

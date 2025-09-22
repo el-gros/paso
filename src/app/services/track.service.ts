@@ -22,6 +22,7 @@ export class TrackService {
   // currentTrack
   private currentTrackSource = new BehaviorSubject<any>(null);
   currentTrack$ = this.currentTrackSource.asObservable();
+  state: string = 'inactive'; 
 
   // 1. SET CURRENT TRACK /////////////////////////
   setCurrentTrack(track: any) {

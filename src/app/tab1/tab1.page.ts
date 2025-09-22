@@ -106,8 +106,8 @@ export class Tab1Page {
   selectedAudioAlert: string = 'on'; // Default audio alert
   selectedAlert: string = 'on'; // Default alert
   selectedGeocodingService = 'nominatim'; // Default geocoding service
-
-  get state(): string { return global.state; }
+  state: string = '';
+//  get state(): string { return global.state; }
 
   constructor(
     public fs: FunctionsService,
@@ -392,7 +392,7 @@ export class Tab1Page {
       }
     );
     // Update state
-    global.state = 'tracking';
+    this.ts.state = 'tracking';
   }
 
   // 5 bis. CHECK LOCATION //////////////////////////////////
@@ -409,7 +409,7 @@ export class Tab1Page {
   // 6. REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
     // show / hide elements
-    global.state = 'inactive'
+    this.ts.state = 'inactive';
     this.show('alert', 'none');
     // Reset current track
     this.status = 'black';
@@ -428,7 +428,7 @@ export class Tab1Page {
   async stopTracking() {
     console.log('initiate stop tracking')
     // show / hide elements
-    global.state = 'stopped';
+    this.ts.state = 'stopped';
     this.show('alert', 'none');
     // Set the red marker at the last coordinate
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
@@ -566,7 +566,7 @@ export class Tab1Page {
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
-    global.state = 'saved'
+    this.ts.state = 'saved'
     this.show('alert', 'none');
   }
 
@@ -1444,10 +1444,10 @@ async createLayers() {
       const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
       const rawProperties: Data[] = await this.fs.fillProperties(distances, altSlopes.altitudes, times, speed);
       // Increase the number of coordinates
-      const num = rawCoordinates.length;
+      //var num = rawCoordinates.length;
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
       if (result) {
-        const num = result.newCoordinates.length;
+        var num = result.newCoordinates.length;
         this.archivedTrack = {
           type: 'FeatureCollection',
           features: [{
@@ -1550,18 +1550,26 @@ async createLayers() {
       }))
     };
     try {
-      const response = await CapacitorHttp.post({
+/*      const response = await CapacitorHttp.post({
         url: 'https://api.open-elevation.com/api/v1/lookup',
         headers: { 'Content-Type': 'application/json' },
         data: requestBody, // no need to JSON.stringify
+      }); */
+      const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       });
+      //const result = await response.json();
+      console.log(response)
       // Check status
       if (response.status < 200 || response.status >= 300) {
         this.fs.displayToast('Failed to fetch elevation data.');
         return [];
       }
-      // `response.data` is already parsed JSON
-      return response.data.results.map((result: any) => result.elevation);
+      // Parse response as JSON and extract elevations
+      const result = await response.json();
+      return result.results.map((result: any) => result.elevation);
     } catch (error) {
       // Handle network or parsing errors gracefully
       this.fs.displayToast('Error retrieving elevation data.');

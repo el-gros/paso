@@ -43,8 +43,6 @@ export class Tab2Page {
     private languageService: LanguageService,
     private translate: TranslateService,
     private socialSharing: SocialSharing,
-    private filePath: FilePath,
-    private file: File
   ) {  }
 
   /* FUNCTIONS
@@ -63,6 +61,9 @@ export class Tab2Page {
     13. selectOption()
     14. resetSelection()
     15. onInit()
+    16. prepareImageExport()
+    17. shareImages()
+    18. cleanupGpxFiles()
   */
 
   // 1. ON VIEW DID ENTER ////////////
@@ -288,6 +289,7 @@ export class Tab2Page {
     const lang = this.languageService.getCurrentLanguage();
   }
 
+  // 16. PREPARE IMAGE EXPORT //////////////////////////////
   async prepareImageExport() {
     // Inform tab1 on action to do
     global.buildTrackImage = true;
@@ -299,6 +301,7 @@ export class Tab2Page {
     await this.displayTrack(true);
   }
 
+  // 17. SHARE IMAGES
   async shareImages() {
     try {
       // 1. Get file URIs from cache
@@ -331,13 +334,13 @@ export class Tab2Page {
     }
   }
 
+  // 18. CLEANUP GPX FILES
   async cleanupGpxFiles(fileName: string) {
     try {
       const result = await Filesystem.readdir({
         path: '',
         directory: Directory.ExternalCache,
       });
-
       for (const file of result.files) {
         if (file.name.endsWith('.gpx') || file.name.endsWith('.GPX')) {
           if (file.name !== fileName) {
@@ -349,28 +352,24 @@ export class Tab2Page {
           }
         }
       }
-
       console.log('Cleanup finished.');
     } catch (err) {
       console.error('Error cleaning GPX files:', err);
     }
   }
 
-// GEOJSON TO KMZ //////////////////////
-
+  // GEOJSON TO KMZ //////////////////////
   async geoJsonToKmz(feature: any): Promise<string> {
     // Format timestamp into ISO 8601 format
     const formatDate = (timestamp: number): string => {
       const date = new Date(timestamp);
       return date.toISOString();
     };
-
     // Escape unsafe XML characters
     const escapeXml = (unsafe: string | undefined) =>
       (unsafe ?? '').replace(/[<>&'"]/g, c => ({
         '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
       }[c] as string));
-
     // Initialize KML text
     let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
       <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -391,7 +390,6 @@ export class Tab2Page {
           </Placemark>`;
       });
     }
-    
     // Add track (LineString with timestamps as gx:Track if desired)
     kmlText += `
       <Placemark>
@@ -399,25 +397,21 @@ export class Tab2Page {
         <LineString>
           <tessellate>1</tessellate>
           <coordinates>`;
-    
     feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
       const altitude = feature.geometry.properties.data[index]?.altitude || 0;
       kmlText += `
         ${coordinate[0]},${coordinate[1]},${altitude}`;
     });
-
     kmlText += `
           </coordinates>
         </LineString>
       </Placemark>`;
-
     kmlText += `
         </Document>
       </kml>`;
     // Wrap into KMZ (ZIP)
     const zip = new JSZip();
     zip.file("doc.kml", kmlText);
-
     // return base64 string
     return await zip.generateAsync({ type: "base64" });
   }

@@ -94,12 +94,11 @@ export interface ModalEditData {
   description: string;
 }
 
-/* export interface LocationResult {
-  lon: number;
-  lat: number;
-  name: string;
-  [key: string]: any;
-} */
+export interface PartialSpeed extends Array<string | number> {
+  0: string;  
+  1: string;  
+  2: number;  
+}
 
 export interface LocationResult {
   lat: number;

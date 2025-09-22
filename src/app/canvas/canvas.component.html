@@ -105,7 +105,7 @@
 
     <div id="exportArea">
       <div class='elementData card' [hidden]="!archivedTrack || layerVisibility != 'archived'">
-        @if (archivedTrack) {
+        @if (archivedTrack) { 
           <table>
             <tr>
               <td colspan='2'>{{'CANVAS.ARCTITLE' | translate}}</td>
@@ -150,7 +150,7 @@
               <td>{{archivedTrack.features[0].properties.totalNumber}}</td>
             </tr>
           </table>
-        }
+        } 
       </div>
 
       <div class='elementCanvas' id='ac0' [hidden]="!archivedTrack || layerVisibility != 'archived'">
@@ -168,6 +168,32 @@
     <div class='empty'></div>
 
   </swiper-slide>
+
+  <!-- Slide 3: Archived track-2 -->
+
+  <swiper-slide>
+    <div class='empty'></div>
+    <div class='elementData card' [hidden]="!archivedTrack || layerVisibility != 'archived'">
+      @if (archivedTrack) {
+        <table class="partials">
+          <tr>
+            <td colspan='3'>{{'CANVAS.ARCTITLE' | translate}}</td>
+          </tr>
+          <tr>
+            <td colspan='3'>{{archivedTrack.features[0].properties.name}}</td>
+          </tr>
+          @for (ps of partialSpeeds; track i; let i = $index) {
+            <tr>
+              <td>{{ ps[0] }}</td>
+              <td>{{ ps[1] }}</td>
+              <td>{{ ps[2] | number:'1.2-2' }} km/h</td>
+            </tr>
+          }
+        </table>
+      }
+    </div>
+  </swiper-slide>
+
 </swiper-container>
 
 </ion-content>
