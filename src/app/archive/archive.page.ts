@@ -31,12 +31,8 @@ import JSZip from "jszip";
 export class Tab2Page {
 
   numChecked: number = 0;
-  get layerVisibility(): string { return global.layerVisibility; }
-  get presentSearch(): boolean { return global.presentSearch; }
-  get archivedPresent(): boolean { return global.archivedPresent; }
-  get collection(): TrackDefinition[] { return global.collection}
 
-  constructor(
+  constructor(           
     public fs: FunctionsService,
     private alertController: AlertController,
     private menu: MenuController,
@@ -68,34 +64,24 @@ export class Tab2Page {
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
-    try {
-      if (global.collection.length <= 0) {
-        const collection = await this.fs.storeGet('collection');
-        global.collection = collection || [];
-      }
-      this.resetSelection();
-    } catch (error) {
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST4'));
-      console.error('ionViewDidEnter error:', error);
-    }
-    if (global.buildTrackImage) await this.shareImages();
+    if (this.fs.buildTrackImage) await this.shareImages();
   }
 
   // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
   async onChange() {
     // Copute numChecked
-    this.numChecked = global.collection.filter((item: { isChecked: any; }) => item.isChecked).length;
+    this.numChecked = this.fs.collection.filter((item: { isChecked: any; }) => item.isChecked).length;
     // Find the first checked item
-    const firstCheckedItem = global.collection.find((item: { isChecked: any; }) => item.isChecked);
+    const firstCheckedItem = this.fs.collection.find((item: { isChecked: any; }) => item.isChecked);
     // Extract the date, or set to null if no checked item is found
     const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
-    global.key = JSON.stringify(firstCheckedDate)
+    this.fs.key = JSON.stringify(firstCheckedDate)
   }
 
   // 3. EDIT TRACK DETAILS //////////////////////////////
   async editTrack() {
     // Find the index of the selected track
-    const selectedIndex = global.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
+    const selectedIndex = this.fs.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
 
@@ -124,32 +110,31 @@ export class Tab2Page {
 
   // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
-    if (active) global.layerVisibility = 'archived'
-    else global.layerVisibility = 'none'
+    if (active) this.fs.layerVisibility = 'archived';
+    else this.fs.layerVisibility = 'none';
     this.fs.gotoPage('tab1');
   }
 
   // 6. CONFIRM, YES, DELETE TRACKS ////////////////////////
   async yesDeleteTracks() {
     // Separate items into "to-remove" and "to-keep" categories
-    const { toRemove, toKeep } = global.collection.reduce(
+    const { toRemove, toKeep } = this.fs.collection.reduce(
       (acc: { toRemove: any[]; toKeep: any[]; }, item: { isChecked: any; }) => {
         item.isChecked ? acc.toRemove.push(item) : acc.toKeep.push(item);
         return acc;
       },
-      { toRemove: [] as typeof global.collection, toKeep: [] as typeof global.collection }
+      { toRemove: [] as typeof this.fs.collection, toKeep: [] as typeof this.fs.collection }
     );
     // Update the collection and save the updated list
-    global.collection = toKeep;
-    //this.collection = global.collection;
-    await this.fs.storeSet('collection', global.collection);
+    this.fs.collection = toKeep;
+    await this.fs.storeSet('collection', this.fs.collection);
     // Remove the selected items (batch operation if supported)
     for (const item of toRemove) {
       await this.fs.storeRem(JSON.stringify(item.date));
     }
     // Reset the count of checked items
     this.numChecked = 0;
-    global.key = "null"
+    this.fs.key = "null"
     // informretrievetrack
     await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST3'));
   }
@@ -214,7 +199,6 @@ export class Tab2Page {
 
     // Generate KMZ file using geoJsonToKmz
     const base64Kmz = await this.geoJsonToKmz(track.features?.[0]);
-    console.log('generated base64')
     const kmzFile: string = `${sanitizedName}.kmz`;
     try {
       // Save gpx file into public Downloads folder
@@ -232,7 +216,6 @@ export class Tab2Page {
         directory: Directory.ExternalCache,
         recursive: true,
       });
-      console.log(savedKmzFile.uri)
       await this.socialSharing.shareWithOptions({
         //message: this.translate.instant('ARCHIVE.TEXT'),
         files: [savedFile.uri, savedKmzFile.uri],
@@ -250,19 +233,19 @@ export class Tab2Page {
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    if (active) global.layerVisibility = 'multi'
-    else global.layerVisibility = 'none'
+    if (active) this.fs.layerVisibility = 'multi';
+    else this.fs.layerVisibility = 'none';
     this.fs.gotoPage('tab1');
   }
 
   // 10. ION VIEW WILL LEAVE
   async ionViewWillLeave() {
-    await this.fs.storeSet('collection', global.collection);
+    await this.fs.storeSet('collection', this.fs.collection);
   }
 
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
-    global.removeSearch = true;
+    this.fs.deleteSearch = true;
     this.fs.gotoPage('tab1');
   }
 
@@ -273,7 +256,6 @@ export class Tab2Page {
 
   // 13. SELECT OPTION FROM MENU ////////////
   selectOption(option: string) {
-    console.log('Selected:', option);
     this.menu.close();
   }
 
@@ -281,7 +263,7 @@ export class Tab2Page {
   async resetSelection() {
     await this.fs.uncheckAll();
     this.numChecked = 0;
-    global.key = "null";
+    this.fs.key = "null";
   }
 
   // 15. ON INIT //////////////////////////////////////
@@ -292,9 +274,9 @@ export class Tab2Page {
   // 16. PREPARE IMAGE EXPORT //////////////////////////////
   async prepareImageExport() {
     // Inform tab1 on action to do
-    global.buildTrackImage = true;
+    this.fs.buildTrackImage = true;
     // Save current map provider
-    global.savedMapProvider = await this.fs.storeGet('mapProvider')
+    this.fs.savedProvider = this.fs.mapProvider
     // Set map to avoid CORS
     await this.fs.storeSet('mapProvider', 'MapTiler_outdoor');
     // Display archived track
@@ -315,7 +297,6 @@ export class Tab2Page {
       });
       const mapUri = mapFile.uri;       // ✅ keep as-is
       const slideUri = slideFile.uri;   // ✅ keep as-is
-      console.log('share-ready files:', mapUri, slideUri);
       // 3. Try sharing both files with Capacitor Share
       try {
         await this.socialSharing.share(
@@ -326,9 +307,9 @@ export class Tab2Page {
         );
       } catch (shareErr) {
         console.warn('Multi-file share failed, falling back:', shareErr);
-        global.buildTrackImage = false;
+        //this.fs.buildTrackImage = false;
       }
-      global.buildTrackImage = false; // finish exportation
+      this.fs.buildTrackImage = false; // finish exportation
     } catch (err) {
       console.error('Failed to share images:', err);
     }
@@ -344,7 +325,6 @@ export class Tab2Page {
       for (const file of result.files) {
         if (file.name.endsWith('.gpx') || file.name.endsWith('.GPX')) {
           if (file.name !== fileName) {
-            console.log('Deleting:', file.name);
             await Filesystem.deleteFile({
               path: file.name,
               directory: Directory.ExternalCache,

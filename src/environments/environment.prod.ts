@@ -2,32 +2,11 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-import { TrackDefinition, Track } from "../globald";
 import { Map } from '../globald';
 
 export var global: any = {
-  lag: 8 as number,
-  layerVisibility: 'archived' as string,
-  languageCode: 'en' as string,
-  archivedPresent: false as boolean,
-  cancel: ['Cancel.lar', 'Cancelar', 'Cancel'],
-  currentColor: 'orange' as string,
-  archivedColor: 'green' as string,
-  collection: [] as TrackDefinition [],
-  key: 'null' as string,
-  comingFrom: '' as string,
-  deleteSearch: false as boolean,
-  presentSearch: false as boolean,
-  locationUpdate: false as boolean,
-  //archivedTrack: undefined as Track | undefined,
-  //state: 'inactive' as 'inactive' | 'tracking' | 'stopped' | 'saved',
-  buildTrackImage: false as boolean,
   mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
-  savedMapProvider: '' as string,
-  alert: 'on' as string,               // Alert on/off
-  audioAlert: 'on' as string,          // Audio alert on/off
-  geocoding: 'nominatim' as string,
-
+  
   // Dynamic getter for the cancel button
 
   get okButton() {

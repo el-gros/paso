@@ -46,13 +46,11 @@ export class ServerService {
         path: filePath,
         directory: Directory.Data,
       });
-      console.log('✅ Previous file deleted.');
     } catch (error) {
       console.log('ℹ️ No existing file to delete, proceeding with download.');
     }
     const chunkSize = 1024 * 1024 * 10; // 🔹 10 MB chunks
     return new Promise((resolve, reject) => {
-      console.log('Starting chunked download...');
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
       xhr.responseType = 'arraybuffer';

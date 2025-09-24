@@ -65,12 +65,12 @@ export class SearchModalComponent implements OnInit {
 // 1. NGONINIT ///////////////////////////////
 ngOnInit(): void {
   // Case of search
-  if (global.comingFrom === 'search') {
+  if (this.fs.comingFrom === 'search') {
     this.title = this.translate.instant('SEARCH.TITLE_SEARCH');
     this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_SEARCH');
   }
   // Case of guide
-  else if (global.comingFrom === 'guide') {
+  else if (this.fs.comingFrom === 'guide') {
     this.title = this.translate.instant('SEARCH.TITLE_GUIDE');
     this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_GUIDE');
     this.showCurrent = true;
@@ -89,7 +89,7 @@ async searchLocation() {
     let url: string;
     let headers: any = { 'Accept': 'application/json' };
 
-    if (global.geocoding === 'mapTiler') {
+    if (this.fs.geocoding === 'mapTiler') {
       // 🌍 MapTiler forward geocoding
       url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
     } else {
@@ -100,7 +100,7 @@ async searchLocation() {
 
     const response = await CapacitorHttp.get({ url, headers });
 
-    if (global.geocoding === 'mapTiler') {
+    if (this.fs.geocoding === 'mapTiler') {
       // ✅ Normalize MapTiler results
       const features = response.data?.features ?? [];
       this.results = features.map((f: any, idx: number) => {
@@ -162,7 +162,7 @@ async searchLocation() {
     this.showCurrent = false;
 
   } catch (error) {
-    console.error(`Error fetching ${global.geocoding} geocoding data:`, error);
+    console.error(`Error fetching ${this.fs.geocoding} geocoding data:`, error);
     this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
     this.results = [];
   } finally {
@@ -172,7 +172,7 @@ async searchLocation() {
 
 // 3. SELECT LOCATION //////////////////////////////////////////
 async selectLocation(location: LocationResult | null) {
-  if (global.comingFrom == 'search') {
+  if (this.fs.comingFrom == 'search') {
     console.log('Selected location', location);
     this.modalController.dismiss({
       location: location
@@ -180,7 +180,7 @@ async selectLocation(location: LocationResult | null) {
         : location
     });
     return;
-  } else if (global.comingFrom == 'guide') {
+  } else if (this.fs.comingFrom == 'guide') {
     this.results = [];
 
     if (this.num == 0) {

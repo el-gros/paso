@@ -61,6 +61,7 @@ export class MapService {
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
 
+
   constructor(
     private styleService: StyleService,
     private http: HttpClient,
@@ -96,7 +97,7 @@ export class MapService {
 
   // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
 
-  async displayCurrentTrack(map: Map | undefined, currentTrack: any, currentFeature: any, currentMarkers: any[]): Promise<void> {
+  async displayCurrentTrack(map: Map | undefined, currentTrack: any, currentFeature: any, currentMarkers: any[], currentColor: any): Promise<void> {
     // Ensure current track and map exist
     if (!currentTrack || !map || !currentFeature || !currentMarkers?.[1]) return;
     // Number of points in the track
@@ -106,7 +107,7 @@ export class MapService {
     if (num < 2) return;
     // Set line geometry and style
     currentFeature.setGeometry(new LineString(coordinates));
-    currentFeature.setStyle(this.setStrokeStyle(global.currentColor));
+    currentFeature.setStyle(this.setStrokeStyle(currentColor));
     // Set the last point as the marker geometry
     currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
@@ -251,7 +252,6 @@ export class MapService {
   // 10. CREATE MAP /////////////////////////////////////
 
   async createMap(options: {
-    mapProvider: string;
     currentLayer: any;
     archivedLayer: any;
     multiLayer: any;
@@ -261,7 +261,6 @@ export class MapService {
     target?: string;
   }): Promise<{ map: Map; credits: string }> {
     const {
-      mapProvider,
       currentLayer,
       archivedLayer,
       multiLayer,
@@ -272,12 +271,12 @@ export class MapService {
       target = 'map',
     } = options;
     let currentPosition: [number, number] | null = null;
-    if (mapProvider !== 'catalonia') {
+    if (this.fs.mapProvider !== 'catalonia') {
       currentPosition = await getCurrentPosition(false, 1000);
     }
     let olLayer: any;
     let credits = '';
-    switch (mapProvider) {
+    switch (this.fs.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({ source: new OSM() });
@@ -343,7 +342,7 @@ export class MapService {
     }
     let minZoom = 0;
     let maxZoom = 19;
-    if (mapProvider === 'catalonia') {
+    if (this.fs.mapProvider === 'catalonia') {
       minZoom = 6;
       maxZoom = 14;
     }
@@ -363,6 +362,7 @@ export class MapService {
       view,
       controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this)],
     });
+    this.fs.lastProvider = this.fs.mapProvider
     showCredits(credits);
     this.mapWrapperElement = document.getElementById('map-wrapper');
     return { map, credits };
@@ -372,25 +372,21 @@ export class MapService {
 
   async updateMapProvider(options: {
     map: any;
-    currentProvider: string;
-    mapProvider: string;
     server: any;
     fs: any;
     onFadeEffect?: () => void;
-  }): Promise<{ newProvider: string }> {
+  }): Promise< void > {
     const {
       map,
-      currentProvider,
-      mapProvider,
       server,
       fs,
       onFadeEffect
     } = options;
-    if (!map) return { newProvider: currentProvider };
+    if (!map) return;
     let newBaseLayer = null;
     let credits = '';
-    if (currentProvider === mapProvider) return { newProvider: mapProvider };
-    switch (mapProvider) {
+    if (this.fs.lastProvider == this.fs.mapProvider) return
+    switch (this.fs.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
         newBaseLayer = new TileLayer({ source: new OSM() });
@@ -467,21 +463,22 @@ export class MapService {
       map.getLayers().insertAt(0, newBaseLayer);
     } else {
       console.warn('No base layer created.');
-      return { newProvider: currentProvider };
+      return;
     }
+    this.fs.lastProvider = this.fs.mapProvider
     // Optional fade effect
     if (onFadeEffect) onFadeEffect();
     await fs.displayToast(credits);
     // Set min/max zoom
     let minZoom = 0;
     let maxZoom = 19;
-    if (mapProvider.toLowerCase() === 'catalonia') {
+    if (this.fs.mapProvider.toLowerCase() === 'catalonia') {
       minZoom = 6;
       maxZoom = 14;
     }
     map.getView().setMinZoom(minZoom);
     map.getView().setMaxZoom(maxZoom);
-    return { newProvider: mapProvider };
+    return;
   }
 
   // 12. DISPLAY AN ARCHIVED TRACK
@@ -510,7 +507,6 @@ export class MapService {
     archivedColor: any
   }): Promise<void> {
     if (!map || !archivedTrack || !archivedLayer) return;
-    console.log('33', archivedTrack);
     archivedLayer.setVisible(true);
     const coordinates = archivedTrack.features[0].geometry.coordinates;
     const num = coordinates.length;
@@ -562,7 +558,6 @@ export class MapService {
         continue;
       }
       const coord = track.features[0]?.geometry?.coordinates;
-      console.log('coord', coord);
       if (coord) {
         multiLine.push(coord);
         multiPoint.push(coord[0]);
@@ -597,8 +592,8 @@ export class MapService {
     if (!map) return;
     // Remove previous search layer
     await this.removeLayer(map, 'searchLayerId');
-    global.presentSearch = false;
-    global.removeSearch = false;
+    this.fs.presentSearch = false;
+    this.fs.deleteSearch = false;
     const styleFunction = (featureLike: FeatureLike) => {
       const geometryType = featureLike.getGeometry()?.getType();
       if (geometryType === 'Point') {
@@ -623,7 +618,7 @@ export class MapService {
     });
     searchLayer.set('id', 'searchLayerId');
     map.addLayer(searchLayer);
-    global.presentSearch = true;
+    this.fs.presentSearch = true;
   }
 
   // 15. CREATE SOURCE //////////////////////////////
@@ -671,7 +666,7 @@ export class MapService {
   }
 
   // 16. CYCLE ZOOM //////////////////////////////
-  
+
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
       console.warn('Map wrapper element not found');
@@ -735,7 +730,7 @@ export class MapService {
     let url: string;
     let options: any = {};
 
-    if (global.geocoding === 'mapTiler') {
+    if (this.fs.geocoding === 'mapTiler') {
       url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
       options = { observe: 'body' as const, responseType: 'json' as const };
     } else {
@@ -756,7 +751,7 @@ export class MapService {
     // --- normalize ---
     return this.http.get<any>(url, options).pipe(
       map((response: any) => {
-        if (global.geocoding === 'mapTiler') {
+        if (this.fs.geocoding === 'mapTiler') {
           const f = response?.features?.[0];
           if (!f) return null;
 

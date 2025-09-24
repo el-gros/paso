@@ -52,8 +52,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   margin: number = 10;
   partialSpeeds: PartialSpeed[] = [];
 
-  get layerVisibility(): string { return global.layerVisibility; }
-
   private subscriptions: Subscription = new Subscription();
   constructor(
     public fs: FunctionsService,
@@ -87,7 +85,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
         this.archivedTrack = archived;
         this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
         this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
-        console.log('partialSpeeds', this.partialSpeeds)
       })
     );
     this.subscriptions.add(
@@ -110,14 +107,14 @@ export class CanvasComponent implements OnInit, OnDestroy {
   // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
     // Variables
-    if (global.buildTrackImage) {
+    if (this.fs.buildTrackImage) {
       var success: boolean = false;
       success = await this.triggerExport();
       if (success) {
         this.fs.gotoPage('archive');
       } else {
         // End process
-        global.buildTrackImage = false;
+        this.fs.buildTrackImage = false;
         await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
         this.fs.gotoPage('archive');
       }

@@ -47,23 +47,15 @@ export class SettingsPage implements OnDestroy {
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
-  selectedMap: string = '';
   baseMaps: string[] = [];
-  // Colors
-  archivedColor: string = global.archivedColor;
-  currentColor: string = global.currentColor;
   colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue']
   // Alert
-  selectedAlert: string = 'on';
   alerts: string[] = ['on', 'off'];
   // Audio alert
-  selectedAudioAlert: string = 'on';
   audioAlerts: string[] = ['on', 'off'];
   // Geocoding service
-  selectedGeocodingService: string = 'nominatim';
   geocodingServices: string[] = ['nominatim', 'maptiler']
   // Altitudes
-  selectedAltitude: string = 'GPS';
   altitudes: string[] = ['GPS', 'DEM'];
 
   // Subjects for debouncing map upload/remove actions
@@ -136,19 +128,6 @@ export class SettingsPage implements OnDestroy {
     // Set language
     const code = this.languageService.getCurrentLangValue();
     this.selectedLanguage = this.languages.find(lang => lang.code === code);
-    // Set map
-    this.selectedMap = await this.fs.storeGet('mapProvider') || ''
-    // Set colors
-    this.archivedColor = global.archivedColor;
-    this.currentColor = global.currentColor;
-    // Set altitude
-    this.selectedAltitude = await this.fs.storeGet('altitude') || 'GPS'
-    // Set alert
-    this.selectedAlert = await this.fs.storeGet('alert') || 'on'
-    // Set audio
-    this.selectedAudioAlert = await this.fs.storeGet('audioAlert') || 'on'
-    // Set geocoding service
-    this.selectedGeocodingService = await this.fs.storeGet('geocoding') || 'nominatim'
   }
 
   // 2. SELECT COLOR ////////////////////////////////////////
@@ -163,7 +142,7 @@ export class SettingsPage implements OnDestroy {
       type: 'radio' as const,
       label: color_list[index], // Use the label from the selected language
       value: color, // Value comes from colors2[2]
-      checked: currArch === 'Current' ? global.currentColor === color : global.archivedColor === color,
+      checked: currArch === 'Current' ? this.fs.currentColor === color : this.fs.archivedColor === color,
       cssClass: `color-option-${color}` // Style based on the value from colors2[2]
     }));
     const cssClass = 'alert primaryAlert';
@@ -179,13 +158,11 @@ export class SettingsPage implements OnDestroy {
         cssClass: 'alert-button',
         handler: async (data: string) => {
           if (currArch === 'Current') {
-            this.currentColor = data;
-            global.currentColor = data;
-            await this.fs.storeSet('currentColor', global.currentColor);
+            this.fs.currentColor = data;
+            await this.fs.storeSet('currentColor', this.fs.currentColor);
           } else if (currArch === 'Archived') {
-            this.archivedColor = data;
-            global.archivedColor = data;
-            await this.fs.storeSet('archivedColor', global.archivedColor);
+            this.fs.archivedColor = data;
+            await this.fs.storeSet('archivedColor', this.fs.archivedColor);
           }
         }
       }
@@ -210,8 +187,8 @@ export class SettingsPage implements OnDestroy {
 
   // 5. MAP CHANGE ///////////////////////////////////////
   async onMapChange(map: string) {
-    this.selectedMap = map;
-    await this.fs.storeSet('mapProvider', this.selectedMap)
+    this.fs.mapProvider = map;
+    await this.fs.storeSet('mapProvider', this.fs.mapProvider)
   }
 
   // 6. COLOR POPOVER ///////////////////////////////////////
@@ -220,7 +197,7 @@ export class SettingsPage implements OnDestroy {
       component: ColorPopoverComponent,
       componentProps: {
         colors: this.colors,
-        currentColor: type === 'current' ? this.currentColor : this.archivedColor,
+        currentColor: type === 'current' ? this.fs.currentColor : this.fs.archivedColor,
         onSelect: (selectedColor: string) => {
           this.updateColor(type, selectedColor);
         },
@@ -234,47 +211,41 @@ export class SettingsPage implements OnDestroy {
 
   // 7. CURRENT COLOR CHANGE /////////////////////
   async onCurrentChange(color: string) {
-    this.currentColor = color;
-    global.currentColor = color;
+    this.fs.currentColor = color;
     await this.fs.storeSet('currentColor', color);
   }
 
   // 8. ARCHIVED COLOR CHANGE ///////////////////////////////////////
   async onArchivedChange(color: string) {
-    this.archivedColor = color;
-    global.archivedColor = color;
-    await this.fs.storeSet('archivedColor', global.archivedColor);
+    this.fs.archivedColor = color;
+    await this.fs.storeSet('archivedColor', this.fs.archivedColor);
   }
 
   // 9. ALTITUDE METHOD CHANGE /////////////////////////
   async onAltitudeChange(method: string) {
-    this.selectedAltitude = method;
-    await this.fs.storeSet('altitude', this.selectedAltitude);
+    this.fs.selectedAltitude = method;
+    await this.fs.storeSet('altitude', this.fs.selectedAltitude);
   }
 
   // 9 bis. ALERT CHANGE /////////////////////////
   async onAlertChange(position: string) {
-    this.selectedAlert = position;
-    global.alert = position;
-    await this.fs.storeSet('alert', this.selectedAlert);
+    this.fs.alert = position;
+    await this.fs.storeSet('alert', this.fs.alert);
     // on alert change, audioAlert also changes
-    this.selectedAudioAlert = position;
-    global.audioAlert = position;
-    await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
+    this.fs.audioAlert = position;
+    await this.fs.storeSet('audioAlert', this.fs.audioAlert);
   }
 
   // 10. AUDIO ALERT CHANGE /////////////////////////
   async onAudioAlertChange(position: string) {
-    this.selectedAudioAlert = position;
-    global.audioAlert = position;
-    await this.fs.storeSet('audioAlert', this.selectedAudioAlert);
+    this.fs.audioAlert = position;
+    await this.fs.storeSet('audioAlert', this.fs.audioAlert);
   }
 
   // 10bis. AUDIO ALERT CHANGE /////////////////////////
   async onGeocodingServiceChange(position: string) {
-    this.selectedGeocodingService = position;
-    global.geocoding = position;
-    await this.fs.storeSet('geocoding', this.selectedGeocodingService);
+    this.fs.geocoding = position;
+    await this.fs.storeSet('geocoding', this.fs.geocoding);
   }
 
   // 11. MAP UPLOAD //////////////////////////////////////////
@@ -384,12 +355,10 @@ export class SettingsPage implements OnDestroy {
     }
     // Current or archived
     if (type === 'current') {
-      this.currentColor = color;
-      global.currentColor = color;
+      this.fs.currentColor = color;
       await this.fs.storeSet('currentColor', color);
     } else {
-      this.archivedColor = color;
-      global.archivedColor = color;
+      this.fs.archivedColor = color;
       await this.fs.storeSet('archivedColor', color);
     }
   }

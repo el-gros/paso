@@ -78,7 +78,6 @@ export class WptModalComponent  implements OnInit {
   // 5. TOGGLE EDIT / NO EDIT /////////////////////////
   toggleEdit() {
     this.edit = !this.edit;
-    console.log('Edit mode:', this.edit);
   }
 
 }

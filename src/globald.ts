@@ -62,7 +62,7 @@ export interface Track {
 
 export interface TrackDefinition {
   name: string,
-  date: Date,
+  date: Date | undefined,
   place: string,
   description: string,
   isChecked: boolean

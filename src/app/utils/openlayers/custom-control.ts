@@ -13,8 +13,6 @@ import VectorSource from 'ol/source/Vector';
 import { Point, Geometry } from 'ol/geom';
 import { Style, Circle as CircleStyle, Fill } from 'ol/style';
 import VectorLayer from 'ol/layer/Vector';
-import { FunctionsService } from '../../services/functions.service'; // Location service
-import { global } from '../../../environments/environment';
 import { MapService } from '../../services/map.service';
 
 export class CustomControl extends Control {
@@ -23,6 +21,7 @@ export class CustomControl extends Control {
   private vectorLayer: VectorLayer<any>;
   private isActive: boolean = false;
   private updateInterval: any; // To store the interval ID
+  locationUpdate: boolean = false; // To track if location updates are active
 
   constructor(
     private mapService: MapService
@@ -92,7 +91,7 @@ export class CustomControl extends Control {
     // start location updates
     this.startLocationUpdates();
     this.isActive = true;
-    global.locationUpdate = true; // Update the global variable
+    this.locationUpdate = true; // Update the global variable
   }
 
   // 2. DEACTIVATE CONTROL ////////////////////////////////
@@ -108,7 +107,7 @@ export class CustomControl extends Control {
     // Re-enable the activate button
     activateButton.disabled = false;
     this.isActive = false;
-    global.locationUpdate = false; // Update the global variable
+    this.locationUpdate = false; // Update the global variable
   }
 
   // 3. CREATE CIRCLE STYLE ///////////////////////////////

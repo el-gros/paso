@@ -104,7 +104,7 @@
     <div class='empty'></div>
 
     <div id="exportArea">
-      <div class='elementData card' [hidden]="!archivedTrack || layerVisibility != 'archived'">
+      <div class='elementData card' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
         @if (archivedTrack) { 
           <table>
             <tr>
@@ -153,13 +153,13 @@
         } 
       </div>
 
-      <div class='elementCanvas' id='ac0' [hidden]="!archivedTrack || layerVisibility != 'archived'">
+      <div class='elementCanvas' id='ac0' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
         <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
         <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
       </div>
     </div>
 
-    <div class='elementCanvas' id='ac1' [hidden]="!archivedTrack || layerVisibility != 'archived'">
+    <div class='elementCanvas' id='ac1' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
       <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
       <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
@@ -173,7 +173,7 @@
 
   <swiper-slide>
     <div class='empty'></div>
-    <div class='elementData card' [hidden]="!archivedTrack || layerVisibility != 'archived'">
+    <div class='elementData card' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
       @if (archivedTrack) {
         <table class="partials">
           <tr>

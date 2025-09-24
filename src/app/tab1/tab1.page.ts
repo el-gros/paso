@@ -40,7 +40,6 @@ import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { lastValueFrom } from 'rxjs';
 import { LanguageService } from '../services/language.service';
 import { TranslateService } from '@ngx-translate/core';
-import { CapacitorHttp } from '@capacitor/core';
 import JSZip from 'jszip';
 
 useGeographic();
@@ -72,13 +71,11 @@ export class Tab1Page {
   archivedMarkers: Feature<Point>[] = [new Feature<Point>(), new Feature<Point>(), new Feature<Point>()];
   multiMarker: Feature<MultiPoint> | undefined = undefined;
   archivedWaypoints: Feature<MultiPoint> | undefined = undefined;
-  lag: number = global.lag; // 8
   distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
   computedDistances: number = 0;
-  mapProvider: string = 'OpenStreetMap'
   stopped: any = 0;
   vMin: number = 1;
   currentAverageSpeed: number | undefined = undefined;
@@ -102,12 +99,7 @@ export class Tab1Page {
   bluePin?: Style;
   yellowPin?: Style;
   blackPin?: Style;
-  selectedAltitude: string = 'GPS'; // Default altitude method
-  selectedAudioAlert: string = 'on'; // Default audio alert
-  selectedAlert: string = 'on'; // Default alert
-  selectedGeocodingService = 'nominatim'; // Default geocoding service
   state: string = '';
-//  get state(): string { return global.state; }
 
   constructor(
     public fs: FunctionsService,
@@ -179,14 +171,10 @@ export class Tab1Page {
       this.listenToAppStateChanges();
       // Listen for app URL open events (e.g., file tap)
       this.addFileListener();
-      // Check map provider
-      this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-      // retrieve collection
-      global.collection = await this.fs.storeGet('collection') || [];
       // Determine language
       this.languageService.determineLanguage();
-      // Determine line color
-      this.determineColors();
+      // Initialize variables
+      await this.initializeVariables()
       // elements shown, elements hidden
       this.show('alert', 'none');
       // uncheck all
@@ -224,9 +212,8 @@ export class Tab1Page {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
       this.fs.gotoPage('tab1');
-      console.log('data', data)
       await this.processUrl(data);
-      global.layerVisibility = 'archived'
+      this.fs.layerVisibility = 'archived'
       // assign visibility
       this.multiLayer?.setVisible(false);
       // iF an archived track has been parsed...
@@ -248,46 +235,28 @@ export class Tab1Page {
       await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
     }
     try {
-      // Remove search
-      if (global.removeSearch) {
-        await this.mapService.removeLayer(this.map, 'searchLayerId');
-        global.presentSearch = false;
-        global.removeSearch = false;
-      }
-      // retrieve collection
-      if (global.collection.length <= 0) global.collection = await this.fs.storeGet('collection') || [];
       // change map provider
       await this.changeMapProvider();
-      // Alert
-      this.selectedAlert = await this.fs.check(this.selectedAlert, 'alert');
-      global.alert = this.selectedAlert;
-      // Audio alert
-      this.selectedAudioAlert = await this.fs.check(this.selectedAudioAlert, 'audioAlert');
-      global.audioAlert = this.selectedAudioAlert;
-      // Geocoding Service
-      this.selectedGeocodingService = await this.fs.check(this.selectedGeocodingService, 'geocoding');
-      global.geocoding = this.selectedGeocodingService;
-      // Altitude method
-      this.selectedAltitude = await this.fs.check(this.selectedAltitude, 'altitude');
+      // Remove search (if needed)
+      await this.removeSearch();
       // Display current track (updates color)
-      if (this.currentTrack && this.map) await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+      if (this.currentTrack && this.map) await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
       // archived visible
-      if (global.layerVisibility == 'archived') {
+      if (this.fs.layerVisibility == 'archived') {
         // retrieve archived track
         this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
         if (this.archivedTrack) {
-          console.log(this.archivedTrack)
           this.ts.setArchivedTrack(this.archivedTrack);
           // Display archived track
           await this.showArchivedTrack();
           // Set map view for archived track if no current track
-          if (!this.currentTrack || global.buildTrackImage) this.mapService.setMapView(this.map, this.archivedTrack);
+          if (!this.currentTrack || this.fs.buildTrackImage) this.mapService.setMapView(this.map, this.archivedTrack);
         }
         // assign visibility
         this.multiLayer?.setVisible(false);
-        if (global.buildTrackImage) await this.buildTrackImage()
+        if (this.fs.buildTrackImage) await this.buildTrackImage()
       }
-      else if (global.layerVisibility == 'multi') {
+      else if (this.fs.layerVisibility == 'multi') {
         // hide archived track
         this.archivedLayer?.setVisible(false);
         this.status = 'black'
@@ -295,7 +264,7 @@ export class Tab1Page {
         // display all tracks
         await this.mapService.displayAllTracks({
           fs: this.fs,
-          collection: global.collection,
+          collection: this.fs.collection,
           multiFeature: this.multiFeature,
           multiMarker: this.multiMarker,
           greenPin: this.greenPin,
@@ -414,9 +383,6 @@ export class Tab1Page {
     // Reset current track
     this.status = 'black';
     this.ts.setStatus(this.status);
-    //this.currentPoint = undefined
-    //this.currentPoint = 0;
-    //this.ts.setCurrentPoint(this.currentPoint);
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
     this.currentLayer?.setVisible(false);
@@ -485,7 +451,6 @@ export class Tab1Page {
         }
       }
     ]
-    console.log(buttons)
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
   }
 
@@ -510,7 +475,7 @@ export class Tab1Page {
     if (data) {
       let { action, name, place, description } = data;
       if (action === 'ok') {
-        // Update the global collection
+        // Update collection
         if (!name) name = 'No name'
         this.saveFile(name, place, description)
       }
@@ -532,7 +497,7 @@ export class Tab1Page {
   async saveFile(name: string, place: string, description: string) {
     if (!this.currentTrack) return;
     // altitud method
-    if (this.selectedAltitude === 'DEM') {
+    if (this.fs.selectedAltitude === 'DEM') {
       const coordinates: number[][] = this.currentTrack.features[0].geometry.coordinates;
       var altSlopes: any = await this.getAltitudesFromMap(coordinates as [number, number][])
       console.log(altSlopes)
@@ -561,8 +526,8 @@ export class Tab1Page {
       isChecked: false
     };
     // Add new track definition to the collection and save it
-    global.collection.push(trackDef);
-    await this.fs.storeSet('collection', global.collection);
+    this.fs.collection.push(trackDef);
+    await this.fs.storeSet('collection', this.fs.collection);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
@@ -587,7 +552,7 @@ export class Tab1Page {
     // add location
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
-    if (this.archivedTrack && global.alert == 'on') {
+    if (this.archivedTrack && this.fs.alert == 'on') {
       await this.checkWhetherOnRoute();
     }
     else {
@@ -601,7 +566,7 @@ export class Tab1Page {
   // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
   async onRoute() {
     // Return 'black' if conditions aren't met
-    if (!this.currentTrack || !this.archivedTrack || global.layerVisibility != 'archived') return 'black';
+    if (!this.currentTrack || !this.archivedTrack || this.fs.layerVisibility != 'archived') return 'black';
     // Define current and archived coordinates
     const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
     const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
@@ -680,7 +645,7 @@ export class Tab1Page {
       greenPin: this.greenPin,
       redPin: this.redPin,
       yellowPin: this.yellowPin,
-      archivedColor: global.archivedColor
+      archivedColor: this.fs.archivedColor
     });
   }
 
@@ -762,7 +727,6 @@ export class Tab1Page {
       }
       await this.createLayers(); // your existing method, or move to service
       const { map } = await this.mapService.createMap({
-        mapProvider: this.mapProvider,
         currentLayer: this.currentLayer,
         archivedLayer: this.archivedLayer,
         multiLayer: this.multiLayer,
@@ -784,13 +748,13 @@ export class Tab1Page {
     // number of points
     const num = track.features[0].geometry.properties.data.length ?? 0;
     // Skip processing if final index is not the last point, or if points are fewer than lag
-    if ((final != num - 1) && (num <= this.lag)) return
+    if ((final != num - 1) && (num <= this.fs.lag)) return
     // Get the track data once to simplify access
     const data = track.features[0].geometry.properties.data;
     // Loop through each point to filter altitude
     for (let i = this.altitudeFiltered + 1; i <=final; i++) {
-      const start = Math.max(0, i - this.lag);
-      const end = Math.min(i + this.lag, num - 1);
+      const start = Math.max(0, i - this.fs.lag);
+      const end = Math.min(i + this.fs.lag, num - 1);
       // Calculate the average altitude in the window
       const sum = data.slice(start, end + 1)
         .reduce((acc: any, point: { altitude: any; }) => acc + point.altitude, 0);
@@ -832,7 +796,7 @@ async createLayers() {
 
   // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
-    switch(global.layerVisibility) {
+    switch(this.fs.layerVisibility) {
       case 'multi':
         if (this.map) {
           if (this.map) {
@@ -854,7 +818,7 @@ async createLayers() {
                     this.ts.setArchivedTrack(this.archivedTrack);
                     //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
                     this.multiLayer?.setVisible(false);
-                    global.layerVisibility = 'archived';
+                    this.fs.layerVisibility = 'archived';
                     await this.showArchivedTrack();
                     this.mapService.setMapView(this.map, this.archivedTrack);
                   }
@@ -870,9 +834,10 @@ async createLayers() {
           this.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
             if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
               hit = true;
-              const index = global.collection.findIndex((item: { date: { getTime: () => number; }; }) =>
+              const index = this.fs.collection.findIndex((item: TrackDefinition) =>
                 item.date instanceof Date &&
                 this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
+                item.date && this.archivedTrack.features[0].properties.date &&
                 item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
               );
               if (index >= 0) await this.fs.editTrack(index, '#ffffbb', false)
@@ -897,7 +862,7 @@ async createLayers() {
                 waypoints[index].comment = response.comment;
                 if (this.archivedTrack) {
                   this.archivedTrack.features[0].waypoints = waypoints;
-                  await this.fs.storeSet(global.key,this.archivedTrack)
+                  if (this.fs.key) await this.fs.storeSet(this.fs.key,this.archivedTrack)
                 }
               }
             }
@@ -950,14 +915,14 @@ async createLayers() {
   // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
-    if (!this.currentTrack || !this.archivedTrack || global.layerVisibility !== 'archived') return;
+    if (!this.currentTrack || !this.archivedTrack || this.fs.layerVisibility !== 'archived') return;
     // Store previous color for comparison
     const previousStatus = this.status;
     // Determine the current route color based on `onRoute` function
     this.status = await this.onRoute() || 'black';
     this.ts.setStatus(this.status);
     // If audio alerts are off, return
-    if (global.audioAlert == 'off') return;
+    if (this.fs.audioAlert == 'off') return;
     // Beep for off-route transition
     if (previousStatus === 'green' && this.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);
@@ -970,7 +935,7 @@ async createLayers() {
 
   // 25. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
-    global.archivedPresent = !!this.archivedTrack;
+    this.fs.archivedPresent = !!this.archivedTrack;
   }
 
   // 26. PLAY A BEEP /////////////////////////////////////
@@ -1144,9 +1109,8 @@ async createLayers() {
       description: track.features[0].properties.description,
       isChecked: true
     };
-    global.collection.push(trackDef);
-    await this.fs.storeSet('collection', global.collection);
-    console.log('collection', global.collection);
+    this.fs.collection.push(trackDef);
+    await this.fs.storeSet('collection', this.fs.collection);
   }
 
   // 30. PROCESS FILE AFTER TAPPING ON IT /////////////
@@ -1191,7 +1155,6 @@ async createLayers() {
           return;
         }
       }
-      console.log('Detected ext:', ext);
       let waypoints: Waypoint[] = [];
       let trackPoints: ParsedPoint[] = [];
       let trk: Element | null = null;
@@ -1243,7 +1206,7 @@ async createLayers() {
     // new point..
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
-    await this.filterAltitude(this.currentTrack, num - this.lag - 1);
+    await this.filterAltitude(this.currentTrack, num - this.fs.lag - 1);
     // compute distances
     await this.computeDistances();
     // filter speed
@@ -1257,7 +1220,7 @@ async createLayers() {
     // html values
     await this.htmlValues();
     // display the current track
-    await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+    await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
@@ -1309,13 +1272,11 @@ async createLayers() {
 
   // 35. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
-    const previousProvider = this.mapProvider;
+    const previousProvider = this.fs.mapProvider;
     // Validate and possibly normalize the new value
-    this.mapProvider = await this.fs.check(this.mapProvider, 'mapProvider');
-    const { newProvider } = await this.mapService.updateMapProvider({
+    this.fs.mapProvider = await this.fs.check(this.fs.mapProvider, 'mapProvider');
+    await this.mapService.updateMapProvider({
       map: this.map,
-      currentProvider: previousProvider,
-      mapProvider: this.mapProvider,
       server: this.server,
       fs: this.fs,
       onFadeEffect: () => {
@@ -1326,17 +1287,6 @@ async createLayers() {
         }
       }
     });
-    this.mapProvider = newProvider; // store the final confirmed value
-  }
-
-  // 36. DETERMINE COLORS ///////////////////////////////////////
-  async determineColors() {
-    try {
-      global.archivedColor = await this.fs.check(global.archivedColor, 'archivedColor');
-      global.currentColor = await this.fs.check(global.currentColor, 'currentColor');
-    } catch (error) {
-      console.error('Error determining color:', error);
-    }
   }
 
   // 37. ADD WAYPOINT ////////////////////////////////////
@@ -1379,7 +1329,7 @@ async createLayers() {
 
   // 39. SEARCH SITE /////////////////////////////////////////
   async search() {
-    global.comingFrom = 'search';
+    this.fs.comingFrom = 'search';
     // Create modal
     const modal = await this.modalController.create({
       component: SearchModalComponent,
@@ -1410,7 +1360,7 @@ async createLayers() {
 
   // 40. SEARCH ROUTE /////////////////////////////////////////////
   async guide() {
-    global.comingFrom = 'guide';
+    this.fs.comingFrom = 'guide';
     // Create modal
     const modal = await this.modalController.create({
       component: SearchModalComponent,
@@ -1482,13 +1432,13 @@ async createLayers() {
       this.ts.setArchivedTrack(this.archivedTrack);
       this.multiLayer?.setVisible(false);
       this.archivedLayer?.setVisible(true);  // No need for await
-      global.layerVisibility = 'archived';
+      this.fs.layerVisibility = 'archived';
       await this.showArchivedTrack();
       this.mapService.setMapView(this.map, this.archivedTrack);
       this.archivedTrack.features[0].properties.date = date;
       const dateKey = JSON.stringify(date);
       await this.fs.storeSet(dateKey, this.archivedTrack);
-      // Track definition for global collection
+      // Track definition for collection
       const trackDef = {
         name: trackName,
         date: date,
@@ -1497,8 +1447,8 @@ async createLayers() {
         isChecked: false
       };
       // add new track definition and save collection
-      global.collection.push(trackDef);
-      await this.fs.storeSet('collection', global.collection);
+      this.fs.collection.push(trackDef);
+      await this.fs.storeSet('collection', this.fs.collection);
     }
   }
 
@@ -1520,7 +1470,7 @@ async createLayers() {
       try{
         // Filter altitude data
         const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-        await this.filterAltitude(this.currentTrack, num - this.lag - 1);
+        await this.filterAltitude(this.currentTrack, num - this.fs.lag - 1);
         // compute distances
         await this.computeDistances();
         // Filter speed data
@@ -1532,7 +1482,7 @@ async createLayers() {
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+        await this.mapService.displayCurrentTrack(this.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -1612,18 +1562,19 @@ async createLayers() {
     // Restore visibility of current track
     this.currentLayer?.setVisible(visible);
     // Restore map provider
-    await this.fs.storeSet('mapProvider', global.savedMapProvider);
+    this.fs.mapProvider = this.fs.savedProvider
+    await this.fs.storeSet('mapProvider', this.fs.mapProvider);
     // Handle result
     if (success) {
       this.fs.gotoPage('canvas');
     } else {
-      global.buildTrackImage = false;
+      this.fs.buildTrackImage = false;
       await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
       this.fs.gotoPage('archive');
     }
   } catch (err) {
     console.error('buildTrackImage failed:', err);
-    global.buildTrackImage = false;
+    this.fs.buildTrackImage = false;
     await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
     this.fs.gotoPage('archive');
   }
@@ -1759,6 +1710,30 @@ async processKmz(data: any) {
       this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
       return { waypoints: [], trackPoints: [], trk: null };
     }
+  }
+
+  async removeSearch() {
+    if (!this.fs.deleteSearch) return;
+    await this.mapService.removeLayer(this.map, 'searchLayerId');
+    this.fs.deleteSearch = false;
+  }
+
+  async initializeVariables() {
+    // Check map provider
+    this.fs.mapProvider = await this.fs.check(this.fs.mapProvider, 'mapProvider');
+    // retrieve collection
+    this.fs.collection = await this.fs.storeGet('collection') || [];
+    // Determine colors
+    this.fs.archivedColor = await this.fs.check(this.fs.archivedColor, 'archivedColor');
+    this.fs.currentColor = await this.fs.check(this.fs.currentColor, 'currentColor');
+    // Aert
+    this.fs.alert = await this.fs.check(this.fs.alert,'alert')
+    // Audio alert
+    this.fs.audioAlert = await this.fs.check(this.fs.audioAlert,'audioAlert')
+    // Altitude method
+    this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
+    // Geocoding Service
+    this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
 }

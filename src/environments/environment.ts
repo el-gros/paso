@@ -1,26 +1,9 @@
-import { TrackDefinition, Track } from "../globald";
 import { Map } from '../globald';
 
 export var global: any = {
-  lag: 8 as number,
-  layerVisibility: 'archived' as string,
-  achivedPresent: false as boolean,
-  currentColor: 'orange' as string,
-  archivedColor: 'green' as string,
-  collection: [] as TrackDefinition [],
-  key: 'null' as string,
-  comingFrom: '' as string,
-  fontSize: 16 as number,
-  deleteSearch: false as boolean,
-  presentSearch: false as boolean,
-  locationUpdate: false as boolean,
-  //archivedTrack: undefined as Track | undefined,
-  //state: 'inactive' as 'inactive' | 'tracking' | 'stopped' | 'saved',
-  buildTrackImage: false as boolean,
-  mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
-  savedMapProvider: '' as string,
-  geocoding: 'nominatim' as string,
 
+  mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
+  
   // Dynamic getter for the cancel button
   get okButton() {
     return {

@@ -6,7 +6,7 @@
 
 import DOMPurify from 'dompurify';
 import { global } from 'src/environments/environment';
-import { Track, Location, Data, Waypoint, Bounds, PartialSpeed } from 'src/globald';
+import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -20,11 +20,28 @@ import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 })
 
 export class FunctionsService {
-    private images: { [key: string]: string } = {};
-    private _storage: Storage | null = null;
-  // Optional UI refresh callback, can be set by the consumer of this service
+  private _storage: Storage | null = null;
   refreshCollectionUI?: () => void;
-
+  
+  // Variables to share across components
+  deleteSearch: boolean = false;
+  presentSearch: boolean = false;
+  comingFrom: string = '';
+  key: string | undefined = undefined;
+  buildTrackImage: boolean = false;
+  selectedAltitude: string = 'GPS'; // Default altitude method
+  lag: number = 8;
+  layerVisibility: string = 'archived';
+  archivedPresent: boolean = false;
+  currentColor: string = 'orange';
+  archivedColor: string = 'green';
+  audioAlert: string = 'on';
+  alert: string = 'on';
+  geocoding: string = 'nominatim';
+  savedProvider: string = '';
+  mapProvider: string ='MapTiler_outdoor';
+  lastProvider: string ='';
+  collection: TrackDefinition []= [];
 
   constructor(
     private storage: Storage,
@@ -100,7 +117,7 @@ export class FunctionsService {
     const num = data.length;
     // loop for points
     for (let i = initial; i < num; i++) {
-        const start = Math.max(i - global.lag, 0);
+        const start = Math.max(i - this.lag, 0);
         const distance = data[i].distance - data[start].distance;
         const time = data[i].time - data[start].time;
         // Check to avoid division by zero
@@ -174,12 +191,12 @@ export class FunctionsService {
 
   // 10. UNCHECK ALL ///////////////////////////////////////////
   async uncheckAll() {
-    for (const item of global.collection) {
+    for (const item of this.collection) {
       if ('isChecked' in item) {
         item.isChecked = false;
       }
     }
-    await this.storeSet('collection', global.collection);
+    await this.storeSet('collection', this.collection);
   }
 
   // 11. COMPUTE CUUMULATIVE DISTANCES
@@ -201,7 +218,7 @@ export class FunctionsService {
   async retrieveTrack() {
     var track: Track | undefined;
     // Retrieve track
-    if (global.key != "null") track = await this.storeGet(global.key);
+    if (this.key) track = await this.storeGet(this.key);
     // Return the retrieved track
     return track;
   }
@@ -269,12 +286,10 @@ export class FunctionsService {
 
   // 17. CREATE TIMES /////////////////////////////////////////
   async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
-    console.log('1', data, date, distances)
     const totalDistance = data.response.features[0].properties.summary.distance / 1000; // in Km
     const totalDuration = data.response.features[0].properties.summary.duration * 1000; // in ms
     const endTime = date.getTime(); // in ms
     const startTime = endTime - totalDuration;
-    console.log('2', totalDistance, totalDuration, startTime, endTime)
     return distances.map(d => {
       const ratio = d / totalDistance;
       const timeOffset = ratio * totalDuration;
@@ -285,7 +300,7 @@ export class FunctionsService {
   // 18. EDIT TRACK DETAILS //////////////////////////////
   async editTrack(selectedIndex: number, backgroundColor: string, edit: boolean) {
     // Extract selected track details
-    const selectedTrack = global.collection[selectedIndex];
+    const selectedTrack = this.collection[selectedIndex];
     const modalEdit = {
       name: this.sanitize(selectedTrack.name || ''),
       place: this.sanitize(selectedTrack.place || ''),
@@ -321,15 +336,16 @@ export class FunctionsService {
           place,
           description
         });
-        await this.storeSet('collection', global.collection);
-        const track = await this.storeGet(global.key);
+        await this.storeSet('collection', this.collection);
+        if (!this.key) return;
+        const track = await this.storeGet(this.key);
         if (track) {
           Object.assign(track.features[0].properties, {
             name,
             place,
             description
           });
-          await this.storeSet(global.key, track);
+          if (this.key) await this.storeSet(this.key, track);
         }
         this.refreshCollectionUI?.();
       }
@@ -427,7 +443,6 @@ export class FunctionsService {
     newCoordinates[idx] = coordinates[coordinates.length - 1];
     newProperties[idx] = { ...properties[properties.length - 1] };
     // Trim arrays to actual used size
-    console.log(newCoordinates, newProperties);
     return {
       newCoordinates: newCoordinates.slice(0, idx + 1),
       newProperties: newProperties.slice(0, idx + 1)
