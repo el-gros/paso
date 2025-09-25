@@ -37,7 +37,7 @@ import { FunctionsService } from './functions.service';
 
 // 1. setMapView
 // 2. displayCurrentTrack
-// 3. removeLayer
+
 // 4. setStrokeStyle
 // 5. getCurrentPosition
 // 6. centerAllTracks
@@ -48,7 +48,7 @@ import { FunctionsService } from './functions.service';
 // 11. updateMapProvider
 // 12. displayArchivedTrack
 // 13. displayAllTracks
-// 14. addSearchLayer
+
 // 15. createSource
 // 16. cycleZoom
 
@@ -113,17 +113,6 @@ export class MapService {
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
       this.setMapView(map, currentTrack);
-    }
-  }
-
-  // 3. REMOVE LAYER ////////////////////////////////////
-
-  async removeLayer(map: Map | undefined, id: string) {
-    // Remove the existing search layer if it exists
-    if (!map) return;
-    const existingLayer = map.getLayers().getArray().find((layer: { get: (arg0: string) => string; }) => layer.get('id') === id);
-    if (existingLayer) {
-      map.removeLayer(existingLayer);
     }
   }
 
@@ -221,14 +210,17 @@ export class MapService {
     const archivedFeature = new Feature();
     const archivedMarkers = [new Feature(), new Feature(), new Feature()];
     const archivedWaypoints = new Feature();
+    const searchFeature = new Feature();
     // Vector sources
     const csource = new VectorSource({ features: [currentFeature, ...currentMarkers] });
     const asource = new VectorSource({ features: [archivedFeature, ...archivedMarkers, archivedWaypoints] });
     const msource = new VectorSource({ features: [multiFeature, multiMarker] });
+    const ssource = new VectorSource({ features: [searchFeature] });
     // Vector layers
     const currentLayer = new VectorLayer({ source: csource });
     const archivedLayer = new VectorLayer({ source: asource });
     const multiLayer = new VectorLayer({ source: msource });
+    const searchLayer = new VectorLayer({ source: ssource });
     // Return everything
     return {
       pinStyles: { greenPin, redPin, bluePin, yellowPin, blackPin },
@@ -240,11 +232,13 @@ export class MapService {
         archivedFeature,
         archivedMarkers,
         archivedWaypoints,
+        searchFeature
       },
       layers: {
         currentLayer,
         archivedLayer,
         multiLayer,
+        searchLayer,
       }
     };
   }
@@ -358,9 +352,9 @@ export class MapService {
     });
     const map = new Map({
       target,
-      layers: [olLayer, currentLayer, archivedLayer, multiLayer].filter(Boolean),
+      layers: [olLayer, currentLayer, archivedLayer, multiLayer, this.fs.searchLayer].filter(Boolean),
       view,
-      controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this)],
+      controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this, this.fs)],
     });
     this.fs.lastProvider = this.fs.mapProvider
     showCredits(credits);
@@ -484,7 +478,6 @@ export class MapService {
   // 12. DISPLAY AN ARCHIVED TRACK
 
   async displayArchivedTrack({
-    map,
     archivedTrack,
     archivedLayer,
     archivedFeature,
@@ -495,7 +488,6 @@ export class MapService {
     yellowPin,
     archivedColor
   }: {
-    map: any,
     archivedTrack: any,
     archivedLayer: any,
     archivedFeature: Feature,
@@ -506,7 +498,7 @@ export class MapService {
     yellowPin: any,
     archivedColor: any
   }): Promise<void> {
-    if (!map || !archivedTrack || !archivedLayer) return;
+    if (!this.fs.map || !archivedTrack || !archivedLayer) return;
     archivedLayer.setVisible(true);
     const coordinates = archivedTrack.features[0].geometry.coordinates;
     const num = coordinates.length;
@@ -571,54 +563,7 @@ export class MapService {
       multiMarker.setStyle(greenPin);
     }
     multiFeature.setStyle(this.setStrokeStyle('black'));
-    if (multiLayer) {
-      multiLayer.setVisible(true);
-    }
-  }
-
-  // 14. ADD SEARCH LAYER ////////////////////////////////
-
-  async addSearchLayer({
-    map,
-    feature,
-    blackPin,
-    setStrokeStyle,
-  }: {
-    map: any;
-    feature: Feature<Geometry>;
-    blackPin?: Style;
-    setStrokeStyle: (color: string) => Style;
-  }): Promise<void> {
-    if (!map) return;
-    // Remove previous search layer
-    await this.removeLayer(map, 'searchLayerId');
-    this.fs.presentSearch = false;
-    this.fs.deleteSearch = false;
-    const styleFunction = (featureLike: FeatureLike) => {
-      const geometryType = featureLike.getGeometry()?.getType();
-      if (geometryType === 'Point') {
-        return blackPin ?? setStrokeStyle('black'); // fallback to stroke style if blackPin is undefined
-      } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        return new Style({
-          stroke: new Stroke({
-            color: 'black',
-            width: 2,
-          }),
-          fill: new Fill({
-            color: 'rgba(128, 128, 128, 0.5)',
-          }),
-        });
-      } else {
-        return setStrokeStyle('black');
-      }
-    };
-    const searchLayer = new VectorLayer({
-      source: new VectorSource({ features: [feature] }),
-      style: styleFunction,
-    });
-    searchLayer.set('id', 'searchLayerId');
-    map.addLayer(searchLayer);
-    this.fs.presentSearch = true;
+    multiLayer?.setVisible(true);
   }
 
   // 15. CREATE SOURCE //////////////////////////////

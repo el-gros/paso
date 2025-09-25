@@ -37,7 +37,7 @@
   <ion-menu side="start" contentId="main-content">
     <ion-content>
       <ion-list>
-        <ion-item class="menu-button" button [disabled]='(!fs.presentSearch)' (click)="removeSearch()">{{'ARCHIVE.REMOVE_SEARCH' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]='(!visibleSearch)' (click)="removeSearch()">{{'ARCHIVE.REMOVE_SEARCH' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="exportTrackFile()">{{'ARCHIVE.EXPORT_FILE' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="prepareImageExport()">{{'ARCHIVE.EXPORT_TRACK' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]="(fs.layerVisibility == 'multi')" (click)="displayAllTracks(true)">{{'ARCHIVE.DISPLAY_ALL' | translate}}</ion-item>

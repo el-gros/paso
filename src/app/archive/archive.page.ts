@@ -31,8 +31,9 @@ import JSZip from "jszip";
 export class Tab2Page {
 
   numChecked: number = 0;
+  visibleSearch: boolean = false;
 
-  constructor(           
+  constructor(
     public fs: FunctionsService,
     private alertController: AlertController,
     private menu: MenuController,
@@ -64,6 +65,8 @@ export class Tab2Page {
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
+    this.visibleSearch = this.fs.searchLayer?.getVisible() || false;
+    console.log('visibleSearch ', this.visibleSearch)
     if (this.fs.buildTrackImage) await this.shareImages();
   }
 
@@ -87,7 +90,7 @@ export class Tab2Page {
 
   // 4. DELETE TRACKS /////////////////////////////
   async deleteTracks() {
-    const cancel = this.translate.instant('ARCHIVE.CANCEL');
+    //const cancel = this.translate.instant('ARCHIVE.CANCEL');
     const header = this.translate.instant('ARCHIVE.HEADER');
     const message = this.translate.instant('ARCHIVE.MESSAGE');
     // create alert control
@@ -105,7 +108,8 @@ export class Tab2Page {
         cssClass: 'alert-ok-button',
         handler: () => { this.yesDeleteTracks(); }
       }]
-    });    await alert.present();
+    });
+    await alert.present();
   }
 
   // 5. DISPLAY TRACK ///////////////////////////
@@ -245,7 +249,7 @@ export class Tab2Page {
 
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
-    this.fs.deleteSearch = true;
+    this.fs.searchLayer?.setVisible(false);
     this.fs.gotoPage('tab1');
   }
 

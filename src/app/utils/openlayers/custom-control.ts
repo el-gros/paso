@@ -14,9 +14,10 @@ import { Point, Geometry } from 'ol/geom';
 import { Style, Circle as CircleStyle, Fill } from 'ol/style';
 import VectorLayer from 'ol/layer/Vector';
 import { MapService } from '../../services/map.service';
+import { FunctionsService } from '../../services/functions.service';
+
 
 export class CustomControl extends Control {
-  private map: any;
   private vectorSource: VectorSource;
   private vectorLayer: VectorLayer<any>;
   private isActive: boolean = false;
@@ -24,7 +25,8 @@ export class CustomControl extends Control {
   locationUpdate: boolean = false; // To track if location updates are active
 
   constructor(
-    private mapService: MapService
+    private mapService: MapService,
+    private fs: FunctionsService
   ) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';
@@ -77,6 +79,7 @@ export class CustomControl extends Control {
 
   // 1. ACTIVATE CONTROL /////////////////////////////
   private async activateControl(activateButton: HTMLButtonElement) {
+    if (!this.fs.map) return;
     if (this.isActive) return; // Prevent reactivation if already active
     // Disable the activate button
     activateButton.disabled = true;
@@ -85,8 +88,8 @@ export class CustomControl extends Control {
     // center map
     if (coordinates) this.updateLocation(coordinates);
     // create layer (if it does not exist)
-    if (!this.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.map.addLayer(this.vectorLayer);
+    if (!this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
+      this.fs.map.addLayer(this.vectorLayer);
     }
     // start location updates
     this.startLocationUpdates();
@@ -96,11 +99,12 @@ export class CustomControl extends Control {
 
   // 2. DEACTIVATE CONTROL ////////////////////////////////
   private deactivateControl(activateButton: HTMLButtonElement) {
+    if (!this.fs.map) return;
     if (!this.isActive) return; // Prevent deactivation if already inactive
     // Remove layer and source
     this.vectorSource.clear();
-    if (this.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.map.removeLayer(this.vectorLayer);
+    if (this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
+      this.fs.map.removeLayer(this.vectorLayer);
     }
     // Stop location updates
     this.stopLocationUpdates();
@@ -124,6 +128,7 @@ export class CustomControl extends Control {
 
   // 4. CENTER MAP ////////////////////////////////
   private updateLocation(coordinates: [number, number]) {
+    if (!this.fs.map) return;
     this.vectorSource.clear();
     // Define a point feature
     const feature = new Feature({
@@ -143,7 +148,7 @@ export class CustomControl extends Control {
     // Add feature to source
     this.vectorSource.addFeature(feature);
     // Set map view
-    this.map.getView().setCenter(coordinates);
+    this.fs.map.getView().setCenter(coordinates);
   }
 
   // 5. START LOCATION UPDATES /////////////////////////
@@ -164,9 +169,10 @@ export class CustomControl extends Control {
 
   override setMap(map: any): void {
     super.setMap(map);
-    this.map = map;
-    if (!this.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.map.addLayer(this.vectorLayer);
+    this.fs.map = map;
+    if (!this.fs.map) return;
+    if (!this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
+      this.fs.map.addLayer(this.vectorLayer);
     }
   }
 }

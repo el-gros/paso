@@ -5,8 +5,8 @@
  */
 
 import DOMPurify from 'dompurify';
-import { global } from 'src/environments/environment';
 import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
+import Map from 'ol/Map';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -14,6 +14,8 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
 
 @Injectable({
   providedIn: 'root'
@@ -22,10 +24,8 @@ import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 export class FunctionsService {
   private _storage: Storage | null = null;
   refreshCollectionUI?: () => void;
-  
+
   // Variables to share across components
-  deleteSearch: boolean = false;
-  presentSearch: boolean = false;
   comingFrom: string = '';
   key: string | undefined = undefined;
   buildTrackImage: boolean = false;
@@ -42,6 +42,8 @@ export class FunctionsService {
   mapProvider: string ='MapTiler_outdoor';
   lastProvider: string ='';
   collection: TrackDefinition []= [];
+  map: Map | undefined;
+  searchLayer: VectorLayer<VectorSource> | undefined;
 
   constructor(
     private storage: Storage,
