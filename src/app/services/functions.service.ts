@@ -16,6 +16,9 @@ import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
+import { Style } from 'ol/style';
+import { MultiPoint } from 'ol/geom';
+import { Feature } from 'ol';
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +47,10 @@ export class FunctionsService {
   collection: TrackDefinition []= [];
   map: Map | undefined;
   searchLayer: VectorLayer<VectorSource> | undefined;
+  multiLayer: VectorLayer<VectorSource> | undefined;
+  multiFeature: any;
+  multiMarker: Feature<MultiPoint> | undefined = undefined;
+  greenPin?: Style;
 
   constructor(
     private storage: Storage,

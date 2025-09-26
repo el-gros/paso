@@ -11,15 +11,13 @@ import { Component } from '@angular/core';
 import { AlertController } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
-import { global } from '../../environments/environment';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
+import { MapService } from '../services/map.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
 import { TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { File } from '@awesome-cordova-plugins/file/ngx';
 import JSZip from "jszip";
 
 @Component({
@@ -35,6 +33,7 @@ export class Tab2Page {
 
   constructor(
     public fs: FunctionsService,
+    public mapService: MapService,
     private alertController: AlertController,
     private menu: MenuController,
     private languageService: LanguageService,
@@ -66,7 +65,6 @@ export class Tab2Page {
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
     this.visibleSearch = this.fs.searchLayer?.getVisible() || false;
-    console.log('visibleSearch ', this.visibleSearch)
     if (this.fs.buildTrackImage) await this.shareImages();
   }
 
@@ -79,6 +77,7 @@ export class Tab2Page {
     // Extract the date, or set to null if no checked item is found
     const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
     this.fs.key = JSON.stringify(firstCheckedDate)
+    console.log(this.numChecked)
   }
 
   // 3. EDIT TRACK DETAILS //////////////////////////////
@@ -115,7 +114,10 @@ export class Tab2Page {
   // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
     if (active) this.fs.layerVisibility = 'archived';
-    else this.fs.layerVisibility = 'none';
+    else {
+      this.fs.layerVisibility = 'none';
+      await this.fs.uncheckAll();
+    }
     this.fs.gotoPage('tab1');
   }
 
@@ -237,7 +239,18 @@ export class Tab2Page {
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    if (active) this.fs.layerVisibility = 'multi';
+    if (active) {
+      // display all tracks
+      await this.mapService.displayAllTracks({
+        fs: this.fs,
+        collection: this.fs.collection,
+        multiFeature: this.fs.multiFeature,
+        multiMarker: this.fs.multiMarker,
+        greenPin: this.fs.greenPin,
+        multiLayer: this.fs.multiLayer,
+      });
+      this.fs.layerVisibility = 'multi';
+    }
     else this.fs.layerVisibility = 'none';
     this.fs.gotoPage('tab1');
   }
