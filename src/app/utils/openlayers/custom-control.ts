@@ -1,10 +1,14 @@
 /**
- * CustomControl is an OpenLayers control that provides UI buttons to activate or deactivate real-time location tracking on the map.
- * When activated, it centers the map on the user's current position and displays a styled marker, updating the location at regular intervals.
- * The control manages its own vector layer and source for rendering the location marker, and interacts with FunctionsService to obtain geolocation data.
+ * CustomControl is an OpenLayers control that provides a single toggle button
+ * to activate or deactivate real-time location tracking on the map.
+ * - Blue circle = inactive
+ * - Sand clock = waiting for GPS fix
+ * - Red circle = active
+ *
+ * When activated, it centers the map on the user's current position and displays
+ * a styled marker, updating the location at regular intervals.
  *
  * @extends Control
- * @param fs FunctionsService instance for geolocation and utility methods.
  */
 
 import { Control } from 'ol/control';
@@ -16,13 +20,12 @@ import VectorLayer from 'ol/layer/Vector';
 import { MapService } from '../../services/map.service';
 import { FunctionsService } from '../../services/functions.service';
 
-
 export class CustomControl extends Control {
   private vectorSource: VectorSource;
   private vectorLayer: VectorLayer<any>;
   private isActive: boolean = false;
-  private updateInterval: any; // To store the interval ID
-  locationUpdate: boolean = false; // To track if location updates are active
+  private updateInterval: any; // interval ID
+  private button: HTMLButtonElement;
 
   constructor(
     private mapService: MapService,
@@ -30,136 +33,130 @@ export class CustomControl extends Control {
   ) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';
-    element.style.display = 'flex';
-    element.style.gap = '10px'; // Add some spacing between the buttons
 
-    // Create the activate button
-    const activateButton = document.createElement('button');
-    activateButton.innerHTML = ''; // No text, just a circle
-    activateButton.style.width = '30px';
-    activateButton.style.height = '30px';
-    activateButton.style.borderRadius = '50%';
-    activateButton.style.backgroundColor = 'rgba(0, 60, 136, 0.7)'; // Bluish circle
-    activateButton.style.border = 'none';
-    activateButton.style.cursor = 'pointer';
+    // Toggle button
+    const button = document.createElement('button');
+    button.style.width = '30px';
+    button.style.height = '30px';
+    button.style.borderRadius = '50%';
+    button.style.border = 'none';
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '16px';
+    button.style.fontWeight = 'bold';
+    element.appendChild(button);
 
-    // Create the deactivate button
-    const deactivateButton = document.createElement('button');
-    deactivateButton.innerHTML = 'X'; // "X" for deactivation
-    deactivateButton.style.width = '30px';
-    deactivateButton.style.height = '30px';
-    deactivateButton.style.borderRadius = '50%';
-    deactivateButton.style.backgroundColor = 'rgba(136, 0, 0, 0.7)'; // Red circle
-    deactivateButton.style.border = 'none';
-    deactivateButton.style.color = 'white';
-    deactivateButton.style.fontWeight = 'bold';
-    deactivateButton.style.fontSize = '16px';
-    deactivateButton.style.cursor = 'pointer';
-
-    // Append buttons to the container
-    element.appendChild(activateButton);
-    element.appendChild(deactivateButton);
-
-    // Initialize the Control class
     super({
       element: element,
       target: undefined,
     });
 
+    this.button = button;
+    this.setButtonBlue();
+
     this.vectorSource = new VectorSource<Feature<Geometry>>({});
     this.vectorLayer = new VectorLayer({
       source: this.vectorSource,
-      style: this.createCircleStyle('rgba(0, 60, 136, 0.7)'),
+      style: this.createCircleStyle('rgba(0, 60, 136, 0.7)', 7.5),
     });
 
-    // Add event listeners to buttons
-    activateButton.addEventListener('click', () => this.activateControl(activateButton));
-    deactivateButton.addEventListener('click', () => this.deactivateControl(activateButton));
+    // Toggle behavior
+    button.addEventListener('click', () => {
+      if (this.isActive) {
+        this.deactivate();
+      } else {
+        this.activate();
+      }
+    });
   }
 
-  // 1. ACTIVATE CONTROL /////////////////////////////
-  private async activateControl(activateButton: HTMLButtonElement) {
-    if (!this.fs.map) return;
-    if (this.isActive) return; // Prevent reactivation if already active
-    // Disable the activate button
-    activateButton.disabled = true;
-    // get coordinates
-    const coordinates = await this.mapService.getCurrentPosition(true, 1000);
-    // center map
-    if (coordinates) this.updateLocation(coordinates);
-    // create layer (if it does not exist)
+  // ------------------------
+  // Activate control
+  // ------------------------
+  private async activate() {
+    if (!this.fs.map || this.isActive) return;
+
+    this.setButtonSpinner();
+
+    // Promise.race to wait for GPS or timeout
+    const timeout = new Promise<null>(resolve =>
+      setTimeout(() => resolve(null), 8000) // 8s max
+    );
+
+    const coordinates = await Promise.race([
+      this.mapService.getCurrentPosition(true, 5000),
+      timeout,
+    ]);
+
+    if (!coordinates) {
+      // Failed → back to blue
+      this.setButtonBlue();
+      return;
+    }
+
+    // Update location & layer
+    this.updateLocation(coordinates);
+
     if (!this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
       this.fs.map.addLayer(this.vectorLayer);
     }
-    // start location updates
+
     this.startLocationUpdates();
     this.isActive = true;
-    this.locationUpdate = true; // Update the global variable
+    this.setButtonRed();
   }
 
-  // 2. DEACTIVATE CONTROL ////////////////////////////////
-  private deactivateControl(activateButton: HTMLButtonElement) {
-    if (!this.fs.map) return;
-    if (!this.isActive) return; // Prevent deactivation if already inactive
-    // Remove layer and source
+  // ------------------------
+  // Deactivate control
+  // ------------------------
+  private deactivate() {
+    if (!this.fs.map || !this.isActive) return;
+
     this.vectorSource.clear();
+
     if (this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
       this.fs.map.removeLayer(this.vectorLayer);
     }
-    // Stop location updates
+
     this.stopLocationUpdates();
-    // Re-enable the activate button
-    activateButton.disabled = false;
     this.isActive = false;
-    this.locationUpdate = false; // Update the global variable
+    this.setButtonBlue();
   }
 
-  // 3. CREATE CIRCLE STYLE ///////////////////////////////
-  private createCircleStyle(color: string): Style {
+  // ------------------------
+  // Helpers
+  // ------------------------
+  private createCircleStyle(color: string, size: number ): Style {
     return new Style({
       image: new CircleStyle({
-        radius: 15,
-        fill: new Fill({
-          color: color,
-        }),
+        radius: size,
+        fill: new Fill({ color }),
       }),
     });
   }
 
-  // 4. CENTER MAP ////////////////////////////////
   private updateLocation(coordinates: [number, number]) {
     if (!this.fs.map) return;
+
     this.vectorSource.clear();
-    // Define a point feature
+
     const feature = new Feature({
       geometry: new Point(coordinates),
     });
-    // Assign style to feature
-    feature.setStyle(
-      new Style({
-        image: new CircleStyle({
-          radius: 15,
-          fill: new Fill({
-            color: 'rgba(0, 60, 136, 0.7)',
-          }),
-        }),
-      })
-    );
-    // Add feature to source
+
+    feature.setStyle(this.createCircleStyle('rgba(0, 60, 136, 0.7)', 7.5));
     this.vectorSource.addFeature(feature);
-    // Set map view
+
     this.fs.map.getView().setCenter(coordinates);
   }
 
-  // 5. START LOCATION UPDATES /////////////////////////
   private startLocationUpdates() {
+    this.stopLocationUpdates(); // safety: clear old interval
     this.updateInterval = setInterval(async () => {
-      const coordinates = await this.mapService.getCurrentPosition(true, 1000);
+      const coordinates = await this.mapService.getCurrentPosition(true, 5000);
       if (coordinates) this.updateLocation(coordinates);
-    }, 5000); // Update every 5 seconds
+    }, 10000);
   }
 
-  // 6. STOP LOCATION UPDATES //////////////////////////
   private stopLocationUpdates() {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
@@ -167,12 +164,32 @@ export class CustomControl extends Control {
     }
   }
 
+  // ------------------------
+  // Button styling
+  // ------------------------
+  private setButtonBlue() {
+    this.button.innerHTML = '';
+    this.button.style.backgroundColor = 'rgba(0, 60, 136, 0.7)';
+    this.button.style.color = 'white';
+  }
+
+  private setButtonRed() {
+    this.button.innerHTML = 'X';
+    this.button.style.backgroundColor = 'rgba(136, 0, 0, 0.7)';
+    this.button.style.color = 'white';
+  }
+
+  private setButtonSpinner() {
+    this.button.innerHTML = '⏳'; // sand clock
+    this.button.style.backgroundColor = 'gray';
+    this.button.style.color = 'white';
+  }
+
+  // ------------------------
+  // Ensure layer is attached
+  // ------------------------
   override setMap(map: any): void {
     super.setMap(map);
     this.fs.map = map;
-    if (!this.fs.map) return;
-    if (!this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.fs.map.addLayer(this.vectorLayer);
-    }
   }
 }
