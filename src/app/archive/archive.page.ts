@@ -55,7 +55,7 @@ export class Tab2Page {
     11. removeSearch()
     12. openMenu()
     13. selectOption()
-    14. resetSelection()
+
     15. onInit()
     16. prepareImageExport()
     17. shareImages()
@@ -101,7 +101,7 @@ export class Tab2Page {
         text: this.translate.instant('SETTINGS.CANCEL'),
         role: 'cancel',
         cssClass: 'alert-cancel-button',
-        handler: () => { this.resetSelection(); }
+        handler: () => { this.fs.uncheckAll(); }
       }, {
         text: 'OK',
         cssClass: 'alert-ok-button',
@@ -139,8 +139,7 @@ export class Tab2Page {
       await this.fs.storeRem(JSON.stringify(item.date));
     }
     // Reset the count of checked items
-    this.numChecked = 0;
-    this.fs.key = "null"
+    await this.fs.uncheckAll();
     // informretrievetrack
     await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST3'));
   }
@@ -276,13 +275,6 @@ export class Tab2Page {
     this.menu.close();
   }
 
-  // 14. RESET SELECTION ///////////////
-  async resetSelection() {
-    await this.fs.uncheckAll();
-    this.numChecked = 0;
-    this.fs.key = "null";
-  }
-
   // 15. ON INIT //////////////////////////////////////
   onInit() {
     const lang = this.languageService.getCurrentLanguage();
@@ -295,7 +287,7 @@ export class Tab2Page {
     // Save current map provider
     this.fs.savedProvider = this.fs.mapProvider
     // Set map to avoid CORS
-    await this.fs.storeSet('mapProvider', 'MapTiler_outdoor');
+    this.fs.mapProvider = 'MapTiler_outdoor';
     // Display archived track
     await this.displayTrack(true);
   }

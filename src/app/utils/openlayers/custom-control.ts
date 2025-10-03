@@ -56,7 +56,7 @@ export class CustomControl extends Control {
     this.vectorSource = new VectorSource<Feature<Geometry>>({});
     this.vectorLayer = new VectorLayer({
       source: this.vectorSource,
-      style: this.createCircleStyle('rgba(0, 60, 136, 0.7)', 7.5),
+      style: this.createCircleStyle('rgba(0, 60, 136, 0.7)'),
     });
 
     // Toggle behavior
@@ -125,10 +125,10 @@ export class CustomControl extends Control {
   // ------------------------
   // Helpers
   // ------------------------
-  private createCircleStyle(color: string, size: number ): Style {
+  private createCircleStyle(color: string): Style {
     return new Style({
       image: new CircleStyle({
-        radius: size,
+        radius: 15,
         fill: new Fill({ color }),
       }),
     });
@@ -143,7 +143,7 @@ export class CustomControl extends Control {
       geometry: new Point(coordinates),
     });
 
-    feature.setStyle(this.createCircleStyle('rgba(0, 60, 136, 0.7)', 7.5));
+    feature.setStyle(this.createCircleStyle('rgba(0, 60, 136, 0.7)'));
     this.vectorSource.addFeature(feature);
 
     this.fs.map.getView().setCenter(coordinates);
@@ -154,7 +154,7 @@ export class CustomControl extends Control {
     this.updateInterval = setInterval(async () => {
       const coordinates = await this.mapService.getCurrentPosition(true, 5000);
       if (coordinates) this.updateLocation(coordinates);
-    }, 10000);
+    }, 5000);
   }
 
   private stopLocationUpdates() {
@@ -180,7 +180,7 @@ export class CustomControl extends Control {
   }
 
   private setButtonSpinner() {
-    this.button.innerHTML = '⏳'; // sand clock
+    this.button.innerHTML = '<span class="sandclock">⏳</span>';
     this.button.style.backgroundColor = 'gray';
     this.button.style.color = 'white';
   }

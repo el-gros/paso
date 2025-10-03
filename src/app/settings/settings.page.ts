@@ -103,7 +103,7 @@ export class SettingsPage implements OnDestroy {
   /*
   1. ionViewWillEnter
   2. selectColor
-  3. selectBaseMap
+
   4. onLanguageChange
   5. onMapChange
   6. openColorPopover
@@ -168,15 +168,6 @@ export class SettingsPage implements OnDestroy {
       }
     ];
     await this.fs.showAlert(cssClass, header, message, inputs, buttons, '');
-  }
-
-  // 3. SELECT MAP ////////////////////////////////
-  async selectBaseMap(baseMap: any) {
-    console.log(baseMap)
-    // Store the map provider
-    await this.fs.storeSet('mapProvider', baseMap.name);
-    // Go to map
-    this.fs.gotoPage('tab1')
   }
 
   // 4. LANGUAGE CHANGE ///////////////////////////////////////

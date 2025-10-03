@@ -437,3 +437,16 @@
   .color-green   { color: green; }
   .color-cyan    { color: cyan; }
   .color-blue    { color: blue; }
+
+ .sandclock {
+  display: inline-block;
+  font-size: 1.8em;        /* bigger */
+  animation: flip 1.5s infinite linear;
+}
+
+@keyframes flip {
+  0%   { transform: rotate(0deg); }
+  45%  { transform: rotate(180deg); }
+  55%  { transform: rotate(180deg); } /* short pause upside down */
+  100% { transform: rotate(360deg); }
+}

@@ -235,7 +235,7 @@ export class Tab1Page {
     }
     try {
       // change map provider
-      await this.changeMapProvider();
+      if (this.fs.lastProvider != this.fs.mapProvider) await this.changeMapProvider();
       // Display current track (updates color)
       if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
       // archived visible
@@ -1257,9 +1257,7 @@ async createLayers() {
 
   // 35. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
-    const previousProvider = this.fs.mapProvider;
     // Validate and possibly normalize the new value
-    this.fs.mapProvider = await this.fs.check(this.fs.mapProvider, 'mapProvider');
     await this.mapService.updateMapProvider({
       map: this.fs.map,
       server: this.server,
@@ -1560,7 +1558,6 @@ async createLayers() {
     this.currentLayer?.setVisible(visible);
     // Restore map provider
     this.fs.mapProvider = this.fs.savedProvider
-    await this.fs.storeSet('mapProvider', this.fs.mapProvider);
     // Handle result
     if (success) {
       this.fs.gotoPage('canvas');

@@ -376,10 +376,9 @@ export class MapService {
       fs,
       onFadeEffect
     } = options;
-    if (!map) return;
     let newBaseLayer = null;
     let credits = '';
-    if (this.fs.lastProvider == this.fs.mapProvider) return
+    if (!map) return;
     switch (this.fs.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
