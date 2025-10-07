@@ -51,6 +51,8 @@ export class FunctionsService {
   multiFeature: any;
   multiMarker: Feature<MultiPoint> | undefined = undefined;
   greenPin?: Style;
+  status: 'black' | 'red' | 'green' = 'black';
+  archivedTrack: Track | undefined = undefined;
 
   constructor(
     private storage: Storage,

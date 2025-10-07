@@ -477,7 +477,7 @@ export class MapService {
   // 12. DISPLAY AN ARCHIVED TRACK
 
   async displayArchivedTrack({
-    archivedTrack,
+    //archivedTrack,
     archivedLayer,
     archivedFeature,
     archivedMarkers,
@@ -487,7 +487,7 @@ export class MapService {
     yellowPin,
     archivedColor
   }: {
-    archivedTrack: any,
+    //archivedTrack: any,
     archivedLayer: any,
     archivedFeature: Feature,
     archivedMarkers: Feature[],
@@ -497,9 +497,9 @@ export class MapService {
     yellowPin: any,
     archivedColor: any
   }): Promise<void> {
-    if (!this.fs.map || !archivedTrack || !archivedLayer) return;
+    if (!this.fs.map || !this.fs.archivedTrack || !archivedLayer) return;
     archivedLayer.setVisible(true);
-    const coordinates = archivedTrack.features[0].geometry.coordinates;
+    const coordinates =this.fs.archivedTrack.features[0].geometry.coordinates;
     const num = coordinates.length;
     if (num === 0) return;
     archivedFeature.setGeometry(new LineString(coordinates));
@@ -510,7 +510,7 @@ export class MapService {
       archivedMarkers[2].setGeometry(new Point(coordinates[num - 1]));
       archivedMarkers[2].setStyle(redPin);
     }
-    const waypoints = archivedTrack.features[0].waypoints || [];
+    const waypoints = this.fs.archivedTrack.features[0].waypoints || [];
     const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
     if (archivedWaypoints) {
       archivedWaypoints.setGeometry(new MultiPoint(multiPoint));

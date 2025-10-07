@@ -1,15 +1,13 @@
 /**
  * CanvasComponent is responsible for displaying and managing interactive canvas charts
  * for both the current and archived tracks, including statistics such as distance,
- * elevation gain/loss, speed, and time. It initializes canvases, subscribes to track
- * and status updates, computes average and motion speeds, and renders graphical
+ * elevation gain/loss, speed, and time. It initializes canvases, computes average and motion speeds, and renders graphical
  * representations of track data with dynamic scaling and grid overlays. The component
  * supports multilingual labels and adapts canvas size to the viewport.
  */
 
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { global } from '../../environments/environment';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
@@ -32,9 +30,8 @@ register();
 export class CanvasComponent implements OnInit, OnDestroy {
 
   currentTrack: Track | undefined = undefined;
-  archivedTrack: Track | undefined = undefined;
+  //archivedTrack: Track | undefined = undefined;
 
-  status: 'black' | 'red' | 'green' = 'black';
   currentPoint: number = 0;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
@@ -80,6 +77,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
         this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
       })
     );
+    /*
     this.subscriptions.add(
       this.ts.archivedTrack$.subscribe(async archived => {
         this.archivedTrack = archived;
@@ -87,11 +85,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
         this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
       })
     );
-    this.subscriptions.add(
-      this.ts.status$.subscribe(async status => {
-        this.status = status;
-      })
-    );
+    */
     this.subscriptions.add(
       this.ts.currentPoint$.subscribe(async currentPoint => {
         this.currentPoint = currentPoint;
@@ -307,7 +301,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     // Open canvas
     try {
       // Hide canvas for the current or archived track
-      if (track === this.currentTrack || track === this.archivedTrack) {
+      if (track === this.currentTrack || track === this.fs.archivedTrack) {
         const type = track === this.currentTrack ? 'c' : 'a';
       }
       // Update canvas
