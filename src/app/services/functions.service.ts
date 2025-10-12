@@ -17,8 +17,7 @@ import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Style } from 'ol/style';
-import { MultiPoint } from 'ol/geom';
-import { Feature } from 'ol';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -46,13 +45,18 @@ export class FunctionsService {
   lastProvider: string ='';
   collection: TrackDefinition []= [];
   map: Map | undefined;
+  currentLayer: VectorLayer<VectorSource> | undefined;
+  archivedLayer: VectorLayer<VectorSource> | undefined;
   searchLayer: VectorLayer<VectorSource> | undefined;
   multiLayer: VectorLayer<VectorSource> | undefined;
-  multiFeature: any;
-  multiMarker: Feature<MultiPoint> | undefined = undefined;
   greenPin?: Style;
+  redPin?: Style;
   status: 'black' | 'red' | 'green' = 'black';
   archivedTrack: Track | undefined = undefined;
+  currentPoint: number = 0;
+  currentTrackSource = new BehaviorSubject<any>(null);
+  currentTrack$ = this.currentTrackSource.asObservable();
+  state: string = 'inactive';
 
   constructor(
     private storage: Storage,
@@ -528,6 +532,16 @@ export class FunctionsService {
     }
 
     return results;
+  }
+
+  // SET CURRENT TRACK /////////////////////////
+  setCurrentTrack(track: any) {
+    this.currentTrackSource.next(track);
+  }
+
+  // GET CURRENT TRACK /////////////////////////
+  getCurrentTrack() {
+    return this.currentTrackSource.value;
   }
 
 }

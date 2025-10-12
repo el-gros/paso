@@ -240,14 +240,7 @@ export class Tab2Page {
   async displayAllTracks(active: boolean) {
     if (active) {
       // display all tracks
-      await this.mapService.displayAllTracks({
-        fs: this.fs,
-        collection: this.fs.collection,
-        multiFeature: this.fs.multiFeature,
-        multiMarker: this.fs.multiMarker,
-        greenPin: this.fs.greenPin,
-        multiLayer: this.fs.multiLayer,
-      });
+      await this.mapService.displayAllTracks();
       this.fs.layerVisibility = 'multi';
     }
     else this.fs.layerVisibility = 'none';

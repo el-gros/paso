@@ -11,7 +11,6 @@ import { Subscription } from 'rxjs';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
-import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -32,7 +31,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   currentTrack: Track | undefined = undefined;
   //archivedTrack: Track | undefined = undefined;
 
-  currentPoint: number = 0;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: string = '00:00:00';
@@ -52,7 +50,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription = new Subscription();
   constructor(
     public fs: FunctionsService,
-    public ts: TrackService,
     private translate: TranslateService
   ) { }
 
@@ -71,24 +68,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     await this.createCanvas();
     this.subscriptions.add(
-      this.ts.currentTrack$.subscribe(async current => {
+      this.fs.currentTrack$.subscribe(async current => {
         this.currentTrack = current;
         await this.averageSpeed();
         this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      })
-    );
-    /*
-    this.subscriptions.add(
-      this.ts.archivedTrack$.subscribe(async archived => {
-        this.archivedTrack = archived;
-        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-        this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
-      })
-    );
-    */
-    this.subscriptions.add(
-      this.ts.currentPoint$.subscribe(async currentPoint => {
-        this.currentPoint = currentPoint;
       })
     );
   }

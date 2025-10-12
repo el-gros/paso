@@ -13,26 +13,21 @@ import { Storage } from '@ionic/storage-angular';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
 import Feature, { FeatureLike } from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import { ParsedPoint, Location, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
-import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { App } from '@capacitor/app';
-import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
-// import { BackgroundTask } from '@capawesome/capacitor-background-task';
 import { ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
@@ -58,18 +53,6 @@ export class Tab1Page {
 
   watcherId: number = 0;
   currentTrack: Track | undefined = undefined;
-  track: Track | undefined = undefined;
-  vMax: number = 400;
-  margin: number = 10;
-  threshold: number = 20;
-  altitudeThreshold: number = 20;
-  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  gridsize: string = '-';
-
-  currentMarkers: Feature<Point>[] = [new Feature<Point>(), new Feature<Point>(), new Feature<Point>()];
-  archivedMarkers: Feature<Point>[] = [new Feature<Point>(), new Feature<Point>(), new Feature<Point>()];
-
-  archivedWaypoints: Feature<MultiPoint> | undefined = undefined;
   distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
@@ -79,30 +62,17 @@ export class Tab1Page {
   vMin: number = 1;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: any = '00:00:00';
-  archivedFeature: any;
-  currentFeature: any;
-  searchFeature: any;
   threshDist: number = 0.0000002;
-  currentLayer: VectorLayer<VectorSource> | undefined;
-  archivedLayer: VectorLayer<VectorSource> | undefined;
   foreground: boolean = true;
-
-  currentPoint: number = 0;
   audioCtx: AudioContext | null = null;
   beepInterval: any;
   appStateListener?: PluginListenerHandle;
-  redPin?: Style;
-  bluePin?: Style;
-  yellowPin?: Style;
-  blackPin?: Style;
-  styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
+  //styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
   state: string = '';
 
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
-    public ts: TrackService,
     public server: ServerService,
     public storage: Storage,
     private zone: NgZone,
@@ -130,11 +100,11 @@ export class Tab1Page {
   13. onRoute
   14. show
   15. onDestroy
-  16. showArchivedTrack
+
   17. firstPoint
   18. createMap
   19. filterAltitude
-  20. createLayers
+
   21. handleMapClick
   22. computeDistances
   23. htmValues
@@ -146,16 +116,16 @@ export class Tab1Page {
   29. saveTrack
   30. processUrl
   31. foregroundTask
-  32. backgroundTask
+
   33. startBeepInterval
   34. stopBeepInterval
   35. changeMapProvider
-  36. determineColors
+
   37. waypoint
   38. setWaypointAltitude
   39. search
   40. guide
-  41. addSearchLayer
+
   42. morningTask
   43. gettitudes
   44. getAltitudesFromMap
@@ -179,8 +149,6 @@ export class Tab1Page {
       await this.fs.uncheckAll();
       // create map
       await this.createMap();
-      // Save initialized currentPoint
-      this.ts.setCurrentPoint(this.currentPoint);
     } catch (error) {
       console.error('Error during ngOnInit:', error);
     }
@@ -216,9 +184,8 @@ export class Tab1Page {
       this.fs.multiLayer?.setVisible(false);
       // iF an archived track has been parsed...
       if (this.fs.archivedTrack) {
-        //this.ts.setArchivedTrack(this.archivedTrack);
         // Display archived track
-        await this.showArchivedTrack();
+        await this.mapService.displayArchivedTrack();
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
           this.mapService.setMapView(this.fs.map, this.fs.archivedTrack);
@@ -236,15 +203,14 @@ export class Tab1Page {
       // change map provider
       if (this.fs.lastProvider != this.fs.mapProvider) await this.changeMapProvider();
       // Display current track (updates color)
-      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
+      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.currentTrack);
       // archived visible
       if (this.fs.layerVisibility == 'archived') {
         // retrieve archived track
         this.fs.archivedTrack = await this.fs.retrieveTrack() ?? this.fs.archivedTrack;
         if (this.fs.archivedTrack) {
-          //this.ts.setArchivedTrack(this.archivedTrack);
           // Display archived track
-          await this.showArchivedTrack();
+          await this.mapService.displayArchivedTrack();
           // Set map view for archived track if no current track
           if (!this.currentTrack || this.fs.buildTrackImage) this.mapService.setMapView(this.fs.map, this.fs.archivedTrack);
         }
@@ -254,7 +220,7 @@ export class Tab1Page {
       }
       else if (this.fs.layerVisibility == 'multi') {
         // hide archived track
-        this.archivedLayer?.setVisible(false);
+        this.fs.archivedLayer?.setVisible(false);
         this.fs.status = 'black'
         // center all tracks
         if (!this.currentTrack) await this.mapService.centerAllTracks(this.fs.map);
@@ -262,7 +228,7 @@ export class Tab1Page {
       else {
         this.fs.status = 'black'
         // Hide archived and multi layers
-        this.archivedLayer?.setVisible(false);
+        this.fs.archivedLayer?.setVisible(false);
         this.fs.multiLayer?.setVisible(false);
       }
       // center current track
@@ -277,7 +243,7 @@ export class Tab1Page {
   // 5. START TRACKING /////////////////////////////////
   async startTracking() {
     // In case there is something wrong
-    if (!this.currentLayer) return;
+    if (!this.fs.currentLayer) return;
     // Check-request permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
@@ -297,13 +263,12 @@ export class Tab1Page {
     });
     // Reset current track and related variables
     this.currentTrack = undefined;
-    this.ts.setCurrentTrack(this.currentTrack);
-    this.currentLayer.setVisible(false);
+    this.fs.setCurrentTrack(this.currentTrack);
+    this.fs.currentLayer.setVisible(false);
     // Initialize variables
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
     this.currentMotionSpeed = undefined;
-    this.currentMotionTime = '00:00:00';
     this.speedFiltered = 0;
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
@@ -350,16 +315,18 @@ export class Tab1Page {
       }
     );
     // Update state
-    this.ts.state = 'tracking';
+    this.fs.state = 'tracking';
   }
 
   // 5 bis. CHECK LOCATION //////////////////////////////////
   async checkLocation(location: Location) {
+    const threshold: number = 20;
+    const altitudeThreshold: number = 20;
     // excessive uncertainty / no altitude or time measured
-    if (location.accuracy > this.threshold ||
+    if (location.accuracy > threshold ||
       location.altitude == null || location.altitude == undefined ||
       location.altitude == 0 ||
-      location.altitudeAccuracy > this.altitudeThreshold ||
+      location.altitudeAccuracy > altitudeThreshold ||
       !location.time) return false;
     else return true;
   }
@@ -367,33 +334,33 @@ export class Tab1Page {
   // 6. REMOVE TRACK ///////////////////////////////////
   async removeTrack() {
     // show / hide elements
-    this.ts.state = 'inactive';
+    this.fs.state = 'inactive';
     this.show('alert', 'none');
     // Reset current track
     this.fs.status = 'black'
     this.currentTrack = undefined;
-    this.ts.setCurrentTrack(this.currentTrack);
-    this.currentLayer?.setVisible(false);
+    this.fs.setCurrentTrack(this.currentTrack);
+    this.fs.currentLayer?.setVisible(false);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
 
   // 7. STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    console.log('initiate stop tracking')
+    console.log('initiate stop tracking');
+    const source = this.fs.currentLayer?.getSource();
+    const features = source?.getFeatures();
     // show / hide elements
-    this.ts.state = 'stopped';
+    this.fs.state = 'stopped';
     this.show('alert', 'none');
     // Set the red marker at the last coordinate
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    if (num > 0 && this.currentMarkers[2] && this.currentTrack) {
-      this.currentMarkers[2].setGeometry(new Point(
+    if (num > 0 && features && features.length > 3 && this.currentTrack) {
+      features[3].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ));
-      this.currentMarkers[2].setStyle(this.redPin);
-      if (this.currentMarkers[1]) {
-        this.currentMarkers[1].setStyle(undefined);
-      }
+      features[3].setStyle(this.fs.redPin);
+      features[2].setStyle(undefined);
     }
     // Remove the watcher
     try {
@@ -519,7 +486,7 @@ export class Tab1Page {
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
-    this.ts.state = 'saved'
+    this.fs.state = 'saved'
     this.show('alert', 'none');
   }
 
@@ -573,26 +540,22 @@ export class Tab1Page {
         point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
     }
     // Forward search
-    for (let i = this.currentPoint; i < archivedCoordinates.length; i += reduction) {
+    for (let i = this.fs.currentPoint; i < archivedCoordinates.length; i += reduction) {
       const point2 = archivedCoordinates[i];
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
-        //this.lastN = i;
-        this.currentPoint = i;
-        this.ts.setCurrentPoint(this.currentPoint);
+        this.fs.currentPoint = i;
         return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i += (skip - 1) * reduction;
       }
     }
     // Reverse search
-    for (let i = this.currentPoint; i >= 0; i -= reduction) {
+    for (let i = this.fs.currentPoint; i >= 0; i -= reduction) {
       const point2 = archivedCoordinates[i];
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
-        //this.lastN = i;
-        this.currentPoint = i;
-        this.ts.setCurrentPoint(this.currentPoint);
+        this.fs.currentPoint = i;
         return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i -= (skip - 1) * reduction;
@@ -620,20 +583,6 @@ export class Tab1Page {
     this.beepInterval = undefined;
   }
 
-  // 16. SHOW ARCHIVED TRACK
-  async showArchivedTrack() {
-    await this.mapService.displayArchivedTrack({
-      //archivedTrack: this.archivedTrack,
-      archivedLayer: this.archivedLayer,
-      archivedFeature: this.archivedFeature,
-      archivedMarkers: this.archivedMarkers,
-      archivedWaypoints: this.archivedWaypoints,
-      greenPin: this.fs.greenPin,
-      redPin: this.redPin,
-      yellowPin: this.yellowPin,
-      archivedColor: this.fs.archivedColor
-    });
-  }
 
   // 17. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
@@ -678,29 +627,27 @@ export class Tab1Page {
     }
     // Display waypoint button
     this.show('alert', 'block');
+    const source = this.fs.currentLayer?.getSource();
+    const features = source?.getFeatures();
     // Set the geometry and style for the first marker
-    if (this.currentMarkers[0]) {
-      this.currentMarkers[0].setGeometry(new Point(
+    if (features && features.length > 3) {
+      features[1].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[0]
       ));
-      this.currentMarkers[0].setStyle(this.fs.greenPin);
-    }
-    // Set the geometry and style for the second marker (for tracking progress)
-    const num = this.currentTrack.features[0].geometry.coordinates.length;
-    if (this.currentMarkers[1]) {
-      this.currentMarkers[1].setGeometry(new Point(
+      features[1].setStyle(this.fs.greenPin);
+      // Set the geometry and style for the second marker (for tracking progress)
+      const num = this.currentTrack.features[0].geometry.coordinates.length;
+      features[2].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ));
-      this.currentMarkers[1].setStyle(this.bluePin);
-    }
-    // Reset the style for the third marker (if applicable)
-    if (this.currentMarkers[2]) {
-      this.currentMarkers[2].setStyle(undefined);
+      features[2].setStyle( this.mapService.createPinStyle('blue'));
+      // Reset the style for the third marker (if applicable)
+      features[3].setStyle(undefined);
     }
     // Make the layer visible, with improved error handling
-    this.currentLayer?.setVisible(true);
+    this.fs.currentLayer?.setVisible(true);
     // Set current track
-    this.ts.setCurrentTrack(this.currentTrack);
+    this.fs.setCurrentTrack(this.currentTrack);
   }
 
   // 18. CREATE MAP ////////////////////////////////////////
@@ -711,11 +658,8 @@ export class Tab1Page {
         this.fs.map.setTarget(undefined); // detach from DOM and free controls
         this.fs.map = undefined;
       }
-      await this.createLayers(); // your existing method, or move to service
+      this.mapService.createLayers(); // your existing method, or move to service
       const { map } = await this.mapService.createMap({
-        currentLayer: this.currentLayer,
-        archivedLayer: this.archivedLayer,
-        multiLayer: this.fs.multiLayer,
         server: this.server,
         getCurrentPosition: this.mapService.getCurrentPosition.bind(this.mapService),
         showCredits: this.fs.displayToast.bind(this.fs),
@@ -758,37 +702,15 @@ export class Tab1Page {
     }
   }
 
-// 20. CREATE LAYERS /////////////////////////////
-async createLayers() {
-  const { pinStyles, features, layers } = this.mapService.createLayers();
-  // Assign to component fields
-  this.fs.greenPin = pinStyles.greenPin;
-  this.redPin = pinStyles.redPin;
-  this.bluePin = pinStyles.bluePin;
-  this.yellowPin = pinStyles.yellowPin;
-  this.blackPin = pinStyles.blackPin;
-  this.currentFeature = features.currentFeature as Feature<LineString>;
-  this.currentMarkers = features.currentMarkers as Feature<Point>[];
-  this.fs.multiFeature = features.multiFeature as Feature<MultiLineString>;
-  this.fs.multiMarker = features.multiMarker as Feature<MultiPoint>;
-  this.archivedFeature = features.archivedFeature as Feature<LineString>;
-  this.archivedMarkers = features.archivedMarkers as Feature<Point>[];
-  this.archivedWaypoints = features.archivedWaypoints as Feature<MultiPoint>;
-  this.searchFeature = features.searchFeature as FeatureLike;
-  this.currentLayer = layers.currentLayer;
-  this.archivedLayer = layers.archivedLayer;
-  this.fs.multiLayer = layers.multiLayer;
-  this.fs.searchLayer = layers.searchLayer;
-  this.fs.searchLayer.setVisible(false)
-}
-
   // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     switch(this.fs.layerVisibility) {
       case 'multi':
         if (this.fs.map) {
           this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-            if (feature === this.fs.multiMarker) {
+            const source = this.fs.multiLayer?.getSource();
+            const features = source?.getFeatures();
+            if (features && feature === features[0]) {
               // Retrieve clicked coordinate and find its index
               const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
               const multiPointCoordinates = feature.getGeometry().getCoordinates();
@@ -799,13 +721,12 @@ async createLayers() {
               const multiKey = feature.get('multikey'); // Retrieve stored waypoints
               const key = multiKey[index];
               this.fs.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
+              this.fs.key = JSON.stringify(key);
               // Display archived track details if it exists
               if (this.fs.archivedTrack) {
-                //this.ts.setArchivedTrack(this.archivedTrack);
-                //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
                 this.fs.multiLayer?.setVisible(false);
                 this.fs.layerVisibility = 'archived';
-                await this.showArchivedTrack();
+                await this.mapService.displayArchivedTrack();
                 this.mapService.setMapView(this.fs.map, this.fs.archivedTrack);
               }
             }
@@ -814,9 +735,11 @@ async createLayers() {
         break;
       case 'archived':
         let hit: boolean = false
-        if (this.fs.map) {
+        const source = this.fs.archivedLayer?.getSource();
+        const features = source?.getFeatures();
+        if (this.fs.map && features) {
           this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-            if ((feature === this.archivedMarkers[0]) || (feature === this.archivedMarkers[2])) {
+            if ((feature === features[1]) || (feature === features[3])) {
               hit = true;
               const index = this.fs.collection.findIndex((item: TrackDefinition) =>
                 item.date instanceof Date &&
@@ -829,7 +752,7 @@ async createLayers() {
           });
         }
         if (!hit && this.fs.map) this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-          if (feature === this.archivedWaypoints) {
+          if (features && feature === features[4]) {
             // Retrieve clicked coordinate and find its index
             const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
             const multiPointCoordinates = feature.getGeometry().getCoordinates();
@@ -870,9 +793,9 @@ async createLayers() {
     // Compute distances for each point
     for (let i = this.computedDistances + 1; i < num; i++) {
       const lastPoint = coordinates[i - 1];
-      const currentPoint = coordinates[i];
+      const ctPoint = coordinates[i];
       // Calculate the distance
-      const distance = this.fs.computeDistance(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1]);
+      const distance = this.fs.computeDistance(lastPoint[0], lastPoint[1], ctPoint[0], ctPoint[1]);
       // Update the data with the new distance
       data[i].distance = data[i - 1].distance + distance;
       // Track the last computed distance index
@@ -893,7 +816,7 @@ async createLayers() {
     this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(data[num - 1].time - data[0].time);
     this.currentTrack.features[0].properties.totalNumber = num;
     this.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
-    this.ts.setCurrentTrack(this.currentTrack);
+    this.fs.setCurrentTrack(this.currentTrack);
   }
 
   // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
@@ -1195,21 +1118,13 @@ async createLayers() {
     // html values
     await this.htmlValues();
     // display the current track
-    await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
+    await this.mapService.displayCurrentTrack(this.currentTrack);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
     });
     console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
   }
-
-  // 32. BACKGROUND TASK /////////////////////////////////////
-/*  async backgroundTask(location: Location) {
-    const taskId = await BackgroundTask.beforeExit(async () => {
-        //Always call finish
-      BackgroundTask.finish({ taskId });
-      });
-  } */
 
   // 33. START BEEP INTERVAL /////////////////////
   startBeepInterval() {
@@ -1235,9 +1150,7 @@ async createLayers() {
   async changeMapProvider() {
     // Validate and possibly normalize the new value
     await this.mapService.updateMapProvider({
-      map: this.fs.map,
       server: this.server,
-      fs: this.fs,
       onFadeEffect: () => {
         const el = document.getElementById('map');
         if (el) {
@@ -1268,7 +1181,7 @@ async createLayers() {
       waypoint.name = response.name,
       waypoint.comment = response.comment
       this.currentTrack.features[0].waypoints?.push(waypoint);
-      this.ts.setCurrentTrack(this.currentTrack);
+      this.fs.setCurrentTrack(this.currentTrack);
       // Toast
       this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'));
     }
@@ -1282,7 +1195,7 @@ async createLayers() {
     for (const wp of waypoints) {
       if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
     }
-    this.ts.setCurrentTrack(this.currentTrack);
+    this.fs.setCurrentTrack(this.currentTrack);
     console.log(this.currentTrack)
   }
 
@@ -1291,7 +1204,7 @@ async createLayers() {
     const styleSearch = (featureLike: FeatureLike) => {
       const geometryType = featureLike.getGeometry()?.getType();
       if (geometryType === 'Point') {
-        return this.blackPin ?? this.mapService.setStrokeStyle('black');
+        return this.mapService.createPinStyle('black') ?? this.mapService.setStrokeStyle('black');
       } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
         return new Style({
           stroke: new Stroke({
@@ -1326,13 +1239,14 @@ async createLayers() {
       // Apply padding
       const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding]; // OpenLayers extent
       // Parse GeoJSON into OpenLayers features
-      const features = new GeoJSON().readFeatures(data.location.geojson);
-      console.log(features)
+      const draw = new GeoJSON().readFeatures(data.location.geojson);
+      console.log(draw)
       // Display on map
-      this.searchFeature = features[0];
-      this.searchFeature.setStyle(styleSearch(this.searchFeature));
-      this.fs.searchLayer?.getSource()?.clear();
-      this.fs.searchLayer?.getSource()?.addFeature(this.searchFeature);
+      const source = this.fs.searchLayer?.getSource();
+      if (!source) return;
+      source.clear();
+      source.addFeatures(draw);
+      draw.forEach(f => f.setStyle(styleSearch(f)));
       this.fs.searchLayer?.setVisible(true);
       if (this.fs.map) {
         this.fs.map.getView().fit(extent);
@@ -1376,7 +1290,6 @@ async createLayers() {
       const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
       const rawProperties: Data[] = await this.fs.fillProperties(distances, altSlopes.altitudes, times, speed);
       // Increase the number of coordinates
-      //var num = rawCoordinates.length;
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
       if (result) {
         var num = result.newCoordinates.length;
@@ -1411,11 +1324,10 @@ async createLayers() {
     console.log('route', this.fs.archivedTrack)
     if (this.fs.archivedTrack) {
       await this.fs.uncheckAll();
-      //this.ts.setArchivedTrack(this.fs.archivedTrack);
       this.fs.multiLayer?.setVisible(false);
-      this.archivedLayer?.setVisible(true);  // No need for await
+      this.fs.archivedLayer?.setVisible(true);  // No need for await
       this.fs.layerVisibility = 'archived';
-      await this.showArchivedTrack();
+      await this.mapService.displayArchivedTrack();
       this.mapService.setMapView(this.fs.map, this.fs.archivedTrack);
       this.fs.archivedTrack.features[0].properties.date = date;
       const dateKey = JSON.stringify(date);
@@ -1453,7 +1365,7 @@ async createLayers() {
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers, this.fs.currentColor);
+        await this.mapService.displayCurrentTrack(this.currentTrack);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -1515,8 +1427,8 @@ async createLayers() {
     // Give Angular time to finish ngOnInit
     await new Promise(resolve => setTimeout(resolve, 150));
     // Save current visibility
-    const visible = this.currentLayer?.getVisible() || false;
-    this.currentLayer?.setVisible(false);
+    const visible = this.fs.currentLayer?.getVisible() || false;
+    this.fs.currentLayer?.setVisible(false);
     // Center map on archived track
     this.mapService.setMapView(this.fs.map, this.fs.archivedTrack);
     // Optional: adjust zoom/scale if needed
@@ -1531,7 +1443,7 @@ async createLayers() {
       success = await this.exportMapToImage(this.fs.map);
     }
     // Restore visibility of current track
-    this.currentLayer?.setVisible(visible);
+    this.fs.currentLayer?.setVisible(visible);
     // Restore map provider
     this.fs.mapProvider = this.fs.savedProvider
     // Handle result
