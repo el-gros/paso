@@ -48,9 +48,7 @@ export class FunctionsService {
   map: Map | undefined;
   searchLayer: VectorLayer<VectorSource> | undefined;
   multiLayer: VectorLayer<VectorSource> | undefined;
-  multiFeature: any;
-  multiMarker: Feature<MultiPoint> | undefined = undefined;
-  greenPin?: Style;
+  archivedLayer: VectorLayer<VectorSource> | undefined;
 
   constructor(
     private storage: Storage,

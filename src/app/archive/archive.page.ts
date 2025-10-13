@@ -243,10 +243,6 @@ export class Tab2Page {
       await this.mapService.displayAllTracks({
         fs: this.fs,
         collection: this.fs.collection,
-        multiFeature: this.fs.multiFeature,
-        multiMarker: this.fs.multiMarker,
-        greenPin: this.fs.greenPin,
-        multiLayer: this.fs.multiLayer,
       });
       this.fs.layerVisibility = 'multi';
     }

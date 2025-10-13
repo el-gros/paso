@@ -97,7 +97,7 @@ export class MapService {
 
   // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
 
-  async displayCurrentTrack(map: Map | undefined, currentTrack: any, currentFeature: any, currentMarkers: any[], currentColor: any): Promise<void> {
+  async displayCurrentTrack(map: Map | undefined, currentTrack: any, currentFeature: any, currentMarkers: any[]): Promise<void> {
     // Ensure current track and map exist
     if (!currentTrack || !map || !currentFeature || !currentMarkers?.[1]) return;
     // Number of points in the track
@@ -107,7 +107,7 @@ export class MapService {
     if (num < 2) return;
     // Set line geometry and style
     currentFeature.setGeometry(new LineString(coordinates));
-    currentFeature.setStyle(this.setStrokeStyle(currentColor));
+    currentFeature.setStyle(this.setStrokeStyle(this.fs.currentColor));
     // Set the last point as the marker geometry
     currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
@@ -196,49 +196,27 @@ export class MapService {
   // 9. CREATE LAYERS /////////////////////////////////////
 
   createLayers() {
-    // Create pin styles
-    const greenPin = this.createPinStyle('green');
-    const redPin = this.createPinStyle('red');
-    const bluePin = this.createPinStyle('blue');
-    const yellowPin = this.createPinStyle('yellow');
-    const blackPin = this.createPinStyle('black');
     // Create features
     const currentFeature = new Feature();
     const currentMarkers = [new Feature(), new Feature(), new Feature()];
-    const multiFeature = new Feature();
-    const multiMarker = new Feature();
-    const archivedFeature = new Feature();
-    const archivedMarkers = [new Feature(), new Feature(), new Feature()];
-    const archivedWaypoints = new Feature();
-    const searchFeature = new Feature();
     // Vector sources
     const csource = new VectorSource({ features: [currentFeature, ...currentMarkers] });
-    const asource = new VectorSource({ features: [archivedFeature, ...archivedMarkers, archivedWaypoints] });
-    const msource = new VectorSource({ features: [multiFeature, multiMarker] });
-    const ssource = new VectorSource({ features: [searchFeature] });
+    const asource = new VectorSource({ features: [new Feature(), new Feature(), new Feature(), new Feature(), new Feature()] });
+    const msource = new VectorSource({ features: [new Feature(), new Feature()] });
+    const ssource = new VectorSource({ features: [new Feature()] });
     // Vector layers
     const currentLayer = new VectorLayer({ source: csource });
-    const archivedLayer = new VectorLayer({ source: asource });
-    const multiLayer = new VectorLayer({ source: msource });
-    const searchLayer = new VectorLayer({ source: ssource });
+    this.fs.archivedLayer = new VectorLayer({ source: asource });
+    this.fs.multiLayer = new VectorLayer({ source: msource });
+    this.fs.searchLayer = new VectorLayer({ source: ssource });
     // Return everything
     return {
-      pinStyles: { greenPin, redPin, bluePin, yellowPin, blackPin },
       features: {
         currentFeature,
         currentMarkers,
-        multiFeature,
-        multiMarker,
-        archivedFeature,
-        archivedMarkers,
-        archivedWaypoints,
-        searchFeature
       },
       layers: {
         currentLayer,
-        archivedLayer,
-        multiLayer,
-        searchLayer,
       }
     };
   }
@@ -247,24 +225,18 @@ export class MapService {
 
   async createMap(options: {
     currentLayer: any;
-    archivedLayer: any;
-    multiLayer: any;
     server: any;
     getCurrentPosition: (force: boolean, timeout: number) => Promise<[number, number] | null>;
     showCredits: (credits: string) => void;
-    target?: string;
   }): Promise<{ map: Map; credits: string }> {
     const {
       currentLayer,
-      archivedLayer,
-      multiLayer,
       server,
-      //createSource,
       getCurrentPosition,
       showCredits,
-      target = 'map',
     } = options;
     let currentPosition: [number, number] | null = null;
+    console.log('i am in mapService')
     if (this.fs.mapProvider !== 'catalonia') {
       currentPosition = await getCurrentPosition(false, 1000);
     }
@@ -351,8 +323,8 @@ export class MapService {
       maxZoom,
     });
     const map = new Map({
-      target,
-      layers: [olLayer, currentLayer, archivedLayer, multiLayer, this.fs.searchLayer].filter(Boolean),
+      target: 'map',
+      layers: [olLayer, currentLayer, this.fs.archivedLayer, this.fs.multiLayer, this.fs.searchLayer].filter(Boolean),
       view,
       controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this, this.fs)],
     });
@@ -478,45 +450,36 @@ export class MapService {
 
   async displayArchivedTrack({
     archivedTrack,
-    archivedLayer,
-    archivedFeature,
-    archivedMarkers,
-    archivedWaypoints,
-    greenPin,
-    redPin,
-    yellowPin,
     archivedColor
   }: {
     archivedTrack: any,
-    archivedLayer: any,
-    archivedFeature: Feature,
-    archivedMarkers: Feature[],
-    archivedWaypoints?: Feature,
-    greenPin: any,
-    redPin: any,
-    yellowPin: any,
     archivedColor: any
   }): Promise<void> {
-    if (!this.fs.map || !archivedTrack || !archivedLayer) return;
-    archivedLayer.setVisible(true);
+    if (!this.fs.map || !archivedTrack || !this.fs.archivedLayer) return;
     const coordinates = archivedTrack.features[0].geometry.coordinates;
     const num = coordinates.length;
+    const source = this.fs.archivedLayer?.getSource();
+    if (!source) return;
+    const features = source.getFeatures();
+    if (!features || features.length < 5) return;
     if (num === 0) return;
-    archivedFeature.setGeometry(new LineString(coordinates));
-    archivedFeature.setStyle(this.setStrokeStyle(archivedColor));
-    if (archivedMarkers.length >= 3) {
-      archivedMarkers[0].setGeometry(new Point(coordinates[0]));
-      archivedMarkers[0].setStyle(greenPin);
-      archivedMarkers[2].setGeometry(new Point(coordinates[num - 1]));
-      archivedMarkers[2].setStyle(redPin);
-    }
+    features[0].setGeometry(new LineString(coordinates));
+    features[0].setStyle(this.setStrokeStyle(archivedColor));
+    features[1].setGeometry(new Point(coordinates[0]));
+    const greenPin = this.createPinStyle('green');
+    features[1].setStyle(greenPin);
+    features[3].setGeometry(new Point(coordinates[num - 1]));
+    const redPin = this.createPinStyle('red');
+    features[3].setStyle(redPin);
     const waypoints = archivedTrack.features[0].waypoints || [];
     const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
-    if (archivedWaypoints) {
-      archivedWaypoints.setGeometry(new MultiPoint(multiPoint));
-      archivedWaypoints.set('waypoints', waypoints);
-      archivedWaypoints.setStyle(yellowPin);
-    }
+    features[4].setGeometry(new MultiPoint(multiPoint));
+    features[4].set('waypoints', waypoints);
+    const yellowPin = this.createPinStyle('yellow');
+    features[4].setStyle(yellowPin);
+    this.fs.archivedLayer?.getSource()?.clear();
+    this.fs.archivedLayer?.getSource()?.addFeatures(features);
+    this.fs.archivedLayer?.setVisible(true);
   }
 
   // 13. DISPLAY ALL TRACKS
@@ -524,17 +487,9 @@ export class MapService {
   async displayAllTracks({
     fs,
     collection,
-    multiFeature,
-    multiMarker,
-    greenPin,
-    multiLayer,
   }: {
     fs: any;
     collection: any[];
-    multiFeature: Feature;
-    multiMarker?: Feature;
-    greenPin: any;
-    multiLayer?: any;
   }) {
     let key: any;
     let track: any;
@@ -555,14 +510,16 @@ export class MapService {
         multiKey.push(item.date);
       }
     }
-    multiFeature.setGeometry(new MultiLineString(multiLine));
-    if (multiMarker) {
-      multiMarker.setGeometry(new MultiPoint(multiPoint));
-      multiMarker.set('multikey', multiKey);
-      multiMarker.setStyle(greenPin);
-    }
-    multiFeature.setStyle(this.setStrokeStyle('black'));
-    multiLayer?.setVisible(true);
+    const features = [new Feature(), new Feature()];
+    features[0].setGeometry(new MultiLineString(multiLine));
+    features[0].setStyle(this.setStrokeStyle('black'));
+    features[1].setGeometry(new MultiPoint(multiPoint));
+    features[1].set('multikey', multiKey);
+    const greenPin = this.createPinStyle('green');
+    features[1].setStyle(greenPin);
+    this.fs.multiLayer?.getSource()?.clear();
+    this.fs.multiLayer?.getSource()?.addFeatures(features);
+    this.fs.multiLayer?.setVisible(true);
   }
 
   // 15. CREATE SOURCE //////////////////////////////
