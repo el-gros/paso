@@ -67,8 +67,6 @@ export class Tab1Page {
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
   gridsize: string = '-';
 
-  currentMarkers: Feature<Point>[] = [new Feature<Point>(), new Feature<Point>(), new Feature<Point>()];
-
   distanceFilter: number = 10; // .05 / 5
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
@@ -80,9 +78,7 @@ export class Tab1Page {
   currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: any = '00:00:00';
 
-  currentFeature: any;
   threshDist: number = 0.0000002;
-  currentLayer: VectorLayer<VectorSource> | undefined;
   foreground: boolean = true;
   status: 'black' | 'red' | 'green' = 'black'
   currentPoint: number = 0;
@@ -127,7 +123,7 @@ export class Tab1Page {
   17. firstPoint
   18. createMap
   19. filterAltitude
-  20. createLayers
+
   21. handleMapClick
   22. computeDistances
   23. htmValues
@@ -229,7 +225,7 @@ export class Tab1Page {
       // change map provider
       if (this.fs.lastProvider != this.fs.mapProvider) await this.changeMapProvider();
       // Display current track (updates color)
-      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
       // archived visible
       if (this.fs.layerVisibility == 'archived') {
         // retrieve archived track
@@ -251,7 +247,7 @@ export class Tab1Page {
         this.status = 'black'
         this.ts.setStatus(this.status);
         // center all tracks
-        if (!this.currentTrack) await this.mapService.centerAllTracks(this.fs.map);
+        if (!this.currentTrack) await this.mapService.centerAllTracks();
       }
       else {
         this.status = 'black';
@@ -272,7 +268,7 @@ export class Tab1Page {
   // 5. START TRACKING /////////////////////////////////
   async startTracking() {
     // In case there is something wrong
-    if (!this.currentLayer) return;
+    if (!this.fs.currentLayer) return;
     // Check-request permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
@@ -293,7 +289,7 @@ export class Tab1Page {
     // Reset current track and related variables
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
-    this.currentLayer.setVisible(false);
+    this.fs.currentLayer.setVisible(false);
     // Initialize variables
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
@@ -365,28 +361,29 @@ export class Tab1Page {
     this.ts.setStatus(this.status);
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
-    this.currentLayer?.setVisible(false);
+    this.fs.currentLayer?.setVisible(false);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
 
   // 7. STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    console.log('initiate stop tracking')
+    const source = this.fs.currentLayer?.getSource();
+    if (!source || !this.fs.map) return;
+    const features = source.getFeatures();
+    if (!features || features.length<4) return;
     // show / hide elements
     this.ts.state = 'stopped';
     this.show('alert', 'none');
     // Set the red marker at the last coordinate
     const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    if (num > 0 && this.currentMarkers[2] && this.currentTrack) {
-      this.currentMarkers[2].setGeometry(new Point(
+    if (num > 0 && this.currentTrack) {
+      features[3].setGeometry(new Point(
         this.currentTrack.features[0].geometry.coordinates[num - 1]
       ));
       const redPin = this.mapService.createPinStyle('red');
-      this.currentMarkers[2].setStyle(redPin);
-      if (this.currentMarkers[1]) {
-        this.currentMarkers[1].setStyle(undefined);
-      }
+      features[3].setStyle(redPin);
+      features[2].setStyle(undefined);
     }
     // Remove the watcher
     try {
@@ -624,6 +621,10 @@ export class Tab1Page {
 
   // 17. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
+    const source = this.fs.currentLayer?.getSource();
+    if (!source || !this.fs.map) return;
+    const features = source.getFeatures();
+    if (!features || features.length<4) return;
     // Initialize current track
     this.currentTrack = {
       type: 'FeatureCollection',
@@ -666,28 +667,20 @@ export class Tab1Page {
     // Display waypoint button
     this.show('alert', 'block');
     // Set the geometry and style for the first marker
-    if (this.currentMarkers[0]) {
-      this.currentMarkers[0].setGeometry(new Point(
-        this.currentTrack.features[0].geometry.coordinates[0]
-      ));
-      const greenPin = this.mapService.createPinStyle('green');
-      this.currentMarkers[0].setStyle(greenPin);
-    }
+    features[1].setGeometry(new Point( this.currentTrack.features[0].geometry.coordinates[0] ));
+    const greenPin = this.mapService.createPinStyle('green');
+    features[1].setStyle(greenPin);
     // Set the geometry and style for the second marker (for tracking progress)
     const num = this.currentTrack.features[0].geometry.coordinates.length;
-    if (this.currentMarkers[1]) {
-      this.currentMarkers[1].setGeometry(new Point(
-        this.currentTrack.features[0].geometry.coordinates[num - 1]
-      ));
-      const bluePin = this.mapService.createPinStyle('blue');
-      this.currentMarkers[1].setStyle(bluePin);
-    }
+    features[2].setGeometry(new Point(
+      this.currentTrack.features[0].geometry.coordinates[num - 1]
+    ));
+    const bluePin = this.mapService.createPinStyle('blue');
+    features[2].setStyle(bluePin);
     // Reset the style for the third marker (if applicable)
-    if (this.currentMarkers[2]) {
-      this.currentMarkers[2].setStyle(undefined);
-    }
+    features[3].setStyle(undefined);
     // Make the layer visible, with improved error handling
-    this.currentLayer?.setVisible(true);
+    this.fs.currentLayer?.setVisible(true);
     // Set current track
     this.ts.setCurrentTrack(this.currentTrack);
   }
@@ -700,15 +693,11 @@ export class Tab1Page {
         this.fs.map.setTarget(undefined); // detach from DOM and free controls
         this.fs.map = undefined;
       }
-      await this.createLayers(); // your existing method, or move to service
-      const { map } = await this.mapService.createMap({
-        currentLayer: this.currentLayer,
-        server: this.server,
-        getCurrentPosition: this.mapService.getCurrentPosition.bind(this.mapService),
-        showCredits: this.fs.displayToast.bind(this.fs),
-      });
-      this.fs.map = map;
-      this.fs.map.on('click', this.handleMapClick.bind(this));
+      this.mapService.createLayers(); // your existing method, or move to service
+      await this.mapService.createMap();
+      if (!this.fs.map) return
+      // Type guard ensures map is defined before calling 'on'
+      (this.fs.map as Map).on('click', this.handleMapClick.bind(this));
     } catch (error) {
       console.error('Error creating map:', error);
     }
@@ -744,15 +733,6 @@ export class Tab1Page {
       this.altitudeFiltered = i;
     }
   }
-
-// 20. CREATE LAYERS /////////////////////////////
-async createLayers() {
-  const { features, layers } = this.mapService.createLayers();
-  // Assign to component fields
-  this.currentFeature = features.currentFeature as Feature<LineString>;
-  this.currentMarkers = features.currentMarkers as Feature<Point>[];
-  this.currentLayer = layers.currentLayer;
-}
 
   // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
@@ -1180,7 +1160,7 @@ async createLayers() {
     // html values
     await this.htmlValues();
     // display the current track
-    await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+    await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
@@ -1233,18 +1213,7 @@ async createLayers() {
   // 35. CHANGE MAP PROVIDER /////////////////////
   async changeMapProvider() {
     // Validate and possibly normalize the new value
-    await this.mapService.updateMapProvider({
-      map: this.fs.map,
-      server: this.server,
-      fs: this.fs,
-      onFadeEffect: () => {
-        const el = document.getElementById('map');
-        if (el) {
-          el.classList.add('fade-in');
-          setTimeout(() => el.classList.remove('fade-in'), 500);
-        }
-      }
-    });
+    await this.mapService.updateMapProvider();
   }
 
   // 37. ADD WAYPOINT ////////////////////////////////////
@@ -1452,7 +1421,7 @@ async createLayers() {
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack, this.currentFeature, this.currentMarkers);
+        await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -1514,8 +1483,8 @@ async createLayers() {
     // Give Angular time to finish ngOnInit
     await new Promise(resolve => setTimeout(resolve, 150));
     // Save current visibility
-    const visible = this.currentLayer?.getVisible() || false;
-    this.currentLayer?.setVisible(false);
+    const visible = this.fs.currentLayer?.getVisible() || false;
+    this.fs.currentLayer?.setVisible(false);
     // Center map on archived track
     this.mapService.setMapView(this.fs.map, this.archivedTrack);
     // Optional: adjust zoom/scale if needed
@@ -1530,7 +1499,7 @@ async createLayers() {
       success = await this.exportMapToImage(this.fs.map);
     }
     // Restore visibility of current track
-    this.currentLayer?.setVisible(visible);
+    this.fs.currentLayer?.setVisible(visible);
     // Restore map provider
     this.fs.mapProvider = this.fs.savedProvider
     // Handle result

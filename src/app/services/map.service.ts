@@ -13,7 +13,6 @@ import { global } from '../../environments/environment';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Feature from 'ol/Feature';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
-import { FeatureLike } from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import TileLayer from 'ol/layer/Tile';
@@ -34,12 +33,13 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
+import { ServerService } from './server.service';
 
 // 1. setMapView
 // 2. displayCurrentTrack
 
 // 4. setStrokeStyle
-// 5. getCurrentPosition
+
 // 6. centerAllTracks
 // 7. getColoredPin
 // 8. createPinStyle
@@ -61,11 +61,11 @@ export class MapService {
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
 
-
   constructor(
     private styleService: StyleService,
     private http: HttpClient,
-    private fs: FunctionsService
+    private fs: FunctionsService,
+    private server: ServerService
   ) { }
 
   // 1. SET MAP VIEW /////////////////////////////////////////
@@ -97,19 +97,23 @@ export class MapService {
 
   // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
 
-  async displayCurrentTrack(map: Map | undefined, currentTrack: any, currentFeature: any, currentMarkers: any[]): Promise<void> {
+  async displayCurrentTrack(map: Map | undefined, currentTrack: any): Promise<void> {
     // Ensure current track and map exist
-    if (!currentTrack || !map || !currentFeature || !currentMarkers?.[1]) return;
+    const source = this.fs.currentLayer?.getSource();
+    if (!source || !this.fs.map) return;
+    const features = source.getFeatures();
+    if (!features || features.length<2) return;
+    if (!currentTrack || !map || !features || features.length < 4) return;
     // Number of points in the track
     const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
     const num = coordinates?.length ?? 0;
     // Ensure there are enough points to display
     if (num < 2) return;
     // Set line geometry and style
-    currentFeature.setGeometry(new LineString(coordinates));
-    currentFeature.setStyle(this.setStrokeStyle(this.fs.currentColor));
+    features[0].setGeometry(new LineString(coordinates));
+    features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
     // Set the last point as the marker geometry
-    currentMarkers[1]?.setGeometry(new Point(coordinates[num - 1]));
+    features[2]?.setGeometry(new Point(coordinates[num - 1]));
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
       this.setMapView(map, currentTrack);
@@ -125,38 +129,15 @@ export class MapService {
     });
   }
 
-  // 5. GET CURRENT POSITION //////////////////////////////////
-
-  async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | null> {
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: highAccuracy,
-            timeout: timeout
-          }
-        );
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    } catch (error) {
-      console.error('Error getting current position:', error);
-      return null;
-    }
-  }
-
   // 6. CENTER ALL TRACKS
 
-  async centerAllTracks(map: Map | undefined): Promise<void> {
+  async centerAllTracks(): Promise<void> {
     // get current position
-    let currentPosition: [number, number] | null = await this.getCurrentPosition(false, 1000);
+    let currentPosition: [number, number] | null = await this.fs.getCurrentPosition(false, 1000);
     // center map
     if (currentPosition) {
-      if (map) {
-        map.getView().setCenter(currentPosition);
-        map.getView().setZoom(8);
-      }
+      this.fs.map?.getView().setCenter(currentPosition);
+      this.fs.map?.getView().setZoom(8);
     }
   }
 
@@ -196,49 +177,23 @@ export class MapService {
   // 9. CREATE LAYERS /////////////////////////////////////
 
   createLayers() {
-    // Create features
-    const currentFeature = new Feature();
-    const currentMarkers = [new Feature(), new Feature(), new Feature()];
-    // Vector sources
-    const csource = new VectorSource({ features: [currentFeature, ...currentMarkers] });
-    const asource = new VectorSource({ features: [new Feature(), new Feature(), new Feature(), new Feature(), new Feature()] });
-    const msource = new VectorSource({ features: [new Feature(), new Feature()] });
-    const ssource = new VectorSource({ features: [new Feature()] });
-    // Vector layers
-    const currentLayer = new VectorLayer({ source: csource });
-    this.fs.archivedLayer = new VectorLayer({ source: asource });
-    this.fs.multiLayer = new VectorLayer({ source: msource });
-    this.fs.searchLayer = new VectorLayer({ source: ssource });
-    // Return everything
-    return {
-      features: {
-        currentFeature,
-        currentMarkers,
-      },
-      layers: {
-        currentLayer,
-      }
-    };
+    var source = new VectorSource({ features: [new Feature(), new Feature(), new Feature(), new Feature()] });
+    this.fs.currentLayer = new VectorLayer({ source });
+    source = new VectorSource({ features: [new Feature(), new Feature(), new Feature(), new Feature(), new Feature()] });
+    this.fs.archivedLayer = new VectorLayer({ source });
+    source = new VectorSource({ features: [new Feature(), new Feature()] });
+    this.fs.multiLayer = new VectorLayer({ source });
+    source = new VectorSource({ features: [new Feature()] });
+    this.fs.searchLayer = new VectorLayer({ source });
   }
 
   // 10. CREATE MAP /////////////////////////////////////
 
-  async createMap(options: {
-    currentLayer: any;
-    server: any;
-    getCurrentPosition: (force: boolean, timeout: number) => Promise<[number, number] | null>;
-    showCredits: (credits: string) => void;
-  }): Promise<{ map: Map; credits: string }> {
-    const {
-      currentLayer,
-      server,
-      getCurrentPosition,
-      showCredits,
-    } = options;
+  async createMap(): Promise<void> {
     let currentPosition: [number, number] | null = null;
     console.log('i am in mapService')
     if (this.fs.mapProvider !== 'catalonia') {
-      currentPosition = await getCurrentPosition(false, 1000);
+      currentPosition = await this.fs.getCurrentPosition(false, 1000);
     }
     let olLayer: any;
     let credits = '';
@@ -284,8 +239,8 @@ export class MapService {
         break;
       case 'catalonia':
         credits = '© MapTiler © OpenStreetMap contributors';
-        await server.openMbtiles('catalonia.mbtiles');
-        const sourceResult = await this.createSource(server);
+        await this.server.openMbtiles('catalonia.mbtiles');
+        const sourceResult = await this.createSource(this.server);
         if (sourceResult) {
           olLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
@@ -322,35 +277,23 @@ export class MapService {
       minZoom,
       maxZoom,
     });
-    const map = new Map({
+    this.fs.map = new Map({
       target: 'map',
-      layers: [olLayer, currentLayer, this.fs.archivedLayer, this.fs.multiLayer, this.fs.searchLayer].filter(Boolean),
+      layers: [olLayer, this.fs.currentLayer, this.fs.archivedLayer, this.fs.multiLayer, this.fs.searchLayer].filter(Boolean),
       view,
       controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this, this.fs)],
     });
     this.fs.lastProvider = this.fs.mapProvider
-    showCredits(credits);
+    this.fs.displayToast(credits);
     this.mapWrapperElement = document.getElementById('map-wrapper');
-    return { map, credits };
   }
 
   // 11. CHANGE MAP PROVIDER
 
-  async updateMapProvider(options: {
-    map: any;
-    server: any;
-    fs: any;
-    onFadeEffect?: () => void;
-  }): Promise< void > {
-    const {
-      map,
-      server,
-      fs,
-      onFadeEffect
-    } = options;
+  async updateMapProvider(): Promise< void > {
     let newBaseLayer = null;
     let credits = '';
-    if (!map) return;
+    if (!this.fs.map) return;
     switch (this.fs.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
@@ -402,10 +345,10 @@ export class MapService {
         break;
       case 'catalonia':
         credits = '© MapTiler © OpenStreetMap contributors';
-        map.getView().setCenter([2, 41]);
-        map.getView().setZoom(8);
-        await server.openMbtiles('catalonia.mbtiles');
-        const sourceResult = await this.createSource(server);
+        this.fs.map?.getView().setCenter([2, 41]);
+        this.fs.map?.getView().setZoom(8);
+        await this.server.openMbtiles('catalonia.mbtiles');
+        const sourceResult = await this.createSource(this.server);
         if(sourceResult) {
           newBaseLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
         }
@@ -423,17 +366,16 @@ export class MapService {
         break;
     }
     if (newBaseLayer) {
-      const olLayers = map.getLayers();
-      map.removeLayer(olLayers.item(0));
-      map.getLayers().insertAt(0, newBaseLayer);
+      var olLayers = this.fs.map?.getLayers();
+      if (!olLayers || olLayers.getLength() < 2) return;
+      this.fs.map?.removeLayer(olLayers.item(0));
+      this.fs.map?.getLayers().insertAt(0, newBaseLayer);
     } else {
       console.warn('No base layer created.');
       return;
     }
     this.fs.lastProvider = this.fs.mapProvider
-    // Optional fade effect
-    if (onFadeEffect) onFadeEffect();
-    await fs.displayToast(credits);
+    await this.fs.displayToast(credits);
     // Set min/max zoom
     let minZoom = 0;
     let maxZoom = 19;
@@ -441,8 +383,8 @@ export class MapService {
       minZoom = 6;
       maxZoom = 14;
     }
-    map.getView().setMinZoom(minZoom);
-    map.getView().setMaxZoom(maxZoom);
+    this.fs.map?.getView().setMinZoom(minZoom);
+    this.fs.map?.getView().setMaxZoom(maxZoom);
     return;
   }
 
@@ -484,33 +426,28 @@ export class MapService {
 
   // 13. DISPLAY ALL TRACKS
 
-  async displayAllTracks({
-    fs,
-    collection,
-  }: {
-    fs: any;
-    collection: any[];
-  }) {
-    let key: any;
-    let track: any;
+  async displayAllTracks() {
     const multiLine: any[] = [];
     const multiPoint: any[] = [];
     const multiKey: any[] = [];
-    for (const item of collection) {
-      key = item.date;
-      track = await fs.storeGet(JSON.stringify(key));
-      if (!track) {
-        await fs.storeRem(key);
+    const source = this.fs.multiLayer?.getSource();
+    if (!source || !this.fs.map) return;
+    const features = source.getFeatures();
+    if (!features || features.length<2) return;
+    for (const item of this.fs.collection) {
+      const key = JSON.stringify(item.date);
+      const track = await this.fs.storeGet(key);
+      const coord = track.features[0]?.geometry?.coordinates;
+      if (!track && key) {
+        await this.fs.storeRem(key);
         continue;
       }
-      const coord = track.features[0]?.geometry?.coordinates;
       if (coord) {
         multiLine.push(coord);
         multiPoint.push(coord[0]);
         multiKey.push(item.date);
       }
     }
-    const features = [new Feature(), new Feature()];
     features[0].setGeometry(new MultiLineString(multiLine));
     features[0].setStyle(this.setStrokeStyle('black'));
     features[1].setGeometry(new MultiPoint(multiPoint));
@@ -520,11 +457,13 @@ export class MapService {
     this.fs.multiLayer?.getSource()?.clear();
     this.fs.multiLayer?.getSource()?.addFeatures(features);
     this.fs.multiLayer?.setVisible(true);
+    this.fs.layerVisibility = 'multi';
+    await this.centerAllTracks();
   }
 
   // 15. CREATE SOURCE //////////////////////////////
 
-  async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer> }): Promise<VectorTileSource | null> {
+  async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
       return new VectorTileSource({
         format: new MVT(),
@@ -534,30 +473,41 @@ export class MapService {
           resolutions: Array.from({ length: 20 }, (_, z) => 156543.03392804097 / Math.pow(2, z)),
           tileSize: [256, 256],
         }),
+
         tileLoadFunction: (tile) => {
           const vectorTile = tile as VectorTile<RenderFeature>;
           const [z, x, y] = vectorTile.getTileCoord();
+
           vectorTile.setLoader(async () => {
             try {
+              // fetch the tile
               const rawData = await server.getVectorTile(z, x, y);
-              if (!rawData?.byteLength) {
+
+              // validate
+              if (!rawData || !rawData.byteLength) {
                 vectorTile.setFeatures([]);
                 vectorTile.setState(TileState.EMPTY);
                 return;
               }
+
+              // decompress and parse features
               const decompressed = pako.inflate(new Uint8Array(rawData));
               const safeBuffer = new Uint8Array(decompressed.length);
               safeBuffer.set(decompressed);
+
               const features = new MVT().readFeatures(safeBuffer.buffer, {
                 extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
                 featureProjection: 'EPSG:3857',
               });
+
               vectorTile.setFeatures(features);
             } catch (error) {
+              console.error(`Tile load error (${z}/${x}/${y}):`, error);
               vectorTile.setState(TileState.ERROR);
             }
           });
         },
+
         tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
       });
     } catch (e) {

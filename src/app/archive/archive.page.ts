@@ -238,14 +238,7 @@ export class Tab2Page {
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    if (active) {
-      // display all tracks
-      await this.mapService.displayAllTracks({
-        fs: this.fs,
-        collection: this.fs.collection,
-      });
-      this.fs.layerVisibility = 'multi';
-    }
+    if (active) await this.mapService.displayAllTracks();
     else this.fs.layerVisibility = 'none';
     this.fs.gotoPage('tab1');
   }

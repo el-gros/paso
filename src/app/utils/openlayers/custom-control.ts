@@ -83,7 +83,7 @@ export class CustomControl extends Control {
     );
 
     const coordinates = await Promise.race([
-      this.mapService.getCurrentPosition(true, 5000),
+      this.fs.getCurrentPosition(true, 5000),
       timeout,
     ]);
 
@@ -152,7 +152,7 @@ export class CustomControl extends Control {
   private startLocationUpdates() {
     this.stopLocationUpdates(); // safety: clear old interval
     this.updateInterval = setInterval(async () => {
-      const coordinates = await this.mapService.getCurrentPosition(true, 5000);
+      const coordinates = await this.fs.getCurrentPosition(true, 5000);
       if (coordinates) this.updateLocation(coordinates);
     }, 5000);
   }

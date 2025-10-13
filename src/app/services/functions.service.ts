@@ -49,6 +49,7 @@ export class FunctionsService {
   searchLayer: VectorLayer<VectorSource> | undefined;
   multiLayer: VectorLayer<VectorSource> | undefined;
   archivedLayer: VectorLayer<VectorSource> | undefined;
+  currentLayer: VectorLayer<VectorSource> | undefined;
 
   constructor(
     private storage: Storage,
@@ -524,6 +525,25 @@ export class FunctionsService {
     }
 
     return results;
+  }
+
+  async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | null> {
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: highAccuracy,
+            timeout: timeout
+          }
+        );
+      });
+      return [position.coords.longitude, position.coords.latitude];
+    } catch (error) {
+      console.error('Error getting current position:', error);
+      return null;
+    }
   }
 
 }

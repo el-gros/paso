@@ -265,7 +265,7 @@ async onCurrentLocationChange(event: any): Promise<void> {
     let attempts = 0;
     let currentLocation: [number, number] | null= null;
     while (!currentLocation && attempts < maxRetries) {
-      currentLocation = await this.mapService.getCurrentPosition(true, 2000);
+      currentLocation = await this.fs.getCurrentPosition(true, 2000);
       if (!currentLocation) {
         attempts++;
         await new Promise(resolve => setTimeout(resolve, 500));
