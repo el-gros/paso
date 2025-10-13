@@ -65,17 +65,17 @@
               }
             </td>
           </tr>
-          @if (status == 'green' && archivedTrack && currentPoint) {
+          @if (status == 'green' && fs.archivedTrack && currentPoint) {
             <tr>
               <td>{{ 'CANVAS.FROM_START' | translate }}</td>
               <td>
-                <div>{{ archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
+                <div>{{ fs.archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
               </td>
             </tr>
             <tr>
               <td>{{ 'CANVAS.TO_END' | translate }}</td>
               <td>
-                <div>{{ archivedTrack.features[0].properties.totalDistance - archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
+                <div>{{ fs.archivedTrack.features[0].properties.totalDistance - fs.archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
               </td>
             </tr>
           }
@@ -104,62 +104,62 @@
     <div class='empty'></div>
 
     <div id="exportArea">
-      <div class='elementData card' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
-        @if (archivedTrack) { 
+      <div class='elementData card' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+        @if (fs.archivedTrack) {
           <table>
             <tr>
               <td colspan='2'>{{'CANVAS.ARCTITLE' | translate}}</td>
             </tr>
             <tr>
-              <td colspan='2'>{{archivedTrack.features[0].properties.name}}</td>
+              <td colspan='2'>{{fs.archivedTrack.features[0].properties.name}}</td>
             </tr>
             <tr>
               <td>{{'CANVAS.DISTANCE' | translate}}</td>
-              @if (archivedTrack.features[0].properties.totalDistance > -1) {
+              @if (fs.archivedTrack.features[0].properties.totalDistance > -1) {
                 <td>
-                  {{ archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km
+                  {{ fs.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km
                 </td>
               }
             </tr>
             <tr>
               <td>{{ 'CANVAS.EGAIN' | translate }}</td>
-              @if (archivedTrack.features[0].properties.totalElevationGain > -1) {
+              @if (fs.archivedTrack.features[0].properties.totalElevationGain > -1) {
                 <td>
-                  {{ archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
+                  {{ fs.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m
                 </td>
               }
             </tr>
             <tr>
               <td>{{ 'CANVAS.ELOSS' | translate }}</td>
-              @if (archivedTrack.features[0].properties.totalElevationLoss > -1) {
+              @if (fs.archivedTrack.features[0].properties.totalElevationLoss > -1) {
                 <td>
-                  {{ archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
+                  {{ fs.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m
                 </td>
               }
             </tr>
             <tr>
               <td>{{ 'CANVAS.TIME' | translate }}</td>
-              @if (archivedTrack.features[0].properties.totalTime !== undefined) {
+              @if (fs.archivedTrack.features[0].properties.totalTime !== undefined) {
                 <td>
-                  {{ archivedTrack.features[0].properties.totalTime }}
+                  {{ fs.archivedTrack.features[0].properties.totalTime }}
                 </td>
               }
             </tr>
             <tr>
               <td>{{'CANVAS.POINTS' | translate}}</td>
-              <td>{{archivedTrack.features[0].properties.totalNumber}}</td>
+              <td>{{fs.archivedTrack.features[0].properties.totalNumber}}</td>
             </tr>
           </table>
-        } 
+        }
       </div>
 
-      <div class='elementCanvas' id='ac0' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
+      <div class='elementCanvas' id='ac0' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
         <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
         <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
       </div>
     </div>
 
-    <div class='elementCanvas' id='ac1' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
+    <div class='elementCanvas' id='ac1' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
       <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
       <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
     </div>
@@ -173,14 +173,16 @@
 
   <swiper-slide>
     <div class='empty'></div>
-    <div class='elementData card' [hidden]="!archivedTrack || fs.layerVisibility != 'archived'">
-      @if (archivedTrack) {
+    <div class='elementData card' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+      @if (fs.archivedTrack) {
         <table class="partials">
           <tr>
             <td colspan='3'>{{'CANVAS.ARCTITLE' | translate}}</td>
           </tr>
           <tr>
-            <td colspan='3'>{{archivedTrack.features[0].properties.name}}</td>
+            <td colspan='3'>
+                {{fs.archivedTrack.features[0].properties.name}}
+            </td>
           </tr>
           @for (ps of partialSpeeds; track i; let i = $index) {
             <tr>

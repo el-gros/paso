@@ -58,7 +58,6 @@ export class Tab1Page {
 
   watcherId: number = 0;
   currentTrack: Track | undefined = undefined;
-  archivedTrack: Track | undefined = undefined;
   track: Track | undefined = undefined;
   vMax: number = 400;
   margin: number = 10;
@@ -204,13 +203,13 @@ export class Tab1Page {
       // assign visibility
       this.fs.multiLayer?.setVisible(false);
       // iF an archived track has been parsed...
-      if (this.archivedTrack) {
-        this.ts.setArchivedTrack(this.archivedTrack);
+      if (this.fs.archivedTrack) {
+        this.ts.setArchivedTrack(this.fs.archivedTrack);
         // Display archived track
-        await this.showArchivedTrack();
+        await this.mapService.displayArchivedTrack();
         // Set map view for archived track if no current track
         if (!this.currentTrack) {
-          this.mapService.setMapView(this.fs.map, this.archivedTrack);
+          this.mapService.setMapView(this.fs.archivedTrack);
         }
       }
     });
@@ -229,13 +228,13 @@ export class Tab1Page {
       // archived visible
       if (this.fs.layerVisibility == 'archived') {
         // retrieve archived track
-        this.archivedTrack = await this.fs.retrieveTrack() ?? this.archivedTrack;
-        if (this.archivedTrack) {
-          this.ts.setArchivedTrack(this.archivedTrack);
+        this.fs.archivedTrack = await this.fs.retrieveTrack() ?? this.fs.archivedTrack;
+        if (this.fs.archivedTrack) {
+          this.ts.setArchivedTrack(this.fs.archivedTrack);
           // Display archived track
-          await this.showArchivedTrack();
+          await this.mapService.displayArchivedTrack();
           // Set map view for archived track if no current track
-          if (!this.currentTrack || this.fs.buildTrackImage) this.mapService.setMapView(this.fs.map, this.archivedTrack);
+          if (!this.currentTrack || this.fs.buildTrackImage) this.mapService.setMapView(this.fs.archivedTrack);
         }
         // assign visibility
         this.fs.multiLayer?.setVisible(false);
@@ -258,7 +257,7 @@ export class Tab1Page {
       }
       // center current track
       if (this.currentTrack) {
-        this.mapService.setMapView(this.fs.map, this.currentTrack);
+        this.mapService.setMapView(this.currentTrack);
       }
     } catch (error) {
       console.error('Error in ionViewDidEnter:', error);
@@ -399,7 +398,7 @@ export class Tab1Page {
     await this.setWaypointAltitude()
     // set map view
     if (this.currentTrack?.features?.length) {
-      this.mapService.setMapView(this.fs.map, this.currentTrack);
+      this.mapService.setMapView(this.currentTrack);
     }
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
@@ -530,7 +529,7 @@ export class Tab1Page {
     // add location
     await this.fs.fillGeojson(this.currentTrack, location);
     // check whether on route...
-    if (this.archivedTrack && this.fs.alert == 'on') {
+    if (this.fs.archivedTrack && this.fs.alert == 'on') {
       await this.checkWhetherOnRoute();
     }
     else {
@@ -544,10 +543,10 @@ export class Tab1Page {
   // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
   async onRoute() {
     // Return 'black' if conditions aren't met
-    if (!this.currentTrack || !this.archivedTrack || this.fs.layerVisibility != 'archived') return 'black';
+    if (!this.currentTrack || !this.fs.archivedTrack || this.fs.layerVisibility != 'archived') return 'black';
     // Define current and archived coordinates
     const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
-    const archivedCoordinates = this.archivedTrack.features[0].geometry.coordinates;
+    const archivedCoordinates = this.fs.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
     const bounding = (this.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
@@ -558,7 +557,7 @@ export class Tab1Page {
     // Get the point to check from the current track
     const point = currentCoordinates[currentCoordinates.length - 1];
     // Boundary check
-    const bbox = this.archivedTrack.features[0].bbox;
+    const bbox = this.fs.archivedTrack.features[0].bbox;
     if (bbox)  {
       if (point[0] < bbox[0] - bounding || point[0] > bbox[2] + bounding ||
         point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
@@ -611,13 +610,7 @@ export class Tab1Page {
     this.beepInterval = undefined;
   }
 
-  // 16. SHOW ARCHIVED TRACK
-  async showArchivedTrack() {
-    await this.mapService.displayArchivedTrack({
-      archivedTrack: this.archivedTrack,
-      archivedColor: this.fs.archivedColor
-    });
-  }
+
 
   // 17. FIRST POINT OF THE TRACK /////////////////////////////
   async firstPoint(location: Location) {
@@ -753,15 +746,15 @@ export class Tab1Page {
             // Retrieve the archived track based on the index key
             const multiKey = feature.get('multikey'); // Retrieve stored waypoints
             const key = multiKey[index];
-            this.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
+            this.fs.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
             // Display archived track details if it exists
-            if (this.archivedTrack) {
-              this.ts.setArchivedTrack(this.archivedTrack);
+            if (this.fs.archivedTrack) {
+              this.ts.setArchivedTrack(this.fs.archivedTrack);
               //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
               this.fs.multiLayer?.setVisible(false);
               this.fs.layerVisibility = 'archived';
-              await this.showArchivedTrack();
-              this.mapService.setMapView(this.fs.map, this.archivedTrack);
+              await this.mapService.displayArchivedTrack();
+              this.mapService.setMapView(this.fs.archivedTrack);
             }
           }
         });
@@ -777,9 +770,9 @@ export class Tab1Page {
             hit = true;
             const index = this.fs.collection.findIndex((item: TrackDefinition) =>
               item.date instanceof Date &&
-              this.archivedTrack?.features[0]?.properties?.date instanceof Date &&
-              item.date && this.archivedTrack.features[0].properties.date &&
-              item.date.getTime() === this.archivedTrack.features[0].properties.date.getTime()
+              this.fs.archivedTrack?.features[0]?.properties?.date instanceof Date &&
+              item.date && this.fs.archivedTrack.features[0].properties.date &&
+              item.date.getTime() === this.fs.archivedTrack.features[0].properties.date.getTime()
             );
             if (index >= 0) await this.fs.editTrack(index, '#ffffbb', false)
           }
@@ -800,9 +793,9 @@ export class Tab1Page {
               if (response.action == 'ok') {
                 waypoints[index].name = response.name;
                 waypoints[index].comment = response.comment;
-                if (this.archivedTrack) {
-                  this.archivedTrack.features[0].waypoints = waypoints;
-                  if (this.fs.key) await this.fs.storeSet(this.fs.key,this.archivedTrack)
+                if (this.fs.archivedTrack) {
+                  this.fs.archivedTrack.features[0].waypoints = waypoints;
+                  if (this.fs.key) await this.fs.storeSet(this.fs.key,this.fs.archivedTrack)
                 }
               }
             }
@@ -855,7 +848,7 @@ export class Tab1Page {
   // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
-    if (!this.currentTrack || !this.archivedTrack || this.fs.layerVisibility !== 'archived') return;
+    if (!this.currentTrack || !this.fs.archivedTrack || this.fs.layerVisibility !== 'archived') return;
     // Store previous color for comparison
     const previousStatus = this.status;
     // Determine the current route color based on `onRoute` function
@@ -875,7 +868,7 @@ export class Tab1Page {
 
   // 25. ON LEAVE ////////////////////////////
   async ionViewWillLeave() {
-    this.fs.archivedPresent = !!this.archivedTrack;
+    this.fs.archivedPresent = !!this.fs.archivedTrack;
   }
 
   // 26. PLAY A BEEP /////////////////////////////////////
@@ -1125,7 +1118,7 @@ export class Tab1Page {
       }
       const track = await this.computeTrackStats(trackPoints, waypoints, trk);
       await this.saveTrack(track);
-      this.archivedTrack = track;
+      this.fs.archivedTrack = track;
       this.fs.displayToast(this.translate.instant('MAP.IMPORTED'));
     } catch (error) {
       console.error('Import failed:', error);
@@ -1274,13 +1267,14 @@ export class Tab1Page {
         return this.mapService.setStrokeStyle('black');
       }
     };
-    this.fs.comingFrom = 'search';
     // Create modal
     const modal = await this.modalController.create({
       component: SearchModalComponent,
       cssClass: ['modal-class','yellow-class'] ,
       backdropDismiss: true, // Allow dismissal by tapping the backdrop
     });
+    if (!this.fs.map || !this.fs.searchLayer) return;
+    this.fs.comingFrom = 'search';
     // Present modal
     await modal.present();
     // Receive data after modal dismiss
@@ -1298,13 +1292,10 @@ export class Tab1Page {
       console.log(lines)
       // Display on map
       const feature = lines instanceof Feature ? lines : lines[0] as Feature;
-      feature.setStyle(styleSearch(feature));
       this.fs.searchLayer?.getSource()?.clear();
       this.fs.searchLayer?.getSource()?.addFeature(feature);
       this.fs.searchLayer?.setVisible(true);
-      if (this.fs.map) {
-        this.fs.map.getView().fit(extent);
-      }
+      this.fs.map.getView().fit(extent);
     };
   }
 
@@ -1348,7 +1339,7 @@ export class Tab1Page {
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
       if (result) {
         var num = result.newCoordinates.length;
-        this.archivedTrack = {
+        this.fs.archivedTrack = {
           type: 'FeatureCollection',
           features: [{
             type: 'Feature',
@@ -1376,18 +1367,18 @@ export class Tab1Page {
         };
       }
     }
-    console.log('route', this.archivedTrack)
-    if (this.archivedTrack) {
+    console.log('route', this.fs.archivedTrack)
+    if (this.fs.archivedTrack) {
       await this.fs.uncheckAll();
-      this.ts.setArchivedTrack(this.archivedTrack);
+      this.ts.setArchivedTrack(this.fs.archivedTrack);
       this.fs.multiLayer?.setVisible(false);
       this.fs.archivedLayer?.setVisible(true);  // No need for await
       this.fs.layerVisibility = 'archived';
-      await this.showArchivedTrack();
-      this.mapService.setMapView(this.fs.map, this.archivedTrack);
-      this.archivedTrack.features[0].properties.date = date;
+      await this.mapService.displayArchivedTrack();
+      this.mapService.setMapView(this.fs.archivedTrack);
+      this.fs.archivedTrack.features[0].properties.date = date;
       const dateKey = JSON.stringify(date);
-      await this.fs.storeSet(dateKey, this.archivedTrack);
+      await this.fs.storeSet(dateKey, this.fs.archivedTrack);
       // Track definition for collection
       const trackDef = {
         name: trackName,
@@ -1486,7 +1477,7 @@ export class Tab1Page {
     const visible = this.fs.currentLayer?.getVisible() || false;
     this.fs.currentLayer?.setVisible(false);
     // Center map on archived track
-    this.mapService.setMapView(this.fs.map, this.archivedTrack);
+    this.mapService.setMapView(this.fs.archivedTrack);
     // Optional: adjust zoom/scale if needed
     const scale = 1;
     const mapWrapperElement: HTMLElement | null = document.getElementById('map-wrapper');
@@ -1602,7 +1593,7 @@ async processKmz(data: any) {
     // 6. Compute and save track
     const track = await this.computeTrackStats(trackPoints, waypoints, trk);
     await this.saveTrack(track);
-    this.archivedTrack = track;
+    this.fs.archivedTrack = track;
     this.fs.displayToast(this.translate.instant('MAP.IMPORTED'));
   } catch (err) {
     console.error(err);

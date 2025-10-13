@@ -82,7 +82,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     );
     this.subscriptions.add(
       this.ts.archivedTrack$.subscribe(async archived => {
-        this.archivedTrack = archived;
+        this.fs.archivedTrack = archived;
         this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
         this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
       })

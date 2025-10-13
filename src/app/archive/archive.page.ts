@@ -113,11 +113,18 @@ export class Tab2Page {
 
   // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
-    if (active) this.fs.layerVisibility = 'archived';
+    if (active) {
+      this.fs.layerVisibility = 'archived';
+      this.fs.archivedLayer?.setVisible(true);
+      this.fs.multiLayer?.setVisible(false);
+    }
     else {
+      this.fs.archivedLayer?.getSource()?.clear();
       this.fs.layerVisibility = 'none';
+      this.fs.archivedLayer?.setVisible(false);
       await this.fs.uncheckAll();
     }
+    this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }
 
@@ -238,8 +245,19 @@ export class Tab2Page {
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    if (active) await this.mapService.displayAllTracks();
-    else this.fs.layerVisibility = 'none';
+    if (active) {
+      await this.mapService.displayAllTracks();
+      this.fs.layerVisibility = 'multi';
+      this.fs.multiLayer?.setVisible(true);
+      this.fs.archivedLayer?.setVisible(false);
+      await this.mapService.centerAllTracks();
+    }
+    else {
+      this.fs.multiLayer?.getSource()?.clear();
+      this.fs.layerVisibility = 'none';
+      this.fs.multiLayer?.setVisible(false);
+    }
+    this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }
 
@@ -250,7 +268,9 @@ export class Tab2Page {
 
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
+    this.fs.multiLayer?.getSource()?.clear();
     this.fs.searchLayer?.setVisible(false);
+    this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }
 

@@ -50,6 +50,7 @@ export class FunctionsService {
   multiLayer: VectorLayer<VectorSource> | undefined;
   archivedLayer: VectorLayer<VectorSource> | undefined;
   currentLayer: VectorLayer<VectorSource> | undefined;
+  archivedTrack: Track | undefined = undefined;
 
   constructor(
     private storage: Storage,
