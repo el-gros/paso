@@ -97,29 +97,23 @@ export class MapService {
 
   // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
 
-  async displayCurrentTrack(map: Map | undefined, currentTrack: any): Promise<void> {
-    if (!this.fs.currentLayer  || !this.fs.map) return;
+  async displayCurrentTrack(currentTrack: any): Promise<void> {
+    if (!this.fs.map || !currentTrack || !this.fs.currentLayer) return;
     const source = this.fs.currentLayer.getSource();
     if (!source) return;
-    this.fs.currentLayer.getSource()?.clear();
-    // Number of points in the track
+    const features = source.getFeatures();
     const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
-    const num = coordinates?.length ?? 0;
-    // Ensure there are enough points to display
-    if (num < 2) return;
-    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
-    // Set line geometry and style
+    const num = coordinates.length;
+    if (!Array.isArray(coordinates) || coordinates.length < 4) return;
+    // Update geometries efficiently
     features[0].setGeometry(new LineString(coordinates));
     features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
-    // Set the last point as the marker geometry
     features[1].setGeometry(new Point(coordinates[0]));
     features[1].setStyle(this.createPinStyle('green'));
-    // Set the last point as the marker geometry
     features[2].setGeometry(new Point(coordinates[num - 1]));
     features[2].setStyle(this.createPinStyle('blue'));
-    this.fs.currentLayer.getSource()?.addFeatures(features)
-    // Adjust map view at specific intervals
-    if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
+    // Adjust map view occasionally
+    if ([5, 10, 25].includes(num) || num % 50 === 0) {
       this.setMapView(currentTrack);
     }
   }

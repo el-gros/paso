@@ -223,7 +223,7 @@ export class Tab1Page {
       // change map provider
       if (this.fs.lastProvider != this.fs.mapProvider) await this.changeMapProvider();
       // Display current track (updates color)
-      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
+      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.currentTrack);
       // archived visible
       if (this.fs.layerVisibility == 'archived') {
         // retrieve archived track
@@ -360,77 +360,39 @@ export class Tab1Page {
   }
 
   // 7. STOP TRACKING //////////////////////////////////
-  async stopTracking() {
-    if (!this.fs.currentLayer  || !this.fs.map) return;
+
+  async stopTracking(): Promise<void> {
+    if (!this.fs.currentLayer || !this.currentTrack || !this.fs.map) return;
     const source = this.fs.currentLayer.getSource();
     if (!source) return;
-    this.fs.currentLayer.getSource()?.clear();
-    // Number of points in the track
-    const coordinates = this.currentTrack?.features?.[0]?.geometry?.coordinates;
-    const num = coordinates?.length ?? 0;
-    // show / hide elements
+    const features = source.getFeatures();
+    if (features.length < 4) return; // expected: 0=line, 2=end, 3=stop marker
     this.ts.state = 'stopped';
     this.show('alert', 'none');
-    if (!coordinates || num == 0) return;
-    // Remove the watcher
-    try {
-      await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-    } catch (error) {}
-    // Stop foreground service
-    try {
-      await ForegroundService.stopForegroundService();
-    } catch (error) {}
-    // filter remaining values
-    await this.filterAltitude(this.currentTrack, num - 1);
-    // Set waypoint altitude
-    await this.setWaypointAltitude()
-    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
-    // Set line geometry and style
+    try { await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
+    catch (err) { console.warn('Failed to remove watcher:', err); }
+    try { await ForegroundService.stopForegroundService(); }
+    catch (err) { console.warn('Failed to stop foreground service:', err); }
+    // get coordinates safely
+    let coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 1) return;
+    await this.filterAltitude(this.currentTrack, coordinates.length - 1);
+    await this.setWaypointAltitude();
+    // re-fetch in case they were modified
+    coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 1) return;
+    // update geometries
     features[0].setGeometry(new LineString(coordinates));
     features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
-    // Set the last point as the marker geometry
     features[1].setGeometry(new Point(coordinates[0]));
     features[1].setStyle(this.mapService.createPinStyle('green'));
-    // Set the last point as the marker geometry
-    features[3].setGeometry(new Point(coordinates[num - 1]));
+    features[2].setStyle(undefined);
+    features[3].setGeometry(new Point(coordinates.at(-1)!));
     features[3].setStyle(this.mapService.createPinStyle('red'));
-    this.fs.currentLayer.getSource()?.addFeatures(features);
     this.fs.currentLayer.setVisible(true);
-    // set map view
     this.mapService.setMapView(this.currentTrack);
-    // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
-
-
-  async displayCurrentTrack(map: Map | undefined, currentTrack: any): Promise<void> {
-    if (!this.fs.currentLayer  || !this.fs.map) return;
-    const source = this.fs.currentLayer.getSource();
-    if (!source) return;
-    this.fs.currentLayer.getSource()?.clear();
-    // Number of points in the track
-    const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
-    const num = coordinates?.length ?? 0;
-    // Ensure there are enough points to display
-    if (num < 2) return;
-    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
-    // Set line geometry and style
-    features[0].setGeometry(new LineString(coordinates));
-    features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
-    // Set the last point as the marker geometry
-    features[1].setGeometry(new Point(coordinates[0]));
-    features[1].setStyle(this.mapService.createPinStyle('green'));
-    // Set the last point as the marker geometry
-    features[2].setGeometry(new Point(coordinates[num - 1]));
-    features[2].setStyle(this.mapService.createPinStyle('blue'));
-    this.fs.currentLayer.getSource()?.addFeatures(features);
-    // Adjust map view at specific intervals
-    if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
-      this.mapService.setMapView(currentTrack);
-    }
-  }
-
-
 
   // 8. CONFIRM TRACK DELETION OR STOP TRACKING
   async confirm(which: string) {
@@ -643,6 +605,7 @@ export class Tab1Page {
   async firstPoint(location: Location) {
     const source = this.fs.currentLayer?.getSource();
     if (!source || !this.fs.map) return;
+    source.clear();
     // Initialize current track
     this.currentTrack = {
       type: 'FeatureCollection',
@@ -687,6 +650,8 @@ export class Tab1Page {
     // Set the geometry and style for the first marker
     const features = [new Feature (), new Feature(), new Feature(), new Feature()];
     // Set the geometry and style for the second marker (for tracking progress)
+    features[1].setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[0]));
+    features[1].setStyle(this.mapService.createPinStyle('green'));
     features[2].setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[0]));
     features[2].setStyle(this.mapService.createPinStyle('blue'));
     this.fs.currentLayer?.getSource()?.addFeatures(features);
@@ -1171,7 +1136,7 @@ export class Tab1Page {
     // html values
     await this.htmlValues();
     // display the current track
-    await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
+    await this.mapService.displayCurrentTrack(this.currentTrack);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
@@ -1430,7 +1395,7 @@ export class Tab1Page {
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.mapService.displayCurrentTrack(this.fs.map, this.currentTrack);
+        await this.mapService.displayCurrentTrack(this.currentTrack);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
