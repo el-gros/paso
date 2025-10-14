@@ -51,6 +51,7 @@ export class FunctionsService {
   archivedLayer: VectorLayer<VectorSource> | undefined;
   currentLayer: VectorLayer<VectorSource> | undefined;
   archivedTrack: Track | undefined = undefined;
+  status: 'black' | 'red' | 'green' = 'black'
 
   constructor(
     private storage: Storage,

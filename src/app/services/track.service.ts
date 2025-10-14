@@ -22,7 +22,7 @@ export class TrackService {
   // currentTrack
   private currentTrackSource = new BehaviorSubject<any>(null);
   currentTrack$ = this.currentTrackSource.asObservable();
-  state: string = 'inactive'; 
+  state: string = 'inactive';
 
   // 1. SET CURRENT TRACK /////////////////////////
   setCurrentTrack(track: any) {
@@ -48,6 +48,7 @@ export class TrackService {
     return this.archivedTrackSource.value;
   }
 
+  /*
   // --- Status (black | red | green) ---
   private statusSource = new BehaviorSubject<'black' | 'red' | 'green'>('black');
   status$ = this.statusSource.asObservable();
@@ -61,6 +62,8 @@ export class TrackService {
   getStatus(): 'black' | 'red' | 'green' {
     return this.statusSource.value;
   }
+
+*/
 
   // --- Current Point ---
   private currentPointSource = new BehaviorSubject<number>(0);

@@ -79,7 +79,6 @@ export class Tab1Page {
 
   threshDist: number = 0.0000002;
   foreground: boolean = true;
-  status: 'black' | 'red' | 'green' = 'black'
   currentPoint: number = 0;
   audioCtx: AudioContext | null = null;
   beepInterval: any;
@@ -243,14 +242,12 @@ export class Tab1Page {
       else if (this.fs.layerVisibility == 'multi') {
         // hide archived track
         this.fs.archivedLayer?.setVisible(false);
-        this.status = 'black'
-        this.ts.setStatus(this.status);
+        this.fs.status = 'black'
         // center all tracks
         if (!this.currentTrack) await this.mapService.centerAllTracks();
       }
       else {
-        this.status = 'black';
-        this.ts.setStatus(this.status);
+        this.fs.status = 'black';
         // Hide archived and multi layers
         this.fs.archivedLayer?.setVisible(false);
         this.fs.multiLayer?.setVisible(false);
@@ -266,8 +263,6 @@ export class Tab1Page {
 
   // 5. START TRACKING /////////////////////////////////
   async startTracking() {
-    // In case there is something wrong
-    if (!this.fs.currentLayer) return;
     // Check-request permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
@@ -288,7 +283,7 @@ export class Tab1Page {
     // Reset current track and related variables
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
-    this.fs.currentLayer.setVisible(false);
+    this.fs.currentLayer?.setVisible(false);
     // Initialize variables
     this.stopped = 0;
     this.currentAverageSpeed = undefined;
@@ -356,8 +351,7 @@ export class Tab1Page {
     this.ts.state = 'inactive';
     this.show('alert', 'none');
     // Reset current track
-    this.status = 'black';
-    this.ts.setStatus(this.status);
+    this.fs.status = 'black';
     this.currentTrack = undefined;
     this.ts.setCurrentTrack(this.currentTrack);
     this.fs.currentLayer?.setVisible(false);
@@ -367,23 +361,17 @@ export class Tab1Page {
 
   // 7. STOP TRACKING //////////////////////////////////
   async stopTracking() {
-    const source = this.fs.currentLayer?.getSource();
-    if (!source || !this.fs.map) return;
-    const features = source.getFeatures();
-    if (!features || features.length<4) return;
+    if (!this.fs.currentLayer  || !this.fs.map) return;
+    const source = this.fs.currentLayer.getSource();
+    if (!source) return;
+    this.fs.currentLayer.getSource()?.clear();
+    // Number of points in the track
+    const coordinates = this.currentTrack?.features?.[0]?.geometry?.coordinates;
+    const num = coordinates?.length ?? 0;
     // show / hide elements
     this.ts.state = 'stopped';
     this.show('alert', 'none');
-    // Set the red marker at the last coordinate
-    const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    if (num > 0 && this.currentTrack) {
-      features[3].setGeometry(new Point(
-        this.currentTrack.features[0].geometry.coordinates[num - 1]
-      ));
-      const redPin = this.mapService.createPinStyle('red');
-      features[3].setStyle(redPin);
-      features[2].setStyle(undefined);
-    }
+    if (!coordinates || num == 0) return;
     // Remove the watcher
     try {
       await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
@@ -396,13 +384,53 @@ export class Tab1Page {
     await this.filterAltitude(this.currentTrack, num - 1);
     // Set waypoint altitude
     await this.setWaypointAltitude()
+    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
+    // Set line geometry and style
+    features[0].setGeometry(new LineString(coordinates));
+    features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
+    // Set the last point as the marker geometry
+    features[1].setGeometry(new Point(coordinates[0]));
+    features[1].setStyle(this.mapService.createPinStyle('green'));
+    // Set the last point as the marker geometry
+    features[3].setGeometry(new Point(coordinates[num - 1]));
+    features[3].setStyle(this.mapService.createPinStyle('red'));
+    this.fs.currentLayer.getSource()?.addFeatures(features);
+    this.fs.currentLayer.setVisible(true);
     // set map view
-    if (this.currentTrack?.features?.length) {
-      this.mapService.setMapView(this.currentTrack);
-    }
+    this.mapService.setMapView(this.currentTrack);
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
   }
+
+
+  async displayCurrentTrack(map: Map | undefined, currentTrack: any): Promise<void> {
+    if (!this.fs.currentLayer  || !this.fs.map) return;
+    const source = this.fs.currentLayer.getSource();
+    if (!source) return;
+    this.fs.currentLayer.getSource()?.clear();
+    // Number of points in the track
+    const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
+    const num = coordinates?.length ?? 0;
+    // Ensure there are enough points to display
+    if (num < 2) return;
+    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
+    // Set line geometry and style
+    features[0].setGeometry(new LineString(coordinates));
+    features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
+    // Set the last point as the marker geometry
+    features[1].setGeometry(new Point(coordinates[0]));
+    features[1].setStyle(this.mapService.createPinStyle('green'));
+    // Set the last point as the marker geometry
+    features[2].setGeometry(new Point(coordinates[num - 1]));
+    features[2].setStyle(this.mapService.createPinStyle('blue'));
+    this.fs.currentLayer.getSource()?.addFeatures(features);
+    // Adjust map view at specific intervals
+    if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
+      this.mapService.setMapView(currentTrack);
+    }
+  }
+
+
 
   // 8. CONFIRM TRACK DELETION OR STOP TRACKING
   async confirm(which: string) {
@@ -533,8 +561,7 @@ export class Tab1Page {
       await this.checkWhetherOnRoute();
     }
     else {
-      this.status = 'black';
-      this.ts.setStatus(this.status);
+      this.fs.status = 'black';
     }
     // Return
     return true;
@@ -549,7 +576,7 @@ export class Tab1Page {
     const archivedCoordinates = this.fs.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
-    const bounding = (this.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
+    const bounding = (this.fs.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
     //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
     const reduction = 1 // no reduction
     const multiplier = 10;
@@ -616,8 +643,6 @@ export class Tab1Page {
   async firstPoint(location: Location) {
     const source = this.fs.currentLayer?.getSource();
     if (!source || !this.fs.map) return;
-    const features = source.getFeatures();
-    if (!features || features.length<4) return;
     // Initialize current track
     this.currentTrack = {
       type: 'FeatureCollection',
@@ -660,19 +685,11 @@ export class Tab1Page {
     // Display waypoint button
     this.show('alert', 'block');
     // Set the geometry and style for the first marker
-    features[1].setGeometry(new Point( this.currentTrack.features[0].geometry.coordinates[0] ));
-    const greenPin = this.mapService.createPinStyle('green');
-    features[1].setStyle(greenPin);
+    const features = [new Feature (), new Feature(), new Feature(), new Feature()];
     // Set the geometry and style for the second marker (for tracking progress)
-    const num = this.currentTrack.features[0].geometry.coordinates.length;
-    features[2].setGeometry(new Point(
-      this.currentTrack.features[0].geometry.coordinates[num - 1]
-    ));
-    const bluePin = this.mapService.createPinStyle('blue');
-    features[2].setStyle(bluePin);
-    // Reset the style for the third marker (if applicable)
-    features[3].setStyle(undefined);
-    // Make the layer visible, with improved error handling
+    features[2].setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[0]));
+    features[2].setStyle(this.mapService.createPinStyle('blue'));
+    this.fs.currentLayer?.getSource()?.addFeatures(features);
     this.fs.currentLayer?.setVisible(true);
     // Set current track
     this.ts.setCurrentTrack(this.currentTrack);
@@ -750,7 +767,6 @@ export class Tab1Page {
             // Display archived track details if it exists
             if (this.fs.archivedTrack) {
               this.ts.setArchivedTrack(this.fs.archivedTrack);
-              //this.extremes = await this.fs.computeExtremes(this.archivedTrack);
               this.fs.multiLayer?.setVisible(false);
               this.fs.layerVisibility = 'archived';
               await this.mapService.displayArchivedTrack();
@@ -765,16 +781,19 @@ export class Tab1Page {
         if (!asource || !this.fs.map) return;
         const afeatures = asource.getFeatures();
         if (!afeatures || afeatures.length<5) return;
-        this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-          if ((feature === afeatures[1]) || (feature === afeatures[3])) {
-            hit = true;
-            const index = this.fs.collection.findIndex((item: TrackDefinition) =>
+        this.fs.map.forEachFeatureAtPixel(event.pixel, feature => {
+          const match = [afeatures?.[1], afeatures?.[3]].includes(feature as Feature<Geometry>);
+          if (!match) return;
+          hit = true;
+          const archivedDate = this.fs.archivedTrack?.features?.[0]?.properties?.date;
+          const index = this.fs.collection.findIndex(
+            (item: TrackDefinition) =>
               item.date instanceof Date &&
-              this.fs.archivedTrack?.features[0]?.properties?.date instanceof Date &&
-              item.date && this.fs.archivedTrack.features[0].properties.date &&
-              item.date.getTime() === this.fs.archivedTrack.features[0].properties.date.getTime()
-            );
-            if (index >= 0) await this.fs.editTrack(index, '#ffffbb', false)
+              archivedDate instanceof Date &&
+              item.date.getTime() === archivedDate.getTime()
+          );
+          if (index >= 0) {
+            this.fs.editTrack(index, '#ffffbb', false).catch(console.error);
           }
         });
         if (!hit && this.fs.map) this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
@@ -850,18 +869,17 @@ export class Tab1Page {
     // Return early if essential conditions are not met
     if (!this.currentTrack || !this.fs.archivedTrack || this.fs.layerVisibility !== 'archived') return;
     // Store previous color for comparison
-    const previousStatus = this.status;
+    const previousStatus = this.fs.status;
     // Determine the current route color based on `onRoute` function
-    this.status = await this.onRoute() || 'black';
-    this.ts.setStatus(this.status);
+    this.fs.status = await this.onRoute() || 'black';
     // If audio alerts are off, return
     if (this.fs.audioAlert == 'off') return;
     // Beep for off-route transition
-    if (previousStatus === 'green' && this.status === 'red') {
+    if (previousStatus === 'green' && this.fs.status === 'red') {
       this.playDoubleBeep(1800, .3, 1, .12);
     }
     // Beep for on-route transition
-    else if (previousStatus === 'red' && this.status === 'green') {
+    else if (previousStatus === 'red' && this.fs.status === 'green') {
       this.playBeep(1800, .4, 1);
     }
   }

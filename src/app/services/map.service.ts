@@ -61,6 +61,7 @@ export class MapService {
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
 
+
   constructor(
     private styleService: StyleService,
     private http: HttpClient,
@@ -97,22 +98,26 @@ export class MapService {
   // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
 
   async displayCurrentTrack(map: Map | undefined, currentTrack: any): Promise<void> {
-    // Ensure current track and map exist
-    const source = this.fs.currentLayer?.getSource();
-    if (!source || !this.fs.map) return;
-    const features = source.getFeatures();
-    if (!features || features.length<2) return;
-    if (!currentTrack || !map || !features || features.length < 4) return;
+    if (!this.fs.currentLayer  || !this.fs.map) return;
+    const source = this.fs.currentLayer.getSource();
+    if (!source) return;
+    this.fs.currentLayer.getSource()?.clear();
     // Number of points in the track
     const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
     const num = coordinates?.length ?? 0;
     // Ensure there are enough points to display
     if (num < 2) return;
+    const features = [new Feature(), new Feature(), new Feature(), new Feature()];
     // Set line geometry and style
     features[0].setGeometry(new LineString(coordinates));
     features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
     // Set the last point as the marker geometry
-    features[2]?.setGeometry(new Point(coordinates[num - 1]));
+    features[1].setGeometry(new Point(coordinates[0]));
+    features[1].setStyle(this.createPinStyle('green'));
+    // Set the last point as the marker geometry
+    features[2].setGeometry(new Point(coordinates[num - 1]));
+    features[2].setStyle(this.createPinStyle('blue'));
+    this.fs.currentLayer.getSource()?.addFeatures(features)
     // Adjust map view at specific intervals
     if (num === 5 || num === 10 || num === 25 || num % 50 === 0) {
       this.setMapView(currentTrack);
@@ -176,8 +181,7 @@ export class MapService {
   // 9. CREATE LAYERS /////////////////////////////////////
 
   createLayers() {
-    var source = new VectorSource({ features: [new Feature(), new Feature(), new Feature(), new Feature()] });
-    this.fs.currentLayer = new VectorLayer({ source: source });
+    this.fs.currentLayer = new VectorLayer({ source: new VectorSource() });
     this.fs.archivedLayer = new VectorLayer({ source: new VectorSource() });
     this.fs.multiLayer = new VectorLayer({ source: new VectorSource() });
     this.fs.searchLayer = new VectorLayer({ source: new VectorSource() });

@@ -9,7 +9,6 @@
 
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { global } from '../../environments/environment';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
@@ -34,7 +33,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   currentTrack: Track | undefined = undefined;
   archivedTrack: Track | undefined = undefined;
 
-  status: 'black' | 'red' | 'green' = 'black';
   currentPoint: number = 0;
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
@@ -83,13 +81,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.ts.archivedTrack$.subscribe(async archived => {
         this.fs.archivedTrack = archived;
-        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.archivedTrack);
-        this.partialSpeeds = await this.fs.computePartialSpeeds(this.archivedTrack);
-      })
-    );
-    this.subscriptions.add(
-      this.ts.status$.subscribe(async status => {
-        this.status = status;
+        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.fs.archivedTrack);
+        this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.archivedTrack);
       })
     );
     this.subscriptions.add(
@@ -307,7 +300,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     // Open canvas
     try {
       // Hide canvas for the current or archived track
-      if (track === this.currentTrack || track === this.archivedTrack) {
+      if (track === this.currentTrack || track === this.fs.archivedTrack) {
         const type = track === this.currentTrack ? 'c' : 'a';
       }
       // Update canvas

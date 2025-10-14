@@ -10,7 +10,7 @@
     <div class='elementData card' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
       @if (currentTrack) {
         <table>
-          <tr [ngClass]="status">
+          <tr [ngClass]="fs.status">
             <td colspan="2">{{ 'CANVAS.CURTITLE' | translate }}</td>
           </tr>
           <tr>
@@ -65,7 +65,7 @@
               }
             </td>
           </tr>
-          @if (status == 'green' && fs.archivedTrack && currentPoint) {
+          @if (fs.status == 'green' && fs.archivedTrack && currentPoint) {
             <tr>
               <td>{{ 'CANVAS.FROM_START' | translate }}</td>
               <td>
