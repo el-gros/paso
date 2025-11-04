@@ -10,7 +10,6 @@
 
 import { ModalController } from '@ionic/angular';
 import { SharedImports } from '../shared-imports';
-import { global } from '../../environments/environment';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { LanguageService } from '../services/language.service';

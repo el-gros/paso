@@ -17,7 +17,7 @@ export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
 
   constructor(
-    private fs: FunctionsService,
+    public fs: FunctionsService,
     private socialSharing: SocialSharing
   ) {
     this.lockToPortrait();

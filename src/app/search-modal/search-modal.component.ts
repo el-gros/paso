@@ -48,8 +48,7 @@ export class SearchModalComponent implements OnInit {
 
   constructor(
     private modalController: ModalController,
-    private fs: FunctionsService,
-    private http: HttpClient, // <-- now you can use this.http
+    public fs: FunctionsService,
     private translate: TranslateService,
     public mapService: MapService
   ) { }

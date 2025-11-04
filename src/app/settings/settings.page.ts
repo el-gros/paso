@@ -12,6 +12,7 @@ import { DecimalPipe, DatePipe } from '@angular/common';
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
+import { MapService } from '../services/map.service';
 import { ModalController, PopoverController } from '@ionic/angular';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { ColorPopoverComponent } from '../color-popover/color-popover.component';
@@ -70,7 +71,8 @@ export class SettingsPage implements OnDestroy {
     public modalController: ModalController,
     private popoverController: PopoverController,
     private languageService: LanguageService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private mapService: MapService
   ) {
 
     // Debounced map upload
@@ -180,6 +182,8 @@ export class SettingsPage implements OnDestroy {
   async onMapChange(map: string) {
     this.fs.mapProvider = map;
     await this.fs.storeSet('mapProvider', this.fs.mapProvider)
+    await this.mapService.loadMap();
+    this.fs.gotoPage('tab1');
   }
 
   // 6. COLOR POPOVER ///////////////////////////////////////
@@ -204,12 +208,14 @@ export class SettingsPage implements OnDestroy {
   async onCurrentChange(color: string) {
     this.fs.currentColor = color;
     await this.fs.storeSet('currentColor', color);
+    this.fs.reDraw = true;
   }
 
   // 8. ARCHIVED COLOR CHANGE ///////////////////////////////////////
   async onArchivedChange(color: string) {
     this.fs.archivedColor = color;
     await this.fs.storeSet('archivedColor', this.fs.archivedColor);
+    this.fs.reDraw = true;
   }
 
   // 9. ALTITUDE METHOD CHANGE /////////////////////////

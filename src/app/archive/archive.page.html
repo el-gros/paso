@@ -37,15 +37,15 @@
   <ion-menu side="start" contentId="main-content">
     <ion-content>
       <ion-list>
-        <ion-item class="menu-button" button [disabled]='(!visibleSearch)' (click)="removeSearch()">{{'ARCHIVE.REMOVE_SEARCH' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="!fs.searchLayer?.getSource()?.getFeatures()?.length" (click)="removeSearch()">{{'ARCHIVE.REMOVE_SEARCH' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="exportTrackFile()">{{'ARCHIVE.EXPORT_FILE' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="prepareImageExport()">{{'ARCHIVE.EXPORT_TRACK' | translate}}</ion-item>
-        <ion-item class="menu-button" button [disabled]="(fs.layerVisibility == 'multi')" (click)="displayAllTracks(true)">{{'ARCHIVE.DISPLAY_ALL' | translate}}</ion-item>
-        <ion-item class="menu-button" button [disabled]="(fs.layerVisibility != 'multi')" (click)="displayAllTracks(false)">{{'ARCHIVE.HIDE_ALL' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="!!fs.archivedLayer?.getSource()?.getFeatures()?.length && !fs.archivedTrack" (click)="displayAllTracks(true)">{{'ARCHIVE.DISPLAY_ALL' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="!fs.archivedLayer?.getSource()?.getFeatures()?.length || fs.archivedTrack" (click)="displayAllTracks(false)">{{'ARCHIVE.HIDE_ALL' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked == 0)' (click)="deleteTracks()">{{'ARCHIVE.REMOVE_TRACKS' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="editTrack()">{{'ARCHIVE.EDIT_TRACK' | translate}}</ion-item>
         <ion-item class="menu-button" button [disabled]='(numChecked != 1)' (click)="displayTrack(true)">{{'ARCHIVE.SHOW_REFERENCE' | translate}}</ion-item>
-        <ion-item class="menu-button" button [disabled]="(numChecked == 1 || fs.layerVisibility != 'archived' || !fs.archivedPresent)" (click)="displayTrack(false)">{{'ARCHIVE.HIDE_REFERENCE' | translate}}</ion-item>
+        <ion-item class="menu-button" button [disabled]="(!fs.archivedTrack)" (click)="displayTrack(false)">{{'ARCHIVE.HIDE_REFERENCE' | translate}}</ion-item>
 
       </ion-list>
     </ion-content>

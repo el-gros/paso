@@ -12,7 +12,6 @@ import { Subscription } from 'rxjs';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
-import { TrackService } from '../services/track.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -30,30 +29,14 @@ register();
 })
 export class CanvasComponent implements OnInit, OnDestroy {
 
-  currentTrack: Track | undefined = undefined;
-  archivedTrack: Track | undefined = undefined;
-
-  currentPoint: number = 0;
-  currentAverageSpeed: number | undefined = undefined;
-  currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: string = '00:00:00';
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
-  canvasNum: number = 400; // canvas size
-  averagedSpeed: number = 0;
-  stopped: number = 0;
   vMin: number = 1;
-
-  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  margin: number = 10;
   partialSpeeds: PartialSpeed[] = [];
 
   private subscriptions: Subscription = new Subscription();
   constructor(
     public fs: FunctionsService,
-    public ts: TrackService,
     private translate: TranslateService
   ) { }
 
@@ -62,9 +45,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
   // 3. ionViewWillEnter()
   // 4. averageSpeed()
   // 5. createCanvas()
-  // 6. updateCanvas()
-  // 7. grid()
-  // 8. gridValue()
+
   // 9. updateAllCanvas()
 
 
@@ -72,22 +53,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     await this.createCanvas();
     this.subscriptions.add(
-      this.ts.currentTrack$.subscribe(async current => {
-        this.currentTrack = current;
-        await this.averageSpeed();
-        this.currentUnit = await this.updateAllCanvas(this.currentCtx, this.currentTrack);
-      })
-    );
-    this.subscriptions.add(
-      this.ts.archivedTrack$.subscribe(async archived => {
-        this.fs.archivedTrack = archived;
-        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.fs.archivedTrack);
-        this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.archivedTrack);
-      })
-    );
-    this.subscriptions.add(
-      this.ts.currentPoint$.subscribe(async currentPoint => {
-        this.currentPoint = currentPoint;
+      this.fs.currentTrack$.subscribe(async (track) => {
+        if (track && this.fs.currentCtx) {
+          this.currentUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, track);
+        }
       })
     );
   }
@@ -99,6 +68,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
+    if (this.fs.archivedTrack) {
+      this.archivedUnit = await this.fs.updateAllCanvas(this.fs.archivedCtx, this.fs.archivedTrack);
+      this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.archivedTrack);
+    }
     // Variables
     if (this.fs.buildTrackImage) {
       var success: boolean = false;
@@ -116,40 +89,39 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   // 4. COMPUTE AVERAGE SPEEDS AND TIMES
   async averageSpeed() {
-    if (!this.currentTrack) return;
+    if (!this.fs.currentTrack) return;
     // get data array
-    const data = this.currentTrack.features[0].geometry.properties.data;
+    const data = this.fs.currentTrack.features[0].geometry.properties.data;
     const num = data.length ?? 0;
     if (num < 2) return;
     // Compute time at rest
-    for (let i = this.averagedSpeed + 1; i < num; i++) {
+    for (let i = this.fs.averagedSpeed + 1; i < num; i++) {
       if (data[i].compSpeed < this.vMin) {
         // Add the time spent at rest
-        this.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
+        this.fs.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
       }
-      this.averagedSpeed = i;  // Track last processed index
+      this.fs.averagedSpeed = i;  // Track last processed index
     }
     // Compute total time
-    let totalTime = data[num - 1].time - data[0].time;
-    totalTime = totalTime / 1000; // Convert milliseconds to seconds
+    let totalTime = (data[num - 1].time - data[0].time)/1000;
     // Calculate average speed (in km/h)
-    this.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
+    this.fs.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
     // If the total time minus stopped time is greater than 5 seconds, calculate motion speed
-    if (totalTime - this.stopped > 5) {
-      this.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.stopped);
+    if (totalTime - this.fs.stopped > 5) {
+      this.fs.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.fs.stopped);
     }
     // Format the motion time
-    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.stopped));
+    this.fs.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.fs.stopped));
   }
 
   // 5. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     const size = Math.min(window.innerWidth, window.innerHeight);
-    for (const i in this.properties) {
-      this.initCanvas(`currCanvas${i}`, size, this.currentCtx, i);
-      this.initCanvas(`archCanvas${i}`, size, this.archivedCtx, i);
+    for (const i in this.fs.properties) {
+      this.initCanvas(`currCanvas${i}`, size, this.fs.currentCtx, i);
+      this.initCanvas(`archCanvas${i}`, size, this.fs.archivedCtx, i);
     }
-    this.canvasNum = size;
+    this.fs.canvasNum = size;
   }
   private initCanvas(
     elementId: string,
@@ -168,152 +140,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 6. UPDATE CANVAS ///////////////////////////////////
-  async updateCanvas(
-    ctx: CanvasRenderingContext2D | undefined,
-    track: Track | undefined,
-    propertyName: keyof Data,
-    xParam: string
-  ) {
-    let tUnit: string = ''
-    if (!ctx) return tUnit;
-    // Reset and clear the canvas
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
-    if (!track) return tUnit;
-    // Define data array
-    const data = track.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num === 0) return tUnit;
-    // Determine time/distance scale and units
-    let xDiv: number = 1;
-    let xTot: number;
-    if (xParam === 'x') {
-      xTot = data[num - 1].distance;
-    } else {
-      xTot = data[num - 1].time - data[0].time;
-      if (xTot > 3600000) {
-        tUnit = 'h';
-        xDiv = 3600000;
-      } else if (xTot > 60000) {
-        tUnit = 'min';
-        xDiv = 60000;
-      } else {
-        tUnit = 's';
-        xDiv = 1000;
-      }
-      xTot /= xDiv;
-    }
-    // Compute min and max bounds
-    const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
-    if (bounds.max === bounds.min) {
-      bounds.max += 2;
-      bounds.min -= 2;
-    }
-    // Compute scaling factors for drawing
-    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
-    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
-    const offsetX = this.margin;
-    const offsetY = this.margin - bounds.max * scaleY;
-    // Draw the line graph
-    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
-    ctx.beginPath();
-    ctx.moveTo(0, bounds.min);
-    for (const point of data) {
-      const xValue = xParam === 'x' ? point.distance : (point.time - data[0].time) / xDiv;
-      const yValue = point[propertyName];
-      ctx.lineTo(xValue, yValue);
-    }
-    // Close the path and fill with color
-    ctx.lineTo(xTot, bounds.min);
-    ctx.closePath();
-    ctx.fillStyle = 'yellow';
-    ctx.fill();
-    // Reset transformation matrix
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // Draw grid
-    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
-    return tUnit;
-  }
-
-  // 7. GRID /////////////////////////////////////////////////////
-  async grid(
-    ctx: CanvasRenderingContext2D | undefined,
-    xMin: number,
-    xMax: number,
-    yMin: number,
-    yMax: number,
-    a: number,
-    d: number,
-    e: number,
-    f: number
-  ) {
-    // Return if there is no canvascontext
-    if (!ctx) return;
-    // Define fonts and styles
-    ctx.font = "15px Arial"
-    ctx.save();
-    ctx.setLineDash([5, 15]);
-    ctx.strokeStyle = 'black';
-    ctx.fillStyle = 'black'
-    // Define line spacing and position
-    const gridx = this.gridValue(xMax - xMin);
-    const gridy = this.gridValue(yMax - yMin);
-    const fx = Math.ceil(xMin / gridx);
-    const fy = Math.ceil(yMin / gridy);
-    // Draw vertical lines
-    for (var xi = fx * gridx; xi <= xMax; xi += gridx) {
-      ctx.beginPath();
-      ctx.moveTo(xi * a + e, yMin * d + f);
-      ctx.lineTo(xi * a + e, yMax * d + f);
-      ctx.stroke();
-      ctx.fillText(xi.toLocaleString(), xi * a + e + 2, yMax * d + f + 15)
-    }
-    // Draw horizontal lines
-    for (var yi = fy * gridy; yi <= yMax; yi += gridy) {
-      ctx.beginPath();
-      ctx.moveTo(xMin * a + e, yi * d + f);
-      ctx.lineTo(xMax * a + e, yi * d + f);
-      ctx.stroke();
-      ctx.fillText(yi.toLocaleString(), xMin * a + e + 2, yi * d + f - 10)
-    }
-    // Restore context
-    ctx.restore();
-    ctx.setLineDash([]);
-  }
-
-  // 8. DETERMINATION OF GRID STEP //////////////////////
-  gridValue(dx: number) {
-    const nx = Math.floor(Math.log10(dx));
-    const x = dx / (10 ** nx);
-    if (x < 2.5) return 0.5 * (10 ** nx);
-    else if (x < 5) return 10 ** nx;
-    else return 2 * (10 ** nx);
-  }
 
   // 9. UPDATE ALL CANVAS ////////////////////////////////
-  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
-    // Validate context
-    if (!context) {
-      return '';
-    }
-    // Open canvas
-    try {
-      // Hide canvas for the current or archived track
-      if (track === this.currentTrack || track === this.fs.archivedTrack) {
-        const type = track === this.currentTrack ? 'c' : 'a';
-      }
-      // Update canvas
-      let lastUnit = '';
-      for (const [index, property] of Object.entries(this.properties)) {
-        const mode = property === 'altitude' ? 'x' : 't';
-        lastUnit = await this.updateCanvas(context[index], track, property, mode);
-      }
-      return lastUnit;
-    } finally {
-      // Close canvas
-    }
-  }
   async triggerExport(): Promise<boolean> {
     try {
       const exportArea = document.querySelector('#exportArea') as HTMLElement;

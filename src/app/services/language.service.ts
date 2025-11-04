@@ -19,7 +19,7 @@ export class LanguageService {
 
   constructor(
     private translate: TranslateService,
-    private fs: FunctionsService
+    public fs: FunctionsService
   ) {
     this.initLanguage();
   }

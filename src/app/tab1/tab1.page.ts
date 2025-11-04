@@ -13,15 +13,12 @@ import { Storage } from '@ionic/storage-angular';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
 import Feature, { FeatureLike } from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import { ParsedPoint, Location, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
-import { TrackService } from '../services/track.service';
 import { ServerService } from '../services/server.service';
 import { global } from '../../environments/environment';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
@@ -57,8 +54,7 @@ register();
 export class Tab1Page {
 
   watcherId: number = 0;
-  currentTrack: Track | undefined = undefined;
-  track: Track | undefined = undefined;
+  //track: Track | undefined = undefined;
   vMax: number = 400;
   margin: number = 10;
   threshold: number = 20;
@@ -71,25 +67,25 @@ export class Tab1Page {
   speedFiltered: number = 0;
   averagedSpeed: number = 0;
   computedDistances: number = 0;
-  stopped: any = 0;
   vMin: number = 1;
-  currentAverageSpeed: number | undefined = undefined;
-  currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: any = '00:00:00';
 
   threshDist: number = 0.0000002;
   foreground: boolean = true;
-  currentPoint: number = 0;
+
   audioCtx: AudioContext | null = null;
   beepInterval: any;
   appStateListener?: PluginListenerHandle;
   styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
   state: string = '';
 
+  isRecordPopoverOpen = false;
+  isConfirmStopOpen = false;
+  isConfirmDeletionOpen = false;
+  isSearchPopoverOpen = false;
+
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
-    public ts: TrackService,
     public server: ServerService,
     public storage: Storage,
     private zone: NgZone,
@@ -107,26 +103,26 @@ export class Tab1Page {
   3. addFileListener
   4. ionViewDidEnter
   5. startTracking
-  6. removeTrack
+  6. deleteTrack
   7. stopTracking
-  8. confirm
+
   9. setTrackDetails
   10. showValidationAlert
   11. saveFile
-  12. nextPoints
+  12. updateTrack
   13. onRoute
   14. show
   15. onDestroy
   16. showArchivedTrack
-  17. firstPoint
-  18. createMap
+
+  18. handleClicks
   19. filterAltitude
 
   21. handleMapClick
   22. computeDistances
   23. htmValues
   24. checkWhetherOnRoute
-  25. ionViewWillLeave
+
   26. playBeep
   27. playDoubleBeep
   28. computeTrackStats
@@ -136,7 +132,7 @@ export class Tab1Page {
   32. backgroundTask
   33. startBeepInterval
   34. stopBeepInterval
-  35. changeMapProvider
+
   36. determineColors
   37. waypoint
   38. setWaypointAltitude
@@ -165,9 +161,9 @@ export class Tab1Page {
       // uncheck all
       await this.fs.uncheckAll();
       // create map
-      await this.createMap();
-      // Save initialized currentPoint
-      this.ts.setCurrentPoint(this.currentPoint);
+      await this.mapService.loadMap();
+      // Handle clicks on map
+      await this.handleClicks();
     } catch (error) {
       console.error('Error during ngOnInit:', error);
     }
@@ -177,7 +173,7 @@ export class Tab1Page {
   // 2. LISTEN TO CHANGES IN FOREGROUND - BACKGROUND
   async listenToAppStateChanges() {
     this.appStateListener = await App.addListener('appStateChange', async (state) => {
-      if (!this.currentTrack) return;
+      if (!this.fs.currentTrack) return;
       this.foreground = state.isActive;
       if (this.foreground) {
         this.stopBeepInterval();
@@ -198,19 +194,8 @@ export class Tab1Page {
     App.addListener('appUrlOpen', async (data: any) => {
       this.fs.gotoPage('tab1');
       await this.processUrl(data);
-      this.fs.layerVisibility = 'archived'
-      // assign visibility
-      this.fs.multiLayer?.setVisible(false);
       // iF an archived track has been parsed...
-      if (this.fs.archivedTrack) {
-        this.ts.setArchivedTrack(this.fs.archivedTrack);
-        // Display archived track
-        await this.mapService.displayArchivedTrack();
-        // Set map view for archived track if no current track
-        if (!this.currentTrack) {
-          this.mapService.setMapView(this.fs.archivedTrack);
-        }
-      }
+      if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
     });
   }
 
@@ -219,46 +204,8 @@ export class Tab1Page {
     while (!global.ngOnInitFinished) {
       await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
     }
-    try {
-      // change map provider
-      if (this.fs.lastProvider != this.fs.mapProvider) await this.changeMapProvider();
-      // Display current track (updates color)
-      if (this.currentTrack && this.fs.map) await this.mapService.displayCurrentTrack(this.currentTrack);
-      // archived visible
-      if (this.fs.layerVisibility == 'archived') {
-        // retrieve archived track
-        this.fs.archivedTrack = await this.fs.retrieveTrack() ?? this.fs.archivedTrack;
-        if (this.fs.archivedTrack) {
-          this.ts.setArchivedTrack(this.fs.archivedTrack);
-          // Display archived track
-          await this.mapService.displayArchivedTrack();
-          // Set map view for archived track if no current track
-          if (!this.currentTrack || this.fs.buildTrackImage) this.mapService.setMapView(this.fs.archivedTrack);
-        }
-        // assign visibility
-        this.fs.multiLayer?.setVisible(false);
-        if (this.fs.buildTrackImage) await this.buildTrackImage()
-      }
-      else if (this.fs.layerVisibility == 'multi') {
-        // hide archived track
-        this.fs.archivedLayer?.setVisible(false);
-        this.fs.status = 'black'
-        // center all tracks
-        if (!this.currentTrack) await this.mapService.centerAllTracks();
-      }
-      else {
-        this.fs.status = 'black';
-        // Hide archived and multi layers
-        this.fs.archivedLayer?.setVisible(false);
-        this.fs.multiLayer?.setVisible(false);
-      }
-      // center current track
-      if (this.currentTrack) {
-        this.mapService.setMapView(this.currentTrack);
-      }
-    } catch (error) {
-      console.error('Error in ionViewDidEnter:', error);
-    }
+    if (this.fs.reDraw) await this.mapService.updateColors();
+    if (this.fs.buildTrackImage) await this.buildTrackImage()
   }
 
   // 5. START TRACKING /////////////////////////////////
@@ -281,14 +228,10 @@ export class Tab1Page {
       smallIcon: 'splash.png',
     });
     // Reset current track and related variables
-    this.currentTrack = undefined;
-    this.ts.setCurrentTrack(this.currentTrack);
-    this.fs.currentLayer?.setVisible(false);
+    this.fs.currentTrack = undefined;
+    this.fs.currentLayer?.getSource()?.clear();
+    this.fs.currentPoint = 0;
     // Initialize variables
-    this.stopped = 0;
-    this.currentAverageSpeed = undefined;
-    this.currentMotionSpeed = undefined;
-    this.currentMotionTime = '00:00:00';
     this.speedFiltered = 0;
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
@@ -331,7 +274,7 @@ export class Tab1Page {
       }
     );
     // Update state
-    this.ts.state = 'tracking';
+    this.fs.state = 'tracking';
   }
 
   // 5 bis. CHECK LOCATION //////////////////////////////////
@@ -346,79 +289,58 @@ export class Tab1Page {
   }
 
   // 6. REMOVE TRACK ///////////////////////////////////
-  async removeTrack() {
+  async deleteTrack() {
     // show / hide elements
-    this.ts.state = 'inactive';
-    this.show('alert', 'none');
+    this.fs.state = 'inactive';
     // Reset current track
     this.fs.status = 'black';
-    this.currentTrack = undefined;
-    this.ts.setCurrentTrack(this.currentTrack);
-    this.fs.currentLayer?.setVisible(false);
-    // Toast
+    this.fs.currentTrack = undefined;
+    this.fs.currentLayer?.getSource()?.clear();
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
   }
 
   // 7. STOP TRACKING //////////////////////////////////
-
   async stopTracking(): Promise<void> {
-    if (!this.fs.currentLayer || !this.currentTrack || !this.fs.map) return;
+    // Always stop the watcher and foreground service, even if no layer yet
+    this.fs.state = 'stopped';
+    this.show('alert', 'none');
+    try {
+      await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
+    } catch (err) {
+      console.warn('Failed to remove watcher:', err);
+    }
+    try {
+      await ForegroundService.stopForegroundService();
+    } catch (err) {
+      console.warn('Failed to stop foreground service:', err);
+    }
+    // If no current layer yet → nothing to update on the map, just finish cleanly
+    if (!this.fs.currentLayer?.getSource() || !this.fs.currentTrack || !this.fs.map) return;
     const source = this.fs.currentLayer.getSource();
     if (!source) return;
     const features = source.getFeatures();
-    if (features.length < 4) return; // expected: 0=line, 2=end, 3=stop marker
-    this.ts.state = 'stopped';
-    this.show('alert', 'none');
-    try { await BackgroundGeolocation.removeWatcher({ id: this.watcherId }); }
-    catch (err) { console.warn('Failed to remove watcher:', err); }
-    try { await ForegroundService.stopForegroundService(); }
-    catch (err) { console.warn('Failed to stop foreground service:', err); }
-    // get coordinates safely
-    let coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 1) return;
-    await this.filterAltitude(this.currentTrack, coordinates.length - 1);
+    // If we have coordinates, finalize track geometry
+    let coordinates = this.fs.currentTrack.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 1) {
+      this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'));
+      return;
+    }
+    await this.filterAltitude(this.fs.currentTrack, coordinates.length - 1);
     await this.setWaypointAltitude();
-    // re-fetch in case they were modified
-    coordinates = this.currentTrack.features?.[0]?.geometry?.coordinates;
+    coordinates = this.fs.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length < 1) return;
-    // update geometries
-    features[0].setGeometry(new LineString(coordinates));
-    features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
-    features[1].setGeometry(new Point(coordinates[0]));
-    features[1].setStyle(this.mapService.createPinStyle('green'));
-    features[2].setStyle(undefined);
-    features[3].setGeometry(new Point(coordinates.at(-1)!));
-    features[3].setStyle(this.mapService.createPinStyle('red'));
-    this.fs.currentLayer.setVisible(true);
-    this.mapService.setMapView(this.currentTrack);
+    if (features.length >= 3) {
+      features[0].setGeometry(new LineString(coordinates));
+      features[0].setStyle(this.mapService.setStrokeStyle(this.fs.currentColor));
+      features[1].setGeometry(new Point(coordinates[0]));
+      features[1].setStyle(this.mapService.createPinStyle('green'));
+      features[2].setGeometry(new Point(coordinates.at(-1)!));
+      features[2].setStyle(this.mapService.createPinStyle('red'));
+    }
+    this.mapService.setMapView(this.fs.currentTrack);
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
-  }
-
-  // 8. CONFIRM TRACK DELETION OR STOP TRACKING
-  async confirm(which: string) {
-    const header = which === 'stop' ? this.translate.instant('MAP.STOP_HEADER') : this.translate.instant('MAP.DELETE_HEADER');
-    const message = which === 'stop' ? this.translate.instant('MAP.STOP_MESSAGE') : this.translate.instant('MAP.DELETE_MESSAGE');
-    const cssClass = 'alert greenishAlert';
-    const inputs: never[] = [];
-    const buttons =  [
-      {
-        text: this.translate.instant('SETTINGS.CANCEL'),
-        role: 'cancel',
-        cssClass: 'alert-cancel-button'
-      },
-      {
-        text:  this.translate.instant('MAP.YES'),
-        cssClass: 'alert-ok-button',
-        handler: async () => {
-          if (which === 'delete') {
-            await this.removeTrack();
-          } else if (which === 'stop') {
-            await this.stopTracking();
-          }
-        }
-      }
-    ]
-    await this.fs.showAlert(cssClass, header, message, inputs, buttons, which)
+    // Update state
+    this.fs.state = 'stopped';
   }
 
   // 9. SET TRACK NAME, TIME, DESCRIPTION, ...
@@ -462,28 +384,28 @@ export class Tab1Page {
 
   // 11. SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
-    if (!this.currentTrack) return;
+    if (!this.fs.currentTrack) return;
     // altitud method
     if (this.fs.selectedAltitude === 'DEM') {
-      const coordinates: number[][] = this.currentTrack.features[0].geometry.coordinates;
+      const coordinates: number[][] = this.fs.currentTrack.features[0].geometry.coordinates;
       var altSlopes: any = await this.getAltitudesFromMap(coordinates as [number, number][])
       console.log(altSlopes)
-      if (altSlopes.slopes) this.currentTrack.features[0].properties.totalElevationGain = altSlopes.slopes.gain;
-      if (altSlopes.slopes) this.currentTrack.features[0].properties.totalElevationLoss = altSlopes.slopes.loss;
-      if (altSlopes.altitudes) this.currentTrack.features[0].geometry.properties.data.forEach((item, index) => {
+      if (altSlopes.slopes) this.fs.currentTrack.features[0].properties.totalElevationGain = altSlopes.slopes.gain;
+      if (altSlopes.slopes) this.fs.currentTrack.features[0].properties.totalElevationLoss = altSlopes.slopes.loss;
+      if (altSlopes.altitudes) this.fs.currentTrack.features[0].geometry.properties.data.forEach((item, index) => {
         item.altitude = altSlopes.altitudes[index];
       });
     }
     // build new track definition
-    const currentProperties = this.currentTrack.features[0].properties;
+    const currentProperties = this.fs.currentTrack.features[0].properties;
     currentProperties.name = name;
     currentProperties.place = place;
     currentProperties.description = description;
     currentProperties.date = new Date();
     // Save the current track to storage with date as key
     const dateKey = JSON.stringify(currentProperties.date);
-    await this.fs.storeSet(dateKey, this.currentTrack);
-    await this.fs.storeSet(JSON.stringify(this.currentTrack.features[0].properties.date), this.currentTrack);
+    await this.fs.storeSet(dateKey, this.fs.currentTrack);
+    await this.fs.storeSet(JSON.stringify(this.fs.currentTrack.features[0].properties.date), this.fs.currentTrack);
     // Create a new track definition
     const trackDef: TrackDefinition = {
       name,
@@ -498,43 +420,94 @@ export class Tab1Page {
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
-    this.ts.state = 'saved'
+    this.fs.state = 'saved'
     this.show('alert', 'none');
   }
 
-  // 12. NEXT POINTS ////////////////////////////////////
-  async nextPoints(location: Location) {
-    // Compute previous time and altitude
-    let num: number = this.currentTrack?.features[0].geometry.coordinates.length || 0;
-    const previousTime = this.currentTrack?.features[0]?.geometry?.properties?.data[num-1]?.time || 0;
-    const previousAltitude = this.currentTrack?.features[0]?.geometry?.properties?.data[num-1]?.altitude || 0;
+  // 12. UPDATE TRACK POINTS ////////////////////////////////////
+  async updateTrack(location: Location): Promise<boolean> {
+    if (!this.fs.map || !this.fs.currentLayer) return false;
+    // If no current track exists → initialize it (first point)
+    if (!this.fs.currentTrack) {
+      var features = [new Feature(), new Feature(), new Feature()]
+      this.fs.currentTrack = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {
+            name: '',
+            place: '',
+            date: undefined,
+            description: '',
+            totalDistance: 0,
+            totalElevationGain: 0,
+            totalElevationLoss: 0,
+            totalTime: '00:00:00',
+            totalNumber: 1,
+            currentAltitude: undefined,
+            currentSpeed: undefined
+          },
+          bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
+          geometry: {
+            type: 'LineString',
+            coordinates: [[location.longitude, location.latitude]],
+            properties: {
+              data: [{
+                altitude: location.altitude,
+                speed: location.speed,
+                time: location.time,
+                compSpeed: 0,
+                distance: 0
+              }]
+            }
+          },
+          waypoints: []
+        }]
+      };
+      this.fs.stopped = 0;
+      this.fs.averagedSpeed = 0;
+      // Display waypoint button
+      this.show('alert', 'block');
+      // Create markers (start, green, blue)
+      features[1].setGeometry(new Point([location.longitude, location.latitude]));
+      features[1].setStyle(this.mapService.createPinStyle('green'));
+      features[2].setGeometry(new Point([location.longitude, location.latitude]));
+      features[2].setStyle(this.mapService.createPinStyle('blue'));
+      // Register track
+      this.fs.currentLayer.getSource()?.clear();
+      this.fs.currentLayer.getSource()?.addFeatures(features);
+      return true;
+    }
+    // Otherwise, we are adding a new point (subsequent update)
+    const num = this.fs.currentTrack.features[0].geometry.coordinates.length;
+    const prevData = this.fs.currentTrack.features[0].geometry.properties.data[num - 1];
+    const previousTime = prevData?.time || 0;
+    const previousAltitude = prevData?.altitude || 0;
     // Wrong order
     if (previousTime > location.time) return false;
-    // Avoid altitude differences greater than 50m unless gps has been stopped
+    // Avoid unrealistic altitude jumps (if GPS still running)
     if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
       location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
     }
-    // m/s to km/h
-    location.speed = location.speed * 3.6
-    // add location
-    await this.fs.fillGeojson(this.currentTrack, location);
-    // check whether on route...
-    if (this.fs.archivedTrack && this.fs.alert == 'on') {
+    // Convert m/s to km/h
+    location.speed = location.speed * 3.6;
+    // Add point to geojson
+    await this.fs.fillGeojson(this.fs.currentTrack, location);
+    // Optional route check
+    if (this.fs.archivedTrack && this.fs.alert === 'on') {
       await this.checkWhetherOnRoute();
-    }
-    else {
+    } else {
       this.fs.status = 'black';
     }
-    // Return
     return true;
   }
 
   // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
   async onRoute() {
     // Return 'black' if conditions aren't met
-    if (!this.currentTrack || !this.fs.archivedTrack || this.fs.layerVisibility != 'archived') return 'black';
+    if (!this.fs.currentTrack || !this.fs.archivedTrack) return 'black';
     // Define current and archived coordinates
-    const currentCoordinates = this.currentTrack.features[0].geometry.coordinates;
+    const currentCoordinates = this.fs.currentTrack.features[0].geometry.coordinates;
     const archivedCoordinates = this.fs.archivedTrack.features[0].geometry.coordinates;
     if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
     // Define parameters
@@ -552,26 +525,24 @@ export class Tab1Page {
         point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
     }
     // Forward search
-    for (let i = this.currentPoint; i < archivedCoordinates.length; i += reduction) {
+    for (let i = this.fs.currentPoint; i < archivedCoordinates.length; i += reduction) {
       const point2 = archivedCoordinates[i];
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         //this.lastN = i;
-        this.currentPoint = i;
-        this.ts.setCurrentPoint(this.currentPoint);
+        this.fs.currentPoint = i;
         return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i += (skip - 1) * reduction;
       }
     }
     // Reverse search
-    for (let i = this.currentPoint; i >= 0; i -= reduction) {
+    for (let i = this.fs.currentPoint; i >= 0; i -= reduction) {
       const point2 = archivedCoordinates[i];
       const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
       if (distSq < this.threshDist) {
         //this.lastN = i;
-        this.currentPoint = i;
-        this.ts.setCurrentPoint(this.currentPoint);
+        this.fs.currentPoint = i;
         return 'green';
       } else if (distSq > multiplier * this.threshDist) {
         i -= (skip - 1) * reduction;
@@ -599,77 +570,9 @@ export class Tab1Page {
     this.beepInterval = undefined;
   }
 
-
-
-  // 17. FIRST POINT OF THE TRACK /////////////////////////////
-  async firstPoint(location: Location) {
-    const source = this.fs.currentLayer?.getSource();
-    if (!source || !this.fs.map) return;
-    source.clear();
-    // Initialize current track
-    this.currentTrack = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: {
-          name: '',
-          place: '',
-          date: undefined,
-          description: '',
-          totalDistance: 0,
-          totalElevationGain: 0,
-          totalElevationLoss: 0,
-          totalTime: '00:00:00',
-          totalNumber: 1,
-          currentAltitude: undefined,
-          currentSpeed: undefined
-        },
-        bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [location.longitude, location.latitude]
-          ],
-          properties: {
-            data: [
-              {
-                altitude: location.altitude,
-                speed: location.speed,
-                time: location.time,
-                compSpeed: 0,
-                distance: 0,
-              }
-            ],
-          }
-        },
-        waypoints: []
-      }]
-    }
-    // Display waypoint button
-    this.show('alert', 'block');
-    // Set the geometry and style for the first marker
-    const features = [new Feature (), new Feature(), new Feature(), new Feature()];
-    // Set the geometry and style for the second marker (for tracking progress)
-    features[1].setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[0]));
-    features[1].setStyle(this.mapService.createPinStyle('green'));
-    features[2].setGeometry(new Point(this.currentTrack.features[0].geometry.coordinates[0]));
-    features[2].setStyle(this.mapService.createPinStyle('blue'));
-    this.fs.currentLayer?.getSource()?.addFeatures(features);
-    this.fs.currentLayer?.setVisible(true);
-    // Set current track
-    this.ts.setCurrentTrack(this.currentTrack);
-  }
-
   // 18. CREATE MAP ////////////////////////////////////////
-  async createMap() {
+  async handleClicks() {
     try {
-      // 🔹 Clean up old map if it exists
-      if (this.fs.map) {
-        this.fs.map.setTarget(undefined); // detach from DOM and free controls
-        this.fs.map = undefined;
-      }
-      this.mapService.createLayers(); // your existing method, or move to service
-      await this.mapService.createMap();
       if (!this.fs.map) return
       // Type guard ensures map is defined before calling 'on'
       (this.fs.map as Map).on('click', this.handleMapClick.bind(this));
@@ -711,92 +614,81 @@ export class Tab1Page {
 
   // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
-    switch(this.fs.layerVisibility) {
-      case 'multi':
-        const source = this.fs.multiLayer?.getSource();
-        if (!source || !this.fs.map) return;
-        const features = source.getFeatures();
-        if (!features || features.length<2) return;
-        this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-          if (feature === features[1]) {
-            // Retrieve clicked coordinate and find its index
-            const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-            const multiPointCoordinates = feature.getGeometry().getCoordinates();
-            const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
-              coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
-            );
-            // Retrieve the archived track based on the index key
-            const multiKey = feature.get('multikey'); // Retrieve stored waypoints
-            const key = multiKey[index];
-            this.fs.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
-            // Display archived track details if it exists
-            if (this.fs.archivedTrack) {
-              this.ts.setArchivedTrack(this.fs.archivedTrack);
-              this.fs.multiLayer?.setVisible(false);
-              this.fs.layerVisibility = 'archived';
-              await this.mapService.displayArchivedTrack();
-              this.mapService.setMapView(this.fs.archivedTrack);
-            }
-          }
-        });
-        break;
-      case 'archived':
-        let hit: boolean = false;
-        const asource = this.fs.archivedLayer?.getSource();
-        if (!asource || !this.fs.map) return;
-        const afeatures = asource.getFeatures();
-        if (!afeatures || afeatures.length<5) return;
-        this.fs.map.forEachFeatureAtPixel(event.pixel, feature => {
-          const match = [afeatures?.[1], afeatures?.[3]].includes(feature as Feature<Geometry>);
-          if (!match) return;
-          hit = true;
-          const archivedDate = this.fs.archivedTrack?.features?.[0]?.properties?.date;
-          const index = this.fs.collection.findIndex(
-            (item: TrackDefinition) =>
-              item.date instanceof Date &&
-              archivedDate instanceof Date &&
-              item.date.getTime() === archivedDate.getTime()
+    if (this.fs.archivedLayer?.getSource() && !this.fs.archivedTrack) {
+      const source = this.fs.archivedLayer?.getSource();
+      if (!source || !this.fs.map) return;
+      const features = source.getFeatures();
+      if (!features || features.length<2) return;
+      this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
+        if (feature === features[1]) {
+          // Retrieve clicked coordinate and find its index
+          const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
+          const multiPointCoordinates = feature.getGeometry().getCoordinates();
+          const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
+            coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
           );
-          if (index >= 0) {
-            this.fs.editTrack(index, '#ffffbb', false).catch(console.error);
-          }
-        });
-        if (!hit && this.fs.map) this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-          if (feature === afeatures[4]) {
-            // Retrieve clicked coordinate and find its index
-            const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-            const multiPointCoordinates = feature.getGeometry().getCoordinates();
-            const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
-              coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
-            );
-            if (index !== -1) {
-              // Retrieve the waypoint data using the index
-              let waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
-              const clickedWaypoint: Waypoint = waypoints[index];
-              const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(clickedWaypoint, true, false)
-              if (response.action == 'ok') {
-                waypoints[index].name = response.name;
-                waypoints[index].comment = response.comment;
-                if (this.fs.archivedTrack) {
-                  this.fs.archivedTrack.features[0].waypoints = waypoints;
-                  if (this.fs.key) await this.fs.storeSet(this.fs.key,this.fs.archivedTrack)
-                }
+          // Retrieve the archived track based on the index key
+          const multiKey = feature.get('multikey'); // Retrieve stored waypoints
+          const key = multiKey[index];
+          this.fs.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
+          // Display archived track details if it exists
+          if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
+        }
+      }); }
+    else if (this.fs.archivedTrack) {
+      let hit: boolean = false;
+      const asource = this.fs.archivedLayer?.getSource();
+      if (!asource || !this.fs.map) return;
+      const afeatures = asource.getFeatures();
+      if (!afeatures || afeatures.length<5) return;
+      this.fs.map.forEachFeatureAtPixel(event.pixel, feature => {
+        const match = [afeatures?.[1], afeatures?.[3]].includes(feature as Feature<Geometry>);
+        if (!match) return;
+        hit = true;
+        const archivedDate = this.fs.archivedTrack?.features?.[0]?.properties?.date;
+        const index = this.fs.collection.findIndex(
+          (item: TrackDefinition) =>
+            item.date instanceof Date &&
+            archivedDate instanceof Date &&
+            item.date.getTime() === archivedDate.getTime()
+        );
+        if (index >= 0) {
+          this.fs.editTrack(index, '#ffffbb', false).catch(console.error);
+        }
+      });
+      if (!hit && this.fs.map) this.fs.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
+        if (feature === afeatures[4]) {
+          // Retrieve clicked coordinate and find its index
+          const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
+          const multiPointCoordinates = feature.getGeometry().getCoordinates();
+          const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
+            coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
+          );
+          if (index !== -1) {
+            // Retrieve the waypoint data using the index
+            let waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
+            const clickedWaypoint: Waypoint = waypoints[index];
+            const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(clickedWaypoint, true, false)
+            if (response.action == 'ok') {
+              waypoints[index].name = response.name;
+              waypoints[index].comment = response.comment;
+              if (this.fs.archivedTrack) {
+                this.fs.archivedTrack.features[0].waypoints = waypoints;
+                if (this.fs.key) await this.fs.storeSet(this.fs.key,this.fs.archivedTrack)
               }
             }
-          };
-        });
-        break;
-      case 'none':
-        break;
+          }
+        };
+      });
     }
   }
 
   // 22. COMPUTE DISTANCES //////////////////////////////////////
   async computeDistances() {
-    if (!this.currentTrack) return;
+    if (!this.fs.currentTrack) return;
     // get coordinates and data arrays
-    const coordinates = this.currentTrack.features[0].geometry.coordinates;
-    const data = this.currentTrack.features[0].geometry.properties.data;
+    const coordinates = this.fs.currentTrack.features[0].geometry.coordinates;
+    const data = this.fs.currentTrack.features[0].geometry.properties.data;
     let num = coordinates.length ?? 0;
     // Ensure data exists and has enough entries
     if (num < 2 || !data || data.length != num) return;
@@ -815,24 +707,23 @@ export class Tab1Page {
 
   // 23. GET VALUES TO SHOW ON THE TABLE ////////////////////////////////////
   async htmlValues() {
-    if (!this.currentTrack) return;
+    if (!this.fs.currentTrack) return;
     // Get the data array
-    const data = this.currentTrack.features[0].geometry.properties.data;
+    const data = this.fs.currentTrack.features[0].geometry.properties.data;
     // Ensure data exists and has elements
     const num = data.length ?? 0;
     if (num < 1) return;
     // Update HTML values
-    this.currentTrack.features[0].properties.totalDistance = data[num - 1].distance;
-    this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(data[num - 1].time - data[0].time);
-    this.currentTrack.features[0].properties.totalNumber = num;
-    this.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
-    this.ts.setCurrentTrack(this.currentTrack);
+    this.fs.currentTrack.features[0].properties.totalDistance = data[num - 1].distance;
+    this.fs.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(data[num - 1].time - data[0].time);
+    this.fs.currentTrack.features[0].properties.totalNumber = num;
+    this.fs.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
   }
 
   // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
   async checkWhetherOnRoute() {
     // Return early if essential conditions are not met
-    if (!this.currentTrack || !this.fs.archivedTrack || this.fs.layerVisibility !== 'archived') return;
+    if (!this.fs.currentTrack || !this.fs.archivedTrack) return;
     // Store previous color for comparison
     const previousStatus = this.fs.status;
     // Determine the current route color based on `onRoute` function
@@ -849,10 +740,6 @@ export class Tab1Page {
     }
   }
 
-  // 25. ON LEAVE ////////////////////////////
-  async ionViewWillLeave() {
-    this.fs.archivedPresent = !!this.fs.archivedTrack;
-  }
 
   // 26. PLAY A BEEP /////////////////////////////////////
   async playBeep(freq: number, time: number, volume: number) {
@@ -1111,24 +998,17 @@ export class Tab1Page {
 
   // 31. FOREGROUND TASK ////////////////////////
   async foregroundTask(location:Location) {
-    if (this.currentTrack) {
-      const locationNew: boolean = await this.nextPoints(location);
-      if (!locationNew) return;
-    }
-    else {
-      await this.firstPoint(location);
-      return;
-    }
-    // new point..
-    const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+    const updated = await this.updateTrack(location);
+    if (!updated) return;    // new point..
+    const num = this.fs.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
-    await this.filterAltitude(this.currentTrack, num - this.fs.lag - 1);
+    await this.filterAltitude(this.fs.currentTrack, num - this.fs.lag - 1);
     // compute distances
     await this.computeDistances();
     // filter speed
-    if (this.currentTrack) {
-      this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
-        this.currentTrack.features[0].geometry.properties.data,
+    if (this.fs.currentTrack) {
+      this.fs.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
+        this.fs.currentTrack.features[0].geometry.properties.data,
         this.speedFiltered + 1
       );
     }
@@ -1136,34 +1016,20 @@ export class Tab1Page {
     // html values
     await this.htmlValues();
     // display the current track
-    await this.mapService.displayCurrentTrack(this.currentTrack);
+    await this.mapService.displayCurrentTrack(this.fs.currentTrack);
     // Ensure UI updates are reflected
     this.zone.run(() => {
       this.cd.detectChanges();
     });
-    console.log('Foreground',this.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
+    console.log('Foreground',this.fs.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
   }
 
   // 32. BACKGROUND TASK /////////////////////////////////////
   async backgroundTask(location: Location) {
     const taskId = await BackgroundTask.beforeExit(async () => {
-      try {
-        if (this.currentTrack) {
-          const locationNew: boolean = await this.nextPoints(location);
-          if (!locationNew) return;
-        }
-        else {
-          await this.firstPoint(location);
-          return;
-        }
-      } catch (error) {
-        console.error('Error in background task:', error);
-      }
-      finally {
-        //Always call finish
-      BackgroundTask.finish({ taskId });
-      }
+      await this.updateTrack(location);
     });
+    BackgroundTask.finish({ taskId });
   }
 
   // 33. START BEEP INTERVAL /////////////////////
@@ -1186,100 +1052,95 @@ export class Tab1Page {
     }
   }
 
-  // 35. CHANGE MAP PROVIDER /////////////////////
-  async changeMapProvider() {
-    // Validate and possibly normalize the new value
-    await this.mapService.updateMapProvider();
-  }
-
   // 37. ADD WAYPOINT ////////////////////////////////////
   async waypoint() {
-    if (!this.currentTrack) return;
-    const num: number = this.currentTrack.features[0].geometry.coordinates.length
-    let point = this.currentTrack.features[0].geometry.coordinates[num-1];
+    if (!this.fs.currentTrack) return;
+    const num: number = this.fs.currentTrack.features[0].geometry.coordinates.length;
+    const point = this.fs.currentTrack.features[0].geometry.coordinates[num - 1];
+    // Wrap the reverse geocode in a timeout
     const addressObservable = this.mapService.reverseGeocode(point[1], point[0]);
-    const address = addressObservable ? await lastValueFrom(addressObservable) : { name: '', display_name: '', short_name: '' };
-    console.log(address)
-    let waypoint: Waypoint = {
+    const addressPromise = lastValueFrom(addressObservable);
+    // Timeout promise (rejects or resolves after 500 ms)
+    const timeoutPromise = new Promise(resolve =>
+      setTimeout(() => resolve(null), 500)
+    );
+    // Race both
+    const address: any = (await Promise.race([addressPromise, timeoutPromise])) || {
+      name: '',
+      display_name: '',
+      short_name: ''
+    };
+    const waypoint: Waypoint = {
       longitude: point[0],
       latitude: point[1],
-      altitude: num - 1, // At this moment, this value is the position of the point in the track
+      altitude: num - 1,
       name: address?.short_name ?? address?.name ?? address?.display_name ?? '',
       comment: ''
-    }
-    const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(waypoint, false, true)
-    if (response.action == 'ok') {
-      waypoint.name = response.name,
-      waypoint.comment = response.comment
-      this.currentTrack.features[0].waypoints?.push(waypoint);
-      this.ts.setCurrentTrack(this.currentTrack);
-      // Toast
+    };
+    const response: { action: string; name: string; comment: string } =
+      await this.fs.editWaypoint(waypoint, false, true);
+    if (response.action === 'ok') {
+      waypoint.name = response.name;
+      waypoint.comment = response.comment;
+      this.fs.currentTrack?.features[0].waypoints?.push(waypoint);
       this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'));
     }
   }
 
   // 38. SET WAYPOINT ALTITUDE ////////////////////////////////////////
   async setWaypointAltitude() {
-    if (!this.currentTrack) return;
+    if (!this.fs.currentTrack) return;
     // Retrieve waypoints
-    const waypoints: Waypoint[] = this.currentTrack.features[0].waypoints || [];
+    const waypoints: Waypoint[] = this.fs.currentTrack.features[0].waypoints || [];
     for (const wp of waypoints) {
-      if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
+      if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.fs.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
     }
-    this.ts.setCurrentTrack(this.currentTrack);
-    console.log(this.currentTrack)
+    console.log(this.fs.currentTrack)
   }
 
   // 39. SEARCH SITE /////////////////////////////////////////
   async search() {
+    if (!this.fs.map || !this.fs.searchLayer) return;
+    // Define a style function for the search results
     const styleSearch = (featureLike: FeatureLike) => {
       const geometryType = featureLike.getGeometry()?.getType();
       const blackPin = this.mapService.createPinStyle('black');
-      if (geometryType === 'Point') return blackPin
-      else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+      if (geometryType === 'Point') return blackPin;
+      if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
         return new Style({
-          stroke: new Stroke({
-            color: 'black',
-            width: 2,
-          }),
-          fill: new Fill({
-            color: 'rgba(128, 128, 128, 0.5)',
-          }),
+          stroke: new Stroke({ color: 'black', width: 2 }),
+          fill: new Fill({ color: 'rgba(128, 128, 128, 0.5)' }),
         });
-      } else {
-        return this.mapService.setStrokeStyle('black');
       }
+      return this.mapService.setStrokeStyle('black');
     };
-    // Create modal
+    this.fs.searchLayer.setStyle(styleSearch);
+    this.fs.comingFrom = 'search';
     const modal = await this.modalController.create({
       component: SearchModalComponent,
-      cssClass: ['modal-class','yellow-class'] ,
-      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+      cssClass: ['modal-class', 'yellow-class'],
+      backdropDismiss: true,
     });
-    if (!this.fs.map || !this.fs.searchLayer) return;
-    this.fs.comingFrom = 'search';
-    // Present modal
     await modal.present();
-    // Receive data after modal dismiss
     const { data } = await modal.onDidDismiss();
-    if (data) {
-      const bbox = data.location.boundingbox;
-      // Destructure the box array and assign the values
-      const [minLat, maxLat, minLon, maxLon] = bbox.map(Number); //
-      // Define padding
-      const padding = Math.max(Math.max(maxLat - minLat, maxLon - minLon) / 10, 0.005);
-      // Apply padding
-      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding]; // OpenLayers extent
-      // Parse GeoJSON into OpenLayers features
-      const lines = new GeoJSON().readFeatures(data.location.geojson);
-      console.log(lines)
-      // Display on map
-      const feature = lines instanceof Feature ? lines : lines[0] as Feature;
-      this.fs.searchLayer?.getSource()?.clear();
-      this.fs.searchLayer?.getSource()?.addFeature(feature);
-      this.fs.searchLayer?.setVisible(true);
-      this.fs.map.getView().fit(extent);
-    };
+    if (data?.location?.boundingbox && data?.location?.geojson) {
+      const [minLat, maxLat, minLon, maxLon] = data.location.boundingbox.map(Number);
+      const latRange = maxLat - minLat;
+      const lonRange = maxLon - minLon;
+      const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
+      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
+      const geojson = typeof data.location.geojson === 'string'
+        ? JSON.parse(data.location.geojson)
+        : data.location.geojson;
+      // readFeatures assumes geographic coordinates since useGeographic() is active
+      const features = new GeoJSON().readFeatures(geojson);
+      if (features.length > 0) {
+        const source = this.fs.searchLayer.getSource();
+        source?.clear();
+        source?.addFeatures(features);
+        this.fs.map.getView().fit(extent, { duration: 800 }); // small animation
+      }
+    }
   }
 
   // 40. SEARCH ROUTE /////////////////////////////////////////////
@@ -1317,8 +1178,8 @@ export class Tab1Page {
       // compute speed
       const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
       const rawProperties: Data[] = await this.fs.fillProperties(distances, altSlopes.altitudes, times, speed);
+      console.log(rawCoordinates, rawProperties)
       // Increase the number of coordinates
-      //var num = rawCoordinates.length;
       const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
       if (result) {
         var num = result.newCoordinates.length;
@@ -1350,30 +1211,7 @@ export class Tab1Page {
         };
       }
     }
-    console.log('route', this.fs.archivedTrack)
-    if (this.fs.archivedTrack) {
-      await this.fs.uncheckAll();
-      this.ts.setArchivedTrack(this.fs.archivedTrack);
-      this.fs.multiLayer?.setVisible(false);
-      this.fs.archivedLayer?.setVisible(true);  // No need for await
-      this.fs.layerVisibility = 'archived';
-      await this.mapService.displayArchivedTrack();
-      this.mapService.setMapView(this.fs.archivedTrack);
-      this.fs.archivedTrack.features[0].properties.date = date;
-      const dateKey = JSON.stringify(date);
-      await this.fs.storeSet(dateKey, this.fs.archivedTrack);
-      // Track definition for collection
-      const trackDef = {
-        name: trackName,
-        date: date,
-        place: '',
-        description: '',
-        isChecked: false
-      };
-      // add new track definition and save collection
-      this.fs.collection.push(trackDef);
-      await this.fs.storeSet('collection', this.fs.collection);
-    }
+    if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
   }
 
   // 42. MORNING TASK
@@ -1382,20 +1220,20 @@ export class Tab1Page {
     this.zone.runOutsideAngular(async () => {
       try{
         // Filter altitude data
-        const num = this.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-        await this.filterAltitude(this.currentTrack, num - this.fs.lag - 1);
+        const num = this.fs.currentTrack?.features[0].geometry.coordinates.length ?? 0;
+        await this.filterAltitude(this.fs.currentTrack, num - this.fs.lag - 1);
         // compute distances
         await this.computeDistances();
         // Filter speed data
-        if (this.currentTrack) this.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
-          this.currentTrack.features[0].geometry.properties.data,
+        if (this.fs.currentTrack) this.fs.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
+          this.fs.currentTrack.features[0].geometry.properties.data,
           this.speedFiltered + 1
         );
         this.speedFiltered = num - 1;
         // Update HTML values
         await this.htmlValues();
         // display current track
-        await this.mapService.displayCurrentTrack(this.currentTrack);
+        await this.mapService.displayCurrentTrack(this.fs.currentTrack);
         // Trigger Angular's change detection
         this.cd.detectChanges();
       } catch (error) {
@@ -1456,11 +1294,8 @@ export class Tab1Page {
   try {
     // Give Angular time to finish ngOnInit
     await new Promise(resolve => setTimeout(resolve, 150));
-    // Save current visibility
-    const visible = this.fs.currentLayer?.getVisible() || false;
+    // Hide current track
     this.fs.currentLayer?.setVisible(false);
-    // Center map on archived track
-    this.mapService.setMapView(this.fs.archivedTrack);
     // Optional: adjust zoom/scale if needed
     const scale = 1;
     const mapWrapperElement: HTMLElement | null = document.getElementById('map-wrapper');
@@ -1473,9 +1308,7 @@ export class Tab1Page {
       success = await this.exportMapToImage(this.fs.map);
     }
     // Restore visibility of current track
-    this.fs.currentLayer?.setVisible(visible);
-    // Restore map provider
-    this.fs.mapProvider = this.fs.savedProvider
+    this.fs.currentLayer?.setVisible(true);
     // Handle result
     if (success) {
       this.fs.gotoPage('canvas');
@@ -1640,6 +1473,54 @@ async processKmz(data: any) {
     this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     // Geocoding Service
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
+  }
+
+  presentRecordPopover() {
+    this.isRecordPopoverOpen = true;
+  }
+
+  presentSearchPopover() {
+    this.isSearchPopoverOpen = true;
+  }
+
+  closeRecordPopover() {
+    this.isRecordPopoverOpen = false;
+  }
+
+  closeSearchPopover() {
+    this.isSearchPopoverOpen = false;
+  }
+
+  openConfirmStopPopover() {
+    this.isConfirmStopOpen = true;
+  }
+
+  confirmStop() {
+    this.isConfirmStopOpen = true;
+  }
+
+  confirmDeletion() {
+    this.isConfirmDeletionOpen = true;
+  }
+
+  yesConfirmStop(confirmed: boolean) {
+    if (confirmed) {
+      this.stopTracking();
+    }
+    this.closeAllPopovers();
+  }
+
+  yesConfirmDeletion(confirmed: boolean) {
+    if (confirmed) {
+      this.deleteTrack();
+    }
+    this.closeAllPopovers();
+  }
+
+  closeAllPopovers() {
+    this.isConfirmStopOpen = false;
+    this.isConfirmDeletionOpen = false;
+    this.isRecordPopoverOpen = false;
   }
 
 }

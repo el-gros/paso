@@ -29,7 +29,6 @@ import JSZip from "jszip";
 export class Tab2Page {
 
   numChecked: number = 0;
-  visibleSearch: boolean = false;
 
   constructor(
     public fs: FunctionsService,
@@ -64,7 +63,6 @@ export class Tab2Page {
 
   // 1. ON VIEW DID ENTER ////////////
   async ionViewDidEnter() {
-    this.visibleSearch = this.fs.searchLayer?.getVisible() || false;
     if (this.fs.buildTrackImage) await this.shareImages();
   }
 
@@ -114,15 +112,14 @@ export class Tab2Page {
   // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
     if (active) {
-      this.fs.layerVisibility = 'archived';
-      this.fs.archivedLayer?.setVisible(true);
-      this.fs.multiLayer?.setVisible(false);
+      // retrieve archived track
+      console.log('active?',active)
+      this.fs.archivedTrack = await this.fs.retrieveTrack() ?? this.fs.archivedTrack;
+      if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
     }
     else {
+      this.fs.archivedTrack = undefined;
       this.fs.archivedLayer?.getSource()?.clear();
-      this.fs.layerVisibility = 'none';
-      this.fs.archivedLayer?.setVisible(false);
-      await this.fs.uncheckAll();
     }
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
@@ -208,7 +205,6 @@ export class Tab2Page {
     var gpxText = await this.geoJsonToGpx(track.features?.[0]);
     const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
     const file: string = `${sanitizedName}.gpx`;
-
     // Generate KMZ file using geoJsonToKmz
     const base64Kmz = await this.geoJsonToKmz(track.features?.[0]);
     const kmzFile: string = `${sanitizedName}.kmz`;
@@ -241,24 +237,16 @@ export class Tab2Page {
       // Show error toast
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
     }
+    this.menu.close();
   }
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    if (active) {
-      await this.mapService.displayAllTracks();
-      this.fs.layerVisibility = 'multi';
-      this.fs.multiLayer?.setVisible(true);
-      this.fs.archivedLayer?.setVisible(false);
-      await this.mapService.centerAllTracks();
-    }
-    else {
-      this.fs.multiLayer?.getSource()?.clear();
-      this.fs.layerVisibility = 'none';
-      this.fs.multiLayer?.setVisible(false);
-    }
+    this.fs.archivedTrack = undefined;
+    this.fs.archivedLayer?.getSource()?.clear();
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
+    if (active) await this.mapService.displayAllTracks();
   }
 
   // 10. ION VIEW WILL LEAVE
@@ -268,8 +256,7 @@ export class Tab2Page {
 
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
-    this.fs.multiLayer?.getSource()?.clear();
-    this.fs.searchLayer?.setVisible(false);
+    this.fs.searchLayer?.getSource()?.clear();
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }
@@ -293,10 +280,6 @@ export class Tab2Page {
   async prepareImageExport() {
     // Inform tab1 on action to do
     this.fs.buildTrackImage = true;
-    // Save current map provider
-    this.fs.savedProvider = this.fs.mapProvider
-    // Set map to avoid CORS
-    this.fs.mapProvider = 'MapTiler_outdoor';
     // Display archived track
     await this.displayTrack(true);
   }

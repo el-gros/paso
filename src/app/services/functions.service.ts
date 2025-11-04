@@ -7,6 +7,7 @@
 import DOMPurify from 'dompurify';
 import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import Map from 'ol/Map';
+import { BehaviorSubject } from 'rxjs';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -16,9 +17,8 @@ import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Style } from 'ol/style';
-import { MultiPoint } from 'ol/geom';
-import { Feature } from 'ol';
+import { register } from 'swiper/element';
+register();
 
 @Injectable({
   providedIn: 'root'
@@ -34,24 +34,38 @@ export class FunctionsService {
   buildTrackImage: boolean = false;
   selectedAltitude: string = 'GPS'; // Default altitude method
   lag: number = 8;
-  layerVisibility: string = 'archived';
-  archivedPresent: boolean = false;
   currentColor: string = 'orange';
   archivedColor: string = 'green';
   audioAlert: string = 'on';
   alert: string = 'on';
   geocoding: string = 'nominatim';
-  savedProvider: string = '';
   mapProvider: string ='MapTiler_outdoor';
-  lastProvider: string ='';
   collection: TrackDefinition []= [];
   map: Map | undefined;
-  searchLayer: VectorLayer<VectorSource> | undefined;
-  multiLayer: VectorLayer<VectorSource> | undefined;
-  archivedLayer: VectorLayer<VectorSource> | undefined;
-  currentLayer: VectorLayer<VectorSource> | undefined;
+  currentLayer?: VectorLayer<VectorSource>
+  archivedLayer?: VectorLayer<VectorSource>
+  searchLayer?: VectorLayer<VectorSource>
   archivedTrack: Track | undefined = undefined;
-  status: 'black' | 'red' | 'green' = 'black'
+  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
+  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
+  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
+  status: 'black' | 'red' | 'green' = 'black';
+  currentPoint: number = 0;
+  state: string = 'inactive';
+  // Canvas
+  canvasNum: number = 400;
+  margin: number = 10;
+  // Current track
+  private _currentTrack = new BehaviorSubject<Track | undefined>(undefined);
+  currentTrack$ = this._currentTrack.asObservable(); // 👈 observable for others to subscribe
+  // Averages
+  currentAverageSpeed: number | undefined = undefined;
+  currentMotionSpeed: number | undefined = undefined;
+  currentMotionTime: string = '00:00:00';
+  averagedSpeed: number = 0;
+  stopped: number = 0;
+  // Re-draw tracks?
+  reDraw: boolean = false;
 
   constructor(
     private storage: Storage,
@@ -546,6 +560,158 @@ export class FunctionsService {
       console.error('Error getting current position:', error);
       return null;
     }
+  }
+
+  async updateCanvas(
+    ctx: CanvasRenderingContext2D | undefined,
+    track: Track | undefined,
+    propertyName: keyof Data,
+    xParam: string,
+  ): Promise<string> {
+    let tUnit = '';
+    if (!ctx) return tUnit;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
+    if (!track) return tUnit;
+    const data = track.features[0].geometry.properties.data;
+    const num = data.length ?? 0;
+    if (num === 0) return tUnit;
+    let xDiv = 1;
+    let xTot: number;
+    if (xParam === 'x') {
+      xTot = data[num - 1].distance;
+    } else {
+      xTot = data[num - 1].time - data[0].time;
+      if (xTot > 3600000) {
+        tUnit = 'h'; xDiv = 3600000;
+      } else if (xTot > 60000) {
+        tUnit = 'min'; xDiv = 60000;
+      } else {
+        tUnit = 's'; xDiv = 1000;
+      }
+      xTot /= xDiv;
+    }
+    const bounds = await this.computeMinMaxProperty(data, propertyName);
+    if (bounds.max === bounds.min) {
+      bounds.max += 2; bounds.min -= 2;
+    }
+    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
+    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
+    const offsetX = this.margin;
+    const offsetY = this.margin - bounds.max * scaleY;
+    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
+    ctx.beginPath();
+    ctx.moveTo(0, bounds.min);
+    for (const point of data) {
+      const xValue = xParam === 'x'
+        ? point.distance
+        : (point.time - data[0].time) / xDiv;
+      const yValue = point[propertyName];
+      ctx.lineTo(xValue, yValue);
+    }
+    ctx.lineTo(xTot, bounds.min);
+    ctx.closePath();
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
+    return tUnit;
+  }
+
+  async grid(
+    ctx: CanvasRenderingContext2D | undefined,
+    xMin: number,
+    xMax: number,
+    yMin: number,
+    yMax: number,
+    a: number,  // scaleX
+    d: number,  // scaleY
+    e: number,  // offsetX
+    f: number   // offsetY
+  ) {
+    if (!ctx) return;
+    // Save state first thing
+    ctx.save();
+    // Set up styles
+    ctx.font = '13px Arial';
+    ctx.strokeStyle = '#555';       // softer than black, more readable
+    ctx.fillStyle = '#333';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4, 8]);        // shorter dash for finer grid
+    // Compute grid intervals
+    const gridx = this.gridValue(xMax - xMin);
+    const gridy = this.gridValue(yMax - yMin);
+    const fx = Math.ceil(xMin / gridx);
+    const fy = Math.ceil(yMin / gridy);
+    // Vertical grid lines
+    for (let xi = fx * gridx; xi <= xMax; xi += gridx) {
+      const px = xi * a + e;
+      ctx.beginPath();
+      ctx.moveTo(px, yMin * d + f);
+      ctx.lineTo(px, yMax * d + f);
+      ctx.stroke();
+      // Draw X label
+      ctx.fillText(
+        xi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        px + 2,
+        yMax * d + f + 15
+      );
+    }
+    // Horizontal grid lines
+    for (let yi = fy * gridy; yi <= yMax; yi += gridy) {
+      const py = yi * d + f;
+      ctx.beginPath();
+      ctx.moveTo(xMin * a + e, py);
+      ctx.lineTo(xMax * a + e, py);
+      ctx.stroke();
+      // Draw Y label
+      ctx.fillText(
+        yi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        xMin * a + e + 2,
+        py - 5
+      );
+    }
+    // Restore canvas state and clear dashes
+    ctx.restore();
+    ctx.setLineDash([]);
+  }
+
+    gridValue(dx: number) {
+      const nx = Math.floor(Math.log10(dx));
+      const x = dx / (10 ** nx);
+      if (x < 2.5) return 0.5 * (10 ** nx);
+      else if (x < 5) return 10 ** nx;
+      else return 2 * (10 ** nx);
+    }
+  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
+    // Validate context
+    if (!context) {
+      return '';
+    }
+    // Open canvas
+    try {
+      // Hide canvas for the current or archived track
+      if (track === this.currentTrack || track === this.archivedTrack) {
+        const type = track === this.currentTrack ? 'c' : 'a';
+      }
+      // Update canvas
+      let lastUnit = '';
+      for (const [index, property] of Object.entries(this.properties)) {
+        const mode = property === 'altitude' ? 'x' : 't';
+        lastUnit = await this.updateCanvas(context[index], track, property, mode);
+      }
+      return lastUnit;
+    } finally {
+      // Close canvas
+    }
+  }
+
+  get currentTrack(): Track | undefined {
+    return this._currentTrack.value;
+  }
+
+  set currentTrack(track: Track | undefined) {
+    this._currentTrack.next(track); // 👈 triggers subscribers
   }
 
 }

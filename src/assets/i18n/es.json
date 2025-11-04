@@ -91,7 +91,8 @@
     "NOTICE2": "... o seleccioneu posició actual",
     "TOAST1": "No se ha encontrado ninguna ruta",
     "NETWORK_ERROR": "Error de red",
-    "DESTINATION": "Destino"
+    "DESTINATION": "Destino",
+    "BUTTON": "Buscar"
   },
 
   "MAP": {
@@ -110,6 +111,23 @@
     "TRACK_FINISHED": "El trayecto actual ha finalizado",
     "YES": "Sí",
     "TOIMAGE_FAILED": "No se ha podido generar la imagen"
+  },
+
+  "RECORD": {
+    "START_TRACKING": "Iniciar el registro del trayecto",
+    "STOP_TRACKING": "Finalizar el registro del trayecto",
+    "WAYPOINT": "Agregar punto de paso",
+    "SAVE_TRACK": "Guardar el trayecto",
+    "REMOVE_TRACK": "Eliminar el trayecto",
+    "CONFIRM_STOP": "Confirma la finalización?",
+    "CONFIRM_DELETION": "Confirma la eliminación?",
+    "STOP_YES": "Sí, finalizar",
+    "STOP_NO": "No, continuar",
+    "DELETE_YES": "Sí, eliminar",
+    "DELETE_NO": "No, continuar",
+    "BUTTON": "Grabar",
+    "LOCATION": "Buscar lugar",
+    "ROUTE": "Buscar ruta"
   }
 
 }

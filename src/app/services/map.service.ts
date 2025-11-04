@@ -13,8 +13,8 @@ import { global } from '../../environments/environment';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Feature from 'ol/Feature';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
+import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
 import TileLayer from 'ol/layer/Tile';
 import { OSM, XYZ } from 'ol/source';
 import VectorTileLayer from 'ol/layer/VectorTile';
@@ -34,6 +34,9 @@ import { map, catchError } from 'rxjs/operators';
 import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
 import { ServerService } from './server.service';
+import VectorSource from 'ol/source/Vector';
+import { transformWithProjections, useGeographic } from 'ol/proj';
+useGeographic();
 
 // 1. setMapView
 // 2. displayCurrentTrack
@@ -43,9 +46,9 @@ import { ServerService } from './server.service';
 // 6. centerAllTracks
 // 7. getColoredPin
 // 8. createPinStyle
-// 9. createLayers
-// 10. createMap
-// 11. updateMapProvider
+
+// 10. loadMap
+
 // 12. displayArchivedTrack
 // 13. displayAllTracks
 
@@ -65,7 +68,7 @@ export class MapService {
   constructor(
     private styleService: StyleService,
     private http: HttpClient,
-    private fs: FunctionsService,
+    public fs: FunctionsService,
     private server: ServerService
   ) { }
 
@@ -104,7 +107,7 @@ export class MapService {
     const features = source.getFeatures();
     const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
     const num = coordinates.length;
-    if (!Array.isArray(coordinates) || coordinates.length < 4) return;
+    if (!Array.isArray(coordinates) || coordinates.length < 3) return;
     // Update geometries efficiently
     features[0].setGeometry(new LineString(coordinates));
     features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
@@ -172,94 +175,44 @@ export class MapService {
     });
   }
 
-  // 9. CREATE LAYERS /////////////////////////////////////
-
-  createLayers() {
-    this.fs.currentLayer = new VectorLayer({ source: new VectorSource() });
-    this.fs.archivedLayer = new VectorLayer({ source: new VectorSource() });
-    this.fs.multiLayer = new VectorLayer({ source: new VectorSource() });
-    this.fs.searchLayer = new VectorLayer({ source: new VectorSource() });
-  }
-
-  // 10. CREATE MAP /////////////////////////////////////
-
-  async createMap(): Promise<void> {
-    let currentPosition: [number, number] | null = null;
-    console.log('i am in mapService')
-    if (this.fs.mapProvider !== 'catalonia') {
-      currentPosition = await this.fs.getCurrentPosition(false, 1000);
+  // 10. LOAD MAP //////////////////////////////////////
+  async loadMap(): Promise<void> {
+    // Ensure layers exist
+    this.fs.currentLayer = await this.createLayer(this.fs.currentLayer);
+    this.fs.archivedLayer = await this.createLayer(this.fs.archivedLayer);
+    this.fs.searchLayer = await this.createLayer(this.fs.searchLayer);
+    // Always (re)create the base layer and credits
+    const { olLayer, credits } = await this.createMapLayer();
+    if (!olLayer) {
+      console.warn('No base layer created.');
+      return;
     }
-    let olLayer: any;
-    let credits = '';
-    switch (this.fs.mapProvider) {
-      case 'OpenStreetMap':
-        credits = '© OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new OSM() });
-        break;
-      case 'OpenTopoMap':
-        credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-        olLayer = new TileLayer({ source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }) });
-        break;
-      case 'German_OSM':
-        credits = '© OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }) });
-        break;
-      case "MapTiler_streets":
-        credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
-        break;
-      case "MapTiler_outdoor":
-        credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
-        break;
-      case "MapTiler_hybrid":
-        credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
-        break;
-      case 'ICGC':
-        credits = 'Institut Cartogràfic i Geològic de Catalunya';
-        olLayer = new TileLayer({ source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }) });
-        break;
-      case 'IGN':
-        credits = 'Instituto Geográfico Nacional (IGN)';
-        olLayer = new TileLayer({
-          source: new XYZ({
-            url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-          }),
-        });
-        break;
-      case 'catalonia':
-        credits = '© MapTiler © OpenStreetMap contributors';
-        await this.server.openMbtiles('catalonia.mbtiles');
-        const sourceResult = await this.createSource(this.server);
-        if (sourceResult) {
-          olLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
-        }
-        break;
-      case 'MapTiler_v_outdoor':
-        credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new VectorTileLayer({
-          source: new VectorTileSource({
-            format: new MVT(),
-            url: `https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=${global.mapTilerKey}`,
-            maxZoom: 14,
-          }),
-        });
-        applyStyle( olLayer, `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`  )
-        break;
-      default:
-        credits = '© OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new OSM() });
-        break;
-    }
+    // Common zoom limits
     let minZoom = 0;
     let maxZoom = 19;
-    if (this.fs.mapProvider === 'catalonia') {
+    if (this.fs.mapProvider.toLowerCase() === 'catalonia') {
       minZoom = 6;
       maxZoom = 14;
+    }
+    // 🟢 CASE 1 — map already exists → only update base layer and zoom limits
+    if (this.fs.map) {
+      const map = this.fs.map;
+      const layers = map.getLayers();
+      // Replace the base layer at index 0
+      if (layers && layers.getLength() >= 1) {
+        map.removeLayer(layers.item(0));
+        map.getLayers().insertAt(0, olLayer);
+      }
+      // ✅ Keep view (center, zoom, rotation, etc.), just update zoom limits
+      const view = map.getView();
+      view.setMinZoom(minZoom);
+      view.setMaxZoom(maxZoom);
+      return; // done, no re-centering or re-creating map
+    }
+    // 🟢 CASE 2 — no existing map → create new one
+    let currentPosition: [number, number] | null = null;
+    if (this.fs.mapProvider !== 'catalonia') {
+      currentPosition = await this.fs.getCurrentPosition(false, 1000);
     }
     if (!currentPosition) {
       currentPosition = [2, 41];
@@ -273,147 +226,138 @@ export class MapService {
     });
     this.fs.map = new Map({
       target: 'map',
-      layers: [olLayer, this.fs.currentLayer, this.fs.archivedLayer, this.fs.multiLayer, this.fs.searchLayer].filter(Boolean),
+      layers: [
+        olLayer,
+        this.fs.currentLayer,
+        this.fs.archivedLayer,
+        this.fs.searchLayer
+      ].filter(Boolean) as BaseLayer[],
       view,
-      controls: [new Zoom(), new ScaleLine(), new Rotate(), new CustomControl(this, this.fs)],
+      controls: [
+        new Zoom(),
+        new ScaleLine(),
+        new Rotate(),
+        new CustomControl(this, this.fs),
+      ],
     });
-    this.fs.lastProvider = this.fs.mapProvider
-    this.fs.displayToast(credits);
     this.mapWrapperElement = document.getElementById('map-wrapper');
   }
 
-  // 11. CHANGE MAP PROVIDER
-
-  async updateMapProvider(): Promise< void > {
-    let newBaseLayer = null;
+  // 12. CREATE MAP LAYER
+  async createMapLayer() {
+    let olLayer;
     let credits = '';
-    if (!this.fs.map) return;
     switch (this.fs.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
-        newBaseLayer = new TileLayer({ source: new OSM() });
+        olLayer = new TileLayer({ source: new OSM() });
         break;
       case 'OpenTopoMap':
         credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
-        newBaseLayer = new TileLayer({
+        olLayer = new TileLayer({
           source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
         });
         break;
       case 'German_OSM':
         credits = '© OpenStreetMap contributors';
-        newBaseLayer = new TileLayer({
+        olLayer = new TileLayer({
           source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }),
         });
         break;
-      case "MapTiler_streets":
+      case 'MapTiler_streets':
+      case 'MapTiler_outdoor':
+      case 'MapTiler_hybrid': {
+        const mapType = this.fs.mapProvider.split('_')[1];
         credits = '© MapTiler © OpenStreetMap contributors';
-        newBaseLayer = new TileLayer({
-          source: new XYZ({ url: `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
+        olLayer = new TileLayer({
+          source: new XYZ({
+            url: `https://api.maptiler.com/maps/${mapType}/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
+            crossOrigin: 'anonymous',
+          }),
+        });
         break;
-      case "MapTiler_outdoor":
-        credits = '© MapTiler © OpenStreetMap contributors';
-        newBaseLayer = new TileLayer({
-          source: new XYZ({ url: `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
-        break;
-      case "MapTiler_hybrid":
-        credits = '© MapTiler © OpenStreetMap contributors';
-        newBaseLayer = new TileLayer({
-          source: new XYZ({ url: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.png?key=${global.mapTilerKey}`,
-          crossOrigin: 'anonymous' }) });
-        break;
+      }
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
-        newBaseLayer = new TileLayer({
+        olLayer = new TileLayer({
           source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }),
         });
         break;
       case 'IGN':
         credits = 'Instituto Geográfico Nacional (IGN)';
-        newBaseLayer = new TileLayer({
+        olLayer = new TileLayer({
           source: new XYZ({
             url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
           }),
         });
         break;
       case 'catalonia':
-        credits = '© MapTiler © OpenStreetMap contributors';
+        credits = 'Institut Cartogràfic i Geològic de Catalunya';
         this.fs.map?.getView().setCenter([2, 41]);
         this.fs.map?.getView().setZoom(8);
         await this.server.openMbtiles('catalonia.mbtiles');
         const sourceResult = await this.createSource(this.server);
-        if(sourceResult) {
-          newBaseLayer = new VectorTileLayer({ source: sourceResult, style: this.styleService.styleFunction });
+        if (sourceResult) {
+          olLayer = new VectorTileLayer({
+            source: sourceResult,
+            style: this.styleService.styleFunction,
+          });
         }
         break;
       case 'MapTiler_v_outdoor':
         credits = '© MapTiler © OpenStreetMap contributors';
-        newBaseLayer = new VectorTileLayer({
+        olLayer = new VectorTileLayer({
           source: new VectorTileSource({
             format: new MVT(),
             url: `https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=${global.mapTilerKey}`,
             maxZoom: 14,
-          })
+          }),
         });
-        applyStyle( newBaseLayer, `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`  )
+        await applyStyle(
+          olLayer,
+          `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`
+        );
         break;
     }
-    if (newBaseLayer) {
-      var olLayers = this.fs.map?.getLayers();
-      if (!olLayers || olLayers.getLength() < 2) return;
-      this.fs.map?.removeLayer(olLayers.item(0));
-      this.fs.map?.getLayers().insertAt(0, newBaseLayer);
-    } else {
-      console.warn('No base layer created.');
-      return;
-    }
-    this.fs.lastProvider = this.fs.mapProvider
-    await this.fs.displayToast(credits);
-    // Set min/max zoom
-    let minZoom = 0;
-    let maxZoom = 19;
-    if (this.fs.mapProvider.toLowerCase() === 'catalonia') {
-      minZoom = 6;
-      maxZoom = 14;
-    }
-    this.fs.map?.getView().setMinZoom(minZoom);
-    this.fs.map?.getView().setMaxZoom(maxZoom);
-    return;
+    return { olLayer, credits };
   }
 
   // 12. DISPLAY AN ARCHIVED TRACK
-
   async displayArchivedTrack(): Promise<void> {
-    if (!this.fs.map || !this.fs.archivedTrack || !this.fs.archivedLayer) return;
-    const coordinates = this.fs.archivedTrack.features[0].geometry.coordinates;
-    const num = coordinates.length;
-    if (num === 0) return;
-    this.fs.archivedLayer.getSource()?.clear();
-    const features = [new Feature(), new Feature(), new Feature(), new Feature(), new Feature()]
+    if (!this.fs.map || !this.fs.archivedTrack?.features?.length) return;
+    const coordinates = this.fs.archivedTrack.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length === 0) return;
+    var features = [new Feature(), new Feature(), new Feature(), new Feature()];
+    // Line
     features[0].setGeometry(new LineString(coordinates));
     features[0].setStyle(this.setStrokeStyle(this.fs.archivedColor));
+    // Start point
     features[1].setGeometry(new Point(coordinates[0]));
-    const greenPin = this.createPinStyle('green');
-    features[1].setStyle(greenPin);
-    features[3].setGeometry(new Point(coordinates[num - 1]));
-    const redPin = this.createPinStyle('red');
-    features[3].setStyle(redPin);
-    const waypoints = this.fs.archivedTrack.features[0].waypoints || [];
-    const multiPoint = waypoints.map((point: { longitude: any; latitude: any; }) => [point.longitude, point.latitude]);
-    features[4].setGeometry(new MultiPoint(multiPoint));
-    features[4].set('waypoints', waypoints);
-    const yellowPin = this.createPinStyle('yellow');
-    features[4].setStyle(yellowPin);
+    features[1].setStyle(this.createPinStyle('green'));
+    // End point
+    features[2].setGeometry(new Point(coordinates.at(-1)!));
+    features[2].setStyle(this.createPinStyle('red'));
+    // Optional waypoints
+    const waypoints = Array.isArray(this.fs.archivedTrack.features?.[0]?.waypoints)
+      ? this.fs.archivedTrack.features[0].waypoints
+      : [];
+    const multiPoint = waypoints
+      .filter(p => typeof p.longitude === 'number' && typeof p.latitude === 'number')
+      .map(p => [p.longitude, p.latitude]);
+    if (multiPoint.length > 0) {
+      features[3].setGeometry(new MultiPoint(multiPoint));
+      features[3].set('waypoints', waypoints);
+      features[3].setStyle(this.createPinStyle('yellow'));
+    }
+    this.fs.archivedLayer?.getSource()?.clear();
     this.fs.archivedLayer?.getSource()?.addFeatures(features);
-    this.fs.layerVisibility = 'archived';
-    this.fs.archivedLayer?.setVisible(true);
+    this.setMapView(this.fs.archivedTrack);
   }
 
   // 13. DISPLAY ALL TRACKS
 
   async displayAllTracks() {
-    if (!this.fs.map || !this.fs.collection || this.fs.collection.length == 0 || !this.fs.multiLayer) return;
+    if (!this.fs.map || !this.fs.collection || this.fs.collection.length == 0 || !this.fs.archivedLayer) return;
     const multiLine: any[] = [];
     const multiPoint: any[] = [];
     const multiKey: any[] = [];
@@ -431,7 +375,6 @@ export class MapService {
         multiKey.push(item.date);
       }
     }
-    this.fs.multiLayer?.getSource()?.clear();
     const features = [new Feature(), new Feature()];
     features[0].setGeometry(new MultiLineString(multiLine));
     features[0].setStyle(this.setStrokeStyle('black'));
@@ -439,7 +382,9 @@ export class MapService {
     features[1].set('multikey', multiKey);
     const greenPin = this.createPinStyle('green');
     features[1].setStyle(greenPin);
-    this.fs.multiLayer?.getSource()?.addFeatures(features);
+    this.fs.archivedLayer?.getSource()?.clear();
+    this.fs.archivedLayer?.getSource()?.addFeatures(features);
+    await this.centerAllTracks();
   }
 
   // 15. CREATE SOURCE //////////////////////////////
@@ -717,6 +662,35 @@ export class MapService {
       }
     }
     return { waypoints, trackPoints, trk };
+  }
+
+  async createLayer(layer?: VectorLayer) {
+    if (!layer) layer = new VectorLayer();
+    if (!layer.getSource()) layer.setSource(new VectorSource());
+    return layer;
+  }
+
+  async updateColors() {
+    // CURRENT TRACK
+    let features = this.fs.currentLayer?.getSource()?.getFeatures();
+    features?.forEach(f => {
+      const geomType = f.getGeometry()?.getType();
+      if (geomType === 'LineString') {
+        f.setStyle(this.setStrokeStyle(this.fs.currentColor));
+      }
+    });
+    // ARCHIVED TRACK
+    features = this.fs.archivedLayer?.getSource()?.getFeatures();
+    features?.forEach(f => {
+      const geomType = f.getGeometry()?.getType();
+      if (geomType === 'LineString') {
+        f.setStyle(this.setStrokeStyle(this.fs.archivedColor));
+      }
+    });
+    this.fs.currentLayer?.changed();
+    this.fs.archivedLayer?.changed();
+    this.fs.map?.render();
+    this.fs.reDraw = false;
   }
 
 }

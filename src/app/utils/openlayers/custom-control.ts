@@ -29,7 +29,7 @@ export class CustomControl extends Control {
 
   constructor(
     private mapService: MapService,
-    private fs: FunctionsService
+    public fs: FunctionsService
   ) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';

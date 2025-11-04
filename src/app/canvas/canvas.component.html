@@ -7,75 +7,75 @@
 
     <div class='empty'></div>
 
-    <div class='elementData card' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
-      @if (currentTrack) {
+    <div class='elementData card' [hidden]="!fs.currentTrack || fs.currentTrack.features[0].geometry.coordinates.length < 2">
+      @if (fs.currentTrack) {
         <table>
           <tr [ngClass]="fs.status">
             <td colspan="2">{{ 'CANVAS.CURTITLE' | translate }}</td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.DISTANCE' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
+            <td>{{ fs.currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.EGAIN' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>
+            <td>{{ fs.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>
           </tr>
             <td>{{ 'CANVAS.ELOSS' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
+            <td>{{ fs.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
           <tr>
             <td>{{ 'CANVAS.TIME' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalTime }}</td>
+            <td>{{ fs.currentTrack.features[0].properties.totalTime }}</td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.MOTIONTIME' | translate }}</td>
-            <td>{{ currentMotionTime }}</td>
+            <td>{{ fs.currentMotionTime }}</td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.POINTS' | translate }}</td>
-            <td>{{ currentTrack.features[0].properties.totalNumber }}</td>
+            <td>{{ fs.currentTrack.features[0].properties.totalNumber }}</td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.ALTITUDE' | translate }}</td>
-            @if (currentTrack.features[0].properties.currentAltitude !== undefined) {
-              <td>{{ currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} m</td>
+            @if (fs.currentTrack.features[0].properties.currentAltitude !== undefined) {
+              <td>{{ fs.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} m</td>
             }
           </tr>
           <tr>
             <td>{{ 'CANVAS.SPEED' | translate }}</td>
             <td>
-              @if (currentTrack.features[0].properties.currentAltitude !== undefined) {
-                <div>{{ currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} km/h</div>
+              @if (fs.currentTrack.features[0].properties.currentAltitude !== undefined) {
+                <div>{{ fs.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} km/h</div>
               }
             </td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.AVGSPEED' | translate }}</td>
             <td>
-              @if (currentAverageSpeed !== undefined) {
-                <div>{{ currentAverageSpeed | number: '1.1-1' }} km/h</div>
+              @if (fs.currentAverageSpeed !== undefined) {
+                <div>{{ fs.currentAverageSpeed | number: '1.1-1' }} km/h</div>
               }
             </td>
           </tr>
           <tr>
             <td>{{ 'CANVAS.MOTIONAVGSPEED' | translate }}</td>
             <td>
-              @if (currentMotionSpeed !== undefined) {
-                <div>{{ currentMotionSpeed | number: '1.1-1' }} km/h</div>
+              @if (fs.currentMotionSpeed !== undefined) {
+                <div>{{ fs.currentMotionSpeed | number: '1.1-1' }} km/h</div>
               }
             </td>
           </tr>
-          @if (fs.status == 'green' && fs.archivedTrack && currentPoint) {
+          @if (fs.status == 'green' && fs.archivedTrack && fs.currentPoint) {
             <tr>
               <td>{{ 'CANVAS.FROM_START' | translate }}</td>
               <td>
-                <div>{{ fs.archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
+                <div>{{ fs.archivedTrack.features[0].geometry.properties.data[fs.currentPoint].distance | number: '1.3' }} km</div>
               </td>
             </tr>
             <tr>
               <td>{{ 'CANVAS.TO_END' | translate }}</td>
               <td>
-                <div>{{ fs.archivedTrack.features[0].properties.totalDistance - fs.archivedTrack.features[0].geometry.properties.data[currentPoint].distance | number: '1.3' }} km</div>
+                <div>{{ fs.archivedTrack.features[0].properties.totalDistance - fs.archivedTrack.features[0].geometry.properties.data[fs.currentPoint].distance | number: '1.3' }} km</div>
               </td>
             </tr>
           }
@@ -83,14 +83,14 @@
       }
     </div>
 
-    <div class='elementCanvas' id='cc0' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
+    <div class='elementCanvas' id='cc0' [hidden]="!fs.currentTrack || fs.currentTrack.features[0].geometry.coordinates.length < 2">
       <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-      <canvas class='canvas' id="currCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+      <canvas class='canvas' id="currCanvas0" [attr.width]="fs.canvasNum" [attr.height]="fs.canvasNum"></canvas>
     </div>
 
-    <div class='elementCanvas' id='cc1' [hidden]="!currentTrack || currentTrack.features[0].geometry.coordinates.length < 2">
+    <div class='elementCanvas' id='cc1' [hidden]="!fs.currentTrack || fs.currentTrack.features[0].geometry.coordinates.length < 2">
       <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
-      <canvas class='canvas' id="currCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+      <canvas class='canvas' id="currCanvas1" [attr.width]="fs.canvasNum" [attr.height]="fs.canvasNum"></canvas>
     </div>
 
     <div class='empty'></div>
@@ -104,7 +104,7 @@
     <div class='empty'></div>
 
     <div id="exportArea">
-      <div class='elementData card' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+      <div class='elementData card' [hidden]="!fs.archivedTrack">
         @if (fs.archivedTrack) {
           <table>
             <tr>
@@ -153,15 +153,15 @@
         }
       </div>
 
-      <div class='elementCanvas' id='ac0' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+      <div class='elementCanvas' id='ac0' [hidden]="!fs.archivedTrack">
         <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-        <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+        <canvas class='canvas' id="archCanvas0" [attr.width]="fs.canvasNum" [attr.height]="fs.canvasNum"></canvas>
       </div>
     </div>
 
-    <div class='elementCanvas' id='ac1' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+    <div class='elementCanvas' id='ac1' [hidden]="!fs.archivedTrack">
       <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
-      <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+      <canvas class='canvas' id="archCanvas1" [attr.width]="fs.canvasNum" [attr.height]="fs.canvasNum"></canvas>
     </div>
 
     <div class='empty'></div>
@@ -173,7 +173,7 @@
 
   <swiper-slide>
     <div class='empty'></div>
-    <div class='elementData card' [hidden]="!fs.archivedTrack || fs.layerVisibility != 'archived'">
+    <div class='elementData card' [hidden]="!fs.archivedTrack">
       @if (fs.archivedTrack) {
         <table class="partials">
           <tr>
