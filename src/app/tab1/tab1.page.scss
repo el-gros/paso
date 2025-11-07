@@ -1,6 +1,3 @@
-ion-icon {
-  color: black
-}
 
 ion-fab-button {
   --background: #45ff2f !important;
@@ -113,7 +110,6 @@ ion-fab-button {
 
 /* ----- Common Popover Styling ----- */
 ion-popover {
-  --width: 260px;
   --max-width: 90%;
   --border-radius: 12px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
@@ -121,7 +117,7 @@ ion-popover {
 }
 
 /* ----- Default item look ----- */
-ion-item {
+.confirm {
   font-weight: 400;
   transition: all 0.2s ease-in-out;
   --inner-padding-end: 0;
@@ -131,23 +127,23 @@ ion-item {
 }
 
 /* Enabled items (same green theme) */
-ion-item.enabled {
+/*ion-item.enabled {
   font-weight: 600;
-  color: #2e7d32;            /* strong green */
-  background-color: #e8f5e9; /* pale green */
-  --background: #e8f5e9;     /* Ionic variable consistency */
+  color: #2e7d32;
+  background-color: #e8f5e9;
+  --background: #e8f5e9;
 }
 
-/* Disabled items */
+Disabled items
 ion-item:not(.enabled) {
   opacity: 0.6;
   color: #777;
 }
 
-/* Tap animation */
+Tap animation
 ion-item:active {
   transform: scale(0.98);
-}
+} */
 
 /* ----- Confirmation popovers ----- */
 
@@ -175,22 +171,48 @@ ion-item#cancel {
   justify-content: center;
   width: 60px;
   height: 60px;
+  border: none;
   border-radius: 15px;
-  background-color: #45ff2f !important;
-  color: black;
   font-weight: 600;
   font-size: 0.9rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.3s;
+  ion-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1px;
+  }
+}
+
+.map-color {
+  background-color: #45ff2f !important;
+  color: black;
+  ion-icon {
+    color: black
+  }
+}
+
+.green-color {
+  background-color: green !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
+}
+
+.red-color {
+  background-color: red !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
+}
+
+.record-button:disabled {
+  opacity: 0.3;
 }
 
 .record-button:active {
   transform: scale(0.95);
-}
-
-.record-button ion-icon {
-  font-size: 1.5rem;
-  margin-bottom: 1px;
 }
 
 ion-row {

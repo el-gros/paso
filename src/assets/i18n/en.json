@@ -93,8 +93,8 @@
     "NETWORK_ERROR": "Network error",
     "DESTINATION": "Destination",
     "BUTTON": "Search",
-    "LOCATION": "Search place",
-    "ROUTE": "Search route"
+    "LOCATION": "Place",
+    "ROUTE": "Route"
   },
 
   "MAP": {
@@ -112,21 +112,22 @@
     "CURRENT_TRACK_DELETED": "The current track has been deleted",
     "TRACK_FINISHED": "The current track has finished",
     "YES": "Yes",
-    "TOIMAGE_FAILED": "Failed to generate image"
+    "TOIMAGE_FAILED": "Failed to generate image",
+    "DATA_BUTTON": "Data",
+    "ARCHIVE_BUTTON": "Archive",
+    "SETTINGS_BUTTON": "Settings"
   },
 
     "RECORD": {
-    "START_TRACKING": "Start tracking",
-    "STOP_TRACKING": "Stop tracking",
-    "WAYPOINT": "Add waypoint",
-    "SAVE_TRACK": "Save track",
-    "REMOVE_TRACK": "Remove track",
+    "START_TRACKING": "Start",
+    "STOP_TRACKING": "Stop",
+    "WAYPOINT": "Wpt.",
+    "SAVE_TRACK": "Save",
+    "REMOVE_TRACK": "Remove",
     "CONFIRM_STOP": "Confirm stop?",
     "CONFIRM_DELETION": "Confirm deletion?",
-    "STOP_YES": "Yes, stop it",
-    "STOP_NO": "No, continue",
-    "DELETE_YES": "Yes, delete it",
-    "DELETE_NO": "No, continue",
+    "DELETE_YES": "Yes",
+    "DELETE_NO": "No",
     "BUTTON": "Record"
   }
 

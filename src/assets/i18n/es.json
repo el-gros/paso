@@ -92,7 +92,9 @@
     "TOAST1": "No se ha encontrado ninguna ruta",
     "NETWORK_ERROR": "Error de red",
     "DESTINATION": "Destino",
-    "BUTTON": "Buscar"
+    "BUTTON": "Buscar",
+    "LOCATION": "Lugar",
+    "ROUTE": "Ruta"
   },
 
   "MAP": {
@@ -110,24 +112,23 @@
     "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
     "TRACK_FINISHED": "El trayecto actual ha finalizado",
     "YES": "Sí",
-    "TOIMAGE_FAILED": "No se ha podido generar la imagen"
+    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
+    "DATA_BUTTON": "Datos",
+    "ARCHIVE_BUTTON": "Archivo",
+    "SETTINGS_BUTTON": "Config."
   },
 
   "RECORD": {
-    "START_TRACKING": "Iniciar el registro del trayecto",
-    "STOP_TRACKING": "Finalizar el registro del trayecto",
-    "WAYPOINT": "Agregar punto de paso",
-    "SAVE_TRACK": "Guardar el trayecto",
-    "REMOVE_TRACK": "Eliminar el trayecto",
+    "START_TRACKING": "Iniciar",
+    "STOP_TRACKING": "Parar",
+    "WAYPOINT": "Wpt.",
+    "SAVE_TRACK": "Guardar",
+    "REMOVE_TRACK": "Eliminar",
     "CONFIRM_STOP": "Confirma la finalización?",
     "CONFIRM_DELETION": "Confirma la eliminación?",
-    "STOP_YES": "Sí, finalizar",
-    "STOP_NO": "No, continuar",
-    "DELETE_YES": "Sí, eliminar",
-    "DELETE_NO": "No, continuar",
-    "BUTTON": "Grabar",
-    "LOCATION": "Buscar lugar",
-    "ROUTE": "Buscar ruta"
+    "DELETE_YES": "Sí",
+    "DELETE_NO": "No",
+    "BUTTON": "Grabar"
   }
 
 }

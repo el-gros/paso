@@ -33,8 +33,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   vMin: number = 1;
   partialSpeeds: PartialSpeed[] = [];
+  subscription?: Subscription;
 
-  private subscriptions: Subscription = new Subscription();
   constructor(
     public fs: FunctionsService,
     private translate: TranslateService
@@ -52,26 +52,32 @@ export class CanvasComponent implements OnInit, OnDestroy {
   // 1. ON INIT ///////////////////
   async ngOnInit() {
     await this.createCanvas();
-    this.subscriptions.add(
-      this.fs.currentTrack$.subscribe(async (track) => {
-        if (track && this.fs.currentCtx) {
-          this.currentUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, track);
-        }
-      })
-    );
   }
 
   // 2. ON DESTROY ///////////////////
   ngOnDestroy() {
-    this.subscriptions.unsubscribe();
+    this.subscription?.unsubscribe();
   }
 
   // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
+    // Update
     if (this.fs.archivedTrack) {
       this.archivedUnit = await this.fs.updateAllCanvas(this.fs.archivedCtx, this.fs.archivedTrack);
       this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.archivedTrack);
     }
+    if (this.fs.currentTrack) {
+      this.archivedUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, this.fs.currentTrack);
+      this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.currentTrack);
+      await this.averageSpeed();
+    }
+    // On changes, update
+    this.subscription =  this.fs.currentTrack$.subscribe(async (track) => {
+      if (track && this.fs.currentCtx) {
+        this.currentUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, track);
+        await this.averageSpeed();
+      }
+    })
     // Variables
     if (this.fs.buildTrackImage) {
       var success: boolean = false;
@@ -171,6 +177,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
       console.error('Failed to export area:', err);
       return false;
     }
+  }
+
+  ionViewWillLeave() {
+      this.subscription?.unsubscribe();
   }
 
 }

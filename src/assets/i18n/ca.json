@@ -96,8 +96,8 @@
     "NETWORK_ERROR": "Error de xarxa",
     "DESTINATION": "Destinació",
     "BUTTON": "Cercar",
-    "LOCATION": "Cercar lloc",
-    "ROUTE": "Cercar ruta"
+    "LOCATION": "Lloc",
+    "ROUTE": "Ruta"
   },
 
   "MAP": {
@@ -115,21 +115,22 @@
     "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
     "TRACK_FINISHED": "El trajecte actual ha finalitzat",
     "YES": "Sí",
-    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge"
+    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
+    "DATA_BUTTON": "Dades",
+    "ARCHIVE_BUTTON": "Arxiu",
+    "SETTINGS_BUTTON": "Config."
   },
 
   "RECORD": {
-    "START_TRACKING": "Iniciar el registre del trajecte",
-    "STOP_TRACKING": "Finalitzar el registre del trajecte",
-    "WAYPOINT": "Afegir punt de pas",
-    "SAVE_TRACK": "Desar el trajecte",
-    "REMOVE_TRACK": "Eliminar el trajecte",
+    "START_TRACKING": "Iniciar",
+    "STOP_TRACKING": "Aturar",
+    "WAYPOINT": "Wpt.",
+    "SAVE_TRACK": "Desar",
+    "REMOVE_TRACK": "Eliminar",
     "CONFIRM_STOP": "Confirmeu la finalització?",
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
-    "STOP_YES": "Sí, finalitzar",
-    "STOP_NO": "No, continuar",
-    "DELETE_YES": "Sí, eliminar",
-    "DELETE_NO": "No, continuar",
+    "DELETE_YES": "Si",
+    "DELETE_NO": "No",
     "BUTTON": "Gravar"
   }
 

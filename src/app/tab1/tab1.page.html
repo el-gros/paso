@@ -1,15 +1,15 @@
 <!-- FAB button -->
 <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
   <ion-row>
-    <div class="record-button" (click)="presentRecordPopover()">
+    <div class="record-button map-color" (click)="isRecordPopoverOpen = true">
       <ion-icon name="recording-sharp"></ion-icon>
       <span>{{ 'RECORD.BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="presentSearchPopover()">
+    <div class="record-button map-color" (click)="isSearchPopoverOpen = true;">
       <ion-icon name="help-sharp"></ion-icon>
       <span>{{ 'SEARCH.BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="mapService.cycleZoom()">
+    <div class="record-button map-color" (click)="mapService.cycleZoom()">
       <ion-icon name="search-sharp"></ion-icon>
       <span>Zoom</span>
     </div>
@@ -24,68 +24,72 @@
   <div class="safe-area"></div>
 </ion-content>
 
+<!-- space for android controls -->
+<div class="bottom-safe-gray"></div>
+
 <!-- Navigation buttons (unchanged) -->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
-    <ion-fab-button (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics"></ion-icon>
-    </ion-fab-button>
-    <ion-fab-button (click)="fs.gotoPage('archive')">
-      <ion-icon name="list"></ion-icon>
-    </ion-fab-button>
-    <ion-fab-button (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings"></ion-icon>
-    </ion-fab-button>
+    <div class="record-button map-color" (click)="fs.gotoPage('canvas')">
+      <ion-icon name="analytics-sharp"></ion-icon>
+      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button map-color" (click)="fs.gotoPage('archive')">
+      <ion-icon name="list-sharp"></ion-icon>
+      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button map-color" (click)="fs.gotoPage('settings')">
+      <ion-icon name="settings-sharp"></ion-icon>
+      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+    </div>
   </ion-row>
 </ion-fab>
 
-<!-- The popover itself -->
+<!-- The record popover -->
 <ion-popover
   [isOpen]="isRecordPopoverOpen"
   (didDismiss)="isRecordPopoverOpen = false"
 >
   <ng-template>
     <ion-list>
-      <ion-item
-        button
-        [disabled]="fs.state!='inactive'"
-        [class.enabled]="fs.state==='inactive'"
-        (click)="startTracking(); closeRecordPopover()"
-      >
-        {{ 'RECORD.START_TRACKING' | translate }}
-      </ion-item>
-      <ion-item
-        button
-        [disabled]="fs.state!='tracking'"
-        [class.enabled]="fs.state==='tracking'"
-        (click)="waypoint(); closeRecordPopover()"
-      >
-        {{ 'RECORD.WAYPOINT' | translate }}
-      </ion-item>
-      <ion-item
-        button
-        [disabled]="fs.state!='tracking'"
-        [class.enabled]="fs.state==='tracking'"
-        (click)="confirmStop()"
-      >
-        {{ 'RECORD.STOP_TRACKING' | translate }}
-      </ion-item>
-      <ion-item
-        button
-        [disabled]="fs.state!='stopped'"
-        [class.enabled]="fs.state==='stopped'"
-        (click)="setTrackDetails(); closeRecordPopover()"
-      >
-        {{ 'RECORD.SAVE_TRACK' | translate }}
-      </ion-item>
-      <ion-item
-        button
-        [disabled]="fs.state != 'stopped' && fs.state != 'saved'"
-        [class.enabled]="fs.state==='stopped' || fs.state==='saved'"
-        (click)="confirmDeletion()"
-      >
-        {{ 'RECORD.REMOVE_TRACK' | translate }}
-      </ion-item>
+      <ion-row>
+        <button class="record-button map-color"
+          [disabled]="fs.state!='inactive'"
+          (click)="startTracking(); isRecordPopoverOpen = false"
+        >
+          <ion-icon name="caret-forward-circle-sharp"></ion-icon>
+          <span>{{ 'RECORD.START_TRACKING' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          [disabled]="fs.state!='tracking'"
+          (click)="waypoint(); isRecordPopoverOpen = false"
+        >
+          <ion-icon name="pin-sharp"></ion-icon>
+          <span>{{ 'RECORD.WAYPOINT' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          [disabled]="fs.state!='tracking'"
+          (click)="isConfirmStopOpen = true;"
+        >
+          <ion-icon name="stop-circle-sharp"></ion-icon>
+          <span>{{ 'RECORD.STOP_TRACKING' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          [disabled]="fs.state!='stopped'"
+          [class.enabled]="fs.state==='stopped'"
+          (click)="setTrackDetails(); isRecordPopoverOpen = false"
+        >
+          <ion-icon name="save-sharp"></ion-icon>
+          <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          [disabled]="fs.state != 'stopped' && fs.state != 'saved'"
+          (click)="isConfirmDeletionOpen = true;"
+        >
+          <ion-icon name="trash-sharp"></ion-icon>
+          <span>{{ 'RECORD.REMOVE_TRACK' | translate }}</span>
+        </button>
+      </ion-row>
     </ion-list>
   </ng-template>
 </ion-popover>
@@ -96,15 +100,23 @@
 >
   <ng-template>
     <ion-list>
-      <ion-item lines="none">
+      <ion-item class="confirm" lines="none">
         <ion-label><strong>{{ 'RECORD.CONFIRM_STOP' | translate }}</strong></ion-label>
       </ion-item>
-      <ion-item button id="ok" (click)="yesConfirmStop(true)">
-        {{ 'RECORD.STOP_YES' | translate }}
-      </ion-item>
-      <ion-item button id="cancel" (click)="yesConfirmStop(false)">
-        {{ 'RECORD.STOP_NO' | translate }}
-      </ion-item>
+      <ion-row>
+        <button class="record-button green-color"
+          (click)="stopTracking(); closeAllPopovers()"
+        >
+          <ion-icon name="happy-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
+        </button>
+        <button class="record-button red-color"
+          (click)="closeAllPopovers()"
+        >
+          <ion-icon name="sad-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
+        </button>
+      </ion-row>
     </ion-list>
   </ng-template>
 </ion-popover>
@@ -115,15 +127,23 @@
 >
   <ng-template>
     <ion-list>
-      <ion-item lines="none">
+      <ion-item class="confirm" lines="none">
         <ion-label><strong>{{ 'RECORD.CONFIRM_DELETION' | translate }}</strong></ion-label>
       </ion-item>
-      <ion-item button id="ok" (click)="yesConfirmDeletion(true)">
-        {{ 'RECORD.DELETE_YES' | translate }}
-      </ion-item>
-      <ion-item button id="cancel" (click)="yesConfirmDeletion(false)">
-        {{ 'RECORD.DELETE_NO' | translate }}
-      </ion-item>
+      <ion-row>
+        <button class="record-button green-color"
+          (click)="deleteTrack(); closeAllPopovers()"
+        >
+          <ion-icon name="happy-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
+        </button>
+        <button class="record-button red-color"
+          (click)="closeAllPopovers()"
+        >
+          <ion-icon name="sad-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
+        </button>
+      </ion-row>
     </ion-list>
   </ng-template>
 </ion-popover>
@@ -134,20 +154,20 @@
 >
   <ng-template>
     <ion-list>
-      <ion-item
-        button
-        [class.enabled] = true
-        (click)="search(); closeSearchPopover()"
-      >
-        {{ 'SEARCH.LOCATION'| translate }}
-      </ion-item>
-      <ion-item
-        button
-        [class.enabled] = true
-        (click)="guide(); closeSearchPopover()"
-      >
-        {{ 'SEARCH.ROUTE' | translate }}
-      </ion-item>
+      <ion-row>
+        <button class="record-button map-color"
+          (click)="search(); closeAllPopovers()"
+        >
+          <ion-icon name="location-sharp"></ion-icon>
+          <span>{{ 'SEARCH.LOCATION' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          (click)="guide(); closeAllPopovers()"
+        >
+          <ion-icon name="walk-sharp"></ion-icon>
+          <span>{{ 'SEARCH.ROUTE' | translate }}</span>
+        </button>
+      </ion-row>
     </ion-list>
   </ng-template>
 </ion-popover>

@@ -1475,52 +1475,11 @@ async processKmz(data: any) {
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
-  presentRecordPopover() {
-    this.isRecordPopoverOpen = true;
-  }
-
-  presentSearchPopover() {
-    this.isSearchPopoverOpen = true;
-  }
-
-  closeRecordPopover() {
-    this.isRecordPopoverOpen = false;
-  }
-
-  closeSearchPopover() {
-    this.isSearchPopoverOpen = false;
-  }
-
-  openConfirmStopPopover() {
-    this.isConfirmStopOpen = true;
-  }
-
-  confirmStop() {
-    this.isConfirmStopOpen = true;
-  }
-
-  confirmDeletion() {
-    this.isConfirmDeletionOpen = true;
-  }
-
-  yesConfirmStop(confirmed: boolean) {
-    if (confirmed) {
-      this.stopTracking();
-    }
-    this.closeAllPopovers();
-  }
-
-  yesConfirmDeletion(confirmed: boolean) {
-    if (confirmed) {
-      this.deleteTrack();
-    }
-    this.closeAllPopovers();
-  }
-
   closeAllPopovers() {
     this.isConfirmStopOpen = false;
     this.isConfirmDeletionOpen = false;
     this.isRecordPopoverOpen = false;
+    this.isSearchPopoverOpen = false;
   }
 
 }
