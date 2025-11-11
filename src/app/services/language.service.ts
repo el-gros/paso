@@ -58,7 +58,7 @@ export class LanguageService {
   async determineLanguage() {
     try {
       const info = await Device.getLanguageCode();
-      let deviceLanguage = info.value.split('-')[0]; // base code like "es"
+      let deviceLanguage = info.value; // base code like "es"
       console.log('Device Language:', deviceLanguage);
       // Optional mapping/override
       deviceLanguage = await this.fs.check(deviceLanguage, 'lang');

@@ -97,7 +97,12 @@
     "DESTINATION": "Destinació",
     "BUTTON": "Cercar",
     "LOCATION": "Lloc",
-    "ROUTE": "Ruta"
+    "ROUTE": "Ruta",
+    "INSTRUCTION": "Què busqueu?",
+    "SEARCH": "Cercar",
+    "LIST": "Llista",
+    "FROM": "Des de",
+    "TO": "Fins a"
   },
 
   "MAP": {
@@ -118,7 +123,9 @@
     "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
     "DATA_BUTTON": "Dades",
     "ARCHIVE_BUTTON": "Arxiu",
-    "SETTINGS_BUTTON": "Config."
+    "SETTINGS_BUTTON": "Config.",
+    "FROM": "From",
+    "TO": "To"
   },
 
   "RECORD": {
@@ -131,7 +138,9 @@
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Si",
     "DELETE_NO": "No",
-    "BUTTON": "Gravar"
+    "BUTTON": "Gravar",
+    "FROM": "Desde",
+    "TO": "Hasta"
   }
 
 }

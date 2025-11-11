@@ -4,13 +4,18 @@ import { FunctionsService } from './services/functions.service';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { File } from '@awesome-cordova-plugins/file/ngx';
-import { SharedImports } from './shared-imports';
+import { IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  imports: [SharedImports],
+  imports: [
+    IonicModule, CommonModule, FormsModule, TranslateModule
+  ],
   providers: [SocialSharing, FilePath, File]
 })
 export class AppComponent {

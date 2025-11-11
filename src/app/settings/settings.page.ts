@@ -7,8 +7,8 @@
 
 import { FunctionsService } from '../services/functions.service';
 import { Component, ViewChild, ElementRef, OnDestroy } from '@angular/core';
-import { AlertController, LoadingController, AlertInput } from '@ionic/angular';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { AlertController, LoadingController, AlertInput, IonicModule } from '@ionic/angular';
+import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { global } from '../../environments/environment';
 import { register } from 'swiper/element/bundle';
 import { ServerService } from '../services/server.service';
@@ -19,9 +19,9 @@ import { ColorPopoverComponent } from '../color-popover/color-popover.component'
 import { Subscription, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { LanguageService } from '../services/language.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageOption } from '../../globald';
-import { SharedImports } from '../shared-imports';
+import { FormsModule } from '@angular/forms';
 
 register();
 
@@ -30,7 +30,9 @@ register();
     selector: 'app-settings',
     templateUrl: 'settings.page.html',
     styleUrls: ['settings.page.scss'],
-    imports: [SharedImports],
+    imports: [
+      IonicModule, CommonModule, FormsModule, TranslateModule
+    ],
     providers: [DecimalPipe, DatePipe],
 })
 
@@ -40,11 +42,11 @@ export class SettingsPage implements OnDestroy {
   private progressSubscription?: Subscription; // 🔹 Store subscription
   // Language
   languages: LanguageOption[] = [
-    { name: 'Català', code: 'ca' },
-    { name: 'Español', code: 'es' },
-    { name: 'English', code: 'en' }
+    { name: 'Català', code: 'ca-ES' },
+    { name: 'Español', code: 'es-ES' },
+    { name: 'English', code: 'en-EN' }
   ];
-  selectedLanguage: any = {name:'English', code:'en'}
+  selectedLanguage: any = {name:'English', code:'en-EN'}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];

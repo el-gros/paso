@@ -10,16 +10,20 @@
  * @input showAltitude - Boolean flag to show or hide altitude field.
  */
 import { Component, Input, OnInit } from '@angular/core';
-import { ModalController } from '@ionic/angular';
-import { SharedImports } from '../shared-imports';
+import { IonicModule, ModalController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
+    standalone: true,
     selector: 'app-wpt-modal',
     templateUrl: './wpt-modal.component.html',
     styleUrls: ['./wpt-modal.component.scss'],
-    imports: [SharedImports]
+    imports: [
+      IonicModule, CommonModule, FormsModule, TranslateModule
+    ],
 })
 export class WptModalComponent  implements OnInit {
   // Input for modal content

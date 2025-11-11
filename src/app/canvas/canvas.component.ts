@@ -10,13 +10,15 @@
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
-import { SharedImports } from '../shared-imports';
 import { FunctionsService } from '../services/functions.service';
 import { register } from 'swiper/element/bundle';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 
 import * as htmlToImage from 'html-to-image';
+import { IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 register();
 
 @Component({
@@ -24,7 +26,9 @@ register();
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  imports: [SharedImports],
+  imports: [
+    IonicModule, CommonModule, FormsModule, TranslateModule
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class CanvasComponent implements OnInit, OnDestroy {

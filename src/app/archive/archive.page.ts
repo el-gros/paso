@@ -8,22 +8,26 @@
  */
 
 import { Component } from '@angular/core';
-import { AlertController } from '@ionic/angular';
+import { AlertController, IonicModule } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
-import { SharedImports } from '../shared-imports';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import JSZip from "jszip";
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
+    standalone: true,
     selector: 'app-archive',
     templateUrl: 'archive.page.html',
-    imports: [SharedImports],
+    imports: [
+      [IonicModule, CommonModule, FormsModule, TranslateModule]
+    ],
     styleUrls: ['archive.page.scss']
 })
 export class Tab2Page {

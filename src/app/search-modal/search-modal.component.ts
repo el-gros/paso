@@ -10,22 +10,25 @@
 
 import { firstValueFrom } from 'rxjs';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { Component, OnInit } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { IonicModule, ModalController } from '@ionic/angular';
 import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
 import { LanguageService } from '../services/language.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MapService } from '../services/map.service';
 import { LocationResult, Route } from '../../globald';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { SharedImports } from '../shared-imports';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 
 @Component({
     selector: 'app-search-modal',
     templateUrl: './search-modal.component.html',
     styleUrls: ['./search-modal.component.scss'],
-    imports: [SharedImports],
+    imports: [IonicModule, TranslateModule],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class SearchModalComponent implements OnInit {

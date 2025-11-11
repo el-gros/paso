@@ -5,10 +5,9 @@
  * Relies on organization-specific services for map, storage, geolocation, and translation functionalities.
  */
 
-import { Component, NgZone } from '@angular/core';
-import { SharedImports } from '../shared-imports';
-import { DecimalPipe, DatePipe } from '@angular/common';
-import { Capacitor, PluginListenerHandle, registerPlugin } from "@capacitor/core";
+import { Component, NgZone, Inject } from '@angular/core';
+import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
+import { CapacitorHttp, PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
@@ -30,23 +29,30 @@ import { ForegroundService } from '@capawesome-team/capacitor-android-foreground
 import GeoJSON from 'ol/format/GeoJSON';
 import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
-import { ModalController } from '@ionic/angular';
+import { IonicModule, ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { lastValueFrom } from 'rxjs';
 import { LanguageService } from '../services/language.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import JSZip from 'jszip';
+import { LocationResult, Route } from '../../globald';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { FormsModule } from '@angular/forms';
+
 
 useGeographic();
 register();
 
 @Component({
+    standalone: true,
     selector: 'app-tab1',
     templateUrl: 'tab1.page.html',
     styleUrls: ['tab1.page.scss'],
-    imports: [SharedImports],
+    imports: [
+      IonicModule, CommonModule, FormsModule, TranslateModule
+    ],
     providers: [DecimalPipe, DatePipe],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -81,14 +87,22 @@ export class Tab1Page {
   isRecordPopoverOpen = false;
   isConfirmStopOpen = false;
   isConfirmDeletionOpen = false;
+  isSearchGuidePopoverOpen = false;
   isSearchPopoverOpen = false;
+  isGuidePopoverOpen = false;
+
+  query: string = '';
+  query2: string = '';
+  query3: string = '';
+  results: LocationResult[] = [];
+  loading: boolean = false;
 
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
     public server: ServerService,
     public storage: Storage,
-    private zone: NgZone,
+    @Inject(NgZone) private zone: NgZone,
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
     private languageService: LanguageService,
@@ -1098,7 +1112,6 @@ export class Tab1Page {
     console.log(this.fs.currentTrack)
   }
 
-  // 39. SEARCH SITE /////////////////////////////////////////
   async search() {
     if (!this.fs.map || !this.fs.searchLayer) return;
     // Define a style function for the search results
@@ -1115,32 +1128,7 @@ export class Tab1Page {
       return this.mapService.setStrokeStyle('black');
     };
     this.fs.searchLayer.setStyle(styleSearch);
-    this.fs.comingFrom = 'search';
-    const modal = await this.modalController.create({
-      component: SearchModalComponent,
-      cssClass: ['modal-class', 'yellow-class'],
-      backdropDismiss: true,
-    });
-    await modal.present();
-    const { data } = await modal.onDidDismiss();
-    if (data?.location?.boundingbox && data?.location?.geojson) {
-      const [minLat, maxLat, minLon, maxLon] = data.location.boundingbox.map(Number);
-      const latRange = maxLat - minLat;
-      const lonRange = maxLon - minLon;
-      const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
-      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
-      const geojson = typeof data.location.geojson === 'string'
-        ? JSON.parse(data.location.geojson)
-        : data.location.geojson;
-      // readFeatures assumes geographic coordinates since useGeographic() is active
-      const features = new GeoJSON().readFeatures(geojson);
-      if (features.length > 0) {
-        const source = this.fs.searchLayer.getSource();
-        source?.clear();
-        source?.addFeatures(features);
-        this.fs.map.getView().fit(extent, { duration: 800 }); // small animation
-      }
-    }
+    this.isSearchPopoverOpen = true;
   }
 
   // 40. SEARCH ROUTE /////////////////////////////////////////////
@@ -1160,7 +1148,7 @@ export class Tab1Page {
     const date = new Date();
     var trackName = ''
     if (data) {
-      trackName = data.response.trackName;
+      trackName = data.respo7nse.trackName;
       console.log('trackName', trackName)
       // Coordinates
       const rawCoordinates = data.response.features[0].geometry.coordinates;
@@ -1480,6 +1468,151 @@ async processKmz(data: any) {
     this.isConfirmDeletionOpen = false;
     this.isRecordPopoverOpen = false;
     this.isSearchPopoverOpen = false;
+  }
+
+  async selectResult(location: LocationResult | null) {
+    if (location?.boundingbox && location?.geojson) {
+      this. isSearchPopoverOpen = false;
+      const [minLat, maxLat, minLon, maxLon] = location.boundingbox.map(Number);
+      const latRange = maxLat - minLat;
+      const lonRange = maxLon - minLon;
+      const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
+      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
+      const geojson = typeof location.geojson === 'string'
+        ? JSON.parse(location.geojson)
+        : location.geojson;
+      // readFeatures assumes geographic coordinates since useGeographic() is active
+      const features = new GeoJSON().readFeatures(geojson);
+      if (features.length > 0) {
+        const source = this.fs.searchLayer?.getSource();
+        source?.clear();
+        source?.addFeatures(features);
+        this.fs.map?.getView().fit(extent, { duration: 800 }); // small animation
+      }
+    }
+  }
+
+  async openList() {
+    if (!this.query) return;
+    this.loading = true;
+    try {
+      let url: string;
+      let headers: any = { 'Accept': 'application/json' };
+
+      if (this.fs.geocoding === 'mapTiler') {
+        // 🌍 MapTiler forward geocoding
+        url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
+      } else {
+        // 🌍 Nominatim forward geocoding (default)
+        url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
+        headers['User-Agent'] = 'YourAppName/1.0 (you@example.com)'; // required
+      }
+
+      const response = await CapacitorHttp.get({ url, headers });
+
+      if (this.fs.geocoding === 'mapTiler') {
+        // ✅ Normalize MapTiler results
+        const features = response.data?.features ?? [];
+        this.results = features.map((f: any, idx: number) => {
+          const [lon, lat] = f.geometry.coordinates;
+
+          // compute bbox from geometry if not provided
+          const coords = f.geometry.type === 'Point'
+            ? [[lon, lat]]
+            : f.geometry.coordinates.flat(Infinity).reduce((acc: any[], v: any, i: number) => {
+                if (i % 2 === 0) acc.push([v]);
+                else acc[acc.length - 1].push(v);
+                return acc;
+              }, []);
+
+          const lons = coords.map((c: any) => c[0]);
+          const lats = coords.map((c: any) => c[1]);
+          const boundingbox = [
+            Math.min(...lats), // south
+            Math.max(...lats), // north
+            Math.min(...lons), // west
+            Math.max(...lons)  // east
+          ];
+
+          return {
+            lat,
+            lon,
+            name: f.text ?? '(no name)',
+            display_name: f.place_name ?? f.text ?? '(no name)',
+            short_name: f.text ?? f.place_name ?? '(no name)', // 👈 added
+            type: f.place_type?.[0] ?? 'unknown',
+            place_id: f.id ?? idx,
+            boundingbox,
+            geojson: f.geometry
+          };
+        });
+      } else {
+        // ✅ Normalize Nominatim results
+        const rawResults = Array.isArray(response.data) ? response.data : [];
+        this.results = rawResults.map((r: any) => {
+          const display = r.display_name ?? '(no name)';
+          const short = r.address?.road
+            ? [r.address.road, r.address.house_number].filter(Boolean).join(' ')
+            : (r.address?.city ?? r.address?.town ?? r.address?.village ?? display);
+
+          return {
+            lat: parseFloat(r.lat),
+            lon: parseFloat(r.lon),
+            name: display,
+            display_name: display,
+            short_name: this.shortenName(display),
+            type: r.type ?? 'unknown',
+            place_id: r.place_id,
+            boundingbox: r.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
+            geojson: r.geojson ?? null
+          };
+        });
+      }
+
+    } catch (error) {
+      console.error(`Error fetching ${this.fs.geocoding} geocoding data:`, error);
+      this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
+      this.results = [];
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async startDictation() {
+    const available = await SpeechRecognition.available();
+    if (!available.available) {
+      console.log('❌ Speech recognition not available');
+      return;
+    }
+
+    const permission = await SpeechRecognition.checkPermissions();
+    if (permission.speechRecognition !== 'granted') {
+      await SpeechRecognition.requestPermissions();
+    }
+
+    const lang = this.languageService.getCurrentLangValue();
+    await SpeechRecognition.start({
+      language: lang,
+      partialResults: true,
+      popup: false,
+    });
+
+    SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+      this.zone.run(() => {
+        this.query = data.matches[0] || '';
+      });
+      console.log('🎤 Heard:', data.matches[0]);
+    });
+
+    SpeechRecognition.addListener('listeningState', (data: { status: 'started' | 'stopped' }) => {
+      console.log('🎧 Listening state:', data.status);
+    });
+  }
+
+  private shortenName(fullName: string): string {
+    if (!fullName) return '(no name)';
+    const parts = fullName.split(',').map(p => p.trim());
+    return parts.slice(0, 2).join(', ');
   }
 
 }

@@ -94,7 +94,10 @@
     "DESTINATION": "Destino",
     "BUTTON": "Buscar",
     "LOCATION": "Lugar",
-    "ROUTE": "Ruta"
+    "ROUTE": "Ruta",
+    "INSTRUCTION": "¿Què busca?",
+    "SEARCH": "Buscar",
+    "LIST": "Lista"
   },
 
   "MAP": {

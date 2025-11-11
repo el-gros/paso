@@ -15,7 +15,7 @@ import { Control } from 'ol/control';
 import { Feature } from 'ol';
 import VectorSource from 'ol/source/Vector';
 import { Point, Geometry } from 'ol/geom';
-import { Style, Circle as CircleStyle, Fill } from 'ol/style';
+import { Style, Circle as CircleStyle, Fill, Icon } from 'ol/style';
 import VectorLayer from 'ol/layer/Vector';
 import { MapService } from '../../services/map.service';
 import { FunctionsService } from '../../services/functions.service';
@@ -132,6 +132,21 @@ export class CustomControl extends Control {
         fill: new Fill({ color }),
       }),
     });
+    /*return new Style({
+      image: new Icon({
+        src: 'assets/icons/navigate-sharp.svg', // path to your icon image
+        scale: 1.0, // adjust as needed
+        color: color,
+        rotation: 0, // can be updated dynamically
+        rotateWithView: true, // rotates with map if desired
+
+
+        .
+
+
+        anchor: [0.5, 0.5], // center the icon
+      }),
+    });*/
   }
 
   private updateLocation(coordinates: [number, number]) {
@@ -191,5 +206,19 @@ export class CustomControl extends Control {
   override setMap(map: any): void {
     super.setMap(map);
     this.fs.map = map;
+  }
+
+  updateHeading(feature: Feature, bearingDeg: number) {
+    const rotation = (bearingDeg * Math.PI) / 180; // convert to radians
+    const style = new Style({
+      image: new Icon({
+        src: 'assets/icons/navigate-sharp-blue.png',
+        scale: 1.0,
+        rotation,
+        rotateWithView: true,
+        anchor: [0.5, 0.5],
+      }),
+    });
+    feature.setStyle(style);
   }
 }

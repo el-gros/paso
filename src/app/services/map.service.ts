@@ -191,7 +191,7 @@ export class MapService {
     let minZoom = 0;
     let maxZoom = 19;
     if (this.fs.mapProvider.toLowerCase() === 'catalonia') {
-      minZoom = 6;
+      minZoom = 0;
       maxZoom = 14;
     }
     // 🟢 CASE 1 — map already exists → only update base layer and zoom limits
