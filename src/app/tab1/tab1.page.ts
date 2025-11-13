@@ -40,7 +40,9 @@ import JSZip from 'jszip';
 import { LocationResult, Route } from '../../globald';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { FormsModule } from '@angular/forms';
-
+import { SupabaseService } from '../services/supabase.service';
+import { Device } from '@capacitor/device';
+import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 
 useGeographic();
 register();
@@ -53,7 +55,7 @@ register();
     imports: [
       IonicModule, CommonModule, FormsModule, TranslateModule
     ],
-    providers: [DecimalPipe, DatePipe],
+    providers: [DecimalPipe, DatePipe, SocialSharing],
     schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
@@ -90,12 +92,17 @@ export class Tab1Page {
   isSearchGuidePopoverOpen = false;
   isSearchPopoverOpen = false;
   isGuidePopoverOpen = false;
+  isSharingPopoverOpen = false;
 
   query: string = '';
   query2: string = '';
   query3: string = '';
   results: LocationResult[] = [];
   loading: boolean = false;
+
+  isSharing = false;
+  shareToken: string | null = null;
+  deviceId: string | null = null;
 
   constructor(
     public fs: FunctionsService,
@@ -107,6 +114,8 @@ export class Tab1Page {
     private modalController: ModalController,
     private languageService: LanguageService,
     private translate: TranslateService,
+    private supabaseService: SupabaseService,
+    private socialSharing: SocialSharing
   ) {
   }
 
@@ -280,6 +289,8 @@ export class Tab1Page {
         if (!location) return;
         const success = await this.checkLocation(location);
         if (!success) return;
+        // Share location
+        await this.shareLocationIfActive(location)
         if (this.foreground) {
           await this.foregroundTask(location);
         } else {
@@ -315,6 +326,8 @@ export class Tab1Page {
 
   // 7. STOP TRACKING //////////////////////////////////
   async stopTracking(): Promise<void> {
+    // Stop sharing
+    this.stopSharing();
     // Always stop the watcher and foreground service, even if no layer yet
     this.fs.state = 'stopped';
     this.show('alert', 'none');
@@ -1468,6 +1481,7 @@ async processKmz(data: any) {
     this.isConfirmDeletionOpen = false;
     this.isRecordPopoverOpen = false;
     this.isSearchPopoverOpen = false;
+    this.isSharingPopoverOpen = false;
   }
 
   async selectResult(location: LocationResult | null) {
@@ -1614,6 +1628,70 @@ async processKmz(data: any) {
     const parts = fullName.split(',').map(p => p.trim());
     return parts.slice(0, 2).join(', ');
   }
+
+    async init() {
+      const info = await Device.getId();
+      this.deviceId = info.identifier;
+    }
+
+    async startSharing() {
+      if (!this.deviceId) await this.init();
+      this.shareToken = crypto.randomUUID(); // unguessable token
+      this.isSharing = true;
+
+      // optional: store token locally so you can stop later
+      await this.fs.storeSet('share_token', this.shareToken);
+
+      // Send URL to share
+      const text = this.translate.instant('RECORD.SHARE_TEXT') +
+        ' https://el-gros.github.io/visor/visor.html?t=' + this.shareToken;
+      try {
+        await this.socialSharing.share(
+          text
+        );
+        this.isSharingPopoverOpen = false;
+      } catch (err) {
+        console.error('Sharing failed', err);
+      }
+
+      // optionally create a metadata row in shares table
+      await this.supabaseService.client.from('shares').upsert([{
+        share_token: this.shareToken,
+        owner_user_id: this.deviceId,
+        created_at: new Date().toISOString()
+      }], { onConflict: 'share_token' });
+    }
+
+    async stopSharing() {
+      if (!this.shareToken) return;
+      this.isSharingPopoverOpen = false;
+      // delete the public row to immediately revoke
+      await this.supabaseService.client.from('public_locations').delete().eq('share_token', this.shareToken);
+      // optional: delete metadata
+      await this.supabaseService.client.from('shares').delete().eq('share_token', this.shareToken);
+      await this.fs.storeSet('share_token', null);
+      this.shareToken = null;
+      this.isSharing = false;
+    }
+
+    // call this from your background geolocation callback
+    async shareLocationIfActive(location: Location ) {
+      if (!this.isSharing || !this.shareToken) return;
+      try {
+        await this.supabaseService.client
+          .from('public_locations')
+          .insert([{
+            share_token: this.shareToken,
+            owner_user_id: this.deviceId,
+            lat: location.latitude,
+            lon: location.longitude,
+            updated_at: new Date().toISOString()
+          }]);
+          console.log('location updated at supabase: ', location)
+      } catch (err) {
+        console.error('Share failed', err);
+      }
+    }
 
 }
 

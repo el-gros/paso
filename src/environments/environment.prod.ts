@@ -5,8 +5,10 @@
 import { Map } from '../globald';
 
 export var global: any = {
+  supabaseUrl: 'https://xvezdemtphqwgjukjhan.supabase.co',
+  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZXpkZW10cGhxd2dqdWtqaGFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4OTQxMTYsImV4cCI6MjA3ODQ3MDExNn0.ayOgM2MIXJiW_q4AbAyQ4KzgiiNEF5o7sQLr2d_oX1E',
   mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
-  
+
   // Dynamic getter for the cancel button
 
   get okButton() {

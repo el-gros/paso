@@ -131,7 +131,11 @@
     "CONFIRM_DELETION": "Confirma la eliminación?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "BUTTON": "Grabar"
+    "BUTTON": "Grabar",
+    "SHARE_YES": "Abrir",
+    "SHARE_NO": "Cerrar",
+    "SHARE_TEXT": "Seguimiento a tiempo real",
+    "SHARE_TRACK": "Comp."
   }
 
 }

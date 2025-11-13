@@ -140,7 +140,11 @@
     "DELETE_NO": "No",
     "BUTTON": "Gravar",
     "FROM": "Desde",
-    "TO": "Hasta"
+    "TO": "Hasta",
+    "SHARE_YES": "Obrir",
+    "SHARE_NO": "Tancar",
+    "SHARE_TEXT": "Seguiment a temps real",
+    "SHARE_TRACK": "Comp."
   }
 
 }

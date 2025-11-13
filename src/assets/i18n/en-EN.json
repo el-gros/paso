@@ -131,7 +131,11 @@
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
-    "BUTTON": "Record"
+    "BUTTON": "Record",
+    "SHARE_YES": "Open",
+    "SHARE_NO": "Close",
+    "SHARE_TEXT": "Real-time location sharing",
+    "SHARE_TRACK": "Share"
   }
 
 }

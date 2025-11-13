@@ -1,7 +1,7 @@
 <!-- FAB button -->
 <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
   <ion-row>
-    <div class="record-button map-color" (click)="isRecordPopoverOpen = true">
+    <div class="record-button map-color" (click)="isRecordPopoverOpen = true;">
       <ion-icon name="recording-sharp"></ion-icon>
       <span>{{ 'RECORD.BUTTON' | translate }}</span>
     </div>
@@ -89,6 +89,13 @@
         >
           <ion-icon name="trash-sharp"></ion-icon>
           <span>{{ 'RECORD.REMOVE_TRACK' | translate }}</span>
+        </button>
+        <button class="record-button map-color"
+          [disabled]="fs.state != 'tracking'"
+          (click)="isSharingPopoverOpen = true;"
+        >
+          <ion-icon name="share"></ion-icon>
+          <span>{{ 'RECORD.SHARE_TRACK' | translate }}</span>
         </button>
       </ion-row>
     </ion-list>
@@ -355,3 +362,36 @@
     </ion-content>
   </ng-template>
 </ion-popover>
+
+<!-- Sharing route popover -->
+
+<ion-popover
+  [isOpen]="isSharingPopoverOpen"
+  (didDismiss)="closeAllPopovers()"
+  cssClass="central"
+>
+  <ng-template>
+    <ion-list>
+      <ion-item class="confirm" lines="none">
+        <ion-label><strong>{{ 'RECORD.SHARE_TEXT' | translate }}</strong></ion-label>
+      </ion-item>
+      <ion-row>
+        <button class="record-button green-color"
+          (click)="startSharing()"
+          [disabled]="shareToken"
+        >
+          <ion-icon name="lock-open-sharp"></ion-icon>
+          <span>{{ 'RECORD.SHARE_YES' | translate }}</span>
+        </button>
+        <button class="record-button red-color"
+          (click)="stopSharing()"
+          [disabled]="!shareToken"
+        >
+          <ion-icon name="lock-closed-sharp"></ion-icon>
+          <span>{{ 'RECORD.SHARE_NO' | translate }}</span>
+        </button>
+      </ion-row>
+    </ion-list>
+  </ng-template>
+</ion-popover>
+
