@@ -94,11 +94,19 @@ export class Tab1Page {
   isGuidePopoverOpen = false;
   isSharingPopoverOpen = false;
 
-  query: string = '';
-  query2: string = '';
-  query3: string = '';
-  results: LocationResult[] = [];
+  query: string[] = ['', '', ''];
+  results: (any[] | undefined)[] | undefined = undefined;
   loading: boolean = false;
+  selected = [null, null, null];
+    transportOptions = [
+    { key: 'car', icon: 'car' },
+    { key: 'cycling', icon: 'bicycle' },
+    { key: 'walking', icon: 'walk' },
+    { key: 'hiking', icon: 'trail-sign' },
+    { key: 'wheelchair', icon: 'accessibility' }
+  ];
+
+  transport: string | null = null;
 
   isSharing = false;
   shareToken: string | null = null;
@@ -1146,7 +1154,6 @@ export class Tab1Page {
 
   // 40. SEARCH ROUTE /////////////////////////////////////////////
   async guide() {
-    this.fs.comingFrom = 'guide';
     // Create modal
     const modal = await this.modalController.create({
       component: SearchModalComponent,
@@ -1484,30 +1491,33 @@ async processKmz(data: any) {
     this.isSharingPopoverOpen = false;
   }
 
-  async selectResult(location: LocationResult | null) {
-    if (location?.boundingbox && location?.geojson) {
-      this. isSearchPopoverOpen = false;
-      const [minLat, maxLat, minLon, maxLon] = location.boundingbox.map(Number);
-      const latRange = maxLat - minLat;
-      const lonRange = maxLon - minLon;
-      const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
-      const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
-      const geojson = typeof location.geojson === 'string'
-        ? JSON.parse(location.geojson)
-        : location.geojson;
-      // readFeatures assumes geographic coordinates since useGeographic() is active
-      const features = new GeoJSON().readFeatures(geojson);
-      if (features.length > 0) {
-        const source = this.fs.searchLayer?.getSource();
-        source?.clear();
-        source?.addFeatures(features);
-        this.fs.map?.getView().fit(extent, { duration: 800 }); // small animation
-      }
+  async selectSearchResult(location: LocationResult | null) {
+    if (!location?.boundingbox || !location?.geojson) return;
+    const [minLat, maxLat, minLon, maxLon] = location.boundingbox.map(Number);
+    const latRange = maxLat - minLat;
+    const lonRange = maxLon - minLon;
+    const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
+    const extent = [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
+    const geojson = typeof location.geojson === 'string'
+      ? JSON.parse(location.geojson)
+      : location.geojson;
+    // readFeatures assumes geographic coordinates since useGeographic() is active
+    const features = new GeoJSON().readFeatures(geojson);
+    if (features.length > 0) {
+      const source = this.fs.searchLayer?.getSource();
+      source?.clear();
+      source?.addFeatures(features);
+      this.fs.map?.getView().fit(extent, { duration: 800 }); // small animation
     }
+    // Close popover
+    this. isSearchPopoverOpen = false;
+    this.results = [];
+    this.query[0] = '';
   }
 
-  async openList() {
-    if (!this.query) return;
+  async openList(i: number) {
+    this.results = [[], [], []];
+    if (!this.query[i]) return;
     this.loading = true;
     try {
       let url: string;
@@ -1515,10 +1525,10 @@ async processKmz(data: any) {
 
       if (this.fs.geocoding === 'mapTiler') {
         // 🌍 MapTiler forward geocoding
-        url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
+        url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query[i])}.json?key=${global.mapTilerKey}`;
       } else {
         // 🌍 Nominatim forward geocoding (default)
-        url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
+        url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query[i])}`;
         headers['User-Agent'] = 'YourAppName/1.0 (you@example.com)'; // required
       }
 
@@ -1527,7 +1537,7 @@ async processKmz(data: any) {
       if (this.fs.geocoding === 'mapTiler') {
         // ✅ Normalize MapTiler results
         const features = response.data?.features ?? [];
-        this.results = features.map((f: any, idx: number) => {
+        this.results[i] = features.map((f: any, idx: number) => {
           const [lon, lat] = f.geometry.coordinates;
 
           // compute bbox from geometry if not provided
@@ -1563,7 +1573,7 @@ async processKmz(data: any) {
       } else {
         // ✅ Normalize Nominatim results
         const rawResults = Array.isArray(response.data) ? response.data : [];
-        this.results = rawResults.map((r: any) => {
+        this.results[i] = rawResults.map((r: any) => {
           const display = r.display_name ?? '(no name)';
           const short = r.address?.road
             ? [r.address.road, r.address.house_number].filter(Boolean).join(' ')
@@ -1586,13 +1596,15 @@ async processKmz(data: any) {
     } catch (error) {
       console.error(`Error fetching ${this.fs.geocoding} geocoding data:`, error);
       this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
-      this.results = [];
+      this.results[i] = [];
     } finally {
       this.loading = false;
     }
   }
 
-  async startDictation() {
+  async startDictation(i: number) {
+    this.query[i] = '';
+    this.results = [];
     const available = await SpeechRecognition.available();
     if (!available.available) {
       console.log('❌ Speech recognition not available');
@@ -1613,7 +1625,7 @@ async processKmz(data: any) {
 
     SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
       this.zone.run(() => {
-        this.query = data.matches[0] || '';
+        this.query[i] = data.matches[0] || '';
       });
       console.log('🎤 Heard:', data.matches[0]);
     });
@@ -1692,6 +1704,95 @@ async processKmz(data: any) {
         console.error('Share failed', err);
       }
     }
+
+  async guide2() {
+    if (!this.fs.map || !this.fs.archivedLayer) return;
+    this.query = ['', '', ''];
+    this.results = [[], [], []];
+    this.isGuidePopoverOpen = true;
+    return;
+
+    var data: any
+    // Build track
+    const date = new Date();
+    var trackName = ''
+    if (data) {
+      trackName = data.respo7nse.trackName;
+      console.log('trackName', trackName)
+      // Coordinates
+      const rawCoordinates = data.response.features[0].geometry.coordinates;
+      // Case of no route
+      if (!rawCoordinates || rawCoordinates?.length === 0) {
+        this.fs.displayToast(this.translate.instant('MAP.NO_ROUTE'));
+        return;
+      }
+      // Compute distances
+      const distances: number[] = await this.fs.computeCumulativeDistances(rawCoordinates)
+      // Compute times
+      const times: number[] = await this.fs.createTimes(data, date, distances);
+      // Get altitudes and compute elevation gain and loss
+      var altSlopes: any = await this.getAltitudesFromMap(rawCoordinates)
+      // compute speed
+      const speed = (data.response.features[0].properties.summary.distance / data.response.features[0].properties.summary.duration) * 3.6;
+      const rawProperties: Data[] = await this.fs.fillProperties(distances, altSlopes.altitudes, times, speed);
+      console.log(rawCoordinates, rawProperties)
+      // Increase the number of coordinates
+      const result = await this.fs.adjustCoordinatesAndProperties(rawCoordinates, rawProperties, 0.025);
+      if (result) {
+        var num = result.newCoordinates.length;
+        this.fs.archivedTrack = {
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: {
+              name: trackName,
+              place: '',
+              date: date,
+              description: '',
+              totalDistance: data.response.features[0].properties.summary.distance / 1000,
+              totalElevationGain: altSlopes.slopes.gain,
+              totalElevationLoss: altSlopes.slopes.loss,
+              totalTime: this.fs.formatMillisecondsToUTC(data.response.features[0].properties.summary.duration * 1000,),
+              totalNumber: num,
+              currentAltitude: undefined,
+              currentSpeed: undefined
+            },
+            bbox: data.response.features[0].bbox,
+            geometry: {
+              type: 'LineString',
+              coordinates: result.newCoordinates,
+              properties: { data: result.newProperties }
+            },
+            waypoints: []
+          }]
+        };
+      }
+    }
+    if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
+  }
+
+  selectResult(i: number, item: any) {
+    this.selected[i] = item;
+    this.query[i] = item.short_name || item.display_name;
+    this.results = [];
+  }
+
+  changeLocation(i: number) {
+    this.selected = [...this.selected];   // force Angular update
+    this.selected[i] = null;
+    this.query[i] = '';
+    this.results = [];
+  }
+
+  clearInput(i: number) {
+    this.query[i] = '';
+    this.results = [];
+  }
+
+  selectTransport(key: string) {
+    this.transport = key;
+    console.log('Selected transport:', key);
+  }
 
 }
 

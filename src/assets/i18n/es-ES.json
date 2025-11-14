@@ -84,7 +84,6 @@
     "TITLE_GUIDE": "Encuentra la mejor ruta",
     "PLACEHOLDER_SEARCH": "Nombre del lugar",
     "PLACEHOLDER_GUIDE": "Inicio",
-    "TRANSPORTATION_MEANS": ["En coche", "En bicicleta", "A pie", "Senderismo", "En silla de ruedas"],
     "CURRENT_LOCATION": "Posiciónactual",
     "UNKNOWN_LOCATION": "No se ha podido obtener la ubicación actual",
     "NOTICE1": "Introducir un punto de inicio...",
@@ -97,7 +96,15 @@
     "ROUTE": "Ruta",
     "INSTRUCTION": "¿Què busca?",
     "SEARCH": "Buscar",
-    "LIST": "Lista"
+    "LIST": "Lista",
+        "TRANSPORT": "Transporte",
+    "TRANSPORTATION_MEANS": {
+      "car": "En coche",
+      "cycling": "En bicicleta",
+      "walking": "A pie",
+      "hiking": "Senderismo",
+      "wheelchair": "En silla de ruedas"
+    }
   },
 
   "MAP": {

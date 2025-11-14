@@ -66,17 +66,9 @@ export class SearchModalComponent implements OnInit {
 
 // 1. NGONINIT ///////////////////////////////
 ngOnInit(): void {
-  // Case of search
-  if (this.fs.comingFrom === 'search') {
-    this.title = this.translate.instant('SEARCH.TITLE_SEARCH');
-    this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_SEARCH');
-  }
-  // Case of guide
-  else if (this.fs.comingFrom === 'guide') {
-    this.title = this.translate.instant('SEARCH.TITLE_GUIDE');
-    this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_GUIDE');
-    this.showCurrent = true;
-  }
+  this.title = this.translate.instant('SEARCH.TITLE_GUIDE');
+  this.placeholder = this.translate.instant('SEARCH.PLACEHOLDER_GUIDE');
+  this.showCurrent = true;
   // Translations
   this.transportation = this.translate.instant('SEARCH.TRANSPORTATION_MEANS');
 }
@@ -174,41 +166,30 @@ async searchLocation() {
 
 // 3. SELECT LOCATION //////////////////////////////////////////
 async selectLocation(location: LocationResult | null) {
-  if (this.fs.comingFrom == 'search') {
+  this.results = [];
+  if (this.num == 0) {
     console.log('Selected location', location);
-    this.modalController.dismiss({
-      location: location
-        ? { ...location, name: this.fs['sanitize'](location.name) }
-        : location
-    });
+    if (location) {
+      this.start = [+location.lon, +location.lat];
+      this.trackName = this.fs['sanitize'](this.query); // 👈 short
+    } else {
+      this.trackName = 'o';
+    }
+    this.query = '';
+    this.placeholder = this.translate.instant('SEARCH.DESTINATION');
+    this.num = 1;
     return;
-  } else if (this.fs.comingFrom == 'guide') {
-    this.results = [];
+  }
 
-    if (this.num == 0) {
-      console.log('Selected location', location);
-      if (location) {
-        this.start = [+location.lon, +location.lat];
-        this.trackName = this.fs['sanitize'](this.query); // 👈 short
-      } else {
-        this.trackName = 'o';
-      }
-      this.query = '';
-      this.placeholder = this.translate.instant('SEARCH.DESTINATION');
-      this.num = 1;
-      return;
-    }
-
-    if (this.num == 1) {
-      console.log('Selected location', location);
-      const destName = this.fs['sanitize'](this.query);
-      this.trackName = `${this.trackName} - ${destName}`; // 👈 short track name
-      this.destination = [+location!.lon, +location!.lat];
-      this.showSelection = false;
-      this.showTransportation = true;
-      this.selectedTransportation = '';
-      this.query = '';
-    }
+  if (this.num == 1) {
+    console.log('Selected location', location);
+    const destName = this.fs['sanitize'](this.query);
+    this.trackName = `${this.trackName} - ${destName}`; // 👈 short track name
+    this.destination = [+location!.lon, +location!.lat];
+    this.showSelection = false;
+    this.showTransportation = true;
+    this.selectedTransportation = '';
+    this.query = '';
   }
 }
 

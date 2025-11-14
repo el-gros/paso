@@ -84,7 +84,6 @@
     "TITLE_GUIDE": "Find the best route",
     "PLACEHOLDER_SEARCH": "Enter place name",
     "PLACEHOLDER_GUIDE": "Start",
-    "TRANSPORTATION_MEANS": ["By car", "Cycling", "Walking", "Hiking", "In a wheelchair"],
     "CURRENT_LOCATION": "Current location",
     "UNKNOWN_LOCATION": "Could not obtain current location",
     "NOTICE1": "Enter a starting point...",
@@ -97,7 +96,15 @@
     "ROUTE": "Route",
     "INSTRUCTION": "What do you search?",
     "SEARCH": "Search",
-    "LIST": "List"
+    "LIST": "List",
+        "TRANSPORT": "Transportation",
+    "TRANSPORTATION_MEANS": {
+      "car": "By car",
+      "cycling": "Cycling",
+      "walking": "Walking",
+      "hiking": "Hiking",
+      "wheelchair": "In a wheelchair"
+    }
   },
 
   "MAP": {

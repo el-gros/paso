@@ -144,7 +144,15 @@
     "SHARE_YES": "Obrir",
     "SHARE_NO": "Tancar",
     "SHARE_TEXT": "Seguiment a temps real",
-    "SHARE_TRACK": "Comp."
+    "SHARE_TRACK": "Comp.",
+        "TRANSPORT": "Transporte",
+    "TRANSPORTATION_MEANS": {
+      "car": "En cotxe",
+      "cycling": "En bicicleta",
+      "walking": "A peu",
+      "hiking": "Senderisme",
+      "wheelchair": "En cadira de rodes"
+    }
   }
 
 }

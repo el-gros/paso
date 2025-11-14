@@ -1,265 +1,3 @@
-<!-- FAB button -->
-<ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
-  <ion-row>
-    <div class="record-button map-color" (click)="isRecordPopoverOpen = true;">
-      <ion-icon name="recording-sharp"></ion-icon>
-      <span>{{ 'RECORD.BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button map-color" (click)="isSearchGuidePopoverOpen = true;">
-      <ion-icon name="help-sharp"></ion-icon>
-      <span>{{ 'SEARCH.BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button map-color" (click)="mapService.cycleZoom()">
-      <ion-icon name="search-sharp"></ion-icon>
-      <span>Zoom</span>
-    </div>
-  </ion-row>
-</ion-fab>
-
-<!-- Regular content -->
-<ion-content>
-  <div id="map-wrapper">
-    <div id="map"></div>
-  </div>
-  <div class="safe-area"></div>
-</ion-content>
-
-<!-- space for android controls -->
-<div class="bottom-safe-gray"></div>
-
-<!-- Navigation buttons (unchanged) -->
-<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row>
-    <div class="record-button map-color" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics-sharp"></ion-icon>
-      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button map-color" (click)="fs.gotoPage('archive')">
-      <ion-icon name="list-sharp"></ion-icon>
-      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button map-color" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-sharp"></ion-icon>
-      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
-    </div>
-  </ion-row>
-</ion-fab>
-
-<!-- The record popover -->
-<ion-popover
-  [isOpen]="isRecordPopoverOpen"
-  (didDismiss)="isRecordPopoverOpen = false"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-row>
-        <button class="record-button map-color"
-          [disabled]="fs.state!='inactive'"
-          (click)="startTracking(); isRecordPopoverOpen = false"
-        >
-          <ion-icon name="caret-forward-circle-sharp"></ion-icon>
-          <span>{{ 'RECORD.START_TRACKING' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          [disabled]="fs.state!='tracking'"
-          (click)="waypoint(); isRecordPopoverOpen = false"
-        >
-          <ion-icon name="pin-sharp"></ion-icon>
-          <span>{{ 'RECORD.WAYPOINT' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          [disabled]="fs.state!='tracking'"
-          (click)="isConfirmStopOpen = true;"
-        >
-          <ion-icon name="stop-circle-sharp"></ion-icon>
-          <span>{{ 'RECORD.STOP_TRACKING' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          [disabled]="fs.state!='stopped'"
-          [class.enabled]="fs.state==='stopped'"
-          (click)="setTrackDetails(); isRecordPopoverOpen = false"
-        >
-          <ion-icon name="save-sharp"></ion-icon>
-          <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          [disabled]="fs.state != 'stopped' && fs.state != 'saved'"
-          (click)="isConfirmDeletionOpen = true;"
-        >
-          <ion-icon name="trash-sharp"></ion-icon>
-          <span>{{ 'RECORD.REMOVE_TRACK' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          [disabled]="fs.state != 'tracking'"
-          (click)="isSharingPopoverOpen = true;"
-        >
-          <ion-icon name="share"></ion-icon>
-          <span>{{ 'RECORD.SHARE_TRACK' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-
-<!-- Stop confirmation popover -->
-
-<ion-popover
-  [isOpen]="isConfirmStopOpen"
-  (didDismiss)="closeAllPopovers()"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-item class="confirm" lines="none">
-        <ion-label><strong>{{ 'RECORD.CONFIRM_STOP' | translate }}</strong></ion-label>
-      </ion-item>
-      <ion-row>
-        <button class="record-button green-color"
-          (click)="stopTracking(); closeAllPopovers()"
-        >
-          <ion-icon name="happy-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
-        </button>
-        <button class="record-button red-color"
-          (click)="closeAllPopovers()"
-        >
-          <ion-icon name="sad-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-
-<!-- Deletion confirmation popover -->
-
-<ion-popover
-  [isOpen]="isConfirmDeletionOpen"
-  (didDismiss)="closeAllPopovers()"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-item class="confirm" lines="none">
-        <ion-label><strong>{{ 'RECORD.CONFIRM_DELETION' | translate }}</strong></ion-label>
-      </ion-item>
-      <ion-row>
-        <button class="record-button green-color"
-          (click)="deleteTrack(); closeAllPopovers()"
-        >
-          <ion-icon name="happy-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
-        </button>
-        <button class="record-button red-color"
-          (click)="closeAllPopovers()"
-        >
-          <ion-icon name="sad-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-
-<!-- SearchGuide popover. Selection place / route -->
-
-<ion-popover
-  [isOpen]="isSearchGuidePopoverOpen"
-  (didDismiss)="isSearchGuidePopoverOpen = false"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-row>
-        <button class="record-button map-color"
-          (click)="search(); isSearchGuidePopoverOpen = false"
-        >
-          <ion-icon name="location-sharp"></ion-icon>
-          <span>{{ 'SEARCH.LOCATION' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          (click)="guide(); isSearchGuidePopoverOpen = false"
-        >
-          <ion-icon name="walk-sharp"></ion-icon>
-          <span>{{ 'SEARCH.ROUTE' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-
-<!-- Search popovwr -->
-
-<ion-popover
-  [isOpen]="isSearchPopoverOpen"
-  (didDismiss)="isSearchPopoverOpen = false"
-  cssClass="long"
->
-  <ng-template>
-    <ion-content class="search-popover-content">
-
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
-
-          <ion-input
-            [(ngModel)]="query"
-            [placeholder]="'SEARCH.SEARCH' | translate"
-            class="search-input"
-          >
-          </ion-input>
-
-          @if (query) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query = ''; results = []">
-            </ion-icon>
-          }
-
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
-
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
-      </div>
-
-            <!-- Search Results -->
-      @if (results.length > 0) {
-        <ion-list class="results-list">
-          @for (result of results; track result) {
-            <ion-item
-              (click)="selectResult(result)"
-              class="result-item">
-
-              <ion-label>
-                <h2>{{ result.short_name || result.name }}</h2>
-                <p>{{ result.display_name }}</p>
-
-                @if (result.type) {
-                  <p class="type">{{ result.type }}</p>
-                }
-              </ion-label>
-
-            </ion-item>
-          }
-        </ion-list>
-      }
-    </ion-content>
-  </ng-template>
-</ion-popover>
-
-<!-- Guide popovwr -->
-
 <ion-popover
   [isOpen]="isGuidePopoverOpen"
   (didDismiss)="isGuidePopoverOpen = false"
@@ -268,130 +6,148 @@
   <ng-template>
     <ion-content class="search-popover-content">
 
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
+      <div class="search-section">
 
-          <ion-input
-            [(ngModel)]="query2"
-            [placeholder]="'SEARCH.FROM' | translate"
-            class="search-input"
-          >
-          </ion-input>
+        <!-- SELECTED FROM -->
+        @if (selected[1]) {
+          <div class="selected-box">
+              <ion-icon name="checkmark-circle" class="ok-icon"></ion-icon>
+              <div class="selected-text">
+                <strong>{{ 'SEARCH.FROM' | translate }}</strong><br>
+                {{ $any(selected[1])?.short_name }}
+              </div>
+              <button class="change-button" (click)="changeLocation(1)">
+                {{ 'SEARCH.CHANGE' | translate }}
+              </button>
+            </div>
+        }
 
-          @if (query2) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query2 = ''">
-            </ion-icon>
-          }
+        <!-- INPUT FROM -->
+        @if (!selected[1]) {
+          <div class="search-row">
+            <div class="search-field">
+              <ion-icon name="search" class="search-icon"></ion-icon>
 
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
+              <ion-input
+                [(ngModel)]="query[1]"
+                [placeholder]="'SEARCH.FROM' | translate"
+                class="search-input"
+              ></ion-input>
 
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
+              @if (query[1]) {
+                <ion-icon
+                  name="close-circle"
+                  class="clear-icon"
+                  (click)="clearInput(1)"
+                ></ion-icon>
+              }
+
+              <ion-icon
+                name="mic"
+                class="mic-icon"
+                (click)="startDictation(1)"
+              ></ion-icon>
+            </div>
+
+            <button class="list-button" (click)="openList(1)">
+              <ion-icon name="list" class="list-icon"></ion-icon>
+              <span>{{ 'SEARCH.LIST' | translate }}</span>
+            </button>
+          </div>
+        }
+
+        <!-- RESULTS FROM -->
+        @if ((results?.[1]?.length ?? 0) > 0) {
+          <ion-list class="results-list">
+            @for (r of (results?.[1] ?? []); track r) {
+              <ion-item (click)="selectResult(1, r)">
+                <ion-label>{{ r.display_name }}</ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        }
+
+        <!-- SELECTED TO -->
+        @if (selected[2]) {
+          <div class="selected-box">
+              <ion-icon name="checkmark-circle" class="ok-icon"></ion-icon>
+              <div class="selected-text">
+                <strong>{{ 'SEARCH.TO' | translate }}</strong><br>
+                {{ $any(selected[2])?.short_name }}
+              </div>
+              <button class="change-button" (click)="changeLocation(2)">
+                {{ 'SEARCH.CHANGE' | translate }}
+              </button>
+            </div>
+        }
+
+        <!-- INPUT TO -->
+        @if (!selected[2]) {
+          <div class="search-row">
+            <div class="search-field">
+              <ion-icon name="search" class="search-icon"></ion-icon>
+
+              <ion-input
+                [(ngModel)]="query[2]"
+                [placeholder]="'SEARCH.TO' | translate"
+                class="search-input"
+              ></ion-input>
+
+              @if (query[2]) {
+                <ion-icon
+                  name="close-circle"
+                  class="clear-icon"
+                  (click)="clearInput(2)"
+                ></ion-icon>
+              }
+
+              <ion-icon
+                name="mic"
+                class="mic-icon"
+                (click)="startDictation(2)"
+              ></ion-icon>
+            </div>
+
+            <button class="list-button" (click)="openList(2)">
+              <ion-icon name="list" class="list-icon"></ion-icon>
+              <span>{{ 'SEARCH.LIST' | translate }}</span>
+            </button>
+          </div>
+        }
+
+        <!-- RESULTS TO -->
+        @if ((results?.[2]?.length ?? 0) > 0) {
+          <ion-list class="results-list">
+            @for (r of (results?.[2] ?? []); track r) {
+              <ion-item (click)="selectResult(2, r)">
+                <ion-label>{{ r.display_name }}</ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        }
+
+        <!-- TRANSPORT -->
+        @if (selected[1] && selected[2]) {
+          <div class="transport-section">
+            <h3 class="transport-title">{{ 'SEARCH.TRANSPORT' | translate }}</h3>
+
+            <div class="transport-buttons">
+              @for (t of transportOptions; track t.key) {
+                <button
+                  class="transport-btn"
+                  [class.active]="transport === t.key"
+                  (click)="selectTransport(t.key)"
+                >
+                  <ion-icon *ngIf="t.icon" [name]="t.icon" class="transport-icon"></ion-icon>
+                  <span>{{ 'SEARCH.TRANSPORTATION_MEANS.' + t.key | translate }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
       </div>
 
-      <!-- Second line -->
-
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
-
-          <ion-input
-            [(ngModel)]="query3"
-            [placeholder]="'SEARCH.TO' | translate"
-            class="search-input"
-          >
-          </ion-input>
-
-          @if (query3) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query3 = ''">
-            </ion-icon>
-          }
-
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
-
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
-      </div>
-
-            <!-- Search Results -->
-      @if (results.length > 0) {
-        <ion-list class="results-list">
-          @for (result of results; track result) {
-            <ion-item
-              (click)="selectResult(result)"
-              class="result-item">
-
-              <ion-label>
-                <h2>{{ result.short_name || result.name }}</h2>
-                <p>{{ result.display_name }}</p>
-
-                @if (result.type) {
-                  <p class="type">{{ result.type }}</p>
-                }
-              </ion-label>
-
-            </ion-item>
-          }
-        </ion-list>
-      }
     </ion-content>
   </ng-template>
 </ion-popover>
-
-<!-- Sharing route popover -->
-
-<ion-popover
-  [isOpen]="isSharingPopoverOpen"
-  (didDismiss)="closeAllPopovers()"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-item class="confirm" lines="none">
-        <ion-label><strong>{{ 'RECORD.SHARE_TEXT' | translate }}</strong></ion-label>
-      </ion-item>
-      <ion-row>
-        <button class="record-button green-color"
-          (click)="startSharing()"
-          [disabled]="shareToken"
-        >
-          <ion-icon name="lock-open-sharp"></ion-icon>
-          <span>{{ 'RECORD.SHARE_YES' | translate }}</span>
-        </button>
-        <button class="record-button red-color"
-          (click)="stopSharing()"
-          [disabled]="!shareToken"
-        >
-          <ion-icon name="lock-closed-sharp"></ion-icon>
-          <span>{{ 'RECORD.SHARE_NO' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-

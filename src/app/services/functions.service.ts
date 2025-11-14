@@ -29,7 +29,6 @@ export class FunctionsService {
   refreshCollectionUI?: () => void;
 
   // Variables to share across components
-  comingFrom: string = '';
   key: string | undefined = undefined;
   buildTrackImage: boolean = false;
   selectedAltitude: string = 'GPS'; // Default altitude method
