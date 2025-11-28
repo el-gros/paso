@@ -1,33 +1,41 @@
 import { Component, EnvironmentInjector, inject } from '@angular/core';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { FunctionsService } from './services/functions.service';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { File } from '@awesome-cordova-plugins/file/ngx';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { LocationManagerService } from './services/location-manager.service';
+import { Platform } from '@ionic/angular';    
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
   imports: [
-    IonicModule, CommonModule, FormsModule, TranslateModule
+    IonicModule,
+    CommonModule,
+    FormsModule,
+    TranslateModule
   ],
-  providers: [SocialSharing, FilePath, File]
 })
 export class AppComponent {
   public environmentInjector = inject(EnvironmentInjector);
 
   constructor(
     public fs: FunctionsService,
-    private socialSharing: SocialSharing
+    private locationService: LocationManagerService,
+    private platform: Platform,
   ) {
     this.lockToPortrait();
-    this.initStorage();            // <-- call storage init on startup
+    this.initStorage();
+    this.platform.ready().then(() => {
+      this.locationService.start();
+    });
   }
+
+
 
   async lockToPortrait() {
     try {
@@ -44,22 +52,6 @@ export class AppComponent {
       console.log('Storage initialized');
     } catch (err) {
       console.error('Failed to initialize storage:', err);
-    }
-  }
-
-    async shareFiles() {
-    try {
-      const mapFile = 'file:///storage/emulated/0/Android/data/your.app/files/map.png';
-      const dataFile = 'file:///storage/emulated/0/Android/data/your.app/files/data.png';
-
-      // WhatsApp: only supports ONE file at a time
-      await this.socialSharing.shareViaWhatsApp('Here is the map', mapFile);
-
-      // if you want to send the second one separately:
-      await this.socialSharing.shareViaWhatsApp('Here is the data', dataFile);
-
-    } catch (err) {
-      console.error('Error sharing:', err);
     }
   }
 

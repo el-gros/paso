@@ -6,13 +6,18 @@ import { IonicStorageModule } from '@ionic/storage-angular';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 import { environment } from './environments/environment';
-import { provideHttpClient, HttpClient } from '@angular/common/http';
-import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { TranslateModule } from '@ngx-translate/core';
+import { TranslateLoader } from '@ngx-translate/core';
+import { HttpClient } from '@angular/common/http';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
+import { File } from '@awesome-cordova-plugins/file/ngx';
 
-// ✅ Factory function for translation loader
-export function createTranslateLoader(http: HttpClient) {
-  return new TranslateHttpLoader(http);
+// Standalone loader factory
+export function httpTranslateLoader(http: HttpClient) {
+  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
 
 if (environment.production) {
@@ -21,26 +26,28 @@ if (environment.production) {
 
 bootstrapApplication(AppComponent, {
   providers: [
+    SocialSharing,
+    FilePath,
+    File,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
 
-    // ✅ Ionic modules
     importProvidersFrom(IonicModule.forRoot({})),
     importProvidersFrom(IonicStorageModule.forRoot()),
 
-    // ✅ New HttpClient API only
-    provideHttpClient(),
+    // Correct HttpClient provider for standalone (required)
+    provideHttpClient(withInterceptorsFromDi()),
 
-    // ✅ TranslateModule with factory loader
+    // ❗ Correct translate module with factory IN standalone mode
     importProvidersFrom(
       TranslateModule.forRoot({
         loader: {
           provide: TranslateLoader,
-          useFactory: createTranslateLoader,
           deps: [HttpClient],
+          useFactory: httpTranslateLoader
         }
       })
     ),
 
     provideRouter(routes)
   ],
-});
+}).catch(err => console.error(err));

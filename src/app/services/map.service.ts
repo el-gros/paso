@@ -21,6 +21,7 @@ import VectorTileLayer from 'ol/layer/VectorTile';
 import { VectorTile, View } from 'ol';
 import { Rotate, ScaleLine, Zoom } from 'ol/control';
 import { CustomControl } from '../utils/openlayers/custom-control';
+import { ShareControl } from '../utils/openlayers/share-control';
 import MVT from 'ol/format/MVT';
 import { TileGrid } from 'ol/tilegrid';
 import RenderFeature from 'ol/render/Feature';
@@ -34,8 +35,10 @@ import { map, catchError } from 'rxjs/operators';
 import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
 import { ServerService } from './server.service';
+import { LocationManagerService } from './location-manager.service';
 import VectorSource from 'ol/source/Vector';
 import { transformWithProjections, useGeographic } from 'ol/proj';
+import { TranslateService } from '@ngx-translate/core';
 useGeographic();
 
 // 1. setMapView
@@ -64,13 +67,18 @@ export class MapService {
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
 
+  public customControl!: CustomControl;  
+  public shareControl!: ShareControl;
 
   constructor(
     private styleService: StyleService,
     private http: HttpClient,
     public fs: FunctionsService,
-    private server: ServerService
-  ) { }
+    private server: ServerService,
+    private locationService: LocationManagerService,
+    private translate: TranslateService,
+  ) { 
+  }
 
   // 1. SET MAP VIEW /////////////////////////////////////////
 
@@ -177,10 +185,14 @@ export class MapService {
 
   // 10. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
+    // Custom and share controls
+    this.customControl = new CustomControl(this.fs);
+    this.shareControl = new ShareControl(this.locationService, this.translate)
     // Ensure layers exist
     this.fs.currentLayer = await this.createLayer(this.fs.currentLayer);
     this.fs.archivedLayer = await this.createLayer(this.fs.archivedLayer);
     this.fs.searchLayer = await this.createLayer(this.fs.searchLayer);
+    this.fs.locationLayer = await this.createLayer(this.fs.locationLayer);
     // Always (re)create the base layer and credits
     const { olLayer, credits } = await this.createMapLayer();
     if (!olLayer) {
@@ -220,7 +232,7 @@ export class MapService {
     const view = new View({
       center: currentPosition,
       zoom: 9,
-      projection: 'EPSG:3857',
+      //projection: 'EPSG:3857',
       minZoom,
       maxZoom,
     });
@@ -230,14 +242,16 @@ export class MapService {
         olLayer,
         this.fs.currentLayer,
         this.fs.archivedLayer,
-        this.fs.searchLayer
+        this.fs.searchLayer,
+        this.fs.locationLayer,
       ].filter(Boolean) as BaseLayer[],
       view,
       controls: [
         new Zoom(),
         new ScaleLine(),
         new Rotate(),
-        new CustomControl(this, this.fs),
+        this.customControl,
+        this.shareControl
       ],
     });
     this.mapWrapperElement = document.getElementById('map-wrapper');
@@ -423,7 +437,7 @@ export class MapService {
 
               const features = new MVT().readFeatures(safeBuffer.buffer, {
                 extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-                featureProjection: 'EPSG:3857',
+                //featureProjection: 'EPSG:3857',
               });
 
               vectorTile.setFeatures(features);
@@ -671,24 +685,17 @@ export class MapService {
   }
 
   async updateColors() {
-    // CURRENT TRACK
-    let features = this.fs.currentLayer?.getSource()?.getFeatures();
-    features?.forEach(f => {
-      const geomType = f.getGeometry()?.getType();
-      if (geomType === 'LineString') {
-        f.setStyle(this.setStrokeStyle(this.fs.currentColor));
-      }
-    });
-    // ARCHIVED TRACK
-    features = this.fs.archivedLayer?.getSource()?.getFeatures();
-    features?.forEach(f => {
-      const geomType = f.getGeometry()?.getType();
-      if (geomType === 'LineString') {
-        f.setStyle(this.setStrokeStyle(this.fs.archivedColor));
-      }
-    });
-    this.fs.currentLayer?.changed();
-    this.fs.archivedLayer?.changed();
+    const updateLayer = (layer: VectorLayer | undefined, color: string) => {
+      const features = layer?.getSource()?.getFeatures();
+      features?.forEach((f: Feature) => {
+        if (f.getGeometry()?.getType() === 'LineString') {
+          f.setStyle(this.setStrokeStyle(color));
+        }
+      });
+      layer?.changed();
+    };
+    updateLayer(this.fs.currentLayer, this.fs.currentColor);
+    updateLayer(this.fs.archivedLayer, this.fs.archivedColor);
     this.fs.map?.render();
     this.fs.reDraw = false;
   }

@@ -1,224 +1,90 @@
-/**
- * CustomControl is an OpenLayers control that provides a single toggle button
- * to activate or deactivate real-time location tracking on the map.
- * - Blue circle = inactive
- * - Sand clock = waiting for GPS fix
- * - Red circle = active
- *
- * When activated, it centers the map on the user's current position and displays
- * a styled marker, updating the location at regular intervals.
- *
- * @extends Control
- */
-
-import { Control } from 'ol/control';
-import { Feature } from 'ol';
-import VectorSource from 'ol/source/Vector';
-import { Point, Geometry } from 'ol/geom';
-import { Style, Circle as CircleStyle, Fill, Icon } from 'ol/style';
-import VectorLayer from 'ol/layer/Vector';
-import { MapService } from '../../services/map.service';
+import Control from 'ol/control/Control';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import { Icon, Style } from 'ol/style';
 import { FunctionsService } from '../../services/functions.service';
 
 export class CustomControl extends Control {
-  private vectorSource: VectorSource;
-  private vectorLayer: VectorLayer<any>;
-  private isActive: boolean = false;
-  private updateInterval: any; // interval ID
   private button: HTMLButtonElement;
+  private positionFeature: Feature<Point>;
 
-  constructor(
-    private mapService: MapService,
-    public fs: FunctionsService
-  ) {
+  private isActive = true;
+
+  private sharpIcon = 'assets/icons/navigate-sharp-blue.svg';
+  private outlineIcon = 'assets/icons/navigate-outline-blue.svg';
+
+  /** Callbacks */
+  private activateCallback?: () => void;
+  private deactivateCallback?: () => void;
+
+  constructor(private fs: FunctionsService) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';
 
-    // Toggle button
     const button = document.createElement('button');
     button.style.width = '30px';
     button.style.height = '30px';
-    button.style.borderRadius = '50%';
     button.style.border = 'none';
+    button.style.borderRadius = '50%';
+    button.style.backgroundColor = 'white';
+    button.style.display = 'flex';
+    button.style.justifyContent = 'center';
+    button.style.alignItems = 'center';
     button.style.cursor = 'pointer';
-    button.style.fontSize = '16px';
-    button.style.fontWeight = 'bold';
+    button.innerHTML = `<img src="assets/icons/navigate-sharp-blue.svg" style="width:22px;height:22px;" />`;
+
     element.appendChild(button);
 
-    super({
-      element: element,
-      target: undefined,
-    });
-
+    super({ element });
     this.button = button;
-    this.setButtonBlue();
 
-    this.vectorSource = new VectorSource<Feature<Geometry>>({});
-    this.vectorLayer = new VectorLayer({
-      source: this.vectorSource,
-      style: this.createCircleStyle('rgba(0, 60, 136, 0.7)'),
-    });
+    // Handle clicks
+    this.button.addEventListener('click', () => this.handleClick());
 
-    // Toggle behavior
-    button.addEventListener('click', () => {
-      if (this.isActive) {
-        this.deactivate();
-      } else {
-        this.activate();
-      }
-    });
+    // Marker feature
+    this.positionFeature = new Feature();
+    this.setMarkerIcon(this.sharpIcon);
+    this.fs.locationLayer?.getSource()?.addFeature(this.positionFeature);
   }
 
-  // ------------------------
-  // Activate control
-  // ------------------------
-  private async activate() {
-    if (!this.fs.map || this.isActive) return;
-
-    this.setButtonSpinner();
-
-    // Promise.race to wait for GPS or timeout
-    const timeout = new Promise<null>(resolve =>
-      setTimeout(() => resolve(null), 8000) // 8s max
-    );
-
-    const coordinates = await Promise.race([
-      this.fs.getCurrentPosition(true, 5000),
-      timeout,
-    ]);
-
-    if (!coordinates) {
-      // Failed → back to blue
-      this.setButtonBlue();
-      return;
-    }
-
-    // Update location & layer
-    this.updateLocation(coordinates);
-
-    if (!this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.fs.map.addLayer(this.vectorLayer);
-    }
-
-    this.startLocationUpdates();
-    this.isActive = true;
-    this.setButtonRed();
+  /** Public API for listening */
+  public onActivate(cb: () => void) {
+    this.activateCallback = cb;
   }
 
-  // ------------------------
-  // Deactivate control
-  // ------------------------
-  private deactivate() {
-    if (!this.fs.map || !this.isActive) return;
-
-    this.vectorSource.clear();
-
-    if (this.fs.map.getLayers().getArray().includes(this.vectorLayer)) {
-      this.fs.map.removeLayer(this.vectorLayer);
-    }
-
-    this.stopLocationUpdates();
-    this.isActive = false;
-    this.setButtonBlue();
+  public onDeactivate(cb: () => void) {
+    this.deactivateCallback = cb;
   }
 
-  // ------------------------
-  // Helpers
-  // ------------------------
-  private createCircleStyle(color: string): Style {
-    return new Style({
-      image: new CircleStyle({
-        radius: 15,
-        fill: new Fill({ color }),
-      }),
-    });
-    /*return new Style({
-      image: new Icon({
-        src: 'assets/icons/navigate-sharp.svg', // path to your icon image
-        scale: 1.0, // adjust as needed
-        color: color,
-        rotation: 0, // can be updated dynamically
-        rotateWithView: true, // rotates with map if desired
-
-
-        .
-
-
-        anchor: [0.5, 0.5], // center the icon
-      }),
-    });*/
-  }
-
-  private updateLocation(coordinates: [number, number]) {
-    if (!this.fs.map) return;
-
-    this.vectorSource.clear();
-
-    const feature = new Feature({
-      geometry: new Point(coordinates),
-    });
-
-    feature.setStyle(this.createCircleStyle('rgba(0, 60, 136, 0.7)'));
-    this.vectorSource.addFeature(feature);
-
-    this.fs.map.getView().setCenter(coordinates);
-  }
-
-  private startLocationUpdates() {
-    this.stopLocationUpdates(); // safety: clear old interval
-    this.updateInterval = setInterval(async () => {
-      const coordinates = await this.fs.getCurrentPosition(true, 5000);
-      if (coordinates) this.updateLocation(coordinates);
-    }, 5000);
-  }
-
-  private stopLocationUpdates() {
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = null;
+  /** -------- BUTTON CLICK LOGIC -------- */
+  private handleClick() {
+    if (this.isActive) {
+      this.isActive = false;
+      this.setButtonIcon(this.outlineIcon);
+      this.deactivateCallback?.();
+    } else {
+      this.isActive = true;
+      this.setButtonIcon(this.sharpIcon);
+      this.activateCallback?.();
     }
   }
 
-  // ------------------------
-  // Button styling
-  // ------------------------
-  private setButtonBlue() {
-    this.button.innerHTML = '';
-    this.button.style.backgroundColor = 'rgba(0, 60, 136, 0.7)';
-    this.button.style.color = 'white';
+  /** -------- ICON HANDLING -------- */
+  private setButtonIcon(iconPath: string) {
+    this.button.innerHTML =
+      `<img src="${iconPath}" style="width:22px;height:22px;" />`;
   }
 
-  private setButtonRed() {
-    this.button.innerHTML = 'X';
-    this.button.style.backgroundColor = 'rgba(136, 0, 0, 0.7)';
-    this.button.style.color = 'white';
-  }
-
-  private setButtonSpinner() {
-    this.button.innerHTML = '<span class="sandclock">⏳</span>';
-    this.button.style.backgroundColor = 'gray';
-    this.button.style.color = 'white';
-  }
-
-  // ------------------------
-  // Ensure layer is attached
-  // ------------------------
-  override setMap(map: any): void {
-    super.setMap(map);
-    this.fs.map = map;
-  }
-
-  updateHeading(feature: Feature, bearingDeg: number) {
-    const rotation = (bearingDeg * Math.PI) / 180; // convert to radians
+  private setMarkerIcon(iconPath: string) {
     const style = new Style({
       image: new Icon({
-        src: 'assets/icons/navigate-sharp-blue.png',
-        scale: 1.0,
-        rotation,
-        rotateWithView: true,
+        src: iconPath,
+        size: [48, 48],
         anchor: [0.5, 0.5],
+        rotateWithView: true,
+        crossOrigin: 'anonymous',
       }),
     });
-    feature.setStyle(style);
+    this.positionFeature.setStyle(style);
   }
 }

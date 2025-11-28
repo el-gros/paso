@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="48" height="48"
+     viewBox="0 0 512 512"
+     aria-hidden="true" role="img">
+  <!-- Filled sharp "navigate" / pointer icon -->
+  <path fill="#0040ff" d="
+    M256 24
+    L32 456
+    L256 352
+    L480 456
+    L256 24
+    Z
+  "/>
+  <!-- Inner triangle cut to make it look 'sharp' and directional -->
+  <path fill="#ffffff" d="
+    M256 112
+    L120 424
+    L256 328
+    L392 424
+    L256 112
+    Z
+  " opacity="0.06"/>
+</svg>
+

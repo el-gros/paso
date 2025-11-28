@@ -44,6 +44,7 @@ export class FunctionsService {
   currentLayer?: VectorLayer<VectorSource>
   archivedLayer?: VectorLayer<VectorSource>
   searchLayer?: VectorLayer<VectorSource>
+  locationLayer?: VectorLayer<VectorSource>
   archivedTrack: Track | undefined = undefined;
   currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];

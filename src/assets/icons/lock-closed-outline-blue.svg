@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="48" height="48"
+     viewBox="0 0 512 512"
+     aria-hidden="true" role="img">
+
+  <!-- Lock closed outline icon (blue stroke) -->
+  <rect x="96" y="208" width="320" height="256" rx="48" ry="48"
+        fill="none"
+        stroke="#0040ff"
+        stroke-linejoin="round"
+        stroke-width="32" />
+
+  <path d="M160 208v-80a96 96 0 0 1 192 0v80"
+        fill="none"
+        stroke="#0040ff"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="32" />
+</svg>
+

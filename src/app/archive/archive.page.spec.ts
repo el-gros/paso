@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { IonicModule } from '@ionic/angular';
-import { Tab2Page } from './archive.page';
+import { ArchivePage } from './archive.page';
 
-describe('Tab2Page', () => {
-  let component: Tab2Page;
-  let fixture: ComponentFixture<Tab2Page>;
+describe('ArchivePage', () => {
+  let component: ArchivePage;
+  let fixture: ComponentFixture<ArchivePage>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Tab2Page, IonicModule],
+      imports: [ArchivePage, IonicModule],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Tab2Page);
+    fixture = TestBed.createComponent(ArchivePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

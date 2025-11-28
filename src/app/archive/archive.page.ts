@@ -30,7 +30,7 @@ import { FormsModule } from '@angular/forms';
     ],
     styleUrls: ['archive.page.scss']
 })
-export class Tab2Page {
+export class ArchivePage {
 
   numChecked: number = 0;
 

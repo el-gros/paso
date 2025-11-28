@@ -4,16 +4,40 @@ import { global } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
-  private supabase: SupabaseClient;
+  public supabase: SupabaseClient;
 
-  constructor() {
+  constructor(
+
+  ) {
+
+    // 👇 Fix definitivo: función de locking compatible con 2.81.1
+    const noLock: any = async (
+      _key: string,
+      _acquireTimeout: number,
+      fn: () => Promise<any>
+    ) => {
+      return await fn();
+    };
+
     this.supabase = createClient(
       global.supabaseUrl,
-      global.supabaseKey
-    )
+      global.supabaseKey,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          flowType: 'pkce',
+          storage: localStorage,
+
+          // 💥 aquí se arregla el error + pantalla en blanco
+          lock: noLock
+        }
+      }
+    );
   }
 
-  get client() {
+  getClient(): SupabaseClient {
     return this.supabase;
   }
 }

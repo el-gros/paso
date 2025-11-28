@@ -349,8 +349,8 @@
   visibility: visible !important;
   z-index: 10000; /* ensure it floats above ion-content */
   position: absolute !important;
-  bottom: 67px !important;
-  left: 0.7em !important;
+  bottom: 60px !important;
+  left: 5px !important;
   pointer-events: none; /* safe so it doesn’t block taps */
 }
 
@@ -364,14 +364,26 @@
 }
 
 /* Example for your custom control */
-.custom-control.ol-control {
+.custom-control {
   bottom: 60px;      /* adjust position */
-  right: 1em;
+  right: 50px;
   background: transparent;
   padding: 6px;
   border-radius: 8px;
-  color: white;
-  cursor: pointer;
+}
+
+.share-control {
+  bottom: 60px;      /* adjust position */
+  right: 5px;
+  background: transparent;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.custom-share-control button,
+.custom-control button {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .padded-list {

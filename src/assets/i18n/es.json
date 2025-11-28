@@ -125,7 +125,8 @@
     "TOIMAGE_FAILED": "No se ha podido generar la imagen",
     "DATA_BUTTON": "Datos",
     "ARCHIVE_BUTTON": "Archivo",
-    "SETTINGS_BUTTON": "Config."
+    "SETTINGS_BUTTON": "Config.",
+    "CONFIRM_SHARING": "Are you sure you want to share your location with somebody?"
   },
 
   "RECORD": {

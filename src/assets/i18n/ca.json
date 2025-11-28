@@ -125,7 +125,8 @@
     "ARCHIVE_BUTTON": "Arxiu",
     "SETTINGS_BUTTON": "Config.",
     "FROM": "From",
-    "TO": "To"
+    "TO": "To",
+    "CONFIRM_SHARING": "Segur que vols compartir la teva posició amb una altra persona?"
   },
 
   "RECORD": {

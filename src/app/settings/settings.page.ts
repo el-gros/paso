@@ -27,6 +27,7 @@ register();
 
 
 @Component({
+    standalone: true,
     selector: 'app-settings',
     templateUrl: 'settings.page.html',
     styleUrls: ['settings.page.scss'],
@@ -42,11 +43,11 @@ export class SettingsPage implements OnDestroy {
   private progressSubscription?: Subscription; // 🔹 Store subscription
   // Language
   languages: LanguageOption[] = [
-    { name: 'Català', code: 'ca-ES' },
-    { name: 'Español', code: 'es-ES' },
-    { name: 'English', code: 'en-EN' }
+    { name: 'Català', code: 'ca' },
+    { name: 'Español', code: 'es' },
+    { name: 'English', code: 'en' }
   ];
-  selectedLanguage: any = {name:'English', code:'en-EN'}
+  selectedLanguage: any = {name:'English', code:'en'}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
@@ -111,8 +112,7 @@ export class SettingsPage implements OnDestroy {
   4. onLanguageChange
   5. onMapChange
   6. openColorPopover
-  7. onCurrentChange
-  8. onArchivedChange
+
   9. onAltitudeChange
   10. onAlertChange
   11. onMapUploadChange
@@ -204,20 +204,6 @@ export class SettingsPage implements OnDestroy {
       translucent: true,
     });
     await popover.present();
-  }
-
-  // 7. CURRENT COLOR CHANGE /////////////////////
-  async onCurrentChange(color: string) {
-    this.fs.currentColor = color;
-    await this.fs.storeSet('currentColor', color);
-    this.fs.reDraw = true;
-  }
-
-  // 8. ARCHIVED COLOR CHANGE ///////////////////////////////////////
-  async onArchivedChange(color: string) {
-    this.fs.archivedColor = color;
-    await this.fs.storeSet('archivedColor', this.fs.archivedColor);
-    this.fs.reDraw = true;
   }
 
   // 9. ALTITUDE METHOD CHANGE /////////////////////////
@@ -352,6 +338,8 @@ export class SettingsPage implements OnDestroy {
       console.warn(`Invalid color selected: ${color}`);
       return;
     }
+    // Tell tab1 to update
+    this.fs.reDraw = true;
     // Current or archived
     if (type === 'current') {
       this.fs.currentColor = color;

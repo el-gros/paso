@@ -24,6 +24,7 @@ import { FormsModule } from '@angular/forms';
 
 
 @Component({
+    standalone: true,
     selector: 'app-search-modal',
     templateUrl: './search-modal.component.html',
     styleUrls: ['./search-modal.component.scss'],

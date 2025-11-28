@@ -7,7 +7,7 @@ export const routes: Routes = [
   },
   {
     path: 'archive',
-    loadComponent: () => import('./archive/archive.page').then((m) => m.Tab2Page),
+    loadComponent: () => import('./archive/archive.page').then((m) => m.ArchivePage),
   },
   {
     path: 'settings',
@@ -20,7 +20,9 @@ export const routes: Routes = [
   {
     path: '',
     redirectTo: 'tab1',
+    pathMatch: 'full',  // 👈 necesario
   }
-]
+];
+
 
 
