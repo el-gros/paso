@@ -71,7 +71,7 @@ export class LocationTrackingService {
     if (!this.locationFeature) return;
 
     // Adjust: Bearing (0° = North) → OL rotation (0° = East)
-    const rotation = (bearing - 90) * (Math.PI / 180);
+    const rotation = bearing * (Math.PI / 180);
 
     this.locationFeature.setStyle(
         new Style({

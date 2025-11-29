@@ -25,7 +25,7 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
 import { App } from '@capacitor/app';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
-import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+//import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
 import { BackgroundTask } from '@capawesome/capacitor-background-task';
@@ -33,7 +33,7 @@ import { IonicModule, ModalController } from '@ionic/angular';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, Subscription } from 'rxjs';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import JSZip from 'jszip';
@@ -42,6 +42,7 @@ import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { FormsModule } from '@angular/forms';
 import { LocationTrackingService } from '../services/locationTracking.service';
 import { LocationSharingService } from '../services/locationSharing.service';
+import { LocationManagerService } from '../services/location-manager.service';
 
 useGeographic();
 register();
@@ -79,8 +80,6 @@ export class Tab1Page {
   threshDist: number = 0.0000002;
   foreground: boolean = true;
 
-  audioCtx: AudioContext | null = null;
-  beepInterval: any;
   appStateListener?: PluginListenerHandle;
   styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
   state: string = '';
@@ -98,7 +97,8 @@ export class Tab1Page {
   query3: string = '';
   results: LocationResult[] = [];
   loading: boolean = false;
-
+  
+  subscription: Subscription | undefined
 
   constructor(
     public fs: FunctionsService,
@@ -111,7 +111,8 @@ export class Tab1Page {
     private languageService: LanguageService,
     private translate: TranslateService,
     private locationTrackingService: LocationTrackingService,
-    private locationSharingService: LocationSharingService
+    private locationSharingService: LocationSharingService,
+    private locationService: LocationManagerService
   ) {
   }
 
@@ -142,15 +143,11 @@ export class Tab1Page {
   23. htmValues
   24. checkWhetherOnRoute
 
-  26. playBeep
-  27. playDoubleBeep
   28. computeTrackStats
   29. saveTrack
   30. processUrl
   31. foregroundTask
   32. backgroundTask
-  33. startBeepInterval
-  34. stopBeepInterval
 
   36. determineColors
   37. waypoint
@@ -195,14 +192,14 @@ export class Tab1Page {
       if (!this.fs.currentTrack) return;
       this.foreground = state.isActive;
       if (this.foreground) {
-        this.stopBeepInterval();
+        this.fs.stopBeepInterval();
         try {
           await this.morningTask();
         } catch (err) {
           console.error('Error in morningTask:', err);
         }
       } else {
-        this.startBeepInterval();
+        this.fs.startBeepInterval();
       }
     });
   }
@@ -229,7 +226,7 @@ export class Tab1Page {
 
   // 5. START TRACKING /////////////////////////////////
   async startTracking() {
-    // Check-request permissions
+/*    // Check-request permissions
     const permissionGranted = await ForegroundService.checkPermissions();
     if (!permissionGranted) {
       await ForegroundService.requestPermissions();
@@ -238,14 +235,14 @@ export class Tab1Page {
     const overlayPermissionGranted = await ForegroundService.checkManageOverlayPermission();
     if (!overlayPermissionGranted) {
       await ForegroundService.requestManageOverlayPermission();
-    }
+    } */
     // Start foreground service
-    await ForegroundService.startForegroundService({
+    /*await ForegroundService.startForegroundService({
       id: 1234,
       title: this.translate.instant('MAP.NOTICE'),
       body: '',
       smallIcon: 'splash.png',
-    });
+    });*/
     // Reset current track and related variables
     this.fs.currentTrack = undefined;
     this.fs.currentLayer?.getSource()?.clear();
@@ -255,9 +252,9 @@ export class Tab1Page {
     this.altitudeFiltered = 0;
     this.averagedSpeed = 0;
     this.computedDistances = 0;
-    this.audioCtx = new window.AudioContext();
+    //this.audioCtx = new window.AudioContext();
     // Request notification permission
-    const { display } = await LocalNotifications.checkPermissions();
+/*    const { display } = await LocalNotifications.checkPermissions();
     if (display !== 'granted') {
       const permissionResult = await LocalNotifications.requestPermissions();
       if (permissionResult.display === 'granted') {
@@ -267,9 +264,19 @@ export class Tab1Page {
       }
     } else {
       console.log('Notification permission already granted.');
-    }
+    } */
     // ✅ Start Background Geolocation watcher (official API)
-    this.watcherId = await BackgroundGeolocation.addWatcher(
+        // Subscribe to LocationService
+    this.subscription = this.locationService.latestLocation$.subscribe(async loc => {
+      //await this.locationSharingService.shareLocationIfActive(location)
+      if (!loc) return;
+      if (this.foreground) {
+        await this.foregroundTask(loc);
+      } else {
+        await this.backgroundTask(loc);
+      }
+    });
+/*    this.watcherId = await BackgroundGeolocation.addWatcher(
       {
         backgroundMessage: '',
         backgroundTitle: this.translate.instant('MAP.NOTICE'),
@@ -294,7 +301,7 @@ export class Tab1Page {
         }
       }
     );
-    // Update state
+    // Update state */
     this.fs.state = 'tracking';
   }
 
@@ -323,20 +330,21 @@ export class Tab1Page {
   // 7. STOP TRACKING //////////////////////////////////
   async stopTracking(): Promise<void> {
     // Stop sharing
-    this.locationSharingService.stopSharing();
+    //this.locationSharingService.stopSharing();
     // Always stop the watcher and foreground service, even if no layer yet
     this.fs.state = 'stopped';
     this.show('alert', 'none');
-    try {
+    /*try {
       await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
     } catch (err) {
       console.warn('Failed to remove watcher:', err);
-    }
-    try {
+    }*/
+    this.subscription?.unsubscribe();
+ /*   try {
       await ForegroundService.stopForegroundService();
     } catch (err) {
       console.warn('Failed to stop foreground service:', err);
-    }
+    } */
     // If no current layer yet → nothing to update on the map, just finish cleanly
     if (!this.fs.currentLayer?.getSource() || !this.fs.currentTrack || !this.fs.map) return;
     const source = this.fs.currentLayer.getSource();
@@ -589,8 +597,8 @@ export class Tab1Page {
     this.appStateListener?.remove();
     this.appStateListener = undefined;
     // Clear beep interval
-    this.beepInterval?.remove();
-    this.beepInterval = undefined;
+    this.fs.beepInterval?.remove();
+    this.fs.beepInterval = undefined;
   }
 
   // 18. CREATE MAP ////////////////////////////////////////
@@ -755,73 +763,14 @@ export class Tab1Page {
     if (this.fs.audioAlert == 'off') return;
     // Beep for off-route transition
     if (previousStatus === 'green' && this.fs.status === 'red') {
-      this.playDoubleBeep(1800, .3, 1, .12);
+      this.fs.playDoubleBeep(1800, .3, 1, .12);
     }
     // Beep for on-route transition
     else if (previousStatus === 'red' && this.fs.status === 'green') {
-      this.playBeep(1800, .4, 1);
+      this.fs.playBeep(1800, .4, 1);
     }
   }
 
-
-  // 26. PLAY A BEEP /////////////////////////////////////
-  async playBeep(freq: number, time: number, volume: number) {
-    // Initialize audio context if not already created
-    if (!this.audioCtx) {
-      this.audioCtx = new window.AudioContext;
-    }
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode =this.audioCtx.createGain();  // Create a gain node
-    // Configure oscillator
-    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
-    // Set initial gain (volume)
-    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);       // Set initial volume
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    // Start and stop the oscillator after the specified duration
-    oscillator.start();
-    console.log('beeping')
-    oscillator.stop(this.audioCtx.currentTime + time);
-    // Clean up after the sound has finished
-    oscillator.onended = async () => {
-      oscillator.disconnect();
-      gainNode.disconnect();
-    };
-  }
-
-  // 27. PLAY A DOUBLE BEEP
-  async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
-    // Initialize audio context if not already created
-    if (!this.audioCtx) {
-      this.audioCtx = new window.AudioContext();
-    }
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
-    // Configure oscillator
-    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime); // Set frequency
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    const now = this.audioCtx.currentTime;
-    // Double beep timing
-    gainNode.gain.setValueAtTime(0, now); // Start with volume off
-    gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // Ramp up quickly for first beep
-    gainNode.gain.linearRampToValueAtTime(0, now + time); // Ramp down after first beep
-    gainNode.gain.setValueAtTime(0, now + time + gap); // Silence for gap
-    gainNode.gain.linearRampToValueAtTime(volume, now + time + gap + 0.01); // Ramp up for second beep
-    gainNode.gain.linearRampToValueAtTime(0, now + time + gap + time); // Ramp down after second beep
-    // Start and stop oscillator
-    oscillator.start(now);
-    oscillator.stop(now + time + gap + time); // Total duration: first beep + gap + second beep
-    // Clean up after the sound has finished
-    oscillator.onended = async () => {
-      oscillator.disconnect();
-      gainNode.disconnect();
-    };
-  }
 
   // 28. COMPUTE TRACK STATS /////////////////////////
   async computeTrackStats(
@@ -1053,26 +1002,6 @@ export class Tab1Page {
       await this.updateTrack(location);
     });
     BackgroundTask.finish({ taskId });
-  }
-
-  // 33. START BEEP INTERVAL /////////////////////
-  startBeepInterval() {
-    // Clear any existing interval to avoid duplicates
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-    }
-    // Set an interval to play the beep every 120 seconds
-    this.beepInterval = setInterval(() => {
-      this.playBeep(600, .001, .001);
-    }, 120000); // 120000 milliseconds = 120 seconds
-  }
-
-  // 34. STOP BEEP INTERVAL ////////////////////////////
-  stopBeepInterval() {
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-      this.beepInterval = null; // Reset the interval reference
-    }
   }
 
   // 37. ADD WAYPOINT ////////////////////////////////////
@@ -1682,12 +1611,12 @@ async processKmz(data: any) {
 
   private onShareStartFromControl() {
     console.log("🔥 starting sharing");
-    this.locationTrackingService.start();  // or your service
+    this.locationSharingService.startSharing();  
   }
 
   private onShareStopFromControl() {
     console.log("🟥 stopping sharing");
-    this.locationTrackingService.stop();
+    this.locationSharingService.stopSharing();
   }
 
 }

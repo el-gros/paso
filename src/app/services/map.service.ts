@@ -121,8 +121,8 @@ export class MapService {
     features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
     features[1].setGeometry(new Point(coordinates[0]));
     features[1].setStyle(this.createPinStyle('green'));
-    features[2].setGeometry(new Point(coordinates[num - 1]));
-    features[2].setStyle(this.createPinStyle('blue'));
+    //features[2].setGeometry(new Point(coordinates[num - 1]));
+    //features[2].setStyle(this.createPinStyle('blue'));
     // Adjust map view occasionally
     if ([5, 10, 25].includes(num) || num % 50 === 0) {
       this.setMapView(currentTrack);
@@ -437,7 +437,7 @@ export class MapService {
 
               const features = new MVT().readFeatures(safeBuffer.buffer, {
                 extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-                //featureProjection: 'EPSG:3857',
+                //git push origin mainfeatureProjection: 'EPSG:3857',
               });
 
               vectorTile.setFeatures(features);

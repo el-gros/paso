@@ -3,11 +3,17 @@ import { BehaviorSubject } from 'rxjs';
 import { registerPlugin } from '@capacitor/core';
 import { TranslateService } from '@ngx-translate/core';
 import { Location } from 'src/globald';
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+import { FunctionsService } from './functions.service';
+const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 
 @Injectable({
   providedIn: 'root'
 })
 export class LocationManagerService {
+
+  threshold: number = 30;
+  altitudeThreshold: number = 20;
 
   // ----------------------------------------------------------------------------
   // 1) PUBLIC API → components/services subscribe here
@@ -18,13 +24,10 @@ export class LocationManagerService {
   private lastAccepted: Location | null = null;
   private watcherId: string | null = null;
 
-  private BackgroundGeolocation: any;
-  private ForegroundService: any;
-
-  constructor(private translate: TranslateService) {
-    this.BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
-    this.ForegroundService = registerPlugin('ForegroundService');
-  }
+  constructor(
+    private translate: TranslateService,
+    public fs: FunctionsService,
+  ) {}
 
   // ----------------------------------------------------------------------------
   // 2) RAW + SAMPLING → (merged from the 3 services)
@@ -59,7 +62,7 @@ export class LocationManagerService {
     this.publish(raw);
   }
 
-  private publish(loc: Location) {
+  async publish(loc: Location) {
     this.latestLocationSubject.next(loc);
     console.log('[LocationManager] new accepted location:', loc);
   }
@@ -80,23 +83,21 @@ export class LocationManagerService {
   // 3) PERMISSIONS + FOREGROUND SERVICE + BACKGROUND WATCHER
   // ----------------------------------------------------------------------------
   private async ensurePermissions() {
-    // Foreground service permissions
-    const fgPerm = await this.ForegroundService.checkPermissions();
-    if (!fgPerm.granted) await this.ForegroundService.requestPermissions();
-
     // Background geolocation permissions
-    const bgPerm = await this.BackgroundGeolocation.checkPermissions();
-
+    const bgPerm = await BackgroundGeolocation.checkPermissions();
+    const needsBackground = bgPerm && 'background' in bgPerm;
     if (
       !bgPerm ||
       bgPerm.location !== 'granted' ||
-      (bgPerm.background && bgPerm.background !== 'granted')
+      (needsBackground && bgPerm.background !== 'granted')
     ) {
-      const req = await this.BackgroundGeolocation.requestPermissions();
+      const req = await BackgroundGeolocation.requestPermissions();
       if (
         req.location !== 'granted' ||
-        (req.background && req.background !== 'granted')
-      ) throw new Error('Location/background permission denied');
+        (needsBackground && req.background !== 'granted')
+      ) {
+        throw new Error('Location/background permission denied');
+      }
     }
   }
 
@@ -106,15 +107,14 @@ export class LocationManagerService {
   async start() {
     try {
       await this.ensurePermissions();
-
-      await this.ForegroundService.startForegroundService({
+      await ForegroundService.startForegroundService({
         id: 4321,
         title: this.translate.instant('MAP.NOTICE'),
         body: '',
         smallIcon: 'splash.png',
       });
-
-      this.watcherId = await this.BackgroundGeolocation.addWatcher(
+      await this.fs.startBeepInterval();
+      this.watcherId = await BackgroundGeolocation.addWatcher(
         {
           backgroundMessage: 'Tracking…',
           backgroundTitle: 'Tracking in background',
@@ -122,14 +122,14 @@ export class LocationManagerService {
           stale: false,
           distanceFilter: 1,
         },
-        (location: any, error: any) => {
+        async (location: any, error: any) => {
           if (!location || error) return;
+          const success = await this.checkLocation(location);
+          if (!success) return;
           this.processRawLocation(location);
         }
       );
-
       console.log('[LocationManager] Watcher started:', this.watcherId);
-
     } catch (err) {
       console.error('[LocationManager] Start error:', err);
     }
@@ -141,15 +141,25 @@ export class LocationManagerService {
   async stop() {
     try {
       if (this.watcherId) {
-        await this.BackgroundGeolocation.removeWatcher({ id: this.watcherId });
+        await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
         console.log('[LocationManager] Watcher removed:', this.watcherId);
       }
-
       this.watcherId = null;
-      await this.ForegroundService.stopForegroundService();
+      await ForegroundService.stopForegroundService();
+      await this.fs.stopBeepInterval();
       console.log('[LocationManager] Foreground service stopped');
     } catch (err) {
       console.error('[LocationManager] Stop error:', err);
     }
   }
+
+    async checkLocation(location: Location) {
+      // excessive uncertainty / no altitude or time measured
+      if (location.accuracy > this.threshold ||
+        !location.altitude || location.altitude == 0 ||
+        location.altitudeAccuracy > this.altitudeThreshold ||
+        !location.time) return false
+      else return true;  
+    }
+
 }
