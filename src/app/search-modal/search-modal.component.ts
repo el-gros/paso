@@ -8,19 +8,16 @@
  * Integrates with organization-specific services for modal control, HTTP requests, and utility functions.
  */
 
-import { firstValueFrom } from 'rxjs';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { IonicModule, ModalController } from '@ionic/angular';
 import { global } from '../../environments/environment';
 import { FunctionsService } from '../services/functions.service';
+import { LocationManagerService } from '../services/location-manager.service';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MapService } from '../services/map.service';
 import { LocationResult, Route } from '../../globald';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 
 
 @Component({
@@ -54,7 +51,8 @@ export class SearchModalComponent implements OnInit {
     private modalController: ModalController,
     public fs: FunctionsService,
     private translate: TranslateService,
-    public mapService: MapService
+    public mapService: MapService,
+    private locationService: LocationManagerService
   ) { }
 
 // 1. NGONINIT
@@ -245,16 +243,7 @@ confirmSelection() {
 async onCurrentLocationChange(event: any): Promise<void> {
   if (event.detail.value === 'current') {
     this.loading = true;
-    const maxRetries = 5;
-    let attempts = 0;
-    let currentLocation: [number, number] | null= null;
-    while (!currentLocation && attempts < maxRetries) {
-      currentLocation = await this.fs.getCurrentPosition(true, 2000);
-      if (!currentLocation) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
+    let currentLocation: [number, number] | null = await this.locationService.getCurrentPosition();
     if (!currentLocation) {
       this.fs.displayToast(this.translate.instant('SEARCH.UNKNOWN_LOCATION'));
       this.loading = false;

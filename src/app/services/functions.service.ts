@@ -6,8 +6,6 @@
 
 import DOMPurify from 'dompurify';
 import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
-import Map from 'ol/Map';
-import { BehaviorSubject } from 'rxjs';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -15,9 +13,8 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
 import { register } from 'swiper/element';
+import { GeographyService } from '../services/geography.service';
 register();
 
 @Injectable({
@@ -33,19 +30,12 @@ export class FunctionsService {
   buildTrackImage: boolean = false;
   selectedAltitude: string = 'GPS'; // Default altitude method
   lag: number = 8;
-  currentColor: string = 'orange';
-  archivedColor: string = 'green';
+
   audioAlert: string = 'on';
   alert: string = 'on';
   geocoding: string = 'nominatim';
-  mapProvider: string ='MapTiler_outdoor';
   collection: TrackDefinition []= [];
-  map: Map | undefined;
-  currentLayer?: VectorLayer<VectorSource>
-  archivedLayer?: VectorLayer<VectorSource>
-  searchLayer?: VectorLayer<VectorSource>
-  locationLayer?: VectorLayer<VectorSource>
-  archivedTrack: Track | undefined = undefined;
+
   currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
@@ -55,9 +45,7 @@ export class FunctionsService {
   // Canvas
   canvasNum: number = 400;
   margin: number = 10;
-  // Current track
-  private _currentTrack = new BehaviorSubject<Track | undefined>(undefined);
-  currentTrack$ = this._currentTrack.asObservable(); // 👈 observable for others to subscribe
+
   // Averages
   currentAverageSpeed: number | undefined = undefined;
   currentMotionSpeed: number | undefined = undefined;
@@ -67,8 +55,6 @@ export class FunctionsService {
   // Re-draw tracks?
   reDraw: boolean = false;
   // Beep interval
-  audioCtx: AudioContext | null = null;
-  beepInterval: any;
 
   constructor(
     private storage: Storage,
@@ -76,6 +62,7 @@ export class FunctionsService {
     private alertController: AlertController,
     @Inject(Router) private router: Router,
     private modalController: ModalController,
+    private geography: GeographyService
   ) {
   }
 
@@ -546,25 +533,6 @@ export class FunctionsService {
     return results;
   }
 
-  async getCurrentPosition(highAccuracy: boolean, timeout: number ): Promise<[number, number] | null> {
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: highAccuracy,
-            timeout: timeout
-          }
-        );
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    } catch (error) {
-      console.error('Error getting current position:', error);
-      return null;
-    }
-  }
-
   async updateCanvas(
     ctx: CanvasRenderingContext2D | undefined,
     track: Track | undefined,
@@ -686,114 +654,31 @@ export class FunctionsService {
       else if (x < 5) return 10 ** nx;
       else return 2 * (10 ** nx);
     }
-  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
-    // Validate context
-    if (!context) {
-      return '';
-    }
-    // Open canvas
-    try {
-      // Hide canvas for the current or archived track
-      if (track === this.currentTrack || track === this.archivedTrack) {
-        const type = track === this.currentTrack ? 'c' : 'a';
+
+
+    setMapView(track: any) {
+      if (!this.geography.map) return;
+      const boundaries = track.features[0].bbox;
+      if (!boundaries) return;
+      // Set a minimum area
+      const minVal = 0.002;
+      if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
+        const centerX = 0.5 * (boundaries[0] + boundaries[2]);
+        const centerY = 0.5 * (boundaries[1] + boundaries[3]);
+        boundaries[0] = centerX - minVal / 2;
+        boundaries[2] = centerX + minVal / 2;
+        boundaries[1] = centerY - minVal / 2;
+        boundaries[3] = centerY + minVal / 2;
       }
-      // Update canvas
-      let lastUnit = '';
-      for (const [index, property] of Object.entries(this.properties)) {
-        const mode = property === 'altitude' ? 'x' : 't';
-        lastUnit = await this.updateCanvas(context[index], track, property, mode);
-      }
-      return lastUnit;
-    } finally {
-      // Close canvas
+      // map view
+      setTimeout(() => {
+        this.geography.map?.getView().fit(boundaries, {
+          size: this.geography.map.getSize(),
+          padding: [50, 50, 50, 50],
+          duration: 100  // Optional: animation duration in milliseconds
+        });
+      })
     }
-  }
-
-  get currentTrack(): Track | undefined {
-    return this._currentTrack.value;
-  }
-
-  set currentTrack(track: Track | undefined) {
-    this._currentTrack.next(track); // 👈 triggers subscribers
-  }
-
-  // START BEEP INTERVAL /////////////////////
-  startBeepInterval() {
-    // Clear any existing interval to avoid duplicates
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-    }
-    // Set an interval to play the beep every 120 seconds
-    this.beepInterval = setInterval(() => {
-      this.playBeep(600, .001, .001);
-    }, 120000); // 120000 milliseconds = 120 seconds
-  }
-
-  // STOP BEEP INTERVAL ////////////////////////////
-  stopBeepInterval() {
-    if (this.beepInterval) {
-      clearInterval(this.beepInterval);
-      this.beepInterval = null; // Reset the interval reference
-    }
-  }
-
-  async playBeep(freq: number, time: number, volume: number) {
-    // Initialize audio context if not already created
-    if (!this.audioCtx) {
-      this.audioCtx = new window.AudioContext;
-    }
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode =this.audioCtx.createGain();  // Create a gain node
-    // Configure oscillator
-    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);  // Set frequency
-    // Set initial gain (volume)
-    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);       // Set initial volume
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    // Start and stop the oscillator after the specified duration
-    oscillator.start();
-    console.log('beeping')
-    oscillator.stop(this.audioCtx.currentTime + time);
-    // Clean up after the sound has finished
-    oscillator.onended = async () => {
-      oscillator.disconnect();
-      gainNode.disconnect();
-    };
-  }
-
-  // PLAY A DOUBLE BEEP
-  async playDoubleBeep(freq: number, time: number, volume: number, gap: number) {
-    // Initialize audio context if not already created
-    if (!this.audioCtx) {
-      this.audioCtx = new window.AudioContext();
-    }
-    const oscillator = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
-    // Configure oscillator
-    oscillator.type = 'sine'; // Other waveforms: 'square', 'sawtooth', 'triangle'
-    oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime); // Set frequency
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    const now = this.audioCtx.currentTime;
-    // Double beep timing
-    gainNode.gain.setValueAtTime(0, now); // Start with volume off
-    gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // Ramp up quickly for first beep
-    gainNode.gain.linearRampToValueAtTime(0, now + time); // Ramp down after first beep
-    gainNode.gain.setValueAtTime(0, now + time + gap); // Silence for gap
-    gainNode.gain.linearRampToValueAtTime(volume, now + time + gap + 0.01); // Ramp up for second beep
-    gainNode.gain.linearRampToValueAtTime(0, now + time + gap + time); // Ramp down after second beep
-    // Start and stop oscillator
-    oscillator.start(now);
-    oscillator.stop(now + time + gap + time); // Total duration: first beep + gap + second beep
-    // Clean up after the sound has finished
-    oscillator.onended = async () => {
-      oscillator.disconnect();
-      gainNode.disconnect();
-    };
-  }
 
 }
 

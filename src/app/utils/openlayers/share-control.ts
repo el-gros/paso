@@ -68,7 +68,7 @@ export class ShareControl extends Control {
     this.popup.style.transform = 'translate(-50%, -50%)';
     this.popup.style.zIndex = '9999';
     this.popup.style.background = 'white';
-    this.popup.style.padding = '16px';
+    this.popup.style.padding = '5px';
     this.popup.style.borderRadius = '8px';
     this.popup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
     this.popup.style.display = 'none';
@@ -186,7 +186,7 @@ export class ShareControl extends Control {
   // ---------------------------------------------------
   private setButtonBlue() {
     this.button.innerHTML = `
-      <img src="assets/icons/share-outline-blue.svg"
+      <img src="assets/icons/lock-closed-outline-blue.svg"
            style="width:22px;height:22px;" />
     `;
     this.button.style.backgroundColor = 'transparent';
@@ -194,7 +194,7 @@ export class ShareControl extends Control {
 
   private setButtonLocked() {
     this.button.innerHTML = `
-      <img src="assets/icons/lock-closed-outline-blue.svg"
+      <img src="assets/icons/share-outline-blue.svg"
            style="width:22px;height:22px;" />
     `;
     this.button.style.backgroundColor = 'transparent';

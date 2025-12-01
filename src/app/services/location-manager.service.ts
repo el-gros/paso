@@ -3,8 +3,9 @@ import { BehaviorSubject } from 'rxjs';
 import { registerPlugin } from '@capacitor/core';
 import { TranslateService } from '@ngx-translate/core';
 import { Location } from 'src/globald';
+import { AudioService } from './audio.service'
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
-import { FunctionsService } from './functions.service';
+import { firstValueFrom, filter, timeout } from 'rxjs';
 const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
 
 @Injectable({
@@ -21,12 +22,12 @@ export class LocationManagerService {
   private latestLocationSubject = new BehaviorSubject<Location | null>(null);
   latestLocation$ = this.latestLocationSubject.asObservable();
 
-  private lastAccepted: Location | null = null;
+  public lastAccepted: Location | null = null;
   private watcherId: string | null = null;
 
   constructor(
     private translate: TranslateService,
-    public fs: FunctionsService,
+    private audio: AudioService,
   ) {}
 
   // ----------------------------------------------------------------------------
@@ -113,14 +114,14 @@ export class LocationManagerService {
         body: '',
         smallIcon: 'splash.png',
       });
-      await this.fs.startBeepInterval();
+      this.audio.startBeepInterval();
       this.watcherId = await BackgroundGeolocation.addWatcher(
         {
           backgroundMessage: 'Tracking…',
           backgroundTitle: 'Tracking in background',
           requestPermissions: false,
           stale: false,
-          distanceFilter: 1,
+          distanceFilter: 10,
         },
         async (location: any, error: any) => {
           if (!location || error) return;
@@ -138,19 +139,16 @@ export class LocationManagerService {
   // ----------------------------------------------------------------------------
   // 5) STOP TRACKING
   // ----------------------------------------------------------------------------
-  async stop() {
-    try {
-      if (this.watcherId) {
-        await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-        console.log('[LocationManager] Watcher removed:', this.watcherId);
-      }
+  stop() {
+    if (this.watcherId) {
+      BackgroundGeolocation.removeWatcher({ id: this.watcherId });
       this.watcherId = null;
-      await ForegroundService.stopForegroundService();
-      await this.fs.stopBeepInterval();
-      console.log('[LocationManager] Foreground service stopped');
-    } catch (err) {
-      console.error('[LocationManager] Stop error:', err);
     }
+    if (this.audio.beepInterval) {
+      clearInterval(this.audio.beepInterval);
+      this.audio.beepInterval = null;
+    }
+    ForegroundService.stopForegroundService();
   }
 
     async checkLocation(location: Location) {
@@ -160,6 +158,27 @@ export class LocationManagerService {
         location.altitudeAccuracy > this.altitudeThreshold ||
         !location.time) return false
       else return true;  
+    }
+
+    async getCurrentPosition(): Promise<[number, number] | null> {
+      // 1) If we already have a location → return it immediately
+      const last = this.lastAccepted;
+      if (last) {
+        return [last.longitude, last.latitude];
+      }
+      // 2) Otherwise wait for the next location for max 1s
+      try {
+        const nextLoc = await firstValueFrom(
+          this.latestLocation$.pipe(
+            filter(v => !!v),   // only non-null values
+            timeout(1000)       // give up after 1 second
+          )
+        );
+        return [nextLoc.longitude, nextLoc.latitude];
+      } catch (err) {
+        // timeout OR stream error
+        return null;
+      }
     }
 
 }

@@ -2,13 +2,13 @@ import Control from 'ol/control/Control';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import { Icon, Style } from 'ol/style';
-import { FunctionsService } from '../../services/functions.service';
+import { GeographyService } from '../../services/geography.service';
 
 export class CustomControl extends Control {
   private button: HTMLButtonElement;
   private positionFeature: Feature<Point>;
 
-  private isActive = true;
+  public isActive = true;
 
   private sharpIcon = 'assets/icons/navigate-sharp-blue.svg';
   private outlineIcon = 'assets/icons/navigate-outline-blue.svg';
@@ -17,7 +17,9 @@ export class CustomControl extends Control {
   private activateCallback?: () => void;
   private deactivateCallback?: () => void;
 
-  constructor(private fs: FunctionsService) {
+  constructor(
+    private geography: GeographyService
+  ) {
     const element = document.createElement('div');
     element.className = 'ol-unselectable ol-control custom-control';
 
@@ -44,7 +46,7 @@ export class CustomControl extends Control {
     // Marker feature
     this.positionFeature = new Feature();
     this.setMarkerIcon(this.sharpIcon);
-    this.fs.locationLayer?.getSource()?.addFeature(this.positionFeature);
+    this.geography.locationLayer?.getSource()?.addFeature(this.positionFeature);
   }
 
   /** Public API for listening */
@@ -54,6 +56,10 @@ export class CustomControl extends Control {
 
   public onDeactivate(cb: () => void) {
     this.deactivateCallback = cb;
+  }
+
+  public isControlActive(): boolean {
+    return this.isActive;
   }
 
   /** -------- BUTTON CLICK LOGIC -------- */
@@ -87,4 +93,6 @@ export class CustomControl extends Control {
     });
     this.positionFeature.setStyle(style);
   }
+
+
 }

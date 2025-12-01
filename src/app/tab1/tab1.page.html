@@ -365,36 +365,5 @@
   </ng-template>
 </ion-popover>
 
-<!--
 
-<ion-popover
-  [isOpen]="isSharingPopoverOpen"
-  (didDismiss)="closeAllPopovers()"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-item class="confirm" lines="none">
-        <ion-label><strong>{{ 'RECORD.SHARE_TEXT' | translate }}</strong></ion-label>
-      </ion-item>
-      <ion-row>
-        <button class="record-button green-color"
-          (click)="startSharing()"
-          [disabled]="shareToken"
-        >
-          <ion-icon name="lock-open-sharp"></ion-icon>
-          <span>{{ 'RECORD.SHARE_YES' | translate }}</span>
-        </button>
-        <button class="record-button red-color"
-          (click)="stopSharing()"
-          [disabled]="!shareToken"
-        >
-          <ion-icon name="lock-closed-sharp"></ion-icon>
-          <span>{{ 'RECORD.SHARE_NO' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
 
--->

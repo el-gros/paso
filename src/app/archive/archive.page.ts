@@ -12,6 +12,7 @@ import { AlertController, IonicModule } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
+import { ReferenceService } from '../services/reference.service';
 import { MapService } from '../services/map.service';
 import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
@@ -20,6 +21,7 @@ import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import JSZip from "jszip";
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { GeographyService } from '../services/geography.service';
 
 @Component({
     standalone: true,
@@ -42,6 +44,8 @@ export class ArchivePage {
     private languageService: LanguageService,
     private translate: TranslateService,
     private socialSharing: SocialSharing,
+    public reference: ReferenceService,
+    public geography: GeographyService,
   ) {  }
 
   /* FUNCTIONS
@@ -118,12 +122,12 @@ export class ArchivePage {
     if (active) {
       // retrieve archived track
       console.log('active?',active)
-      this.fs.archivedTrack = await this.fs.retrieveTrack() ?? this.fs.archivedTrack;
-      if (this.fs.archivedTrack) await this.mapService.displayArchivedTrack();
+      this.reference.archivedTrack = await this.fs.retrieveTrack() ?? this.reference.archivedTrack;
+      if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
     }
     else {
-      this.fs.archivedTrack = undefined;
-      this.fs.archivedLayer?.getSource()?.clear();
+      this.reference.archivedTrack = undefined;
+      this.geography.archivedLayer?.getSource()?.clear();
     }
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
@@ -246,8 +250,8 @@ export class ArchivePage {
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
-    this.fs.archivedTrack = undefined;
-    this.fs.archivedLayer?.getSource()?.clear();
+    this.reference.archivedTrack = undefined;
+    this.geography.archivedLayer?.getSource()?.clear();
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
     if (active) await this.mapService.displayAllTracks();
@@ -260,7 +264,7 @@ export class ArchivePage {
 
   // 11. REMOVE SEARCH LAYER
   removeSearch() {
-    this.fs.searchLayer?.getSource()?.clear();
+    this.geography.searchLayer?.getSource()?.clear();
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }

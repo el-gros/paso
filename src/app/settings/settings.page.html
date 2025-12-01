@@ -19,7 +19,7 @@
   <ion-item lines="none" class="selector">
     <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
     <ion-select
-      [value]="fs.mapProvider"
+      [value]="geography.mapProvider"
       (ionChange)="onMapChange($event.detail.value)"
       interface="popover"
       slot="end"
@@ -35,7 +35,7 @@
     <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
     <ion-button fill="clear" (click)="openColorPopover($event, 'current')">
       <div class="color-display">
-        <div class="color-line" [ngStyle]="{ 'background-color': fs.currentColor }"></div>
+        <div class="color-line" [ngStyle]="{ 'background-color': present.currentColor }"></div>
         <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
       </div>
     </ion-button>
@@ -46,7 +46,7 @@
     <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
     <ion-button fill="clear" (click)="openColorPopover($event, 'archived')">
       <div class="color-display">
-        <div class="color-line" [ngStyle]="{ 'background-color': fs.archivedColor }"></div>
+        <div class="color-line" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
         <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
       </div>
     </ion-button>

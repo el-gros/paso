@@ -1,18 +1,8 @@
-/**
- * Service for managing OpenLayers map functionality, including view fitting, track and marker display, layer management, map creation, and provider switching.
- * Provides utility methods for styling, pin creation, geolocation, and dynamic map updates.
- * Integrates with StyleService and supports multiple map providers and custom controls.
- */
-
-import { StyleService } from '../services/style.service';
 import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
-import LineString from 'ol/geom/LineString';
-import Point from 'ol/geom/Point';
 import { global } from '../../environments/environment';
-import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Feature from 'ol/Feature';
-import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
+import { MultiLineString, MultiPoint } from 'ol/geom';
 import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
 import TileLayer from 'ol/layer/Tile';
@@ -34,29 +24,26 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
+import { GeographyService } from './geography.service';
+import { StylerService } from './styler.service';
 import { ServerService } from './server.service';
 import { LocationManagerService } from './location-manager.service';
 import VectorSource from 'ol/source/Vector';
-import { transformWithProjections, useGeographic } from 'ol/proj';
+import { useGeographic } from 'ol/proj';
 import { TranslateService } from '@ngx-translate/core';
+import { ReferenceService } from '../services/reference.service';
+import { PresentService } from '../services/present.service';
+
 useGeographic();
 
-// 1. setMapView
-// 2. displayCurrentTrack
-
-// 4. setStrokeStyle
-
-// 6. centerAllTracks
-// 7. getColoredPin
-// 8. createPinStyle
-
-// 10. loadMap
-
-// 12. displayArchivedTrack
-// 13. displayAllTracks
-
-// 15. createSource
-// 16. cycleZoom
+// 1. centerAllTracks
+// 2. loadMap
+// 3. createMapLayer
+// 4. displayAllTracks
+// 5. createSource
+// 6. cycleZoom
+// 7. createLayer
+// 8. UPDATE COLORS ///////////////////////////////
 
 @Injectable({
   providedIn: 'root'
@@ -71,128 +58,40 @@ export class MapService {
   public shareControl!: ShareControl;
 
   constructor(
-    private styleService: StyleService,
     private http: HttpClient,
     public fs: FunctionsService,
     private server: ServerService,
     private locationService: LocationManagerService,
     private translate: TranslateService,
+    private stylerService: StylerService,
+    private geography: GeographyService,
+    private reference: ReferenceService,
+    private present: PresentService,
   ) { 
   }
 
-  // 1. SET MAP VIEW /////////////////////////////////////////
-
-  setMapView(track: any) {
-    if (!this.fs.map) return;
-    const boundaries = track.features[0].bbox;
-    if (!boundaries) return;
-    // Set a minimum area
-    const minVal = 0.002;
-    if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
-      const centerX = 0.5 * (boundaries[0] + boundaries[2]);
-      const centerY = 0.5 * (boundaries[1] + boundaries[3]);
-      boundaries[0] = centerX - minVal / 2;
-      boundaries[2] = centerX + minVal / 2;
-      boundaries[1] = centerY - minVal / 2;
-      boundaries[3] = centerY + minVal / 2;
-    }
-    // map view
-    setTimeout(() => {
-      this.fs.map?.getView().fit(boundaries, {
-        size: this.fs.map.getSize(),
-        padding: [50, 50, 50, 50],
-        duration: 100  // Optional: animation duration in milliseconds
-      });
-    })
-  }
-
-  // 2. DISPLAY CURRENT TRACK /////////////////////////////////////////
-
-  async displayCurrentTrack(currentTrack: any): Promise<void> {
-    if (!this.fs.map || !currentTrack || !this.fs.currentLayer) return;
-    const source = this.fs.currentLayer.getSource();
-    if (!source) return;
-    const features = source.getFeatures();
-    const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
-    const num = coordinates.length;
-    if (!Array.isArray(coordinates) || coordinates.length < 3) return;
-    // Update geometries efficiently
-    features[0].setGeometry(new LineString(coordinates));
-    features[0].setStyle(this.setStrokeStyle(this.fs.currentColor));
-    features[1].setGeometry(new Point(coordinates[0]));
-    features[1].setStyle(this.createPinStyle('green'));
-    //features[2].setGeometry(new Point(coordinates[num - 1]));
-    //features[2].setStyle(this.createPinStyle('blue'));
-    // Adjust map view occasionally
-    if ([5, 10, 25].includes(num) || num % 50 === 0) {
-      this.setMapView(currentTrack);
-    }
-  }
-
-  // 4. SET STROKE STYLE //////////////////////////////////
-
-  setStrokeStyle(color: string): Style {
-    return new Style({ stroke: new Stroke({
-      color: color,
-      width: 3 })
-    });
-  }
-
-  // 6. CENTER ALL TRACKS
+  // 1. CENTER ALL TRACKS
 
   async centerAllTracks(): Promise<void> {
     // get current position
-    let currentPosition: [number, number] | null = await this.fs.getCurrentPosition(false, 1000);
+    let currentPosition: [number, number] | null = await this.locationService.getCurrentPosition();
     // center map
     if (currentPosition) {
-      this.fs.map?.getView().setCenter(currentPosition);
-      this.fs.map?.getView().setZoom(8);
+      this.geography.map?.getView().setCenter(currentPosition);
+      this.geography.map?.getView().setZoom(8);
     }
   }
 
-  // 7. GET COLORED PIN //////////////////////////
-
-  getColoredPin(color: string): string {
-    const svgTemplate = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
-        <g>
-          <path fill="${color}" d="M146.667,0C94.903,0,52.946,41.957,52.946,93.721c0,22.322,7.849,42.789,20.891,58.878
-            c4.204,5.178,11.237,13.331,14.903,18.906c21.109,32.069,48.19,78.643,56.082,116.864c1.354,6.527,2.986,6.641,4.743,0.212
-            c5.629-20.609,20.228-65.639,50.377-112.757c3.595-5.619,10.884-13.483,15.409-18.379c6.554-7.098,12.009-15.224,16.154-24.084
-            c5.651-12.086,8.882-25.466,8.882-39.629C240.387,41.962,198.43,0,146.667,0z M146.667,144.358
-            c-28.892,0-52.313-23.421-52.313-52.313c0-28.887,23.421-52.307,52.313-52.307s52.313,23.421,52.313,52.307
-            C198.98,120.938,175.559,144.358,146.667,144.358z"/>
-          <circle fill="${color}" cx="146.667" cy="90.196" r="21.756"/>
-        </g>
-      </svg>
-    `.trim();
-    // Encode safely as base64
-    const encoded = window.btoa(unescape(encodeURIComponent(svgTemplate)));
-    return `data:image/svg+xml;base64,${encoded}`;
-  }
-
-  // 8. CREATE PIN STYLE //////////////////////////
-
-  createPinStyle(color: string): Style {
-    return new Style({
-      image: new Icon({
-        src: this.getColoredPin(color),
-        anchor: [0.5, 1],
-        scale: 0.035
-      })
-    });
-  }
-
-  // 10. LOAD MAP //////////////////////////////////////
+  // 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
     // Custom and share controls
-    this.customControl = new CustomControl(this.fs);
+    this.customControl = new CustomControl(this.geography);
     this.shareControl = new ShareControl(this.locationService, this.translate)
     // Ensure layers exist
-    this.fs.currentLayer = await this.createLayer(this.fs.currentLayer);
-    this.fs.archivedLayer = await this.createLayer(this.fs.archivedLayer);
-    this.fs.searchLayer = await this.createLayer(this.fs.searchLayer);
-    this.fs.locationLayer = await this.createLayer(this.fs.locationLayer);
+    this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
+    this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
+    this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
+    this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
     // Always (re)create the base layer and credits
     const { olLayer, credits } = await this.createMapLayer();
     if (!olLayer) {
@@ -202,13 +101,15 @@ export class MapService {
     // Common zoom limits
     let minZoom = 0;
     let maxZoom = 19;
-    if (this.fs.mapProvider.toLowerCase() === 'catalonia') {
+    let zoom = 9;
+    if (this.geography.mapProvider.toLowerCase() === 'catalonia') {
       minZoom = 0;
       maxZoom = 14;
+      zoom = 8
     }
     // 🟢 CASE 1 — map already exists → only update base layer and zoom limits
-    if (this.fs.map) {
-      const map = this.fs.map;
+    if (this.geography.map) {
+      const map = this.geography.map;
       const layers = map.getLayers();
       // Replace the base layer at index 0
       if (layers && layers.getLength() >= 1) {
@@ -223,27 +124,26 @@ export class MapService {
     }
     // 🟢 CASE 2 — no existing map → create new one
     let currentPosition: [number, number] | null = null;
-    if (this.fs.mapProvider !== 'catalonia') {
-      currentPosition = await this.fs.getCurrentPosition(false, 1000);
+    if (this.geography.mapProvider !== 'catalonia') {
+      currentPosition = await this.locationService.getCurrentPosition();
     }
     if (!currentPosition) {
       currentPosition = [2, 41];
     }
     const view = new View({
       center: currentPosition,
-      zoom: 9,
-      //projection: 'EPSG:3857',
+      zoom: zoom,
       minZoom,
       maxZoom,
     });
-    this.fs.map = new Map({
+    this.geography.map = new Map({
       target: 'map',
       layers: [
         olLayer,
-        this.fs.currentLayer,
-        this.fs.archivedLayer,
-        this.fs.searchLayer,
-        this.fs.locationLayer,
+        this.geography.currentLayer,
+        this.geography.archivedLayer,
+        this.geography.searchLayer,
+        this.geography.locationLayer,
       ].filter(Boolean) as BaseLayer[],
       view,
       controls: [
@@ -257,31 +157,35 @@ export class MapService {
     this.mapWrapperElement = document.getElementById('map-wrapper');
   }
 
-  // 12. CREATE MAP LAYER
+  // 3. CREATE MAP LAYER
   async createMapLayer() {
-    let olLayer;
+    let olLayer: any = null;
     let credits = '';
-    switch (this.fs.mapProvider) {
+    switch (this.geography.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({ source: new OSM() });
         break;
       case 'OpenTopoMap':
-        credits = '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)';
+        credits = '© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)';
         olLayer = new TileLayer({
-          source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' }),
+          source: new XYZ({
+            url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png'
+          })
         });
         break;
       case 'German_OSM':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({
-          source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' }),
+          source: new XYZ({
+            url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png'
+          })
         });
         break;
       case 'MapTiler_streets':
       case 'MapTiler_outdoor':
       case 'MapTiler_hybrid': {
-        const mapType = this.fs.mapProvider.split('_')[1];
+        const mapType = this.geography.mapProvider.split('_')[1];
         credits = '© MapTiler © OpenStreetMap contributors';
         olLayer = new TileLayer({
           source: new XYZ({
@@ -294,30 +198,35 @@ export class MapService {
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
         olLayer = new TileLayer({
-          source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' }),
+          source: new XYZ({
+            url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg'
+          })
         });
         break;
       case 'IGN':
         credits = 'Instituto Geográfico Nacional (IGN)';
         olLayer = new TileLayer({
           source: new XYZ({
-            url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-          }),
+            url:
+              'https://www.ign.es/wmts/mapa-raster?' +
+              'SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default' +
+              '&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg'
+          })
         });
         break;
-      case 'catalonia':
+      case 'catalonia': {
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
-        this.fs.map?.getView().setCenter([2, 41]);
-        this.fs.map?.getView().setZoom(8);
         await this.server.openMbtiles('catalonia.mbtiles');
         const sourceResult = await this.createSource(this.server);
-        if (sourceResult) {
-          olLayer = new VectorTileLayer({
-            source: sourceResult,
-            style: this.styleService.styleFunction,
-          });
+        if (!sourceResult) {
+          throw new Error('Catalonia mbtiles source could not be loaded');
         }
+        olLayer = new VectorTileLayer({
+          source: sourceResult,
+          style: this.stylerService.styleFunction
+        });
         break;
+      }
       case 'MapTiler_v_outdoor':
         credits = '© MapTiler © OpenStreetMap contributors';
         olLayer = new VectorTileLayer({
@@ -330,48 +239,20 @@ export class MapService {
         await applyStyle(
           olLayer,
           `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`
+          // ,'openmaptiles' // add if needed
         );
         break;
+      default:
+        credits = '© OpenStreetMap contributors';
+        olLayer = new TileLayer({ source: new OSM() });
     }
     return { olLayer, credits };
   }
 
-  // 12. DISPLAY AN ARCHIVED TRACK
-  async displayArchivedTrack(): Promise<void> {
-    if (!this.fs.map || !this.fs.archivedTrack?.features?.length) return;
-    const coordinates = this.fs.archivedTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length === 0) return;
-    var features = [new Feature(), new Feature(), new Feature(), new Feature()];
-    // Line
-    features[0].setGeometry(new LineString(coordinates));
-    features[0].setStyle(this.setStrokeStyle(this.fs.archivedColor));
-    // Start point
-    features[1].setGeometry(new Point(coordinates[0]));
-    features[1].setStyle(this.createPinStyle('green'));
-    // End point
-    features[2].setGeometry(new Point(coordinates.at(-1)!));
-    features[2].setStyle(this.createPinStyle('red'));
-    // Optional waypoints
-    const waypoints = Array.isArray(this.fs.archivedTrack.features?.[0]?.waypoints)
-      ? this.fs.archivedTrack.features[0].waypoints
-      : [];
-    const multiPoint = waypoints
-      .filter(p => typeof p.longitude === 'number' && typeof p.latitude === 'number')
-      .map(p => [p.longitude, p.latitude]);
-    if (multiPoint.length > 0) {
-      features[3].setGeometry(new MultiPoint(multiPoint));
-      features[3].set('waypoints', waypoints);
-      features[3].setStyle(this.createPinStyle('yellow'));
-    }
-    this.fs.archivedLayer?.getSource()?.clear();
-    this.fs.archivedLayer?.getSource()?.addFeatures(features);
-    this.setMapView(this.fs.archivedTrack);
-  }
-
-  // 13. DISPLAY ALL TRACKS
+  // 4. DISPLAY ALL TRACKS
 
   async displayAllTracks() {
-    if (!this.fs.map || !this.fs.collection || this.fs.collection.length == 0 || !this.fs.archivedLayer) return;
+    if (!this.geography.map || !this.fs.collection || this.fs.collection.length == 0 || !this.geography.archivedLayer) return;
     const multiLine: any[] = [];
     const multiPoint: any[] = [];
     const multiKey: any[] = [];
@@ -391,17 +272,17 @@ export class MapService {
     }
     const features = [new Feature(), new Feature()];
     features[0].setGeometry(new MultiLineString(multiLine));
-    features[0].setStyle(this.setStrokeStyle('black'));
+    features[0].setStyle(this.stylerService.setStrokeStyle('black'));
     features[1].setGeometry(new MultiPoint(multiPoint));
     features[1].set('multikey', multiKey);
-    const greenPin = this.createPinStyle('green');
+    const greenPin = this.stylerService.createPinStyle('green');
     features[1].setStyle(greenPin);
-    this.fs.archivedLayer?.getSource()?.clear();
-    this.fs.archivedLayer?.getSource()?.addFeatures(features);
+    this.geography.archivedLayer?.getSource()?.clear();
+    this.geography.archivedLayer?.getSource()?.addFeatures(features);
     await this.centerAllTracks();
   }
 
-  // 15. CREATE SOURCE //////////////////////////////
+  // 5. CREATE SOURCE //////////////////////////////
 
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
@@ -456,7 +337,7 @@ export class MapService {
     }
   }
 
-  // 16. CYCLE ZOOM //////////////////////////////
+  // 6. CYCLE ZOOM //////////////////////////////
 
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
@@ -466,6 +347,32 @@ export class MapService {
     this.currentScaleIndex = (this.currentScaleIndex + 1) % this.scaleSteps.length;
     const scale = this.scaleSteps[this.currentScaleIndex];
     this.mapWrapperElement.style.transform = `scale(${scale})`;
+  }
+
+  // 7. CREATE LAYER ///////////////////////////////////////
+
+  async createLayer(layer?: VectorLayer) {
+    if (!layer) layer = new VectorLayer();
+    if (!layer.getSource()) layer.setSource(new VectorSource());
+    return layer;
+  }
+
+  // 8. UPDATE COLORS /////////////////////////////////////////
+  
+  async updateColors() {
+    const updateLayer = (layer: VectorLayer | undefined, color: string) => {
+      const features = layer?.getSource()?.getFeatures();
+      features?.forEach((f: Feature) => {
+        if (f.getGeometry()?.getType() === 'LineString') {
+          f.setStyle(this.stylerService.setStrokeStyle(color));
+        }
+      });
+      layer?.changed();
+    };
+    updateLayer(this.geography.currentLayer, this.present.currentColor);
+    updateLayer(this.geography.archivedLayer, this.reference.archivedColor);
+    this.geography.map?.render();
+    this.fs.reDraw = false;
   }
 
   reverseGeocode(lat: number, lon: number): Observable<any | null> {
@@ -678,27 +585,6 @@ export class MapService {
     return { waypoints, trackPoints, trk };
   }
 
-  async createLayer(layer?: VectorLayer) {
-    if (!layer) layer = new VectorLayer();
-    if (!layer.getSource()) layer.setSource(new VectorSource());
-    return layer;
-  }
-
-  async updateColors() {
-    const updateLayer = (layer: VectorLayer | undefined, color: string) => {
-      const features = layer?.getSource()?.getFeatures();
-      features?.forEach((f: Feature) => {
-        if (f.getGeometry()?.getType() === 'LineString') {
-          f.setStyle(this.setStrokeStyle(color));
-        }
-      });
-      layer?.changed();
-    };
-    updateLayer(this.fs.currentLayer, this.fs.currentColor);
-    updateLayer(this.fs.archivedLayer, this.fs.archivedColor);
-    this.fs.map?.render();
-    this.fs.reDraw = false;
-  }
 
 }
 

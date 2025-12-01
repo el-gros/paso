@@ -1,14 +1,14 @@
 
 import { Injectable } from '@angular/core';
 import { LocationManagerService } from './location-manager.service';
-import { FunctionsService } from '../services/functions.service';
 import { Feature } from 'ol';
 import Point from 'ol/geom/Point';
 import { Style, Icon } from 'ol/style';
 import { Subscription } from 'rxjs';
+import { GeographyService } from '../services/geography.service';
 
 @Injectable({ providedIn: 'root' })
-export class LocationTrackingService {
+export class TrackingControlService {
 
   private isRunning = false;
   private locationFeature: Feature<Point> | null = null;
@@ -18,7 +18,7 @@ export class LocationTrackingService {
   
   constructor(
     private locationService: LocationManagerService,
-    private fs: FunctionsService
+    private geography: GeographyService,
   ) {}
 
   /** -------------------------------------------
@@ -33,7 +33,7 @@ export class LocationTrackingService {
     if (!this.locationFeature) {
       this.locationFeature = new Feature(new Point([0, 0]));
       this.setFeatureStyle(0); // initial rotation = 0
-      this.fs.locationLayer?.getSource()?.addFeature(this.locationFeature);
+      this.geography.locationLayer?.getSource()?.addFeature(this.locationFeature);
     }
 
     // Subscribe to LocationService
@@ -59,7 +59,7 @@ export class LocationTrackingService {
 
     // Remove the marker from the map
     if (this.locationFeature) {
-      this.fs.locationLayer?.getSource()?.removeFeature(this.locationFeature);
+      this.geography.locationLayer?.getSource()?.removeFeature(this.locationFeature);
       this.locationFeature = null;
     }
   }

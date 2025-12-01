@@ -1,32 +1,63 @@
-/**
- * Service for generating OpenLayers styles dynamically based on Mapbox-style JSON definitions.
- *
- * Provides a style function that maps vector features and resolution to OL styles,
- * supporting fill, line, and symbol layers with paint and layout properties, zoom-dependent styling,
- * and feature filtering. Includes utility methods for zoom calculation, filter evaluation,
- * paint value extraction, and interpolation of style stops.
- */
-
 import { Injectable } from '@angular/core';
 import { global } from '../../environments/environment';
-import { Fill, Stroke, Style, Text } from 'ol/style';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { FeatureLike } from 'ol/Feature';
 import { StyleJSON } from 'src/globald';
 
-// 1. styleFunction
-// 2. getZoomFromResolution
-// 3. evaluateFilter
-// 4. getPaintValue
-// 5. extractStops
-// 6. interpolateStops
 
-@Injectable({
+@Injectable({ 
   providedIn: 'root'
 })
 
-export class StyleService {
+export class StylerService {
 
-  // 1. STYLE FUNCTION ////////////////////////////
+    constructor(
+
+    ) { }
+
+  // SET STROKE STYLE //////////////////////////////////
+
+  setStrokeStyle(color: string): Style {
+    return new Style({ stroke: new Stroke({
+      color: color,
+      width: 3 })
+    });
+  }
+
+    // CREATE PIN STYLE //////////////////////////
+
+  createPinStyle(color: string): Style {
+    return new Style({
+      image: new Icon({
+        src: this.getColoredPin(color),
+        anchor: [0.5, 1],
+        scale: 0.035
+      })
+    });
+  }
+
+  // GET COLORED PIN //////////////////////////
+
+  getColoredPin(color: string): string {
+    const svgTemplate = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
+        <g>
+          <path fill="${color}" d="M146.667,0C94.903,0,52.946,41.957,52.946,93.721c0,22.322,7.849,42.789,20.891,58.878
+            c4.204,5.178,11.237,13.331,14.903,18.906c21.109,32.069,48.19,78.643,56.082,116.864c1.354,6.527,2.986,6.641,4.743,0.212
+            c5.629-20.609,20.228-65.639,50.377-112.757c3.595-5.619,10.884-13.483,15.409-18.379c6.554-7.098,12.009-15.224,16.154-24.084
+            c5.651-12.086,8.882-25.466,8.882-39.629C240.387,41.962,198.43,0,146.667,0z M146.667,144.358
+            c-28.892,0-52.313-23.421-52.313-52.313c0-28.887,23.421-52.307,52.313-52.307s52.313,23.421,52.313,52.307
+            C198.98,120.938,175.559,144.358,146.667,144.358z"/>
+          <circle fill="${color}" cx="146.667" cy="90.196" r="21.756"/>
+        </g>
+      </svg>
+    `.trim();
+    // Encode safely as base64
+    const encoded = window.btoa(unescape(encodeURIComponent(svgTemplate)));
+    return `data:image/svg+xml;base64,${encoded}`;
+  }
+
+    // 1. STYLE FUNCTION ////////////////////////////
 
   styleFunction = (feature: FeatureLike, resolution: number) => {
     const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
@@ -197,19 +228,4 @@ export class StyleService {
     return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
   }
 
-  /* styleMapTiler = (feature: FeatureLike, resolution: number) => {
-    const name = feature.get('name');
-    if (name) {
-      return new Style({
-        text: new Text({
-          text: name,
-          font: '20px Arial',   // 👈 adjust size/family here
-          fill: new Fill({ color: '#000' }),
-          stroke: new Stroke({ color: '#fff', width: 2 }),
-        }),
-      });
-    }
-    return undefined;
-  } */
-
-}
+}    

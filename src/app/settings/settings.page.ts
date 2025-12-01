@@ -22,6 +22,9 @@ import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageOption } from '../../globald';
 import { FormsModule } from '@angular/forms';
+import { ReferenceService } from '../services/reference.service';
+import { GeographyService } from '../services/geography.service';
+import { PresentService } from '../services/present.service';
 
 register();
 
@@ -75,7 +78,10 @@ export class SettingsPage implements OnDestroy {
     private popoverController: PopoverController,
     private languageService: LanguageService,
     private translate: TranslateService,
-    private mapService: MapService
+    private mapService: MapService,
+    public reference: ReferenceService,
+    public geography: GeographyService,
+    public present: PresentService,
   ) {
 
     // Debounced map upload
@@ -146,7 +152,7 @@ export class SettingsPage implements OnDestroy {
       type: 'radio' as const,
       label: color_list[index], // Use the label from the selected language
       value: color, // Value comes from colors2[2]
-      checked: currArch === 'Current' ? this.fs.currentColor === color : this.fs.archivedColor === color,
+      checked: currArch === 'Current' ? this.present.currentColor === color : this.reference.archivedColor === color,
       cssClass: `color-option-${color}` // Style based on the value from colors2[2]
     }));
     const cssClass = 'alert primaryAlert';
@@ -162,11 +168,11 @@ export class SettingsPage implements OnDestroy {
         cssClass: 'alert-button',
         handler: async (data: string) => {
           if (currArch === 'Current') {
-            this.fs.currentColor = data;
-            await this.fs.storeSet('currentColor', this.fs.currentColor);
+            this.present.currentColor = data;
+            await this.fs.storeSet('currentColor', this.present.currentColor);
           } else if (currArch === 'Archived') {
-            this.fs.archivedColor = data;
-            await this.fs.storeSet('archivedColor', this.fs.archivedColor);
+            this.reference.archivedColor = data;
+            await this.fs.storeSet('archivedColor', this.reference.archivedColor);
           }
         }
       }
@@ -182,8 +188,8 @@ export class SettingsPage implements OnDestroy {
 
   // 5. MAP CHANGE ///////////////////////////////////////
   async onMapChange(map: string) {
-    this.fs.mapProvider = map;
-    await this.fs.storeSet('mapProvider', this.fs.mapProvider)
+    this.geography.mapProvider = map;
+    await this.fs.storeSet('mapProvider', this.geography.mapProvider)
     await this.mapService.loadMap();
     this.fs.gotoPage('tab1');
   }
@@ -194,7 +200,7 @@ export class SettingsPage implements OnDestroy {
       component: ColorPopoverComponent,
       componentProps: {
         colors: this.colors,
-        currentColor: type === 'current' ? this.fs.currentColor : this.fs.archivedColor,
+        currentColor: type === 'current' ? this.present.currentColor : this.reference.archivedColor,
         onSelect: (selectedColor: string) => {
           this.updateColor(type, selectedColor);
         },
@@ -342,10 +348,10 @@ export class SettingsPage implements OnDestroy {
     this.fs.reDraw = true;
     // Current or archived
     if (type === 'current') {
-      this.fs.currentColor = color;
+      this.present.currentColor = color;
       await this.fs.storeSet('currentColor', color);
     } else {
-      this.fs.archivedColor = color;
+      this.reference.archivedColor = color;
       await this.fs.storeSet('archivedColor', color);
     }
   }

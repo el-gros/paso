@@ -11,6 +11,8 @@ import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit
 import { Subscription } from 'rxjs';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
+import { ReferenceService } from '../services/reference.service';
+import { PresentService } from '../services/present.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -41,7 +43,9 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   constructor(
     public fs: FunctionsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    public reference: ReferenceService,
+    public present: PresentService,
   ) { }
 
   // 1. ngOnInit()
@@ -66,19 +70,19 @@ export class CanvasComponent implements OnInit, OnDestroy {
   // 3. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
     // Update
-    if (this.fs.archivedTrack) {
-      this.archivedUnit = await this.fs.updateAllCanvas(this.fs.archivedCtx, this.fs.archivedTrack);
-      this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.archivedTrack);
+    if (this.reference.archivedTrack) {
+      this.archivedUnit = await this.updateAllCanvas(this.fs.archivedCtx, this.reference.archivedTrack);
+      this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
     }
-    if (this.fs.currentTrack) {
-      this.archivedUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, this.fs.currentTrack);
-      this.partialSpeeds = await this.fs.computePartialSpeeds(this.fs.currentTrack);
+    if (this.present.currentTrack) {
+      this.archivedUnit = await this.updateAllCanvas(this.fs.currentCtx, this.present.currentTrack);
+      this.partialSpeeds = await this.fs.computePartialSpeeds(this.present.currentTrack);
       await this.averageSpeed();
     }
     // On changes, update
-    this.subscription =  this.fs.currentTrack$.subscribe(async (track) => {
+    this.subscription =  this.present.currentTrack$.subscribe(async (track) => {
       if (track && this.fs.currentCtx) {
-        this.currentUnit = await this.fs.updateAllCanvas(this.fs.currentCtx, track);
+        this.currentUnit = await this.updateAllCanvas(this.fs.currentCtx, track);
         await this.averageSpeed();
       }
     })
@@ -99,9 +103,9 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   // 4. COMPUTE AVERAGE SPEEDS AND TIMES
   async averageSpeed() {
-    if (!this.fs.currentTrack) return;
+    if (!this.present.currentTrack) return;
     // get data array
-    const data = this.fs.currentTrack.features[0].geometry.properties.data;
+    const data = this.present.currentTrack.features[0].geometry.properties.data;
     const num = data.length ?? 0;
     if (num < 2) return;
     // Compute time at rest
@@ -186,5 +190,29 @@ export class CanvasComponent implements OnInit, OnDestroy {
   ionViewWillLeave() {
       this.subscription?.unsubscribe();
   }
+
+  async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
+    // Validate context
+    if (!context) {
+      return '';
+    }
+    // Open canvas
+    try {
+      // Hide canvas for the current or archived track
+      if (track === this.present.currentTrack || track === this.reference.archivedTrack) {
+        const type = track === this.present.currentTrack ? 'c' : 'a';
+      }
+      // Update canvas
+      let lastUnit = '';
+      for (const [index, property] of Object.entries(this.fs.properties)) {
+        const mode = property === 'altitude' ? 'x' : 't';
+        lastUnit = await this.fs.updateCanvas(context[index], track, property, mode);
+      }
+      return lastUnit;
+    } finally {
+      // Close canvas
+    }
+  }
+
 
 }
