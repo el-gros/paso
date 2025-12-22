@@ -1,9 +1,3 @@
-/**
- * Main component for the application's first tab, responsible for map display, GPS tracking, and track management.
- * Integrates map rendering, real-time location tracking, GPX import/export, audio alerts, and multilingual support.
- * Provides methods for starting/stopping tracking, managing tracks and waypoints, handling map events, and updating UI state.
- * Relies on organization-specific services for map, storage, geolocation, and translation functionalities.
- */
 
 import { Component, NgZone, Inject } from '@angular/core';
 import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
@@ -26,8 +20,7 @@ import { App } from '@capacitor/app';
 import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
-import { BackgroundTask } from '@capawesome/capacitor-background-task';
-import { IonicModule, ModalController } from '@ionic/angular';
+import { IonicModule, ModalController, isPlatform } from '@ionic/angular';
 import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { lastValueFrom, Subscription } from 'rxjs';
@@ -46,6 +39,10 @@ import { StylerService } from '../services/styler.service';
 import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
+import MyService from '../../plugins/MyServicePlugin';
+import { Platform } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular';
+import { XiaomiPopoverComponent } from '../xiaomi-popover.component';
 
 useGeographic();
 register();
@@ -66,15 +63,10 @@ export class Tab1Page {
 
   altitudeFiltered: number = 0;
   speedFiltered: number = 0;
-  averagedSpeed: number = 0;
   computedDistances: number = 0;
   vMin: number = 1;
 
-  threshDist: number = 0.0000002;
-  foreground: boolean = true;
-
   styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
-  state: string = '';
 
   isRecordPopoverOpen = false;
   isConfirmStopOpen = false;
@@ -82,7 +74,7 @@ export class Tab1Page {
   isSearchGuidePopoverOpen = false;
   isSearchPopoverOpen = false;
   isGuidePopoverOpen = false;
-
+  
   query: string = '';
   query2: string = '';
   query3: string = '';
@@ -90,8 +82,9 @@ export class Tab1Page {
   results: LocationResult[] = [];
   loading: boolean = false;
   
-  subscription: Subscription | undefined
+  subscription: Subscription | undefined;
 
+  
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
@@ -104,26 +97,31 @@ export class Tab1Page {
     private translate: TranslateService,
     private trackingControlService: TrackingControlService,
     private locationSharingService: LocationSharingService,
-    private locationService: LocationManagerService,
+    public location: LocationManagerService,
     private appState: AppStateService,
     private audio: AudioService,
     private stylerService: StylerService,
     public reference: ReferenceService,
     private geography: GeographyService,
     private present: PresentService,
+    private platform: Platform,
+    private popoverController: PopoverController
   ) {
       this.appState.onEnterBackground().subscribe(() => {
-        this.foreground = false;
         this.trackingControlService.stop();
+        this.location.foreground = false;
+        this.location.toBackground = true;
       });
       this.appState.onEnterForeground().subscribe(async () => {
-        this.foreground = true;
+        this.location.foreground = true;
+        this.location.toForeground = true;
         if (this.mapService.customControl?.isControlActive()) {
           this.trackingControlService.start();
         }
         if (this.present.currentTrack) await this.morningTask();
       });
   }
+
 
   /* FUNCTIONS
 
@@ -137,8 +135,6 @@ export class Tab1Page {
   9. setTrackDetails
   10. showValidationAlert
   11. saveFile
-  12. updateTrack
-  13. onRoute
   14. show
   15. onDestroy
 
@@ -148,13 +144,12 @@ export class Tab1Page {
   21. handleMapClick
   22. computeDistances
   23. htmValues
-  24. checkWhetherOnRoute
+
 
   28. computeTrackStats
   29. saveTrack
   30. processUrl
   31. foregroundTask
-  32. backgroundTask
 
   36. determineColors
   37. waypoint
@@ -170,33 +165,39 @@ export class Tab1Page {
 
   // 1. ON INIT ////////////////////////////////
   async ngOnInit() {
+    await this.platform.ready();
+    console.log("🚀 Plataforma lista, iniciando carga...");
+    // 1. Instantaneous or very fast tasks
+    this.languageService.determineLanguage();
+    this.show('alert', 'none');
+    this.addFileListener();
+    // 2. Critical tasks on data
     try {
-      // Listen for app URL open events (e.g., file tap)
-      this.addFileListener();
-      // Determine language
-      this.languageService.determineLanguage();
-      // Initialize variables
-      await this.initializeVariables()
-      // elements shown, elements hidden
-      this.show('alert', 'none');
-      // uncheck all
+      await this.initializeVariables();
       await this.fs.uncheckAll();
-      // create map
-      await this.mapService.loadMap();
-      // Handle clicks on map
-      await this.handleClicks();
-    } catch (error) {
-      console.error('Error during ngOnInit:', error);
+    } catch (e) {
+      console.error("Error en inicialización de variables", e);
     }
+    // 3. Paralell processes (no async) 
+    // A. Preparation for Xiaomi
+    this.prepareXiaomi().then(() => {
+      return MyService.startService();
+    }).catch(err => console.error("Error en servicio nativo", err));
+    // B. Map and taps on it
+    this.mapService.loadMap().then(() => {
+      return this.handleClicks();
+    }).then(() => {
+      return this.location.startPaso();
+    }).catch(err => console.error("Error en Mapa/GPS", err));
+    // Final
     global.ngOnInitFinished = true;
   }
-
 
   // 2. LISTENING FOR OPEN EVENTS
   addFileListener() {
     // Listen for app URL open events (e.g., file tap)
     App.addListener('appUrlOpen', async (data: any) => {
-      this.fs.gotoPage('tab1');
+      //this.fs.gotoPage('tab1');
       await this.processUrl(data);
       // iF an archived track has been parsed...
       if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
@@ -217,31 +218,29 @@ export class Tab1Page {
     // Reset current track and related variables
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
-    this.fs.currentPoint = 0;
+    this.location.currentPoint = 0;
     // Initialize variables
     this.speedFiltered = 0;
     this.altitudeFiltered = 0;
-    this.averagedSpeed = 0;
+    this.location.averagedSpeed = 0;
     this.computedDistances = 0;
     // Subscribe to LocationService
-    this.subscription = this.locationService.latestLocation$.subscribe(async loc => {
+    this.subscription = this.location.latestLocation$.subscribe(async loc => {
       if (!loc) return;
-      if (this.foreground) {
-        await this.foregroundTask(loc);
-      } else {
-        await this.backgroundTask(loc);
-      }
+      if (this.location.foreground) {
+        await this.foregroundTask();
+      } 
     });
     // Update state */
-    this.fs.state = 'tracking';
+    this.location.state = 'tracking';
   }
 
   // 5. REMOVE TRACK ///////////////////////////////////
   async deleteTrack() {
     // show / hide elements
-    this.fs.state = 'inactive';
+    this.location.state = 'inactive';
     // Reset current track
-    this.fs.status = 'black';
+    this.audio.status = 'black';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
@@ -249,7 +248,7 @@ export class Tab1Page {
 
   // 6. STOP TRACKING //////////////////////////////////
   async stopTracking(): Promise<void> {
-    this.fs.state = 'stopped';
+    this.location.state = 'stopped';
     this.show('alert', 'none');
     this.subscription?.unsubscribe();
     // If no current layer yet → nothing to update on the map, just finish cleanly
@@ -275,10 +274,10 @@ export class Tab1Page {
       features[2].setGeometry(new Point(coordinates.at(-1)!));
       features[2].setStyle(this.stylerService.createPinStyle('red'));
     }
-    this.fs.setMapView(this.present.currentTrack);
+    this.geography.setMapView(this.present.currentTrack);
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
     // Update state
-    this.fs.state = 'stopped';
+    this.location.state = 'stopped';
   }
 
   // 9. SET TRACK NAME, TIME, DESCRIPTION, ...
@@ -358,134 +357,8 @@ export class Tab1Page {
     // Toast
     this.fs.displayToast(this.translate.instant('MAP.SAVED'));
     // Update UI elements
-    this.fs.state = 'saved'
+    this.location.state = 'saved'
     this.show('alert', 'none');
-  }
-
-  // 12. UPDATE TRACK POINTS ////////////////////////////////////
-  async updateTrack(location: Location): Promise<boolean> {
-    if (!this.geography.map || !this.geography.currentLayer) return false;
-    // If no current track exists → initialize it (first point)
-    if (!this.present.currentTrack) {
-      var features = [new Feature(), new Feature(), new Feature()]
-      this.present.currentTrack = {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          properties: {
-            name: '',
-            place: '',
-            date: undefined,
-            description: '',
-            totalDistance: 0,
-            totalElevationGain: 0,
-            totalElevationLoss: 0,
-            totalTime: '00:00:00',
-            totalNumber: 1,
-            currentAltitude: undefined,
-            currentSpeed: undefined
-          },
-          bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
-          geometry: {
-            type: 'LineString',
-            coordinates: [[location.longitude, location.latitude]],
-            properties: {
-              data: [{
-                altitude: location.altitude,
-                speed: location.speed,
-                time: location.time,
-                compSpeed: 0,
-                distance: 0
-              }]
-            }
-          },
-          waypoints: []
-        }]
-      };
-      this.fs.stopped = 0;
-      this.fs.averagedSpeed = 0;
-      // Display waypoint button
-      this.show('alert', 'block');
-      // Create markers (start, green, blue)
-      features[1].setGeometry(new Point([location.longitude, location.latitude]));
-      features[1].setStyle(this.stylerService.createPinStyle('green'));
-      // Register track
-      this.geography.currentLayer.getSource()?.clear();
-      this.geography.currentLayer.getSource()?.addFeatures(features);
-      return true;
-    }
-    // Otherwise, we are adding a new point (subsequent update)
-    const num = this.present.currentTrack.features[0].geometry.coordinates.length;
-    const prevData = this.present.currentTrack.features[0].geometry.properties.data[num - 1];
-    const previousTime = prevData?.time || 0;
-    const previousAltitude = prevData?.altitude || 0;
-    // Wrong order
-    if (previousTime > location.time) return false;
-    // Avoid unrealistic altitude jumps (if GPS still running)
-    if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
-      location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
-    }
-    // Convert m/s to km/h
-    location.speed = location.speed * 3.6;
-    // Add point to geojson
-    await this.fs.fillGeojson(this.present.currentTrack, location);
-    // Optional route check
-    if (this.reference.archivedTrack && this.fs.alert === 'on') {
-      await this.checkWhetherOnRoute();
-    } else {
-      this.fs.status = 'black';
-    }
-    return true;
-  }
-
-  // 13. CHECK WHETHER OR NOT WE ARE ON ROUTE //////////////////////
-  async onRoute() {
-    // Return 'black' if conditions aren't met
-    if (!this.present.currentTrack || !this.reference.archivedTrack) return 'black';
-    // Define current and archived coordinates
-    const currentCoordinates = this.present.currentTrack.features[0].geometry.coordinates;
-    const archivedCoordinates = this.reference.archivedTrack.features[0].geometry.coordinates;
-    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
-    // Define parameters
-    const bounding = (this.fs.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
-    //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
-    const reduction = 1 // no reduction
-    const multiplier = 10;
-    const skip = 5;
-    // Get the point to check from the current track
-    const point = currentCoordinates[currentCoordinates.length - 1];
-    // Boundary check
-    const bbox = this.reference.archivedTrack.features[0].bbox;
-    if (bbox)  {
-      if (point[0] < bbox[0] - bounding || point[0] > bbox[2] + bounding ||
-        point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
-    }
-    // Forward search
-    for (let i = this.fs.currentPoint; i < archivedCoordinates.length; i += reduction) {
-      const point2 = archivedCoordinates[i];
-      const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
-      if (distSq < this.threshDist) {
-        //this.lastN = i;
-        this.fs.currentPoint = i;
-        return 'green';
-      } else if (distSq > multiplier * this.threshDist) {
-        i += (skip - 1) * reduction;
-      }
-    }
-    // Reverse search
-    for (let i = this.fs.currentPoint; i >= 0; i -= reduction) {
-      const point2 = archivedCoordinates[i];
-      const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
-      if (distSq < this.threshDist) {
-        //this.lastN = i;
-        this.fs.currentPoint = i;
-        return 'green';
-      } else if (distSq > multiplier * this.threshDist) {
-        i -= (skip - 1) * reduction;
-      }
-    }
-    // No match found
-    return 'red';
   }
 
   // 14. SHOW / HIDE ELEMENTS /////////////////////////////////
@@ -624,9 +497,9 @@ export class Tab1Page {
     // Compute distances for each point
     for (let i = this.computedDistances + 1; i < num; i++) {
       const lastPoint = coordinates[i - 1];
-      const currentPoint = coordinates[i];
+      const currPoint = coordinates[i];
       // Calculate the distance
-      const distance = this.fs.computeDistance(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1]);
+      const distance = this.fs.computeDistance(lastPoint[0], lastPoint[1], currPoint[0], currPoint[1]);
       // Update the data with the new distance
       data[i].distance = data[i - 1].distance + distance;
       // Track the last computed distance index
@@ -648,27 +521,6 @@ export class Tab1Page {
     this.present.currentTrack.features[0].properties.totalNumber = num;
     this.present.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
   }
-
-  // 24. CHECK WHETHER OR NOT WE ARE ON ROUTE ///////////////////
-  async checkWhetherOnRoute() {
-    // Return early if essential conditions are not met
-    if (!this.present.currentTrack || !this.reference.archivedTrack) return;
-    // Store previous color for comparison
-    const previousStatus = this.fs.status;
-    // Determine the current route color based on `onRoute` function
-    this.fs.status = await this.onRoute() || 'black';
-    // If audio alerts are off, return
-    if (this.fs.audioAlert == 'off') return;
-    // Beep for off-route transition
-    if (previousStatus === 'green' && this.fs.status === 'red') {
-      this.audio.playDoubleBeep(1800, .3, 1, .12);
-    }
-    // Beep for on-route transition
-    else if (previousStatus === 'red' && this.fs.status === 'green') {
-      this.audio.playBeep(1800, .4, 1);
-    }
-  }
-
 
   // 28. COMPUTE TRACK STATS /////////////////////////
   async computeTrackStats(
@@ -867,9 +719,7 @@ export class Tab1Page {
   }
 
   // 31. FOREGROUND TASK ////////////////////////
-  async foregroundTask(location:Location) {
-    const updated = await this.updateTrack(location);
-    if (!updated) return;    // new point..
+  async foregroundTask() {
     const num = this.present.currentTrack?.features[0].geometry.coordinates.length ?? 0;
     // filter altitude
     await this.filterAltitude(this.present.currentTrack, num - this.fs.lag - 1);
@@ -892,14 +742,6 @@ export class Tab1Page {
       this.cd.detectChanges();
     });
     console.log('Foreground',this.present.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
-  }
-
-  // 32. BACKGROUND TASK /////////////////////////////////////
-  async backgroundTask(location: Location) {
-    const taskId = await BackgroundTask.beforeExit(async () => {
-      await this.updateTrack(location);
-    });
-    BackgroundTask.finish({ taskId });
   }
 
   // 37. ADD WAYPOINT ////////////////////////////////////
@@ -1289,9 +1131,9 @@ async processKmz(data: any) {
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
     this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
     // Aert
-    this.fs.alert = await this.fs.check(this.fs.alert,'alert')
+    this.audio.alert = await this.fs.check(this.audio.alert,'alert')
     // Audio alert
-    this.fs.audioAlert = await this.fs.check(this.fs.audioAlert,'audioAlert')
+    this.audio.audioAlert = await this.fs.check(this.audio.audioAlert,'audioAlert')
     // Altitude method
     this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     // Geocoding Service
@@ -1330,83 +1172,59 @@ async processKmz(data: any) {
 
   async openList() {
     if (!this.query) return;
+
     this.loading = true;
+
     try {
-      let url: string;
-      let headers: any = { 'Accept': 'application/json' };
+      const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
 
-      if (this.fs.geocoding === 'mapTiler') {
-        // 🌍 MapTiler forward geocoding
-        url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
-      } else {
-        // 🌍 Nominatim forward geocoding (default)
-        url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${encodeURIComponent(this.query)}`;
-        headers['User-Agent'] = 'YourAppName/1.0 (you@example.com)'; // required
-      }
+      const response = await CapacitorHttp.get({
+        url,
+        headers: { 'Accept': 'application/json' }
+      });
 
-      const response = await CapacitorHttp.get({ url, headers });
+      // Normalize MapTiler results
+      const features = response.data?.features ?? [];
 
-      if (this.fs.geocoding === 'mapTiler') {
-        // ✅ Normalize MapTiler results
-        const features = response.data?.features ?? [];
-        this.results = features.map((f: any, idx: number) => {
-          const [lon, lat] = f.geometry.coordinates;
+      this.results = features.map((f: any, idx: number) => {
+        const [lon, lat] = f.geometry.coordinates;
 
-          // compute bbox from geometry if not provided
-          const coords = f.geometry.type === 'Point'
-            ? [[lon, lat]]
-            : f.geometry.coordinates.flat(Infinity).reduce((acc: any[], v: any, i: number) => {
+        // compute bbox from geometry when available
+        const coords = f.geometry.type === 'Point'
+          ? [[lon, lat]]
+          : f.geometry.coordinates
+              .flat(Infinity)
+              .reduce((acc: any[], v: any, i: number) => {
                 if (i % 2 === 0) acc.push([v]);
                 else acc[acc.length - 1].push(v);
                 return acc;
               }, []);
 
-          const lons = coords.map((c: any) => c[0]);
-          const lats = coords.map((c: any) => c[1]);
-          const boundingbox = [
-            Math.min(...lats), // south
-            Math.max(...lats), // north
-            Math.min(...lons), // west
-            Math.max(...lons)  // east
-          ];
+        const lons = coords.map((c: any) => c[0]);
+        const lats = coords.map((c: any) => c[1]);
 
-          return {
-            lat,
-            lon,
-            name: f.text ?? '(no name)',
-            display_name: f.place_name ?? f.text ?? '(no name)',
-            short_name: f.text ?? f.place_name ?? '(no name)', // 👈 added
-            type: f.place_type?.[0] ?? 'unknown',
-            place_id: f.id ?? idx,
-            boundingbox,
-            geojson: f.geometry
-          };
-        });
-      } else {
-        // ✅ Normalize Nominatim results
-        const rawResults = Array.isArray(response.data) ? response.data : [];
-        this.results = rawResults.map((r: any) => {
-          const display = r.display_name ?? '(no name)';
-          const short = r.address?.road
-            ? [r.address.road, r.address.house_number].filter(Boolean).join(' ')
-            : (r.address?.city ?? r.address?.town ?? r.address?.village ?? display);
+        const boundingbox = [
+          Math.min(...lats), // south
+          Math.max(...lats), // north
+          Math.min(...lons), // west
+          Math.max(...lons)  // east
+        ];
 
-          return {
-            lat: parseFloat(r.lat),
-            lon: parseFloat(r.lon),
-            name: display,
-            display_name: display,
-            short_name: this.shortenName(display),
-            type: r.type ?? 'unknown',
-            place_id: r.place_id,
-            boundingbox: r.boundingbox?.map((n: string) => parseFloat(n)) ?? [],
-            geojson: r.geojson ?? null
-          };
-        });
-      }
+        return {
+          lat,
+          lon,
+          name: f.text ?? '(no name)',
+          display_name: f.place_name ?? f.text ?? '(no name)',
+          short_name: f.text ?? f.place_name ?? '(no name)',
+          type: f.place_type?.[0] ?? 'unknown',
+          place_id: f.id ?? idx,
+          boundingbox,
+          geojson: f.geometry
+        };
+      });
 
     } catch (error) {
-      console.error(`Error fetching ${this.fs.geocoding} geocoding data:`, error);
+      console.error('Error fetching MapTiler geocoding data:', error);
       this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
       this.results = [];
     } finally {
@@ -1420,13 +1238,14 @@ async processKmz(data: any) {
       console.log('❌ Speech recognition not available');
       return;
     }
-
     const permission = await SpeechRecognition.checkPermissions();
     if (permission.speechRecognition !== 'granted') {
       await SpeechRecognition.requestPermissions();
     }
-
-    const lang = this.languageService.getCurrentLangValue();
+    let lang = this.languageService.getCurrentLangValue();
+    if (lang == 'ca') lang = 'ca-ES'
+    else if (lang == 'es') lang = 'es-ES'
+    else if (lang == 'en') lang = 'en-EN' 
     await SpeechRecognition.start({
       language: lang,
       partialResults: true,
@@ -1517,6 +1336,38 @@ async processKmz(data: any) {
     this.locationSharingService.stopSharing();
   }
 
+  async onDestroy()  {
+    //await this.location.stopBackgroundTracking();
+    MyService.stopService();
+  }
+
+  async prepareXiaomi(evento?: any) {
+    const { value: esXiaomi } = await MyService.isXiaomi();
+    
+    if (esXiaomi) {
+      const yaAvisado = localStorage.getItem('xiaomi_configurado');
+      if (yaAvisado) return;
+
+      const popover = await this.popoverController.create({
+        component: XiaomiPopoverComponent,
+        event: evento, // Opcional: apunta al botón que disparó la acción
+        translucent: true,
+        backdropDismiss: true
+      });
+
+      await popover.present();
+
+      const { data } = await popover.onDidDismiss();
+      
+      if (data === true) {
+        await MyService.openAutostartSettings();
+        localStorage.setItem('xiaomi_configurado', 'true');
+      }
+    }
+  }
+
 }
+
+
 
 

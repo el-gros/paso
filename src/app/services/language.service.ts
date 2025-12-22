@@ -24,14 +24,6 @@ export class LanguageService {
     this.initLanguage();
   }
 
-  /*
-   initLanguage
-   getCurrentLanguage
-   getCurrentLangValue
-   setLanguage
-   determineLanguage
-  */
-
   private async initLanguage() {
     const storedLang = await this.fs.storeGet('lang');
     if (storedLang) {

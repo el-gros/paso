@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- External cache: /storage/emulated/0/Android/data/<pkg>/cache/... -->
-    <external-cache-path name="external_cache" path="." />
-
-    <!-- External files: /storage/emulated/0/Android/data/<pkg>/files/... -->
-    <external-files-path name="external_files" path="." />
-
-    <!-- Optional: downloads or public external -->
-    <external-path name="external" path="." />
-
-    <!-- Internal cache if needed -->
-    <cache-path name="internal_cache" path="." />
+    <external-path name="my_images" path="." />
+    <cache-path name="my_cache_images" path="." />
 </paths>

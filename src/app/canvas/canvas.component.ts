@@ -13,6 +13,9 @@ import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
+import { AppStateService } from '../services/appState.service';
+import { AudioService } from '../services/audio.service';
+import { LocationManagerService } from '../services/location-manager.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -36,57 +39,83 @@ register();
 export class CanvasComponent implements OnInit, OnDestroy {
 
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
+  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   archivedUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   vMin: number = 1;
   partialSpeeds: PartialSpeed[] = [];
   subscription?: Subscription;
+  trackSub: any;
+  fgSub: any;
+  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
+  canvasNum: number = 400;
+  margin: number = 10;
+  // Averages
+  currentAverageSpeed: number | undefined = undefined;
+  currentMotionSpeed: number | undefined = undefined;
+  currentMotionTime: string = '00:00:00';
 
   constructor(
     public fs: FunctionsService,
     private translate: TranslateService,
     public reference: ReferenceService,
     public present: PresentService,
-  ) { }
+    private appState: AppStateService,
+    public location: LocationManagerService,
+    public audio: AudioService,
+  ) {
+
+    }
 
   // 1. ngOnInit()
   // 2. ngOnDestroy()
-  // 3. ionViewWillEnter()
-  // 4. averageSpeed()
-  // 5. createCanvas()
-
+  // 3. ionViewWillLeave() 
+  // 4. ionViewWillEnter()
+  // 5. runCanvasUpdates()
+  // 6. averageSpeed()
+  // 7. createCanvas()
+  // 8. triggerExport()
   // 9. updateAllCanvas()
 
 
   // 1. ON INIT ///////////////////
   async ngOnInit() {
+    // Create canvas
     await this.createCanvas();
+    // 1️⃣ Run updates when currentTrack changes (foreground only)
+    this.trackSub = this.present.currentTrack$.subscribe(async track => {
+      if (!this.appState.isForeground()) return;
+      if (!track) return;
+      await this.runCanvasUpdates();
+    });
+    // 2️⃣ Run updates when app comes back to foreground
+    this.fgSub = this.appState.onEnterForeground().subscribe(async () => {
+      await this.runCanvasUpdates();
+    });
   }
 
   // 2. ON DESTROY ///////////////////
   ngOnDestroy() {
-    this.subscription?.unsubscribe();
+    this.trackSub?.unsubscribe();
+    this.fgSub?.unsubscribe();
   }
 
-  // 3. ION VIEW WILL ENTER //////////////////
+  // 3. ION VIEW WILL LEAVE
+  ionViewWillLeave() {
+    this.trackSub?.unsubscribe();
+    this.fgSub?.unsubscribe();
+  }
+
+  // 4. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
-    // Update
+    if (this.appState.isForeground()) {
+      await this.runCanvasUpdates();
+    }
+    // Update archived track
     if (this.reference.archivedTrack) {
-      this.archivedUnit = await this.updateAllCanvas(this.fs.archivedCtx, this.reference.archivedTrack);
+      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.reference.archivedTrack);
       this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
     }
-    if (this.present.currentTrack) {
-      this.archivedUnit = await this.updateAllCanvas(this.fs.currentCtx, this.present.currentTrack);
-      this.partialSpeeds = await this.fs.computePartialSpeeds(this.present.currentTrack);
-      await this.averageSpeed();
-    }
-    // On changes, update
-    this.subscription =  this.present.currentTrack$.subscribe(async (track) => {
-      if (track && this.fs.currentCtx) {
-        this.currentUnit = await this.updateAllCanvas(this.fs.currentCtx, track);
-        await this.averageSpeed();
-      }
-    })
-    // Variables
+    // In case of exporting track
     if (this.fs.buildTrackImage) {
       var success: boolean = false;
       success = await this.triggerExport();
@@ -101,7 +130,16 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 4. COMPUTE AVERAGE SPEEDS AND TIMES
+  // 5. RUN CANVAS UPDATES //////////////////////////////////
+  async runCanvasUpdates() {
+    const track = this.present.currentTrack;
+    if (!track || !this.currentCtx) return;
+    this.currentUnit = await this.updateAllCanvas(this.currentCtx, track);
+    this.partialSpeeds = await this.fs.computePartialSpeeds(track);
+    await this.averageSpeed();
+  }
+
+  // 6. COMPUTE AVERAGE SPEEDS AND TIMES
   async averageSpeed() {
     if (!this.present.currentTrack) return;
     // get data array
@@ -109,33 +147,33 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const num = data.length ?? 0;
     if (num < 2) return;
     // Compute time at rest
-    for (let i = this.fs.averagedSpeed + 1; i < num; i++) {
+    for (let i = this.location.averagedSpeed + 1; i < num; i++) {
       if (data[i].compSpeed < this.vMin) {
         // Add the time spent at rest
-        this.fs.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
+        this.location.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
       }
-      this.fs.averagedSpeed = i;  // Track last processed index
+      this.location.averagedSpeed = i;  // Track last processed index
     }
     // Compute total time
     let totalTime = (data[num - 1].time - data[0].time)/1000;
     // Calculate average speed (in km/h)
-    this.fs.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
+    this.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
     // If the total time minus stopped time is greater than 5 seconds, calculate motion speed
-    if (totalTime - this.fs.stopped > 5) {
-      this.fs.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.fs.stopped);
+    if (totalTime - this.location.stopped > 5) {
+      this.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.location.stopped);
     }
     // Format the motion time
-    this.fs.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.fs.stopped));
+    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.location.stopped));
   }
 
-  // 5. CREATE CANVASES //////////////////////////////////////////
+  // 7. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
     const size = Math.min(window.innerWidth, window.innerHeight);
     for (const i in this.fs.properties) {
-      this.initCanvas(`currCanvas${i}`, size, this.fs.currentCtx, i);
-      this.initCanvas(`archCanvas${i}`, size, this.fs.archivedCtx, i);
+      this.initCanvas(`currCanvas${i}`, size, this.currentCtx, i);
+      this.initCanvas(`archCanvas${i}`, size, this.archivedCtx, i);
     }
-    this.fs.canvasNum = size;
+    this.canvasNum = size;
   }
   private initCanvas(
     elementId: string,
@@ -154,8 +192,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  // 9. UPDATE ALL CANVAS ////////////////////////////////
+  // 8. UPDATE ALL CANVAS ////////////////////////////////
   async triggerExport(): Promise<boolean> {
     try {
       const exportArea = document.querySelector('#exportArea') as HTMLElement;
@@ -187,10 +224,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
-  ionViewWillLeave() {
-      this.subscription?.unsubscribe();
-  }
-
+  // 9. UPDATE ALL CANVAS //////////////////////////////////////////
   async updateAllCanvas(context: Record<string, any>, track: Track | undefined): Promise<string> {
     // Validate context
     if (!context) {
@@ -206,7 +240,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
       let lastUnit = '';
       for (const [index, property] of Object.entries(this.fs.properties)) {
         const mode = property === 'altitude' ? 'x' : 't';
-        lastUnit = await this.fs.updateCanvas(context[index], track, property, mode);
+        lastUnit = await this.updateCanvas(context[index], track, property, mode);
       }
       return lastUnit;
     } finally {
@@ -214,5 +248,126 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
   }
 
+  async updateCanvas(
+    ctx: CanvasRenderingContext2D | undefined,
+    track: Track | undefined,
+    propertyName: keyof Data,
+    xParam: string,
+  ): Promise<string> {
+    let tUnit = '';
+    if (!ctx) return tUnit;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
+    if (!track) return tUnit;
+    const data = track.features[0].geometry.properties.data;
+    const num = data.length ?? 0;
+    if (num === 0) return tUnit;
+    let xDiv = 1;
+    let xTot: number;
+    if (xParam === 'x') {
+      xTot = data[num - 1].distance;
+    } else {
+      xTot = data[num - 1].time - data[0].time;
+      if (xTot > 3600000) {
+        tUnit = 'h'; xDiv = 3600000;
+      } else if (xTot > 60000) {
+        tUnit = 'min'; xDiv = 60000;
+      } else {
+        tUnit = 's'; xDiv = 1000;
+      }
+      xTot /= xDiv;
+    }
+    const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
+    if (bounds.max === bounds.min) {
+      bounds.max += 2; bounds.min -= 2;
+    }
+    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
+    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
+    const offsetX = this.margin;
+    const offsetY = this.margin - bounds.max * scaleY;
+    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
+    ctx.beginPath();
+    ctx.moveTo(0, bounds.min);
+    for (const point of data) {
+      const xValue = xParam === 'x'
+        ? point.distance
+        : (point.time - data[0].time) / xDiv;
+      const yValue = point[propertyName];
+      ctx.lineTo(xValue, yValue);
+    }
+    ctx.lineTo(xTot, bounds.min);
+    ctx.closePath();
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
+    return tUnit;
+  }
+
+  async grid(
+    ctx: CanvasRenderingContext2D | undefined,
+    xMin: number,
+    xMax: number,
+    yMin: number,
+    yMax: number,
+    a: number,  // scaleX
+    d: number,  // scaleY
+    e: number,  // offsetX
+    f: number   // offsetY
+  ) {
+    if (!ctx) return;
+    // Save state first thing
+    ctx.save();
+    // Set up styles
+    ctx.font = '13px Arial';
+    ctx.strokeStyle = '#555';       // softer than black, more readable
+    ctx.fillStyle = '#333';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4, 8]);        // shorter dash for finer grid
+    // Compute grid intervals
+    const gridx = this.gridValue(xMax - xMin);
+    const gridy = this.gridValue(yMax - yMin);
+    const fx = Math.ceil(xMin / gridx);
+    const fy = Math.ceil(yMin / gridy);
+    // Vertical grid lines
+    for (let xi = fx * gridx; xi <= xMax; xi += gridx) {
+      const px = xi * a + e;
+      ctx.beginPath();
+      ctx.moveTo(px, yMin * d + f);
+      ctx.lineTo(px, yMax * d + f);
+      ctx.stroke();
+      // Draw X label
+      ctx.fillText(
+        xi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        px + 2,
+        yMax * d + f + 15
+      );
+    }
+    // Horizontal grid lines
+    for (let yi = fy * gridy; yi <= yMax; yi += gridy) {
+      const py = yi * d + f;
+      ctx.beginPath();
+      ctx.moveTo(xMin * a + e, py);
+      ctx.lineTo(xMax * a + e, py);
+      ctx.stroke();
+      // Draw Y label
+      ctx.fillText(
+        yi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        xMin * a + e + 2,
+        py - 5
+      );
+    }
+    // Restore canvas state and clear dashes
+    ctx.restore();
+    ctx.setLineDash([]);
+  }
+
+  gridValue(dx: number) {
+    const nx = Math.floor(Math.log10(dx));
+    const x = dx / (10 ** nx);
+    if (x < 2.5) return 0.5 * (10 ** nx);
+    else if (x < 5) return 10 ** nx;
+    else return 2 * (10 ** nx);
+  }
 
 }

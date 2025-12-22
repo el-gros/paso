@@ -1,17 +1,22 @@
-/**
- * Configures the Android build settings for the project, including namespace, SDK versions,
- * application ID, Java 17 compatibility, source sets, and build types.
- * Also specifies ProGuard rules and asset ignore patterns for packaging.
- */
-
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+//    id 'kotlin-android'  // rem
+    id 'org.jetbrains.kotlin.android' // add 
+    id 'kotlin-kapt'  // add 
+}
 
 android {
     namespace "io.elgros.paso"
     compileSdk rootProject.ext.compileSdkVersion
-
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/java' 
+            kotlin.srcDirs += 'src/main/kotlin'
+        }
+    }
     defaultConfig {
-        applicationId "io.elgros.paso"
+        applicationId "io.elgros.paso" 
+        multiDexEnabled true
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -21,26 +26,6 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-
-    // 1) Your Java 17 settings
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    // 2) Java toolchain – the supported way to lock to JDK 17
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
-        }
-    }
-
-    sourceSets {
-        main {
-            java.srcDirs += 'src/main/java'
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -50,7 +35,7 @@ android {
 }
 
 repositories {
-    flatDir {
+    flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }
@@ -60,17 +45,18 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation project(':capacitor-android')
+    implementation project(':capacitor-cordova-android-plugins')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
-    implementation project(':capacitor-cordova-android-plugins')
 }
 
-// 3) Apply Capacitor’s generated script (it will temporarily set Java 21)
 apply from: 'capacitor.build.gradle'
-
-// 4) No --release hacks here! Let compileOptions + toolchain do the work.
 
 try {
     def servicesJSON = file('google-services.json')

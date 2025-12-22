@@ -6,20 +6,11 @@ export class AudioService {
 
     beepInterval: any = undefined;
     audioCtx: AudioContext | null = null;
+    alert: string = 'on';
+    audioAlert: string = 'on';
+    status: 'black' | 'red' | 'green' = 'black';
 
     constructor() {}
-
-    // START BEEP INTERVAL /////////////////////
-    startBeepInterval() {
-        // Clear any existing interval to avoid duplicates
-        if (this.beepInterval) {
-            clearInterval(this.beepInterval);
-        }
-        // Set an interval to play the beep every 120 seconds
-        this.beepInterval = setInterval(() => {
-            requestAnimationFrame(() => this.playBeep(600, .001, .001));
-        }, 120000);
-    }
 
     // STOP BEEP INTERVAL ////////////////////////////
     stopBeepInterval() {

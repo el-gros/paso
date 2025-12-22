@@ -25,6 +25,7 @@ import { FormsModule } from '@angular/forms';
 import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
+import { AudioService } from '../services/audio.service';
 
 register();
 
@@ -61,7 +62,7 @@ export class SettingsPage implements OnDestroy {
   // Audio alert
   audioAlerts: string[] = ['on', 'off'];
   // Geocoding service
-  geocodingServices: string[] = ['nominatim', 'maptiler']
+  geocodingServices: string[] = ['maptiler']
   // Altitudes
   altitudes: string[] = ['GPS', 'DEM'];
 
@@ -82,6 +83,7 @@ export class SettingsPage implements OnDestroy {
     public reference: ReferenceService,
     public geography: GeographyService,
     public present: PresentService,
+    public audio: AudioService,
   ) {
 
     // Debounced map upload
@@ -220,17 +222,17 @@ export class SettingsPage implements OnDestroy {
 
   // 9 bis. ALERT CHANGE /////////////////////////
   async onAlertChange(position: string) {
-    this.fs.alert = position;
-    await this.fs.storeSet('alert', this.fs.alert);
+    this.audio.alert = position;
+    await this.fs.storeSet('alert', this.audio.alert);
     // on alert change, audioAlert also changes
-    this.fs.audioAlert = position;
-    await this.fs.storeSet('audioAlert', this.fs.audioAlert);
+    this.audio.audioAlert = position;
+    await this.fs.storeSet('audioAlert', this.audio.audioAlert);
   }
 
   // 10. AUDIO ALERT CHANGE /////////////////////////
   async onAudioAlertChange(position: string) {
-    this.fs.audioAlert = position;
-    await this.fs.storeSet('audioAlert', this.fs.audioAlert);
+    this.audio.audioAlert = position;
+    await this.fs.storeSet('audioAlert', this.audio.audioAlert);
   }
 
   // 10bis. AUDIO ALERT CHANGE /////////////////////////

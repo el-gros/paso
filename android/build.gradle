@@ -1,53 +1,65 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Top-level build file
 
 buildscript {
-
+    ext.kotlin_version = '1.9.22'
     repositories {
         google()
         mavenCentral()
     }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.2'
-        classpath 'com.google.gms:google-services:4.4.2'
 
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.2'
     }
 }
 
-apply from: "variables.gradle"
-
-
-// Add the `ext` block here
-ext {
-    androidxAppCompatVersion = "1.6.1" // Define the version for AndroidX AppCompat
-    // You can add other shared dependency versions here if needed
-}
+apply from: "${rootDir}/variables.gradle"
 
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+    
+    // 💡 ADDED BLOCK: Dependency Resolution Strategy
+    // This forces all modules to use compatible versions of core AndroidX/Kotlin libraries,
+    // which should resolve the persistent Dexing/Duplicate Class errors.
+    configurations.all {
+        resolutionStrategy {
+            // Note: Versions should match your rootProject.ext or latest stable versions.
+            // Using versions consistent with modern Android/Capacitor setup.
+            force 'androidx.core:core-ktx:1.12.0' 
+            force 'androidx.appcompat:appcompat:1.6.1' 
+            force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22' // Matching your $kotlin_version
+        }
+    }
+    // END ADDED BLOCK
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
+// 🔧 Fuerza Java 17 en todos los subproyectos (Existing Subprojects Block)
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
-            android.compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(17)
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
                 }
+            }
+        }
+        if (project.hasProperty("kotlinOptions")) {
+            project.kotlinOptions.jvmTarget = "17"
+        }
+        // 🔧 Fuerza el toolchain de Kotlin en todos los subproyectos
+        project.plugins.withId("org.jetbrains.kotlin.android") {
+            project.kotlin {
+                jvmToolchain(17)
             }
         }
     }
 }
-

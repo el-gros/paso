@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { LocationManagerService } from './services/location-manager.service';
-import { Platform } from '@ionic/angular';    
+import { App } from '@capacitor/app';
 
 @Component({
   selector: 'app-root',
@@ -25,13 +25,14 @@ export class AppComponent {
 
   constructor(
     public fs: FunctionsService,
-    private locationService: LocationManagerService,
-    private platform: Platform,
+    public locationService: LocationManagerService,
   ) {
     this.lockToPortrait();
     this.initStorage();
-    this.platform.ready().then(() => {
-      this.locationService.start();
+    App.addListener('appStateChange', ({ isActive }) => {
+//      if (isActive) {
+//        this.locationService.checkLocationPermissionStatus(); 
+//      }
     });
   }
 

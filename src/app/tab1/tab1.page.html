@@ -55,50 +55,41 @@
     <ion-list>
       <ion-row>
         <button class="record-button map-color"
-          [disabled]="fs.state!='inactive'"
+          [disabled]="location.state!='inactive'"
           (click)="startTracking(); isRecordPopoverOpen = false"
         >
           <ion-icon name="caret-forward-circle-sharp"></ion-icon>
           <span>{{ 'RECORD.START_TRACKING' | translate }}</span>
         </button>
         <button class="record-button map-color"
-          [disabled]="fs.state!='tracking'"
+          [disabled]="location.state!='tracking'"
           (click)="waypoint(); isRecordPopoverOpen = false"
         >
           <ion-icon name="pin-sharp"></ion-icon>
           <span>{{ 'RECORD.WAYPOINT' | translate }}</span>
         </button>
         <button class="record-button map-color"
-          [disabled]="fs.state!='tracking'"
+          [disabled]="location.state!='tracking'"
           (click)="isConfirmStopOpen = true;"
         >
           <ion-icon name="stop-circle-sharp"></ion-icon>
           <span>{{ 'RECORD.STOP_TRACKING' | translate }}</span>
         </button>
         <button class="record-button map-color"
-          [disabled]="fs.state!='stopped'"
-          [class.enabled]="fs.state==='stopped'"
+          [disabled]="location.state!=='stopped'"
+          [class.enabled]="location.state==='stopped'"
           (click)="setTrackDetails(); isRecordPopoverOpen = false"
         >
           <ion-icon name="save-sharp"></ion-icon>
           <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
         </button>
         <button class="record-button map-color"
-          [disabled]="fs.state != 'stopped' && fs.state != 'saved'"
+          [disabled]="location.state != 'stopped' && location.state != 'saved'"
           (click)="isConfirmDeletionOpen = true;"
         >
           <ion-icon name="trash-sharp"></ion-icon>
           <span>{{ 'RECORD.REMOVE_TRACK' | translate }}</span>
         </button>
-        <!--
-        <button class="record-button map-color"
-          [disabled]="fs.state != 'tracking'"
-          (click)="isSharingPopoverOpen = true;"
-        >
-          <ion-icon name="share"></ion-icon>
-          <span>{{ 'RECORD.SHARE_TRACK' | translate }}</span>
-        </button>
-        -->
       </ion-row>
     </ion-list>
   </ng-template>

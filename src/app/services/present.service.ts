@@ -1,4 +1,3 @@
-import { FunctionsService } from './functions.service'
 import { StylerService } from './styler.service'
 import { Track } from 'src/globald';
 import { GeographyService } from './geography.service';
@@ -17,7 +16,6 @@ import { LineString, Point } from 'ol/geom';
   currentColor: string = 'orange';
 
   constructor(
-    private fs: FunctionsService,
     private stylerService: StylerService,
     private geography: GeographyService
   ) { }
@@ -30,7 +28,7 @@ import { LineString, Point } from 'ol/geom';
     this._currentTrack.next(track); // 👈 triggers subscribers
   }
 
-    async displayCurrentTrack(currentTrack: any): Promise<void> {
+  async displayCurrentTrack(currentTrack: any): Promise<void> {
     if (!this.geography.map || !currentTrack || !this.geography.currentLayer) return;
     const source = this.geography.currentLayer.getSource();
     if (!source) return;
@@ -45,7 +43,7 @@ import { LineString, Point } from 'ol/geom';
     features[1].setStyle(this.stylerService.createPinStyle('green'));
     // Adjust map view occasionally
     if ([5, 10, 25].includes(num) || num % 50 === 0) {
-      this.fs.setMapView(currentTrack);
+      this.geography.setMapView(currentTrack);
     }
   }
 

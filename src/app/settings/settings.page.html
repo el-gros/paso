@@ -56,7 +56,7 @@
   <ion-item lines="none" class="selector">
     <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
     <ion-select
-      [value]="fs.alert"
+      [value]="audio.alert"
       (ionChange)="onAlertChange($event.detail.value)"
       interface="popover"
       slot="end"
@@ -71,7 +71,7 @@
   <ion-item lines="none" class="selector">
     <ion-label>{{ 'SETTINGS.AUDIO_ALERT' | translate }}</ion-label>
     <ion-select
-      [value]="fs.audioAlert"
+      [value]="audio.audioAlert"
       (ionChange)="onAudioAlertChange($event.detail.value)"
       interface="popover"
       slot="end"

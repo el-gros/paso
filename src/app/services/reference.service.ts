@@ -1,5 +1,4 @@
 import { Feature } from 'ol';
-import { FunctionsService } from './functions.service'
 import { StylerService } from './styler.service'
 import { LineString, MultiPoint, Point } from 'ol/geom';
 import { Track } from 'src/globald';
@@ -16,7 +15,6 @@ import { Injectable } from '@angular/core';
     archivedColor: string = 'green';
 
   constructor(
-    private fs: FunctionsService,
     private stylerService: StylerService,
     private geography: GeographyService
   ) { }
@@ -49,7 +47,7 @@ import { Injectable } from '@angular/core';
     }
     this.geography.archivedLayer?.getSource()?.clear();
     this.geography.archivedLayer?.getSource()?.addFeatures(features);
-    this.fs.setMapView(this.archivedTrack);
+    this.geography.setMapView(this.archivedTrack);
   }
 
 }  

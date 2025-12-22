@@ -1,8 +1,16 @@
 include ':app'
-include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
 include ':capacitor-android'
-project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android')
+//include ':android-plugin'
+include ':capacitor-cordova-android-plugins'
 
+// Path to Capacitor Android module
+project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
 
+// Path to your custom plugin
+//project(':android-plugin').projectDir = new File('../android-plugin')
+
+// Path to Cordova plugins (if you have any)
+project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins')
+
+// Apply Capacitor settings
 apply from: 'capacitor.settings.gradle'

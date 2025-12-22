@@ -1,9 +1,3 @@
-/**
- * Injectable service providing utility functions for geospatial calculations, data formatting, persistent storage, UI interactions, and editing of tracks and waypoints.
- *
- * Integrates with Ionic controllers, modals, and organization-specific data models. Includes methods for distance computation, time formatting, speed filtering, GeoJSON manipulation, storage management, toast and alert display, navigation, editing modals, map pin styling, and input sanitization.
- */
-
 import DOMPurify from 'dompurify';
 import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
@@ -30,28 +24,10 @@ export class FunctionsService {
   buildTrackImage: boolean = false;
   selectedAltitude: string = 'GPS'; // Default altitude method
   lag: number = 8;
-
-  audioAlert: string = 'on';
-  alert: string = 'on';
-  geocoding: string = 'nominatim';
+  geocoding: string = 'maptiler';
   collection: TrackDefinition []= [];
-
-  currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
-  status: 'black' | 'red' | 'green' = 'black';
-  currentPoint: number = 0;
-  state: string = 'inactive';
-  // Canvas
-  canvasNum: number = 400;
-  margin: number = 10;
-
-  // Averages
-  currentAverageSpeed: number | undefined = undefined;
-  currentMotionSpeed: number | undefined = undefined;
-  currentMotionTime: string = '00:00:00';
-  averagedSpeed: number = 0;
-  stopped: number = 0;
+ 
   // Re-draw tracks?
   reDraw: boolean = false;
   // Beep interval
@@ -138,29 +114,6 @@ export class FunctionsService {
         data[i].compSpeed = time > 0 ? (3600000 * distance) / time : 0;
     }
     return data;
-  }
-
-  // 4. ADD POINT TO TRACK ////////////////////////////////
-  async fillGeojson(track: Track | undefined, location: Location): Promise<void> {
-    if (!track) return;
-    // Add minimal data
-    track.features[0].geometry.properties.data.push({
-        altitude: location.altitude,
-        speed: location.speed,
-        time: location.time,
-        compSpeed: location.speed,  // Initial value; further processing can adjust it
-        distance: 0  // Placeholder, will be computed later
-    });
-    // Add coordinates
-    track.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
-    // Update bbox
-    const bbox = track.features[0].bbox || [Infinity, Infinity, -Infinity, -Infinity];
-    track.features[0].bbox = [
-      Math.min(bbox[0], location.longitude),
-      Math.min(bbox[1], location.latitude),
-      Math.max(bbox[2], location.longitude),
-      Math.max(bbox[3], location.latitude)
-    ];
   }
 
   // 5. STORAGE SET ///////////////////
@@ -533,152 +486,6 @@ export class FunctionsService {
     return results;
   }
 
-  async updateCanvas(
-    ctx: CanvasRenderingContext2D | undefined,
-    track: Track | undefined,
-    propertyName: keyof Data,
-    xParam: string,
-  ): Promise<string> {
-    let tUnit = '';
-    if (!ctx) return tUnit;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
-    if (!track) return tUnit;
-    const data = track.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num === 0) return tUnit;
-    let xDiv = 1;
-    let xTot: number;
-    if (xParam === 'x') {
-      xTot = data[num - 1].distance;
-    } else {
-      xTot = data[num - 1].time - data[0].time;
-      if (xTot > 3600000) {
-        tUnit = 'h'; xDiv = 3600000;
-      } else if (xTot > 60000) {
-        tUnit = 'min'; xDiv = 60000;
-      } else {
-        tUnit = 's'; xDiv = 1000;
-      }
-      xTot /= xDiv;
-    }
-    const bounds = await this.computeMinMaxProperty(data, propertyName);
-    if (bounds.max === bounds.min) {
-      bounds.max += 2; bounds.min -= 2;
-    }
-    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
-    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
-    const offsetX = this.margin;
-    const offsetY = this.margin - bounds.max * scaleY;
-    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
-    ctx.beginPath();
-    ctx.moveTo(0, bounds.min);
-    for (const point of data) {
-      const xValue = xParam === 'x'
-        ? point.distance
-        : (point.time - data[0].time) / xDiv;
-      const yValue = point[propertyName];
-      ctx.lineTo(xValue, yValue);
-    }
-    ctx.lineTo(xTot, bounds.min);
-    ctx.closePath();
-    ctx.fillStyle = 'yellow';
-    ctx.fill();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
-    return tUnit;
-  }
-
-  async grid(
-    ctx: CanvasRenderingContext2D | undefined,
-    xMin: number,
-    xMax: number,
-    yMin: number,
-    yMax: number,
-    a: number,  // scaleX
-    d: number,  // scaleY
-    e: number,  // offsetX
-    f: number   // offsetY
-  ) {
-    if (!ctx) return;
-    // Save state first thing
-    ctx.save();
-    // Set up styles
-    ctx.font = '13px Arial';
-    ctx.strokeStyle = '#555';       // softer than black, more readable
-    ctx.fillStyle = '#333';
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([4, 8]);        // shorter dash for finer grid
-    // Compute grid intervals
-    const gridx = this.gridValue(xMax - xMin);
-    const gridy = this.gridValue(yMax - yMin);
-    const fx = Math.ceil(xMin / gridx);
-    const fy = Math.ceil(yMin / gridy);
-    // Vertical grid lines
-    for (let xi = fx * gridx; xi <= xMax; xi += gridx) {
-      const px = xi * a + e;
-      ctx.beginPath();
-      ctx.moveTo(px, yMin * d + f);
-      ctx.lineTo(px, yMax * d + f);
-      ctx.stroke();
-      // Draw X label
-      ctx.fillText(
-        xi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-        px + 2,
-        yMax * d + f + 15
-      );
-    }
-    // Horizontal grid lines
-    for (let yi = fy * gridy; yi <= yMax; yi += gridy) {
-      const py = yi * d + f;
-      ctx.beginPath();
-      ctx.moveTo(xMin * a + e, py);
-      ctx.lineTo(xMax * a + e, py);
-      ctx.stroke();
-      // Draw Y label
-      ctx.fillText(
-        yi.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-        xMin * a + e + 2,
-        py - 5
-      );
-    }
-    // Restore canvas state and clear dashes
-    ctx.restore();
-    ctx.setLineDash([]);
-  }
-
-    gridValue(dx: number) {
-      const nx = Math.floor(Math.log10(dx));
-      const x = dx / (10 ** nx);
-      if (x < 2.5) return 0.5 * (10 ** nx);
-      else if (x < 5) return 10 ** nx;
-      else return 2 * (10 ** nx);
-    }
-
-
-    setMapView(track: any) {
-      if (!this.geography.map) return;
-      const boundaries = track.features[0].bbox;
-      if (!boundaries) return;
-      // Set a minimum area
-      const minVal = 0.002;
-      if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
-        const centerX = 0.5 * (boundaries[0] + boundaries[2]);
-        const centerY = 0.5 * (boundaries[1] + boundaries[3]);
-        boundaries[0] = centerX - minVal / 2;
-        boundaries[2] = centerX + minVal / 2;
-        boundaries[1] = centerY - minVal / 2;
-        boundaries[3] = centerY + minVal / 2;
-      }
-      // map view
-      setTimeout(() => {
-        this.geography.map?.getView().fit(boundaries, {
-          size: this.geography.map.getSize(),
-          padding: [50, 50, 50, 50],
-          duration: 100  // Optional: animation duration in milliseconds
-        });
-      })
-    }
 
 }
 
