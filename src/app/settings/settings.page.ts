@@ -26,6 +26,7 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { AudioService } from '../services/audio.service';
+import { LocationManagerService } from '../services/location-manager.service';
 
 register();
 
@@ -60,7 +61,7 @@ export class SettingsPage implements OnDestroy {
   // Alert
   alerts: string[] = ['on', 'off'];
   // Audio alert
-  audioAlerts: string[] = ['on', 'off'];
+  //audioAlerts: string[] = ['on', 'off'];
   // Geocoding service
   geocodingServices: string[] = ['maptiler']
   // Altitudes
@@ -84,6 +85,7 @@ export class SettingsPage implements OnDestroy {
     public geography: GeographyService,
     public present: PresentService,
     public audio: AudioService,
+    private location: LocationManagerService
   ) {
 
     // Debounced map upload
@@ -224,16 +226,17 @@ export class SettingsPage implements OnDestroy {
   async onAlertChange(position: string) {
     this.audio.alert = position;
     await this.fs.storeSet('alert', this.audio.alert);
+    await this.location.sendReferenceToPlugin()
     // on alert change, audioAlert also changes
-    this.audio.audioAlert = position;
-    await this.fs.storeSet('audioAlert', this.audio.audioAlert);
+    //this.audio.audioAlert = position;
+    //await this.fs.storeSet('audioAlert', this.audio.audioAlert);
   }
 
   // 10. AUDIO ALERT CHANGE /////////////////////////
-  async onAudioAlertChange(position: string) {
+  /* async onAudioAlertChange(position: string) {
     this.audio.audioAlert = position;
     await this.fs.storeSet('audioAlert', this.audio.audioAlert);
-  }
+  } */
 
   // 10bis. AUDIO ALERT CHANGE /////////////////////////
   async onGeocodingServiceChange(position: string) {

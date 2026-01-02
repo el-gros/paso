@@ -22,6 +22,7 @@ import JSZip from "jszip";
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GeographyService } from '../services/geography.service';
+import { LocationManagerService } from '../services/location-manager.service';
 
 @Component({
     standalone: true,
@@ -46,6 +47,7 @@ export class ArchivePage {
     private socialSharing: SocialSharing,
     public reference: ReferenceService,
     public geography: GeographyService,
+    public location: LocationManagerService,
   ) {  }
 
   /* FUNCTIONS
@@ -123,10 +125,12 @@ export class ArchivePage {
       // retrieve archived track
       console.log('active?',active)
       this.reference.archivedTrack = await this.fs.retrieveTrack() ?? this.reference.archivedTrack;
+      await this.location.sendReferenceToPlugin()
       if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
     }
     else {
       this.reference.archivedTrack = undefined;
+      await this.location.sendReferenceToPlugin()
       this.geography.archivedLayer?.getSource()?.clear();
     }
     this.fs.uncheckAll();
@@ -251,6 +255,7 @@ export class ArchivePage {
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
     this.reference.archivedTrack = undefined;
+    await this.location.sendReferenceToPlugin()
     this.geography.archivedLayer?.getSource()?.clear();
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');

@@ -1,124 +1,140 @@
 package io.elgros.paso
 
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import androidx.core.content.ContextCompat
-import android.content.ComponentName
-import io.elgros.paso.MyForegroundService
+import android.location.Location
+import android.os.Build
 
-@CapacitorPlugin(name = "MyService")
+@CapacitorPlugin(name = "PasoServicePlugin") 
 class MyServicePlugin : Plugin() {
 
-    init {
-        Log.e("PasoPlugin", "🔥 MyServicePlugin CLASS LOADED 🔥")
+    companion object {
+        var instance: MyServicePlugin? = null
     }
 
-override fun load() {
-    super.load()
-    Log.e("PasoApp", ">>> MyServicePlugin.load() CALLED <<<")
-}
+    override fun load() {
+        super.load()
+        instance = this
+        Log.d("PasoApp", "✅ MyServicePlugin cargado")
+    }
 
-init {
-    Log.d("PasoApp", "MyServicePlugin instance created and initialized!")
-}
+    @PluginMethod
+    fun setReferenceTrack(call: PluginCall) {
+        val coordsArray = call.getArray("coordinates")
+        
+        val flatCoords = if (coordsArray != null && coordsArray.length() > 0) {
+            DoubleArray(coordsArray.length() * 2).apply {
+                for (i in 0 until coordsArray.length()) {
+                    val point = coordsArray.getJSONArray(i)
+                    this[i * 2] = point.getDouble(0)     // Lon
+                    this[i * 2 + 1] = point.getDouble(1) // Lat
+                }
+            }
+        } else { null }
 
-@PluginMethod
-fun startService(call: PluginCall) {
-  // 1. Define the intent
-  Log.d("PLUGIN_DEBUG", "MyServicePlugin.startService called 1")
+        val intent = Intent(context, MyForegroundService::class.java).apply {
+            action = MyForegroundService.ACTION_UPDATE_REFERENCE_TRACK
+            putExtra("coords", flatCoords)
+        }
+        
+        // Usar startService para actualizaciones de datos, no necesita startForegroundService
+        context.startService(intent)
+        call.resolve()
+    }
 
-  val context = bridge.activity?.applicationContext ?: run {
-    call.reject("Activity is null")
-    return
-  }
+    /**
+     * Inicia los servicios: Cerebro y GPS con protección para Android 14/15
+     */
+    @PluginMethod
+    fun startService(call: PluginCall) {
+        val context = bridge.activity?.applicationContext ?: run {
+            call.reject("Activity is null")
+            return
+        }
 
-  val intent = Intent(context, MyForegroundService::class.java).apply {
-    action = MyForegroundService.ACTION_START_FOREGROUND_SERVICE
-  }
+        try {
+            // 1. Iniciar MyForegroundService (Cerebro)
+            val brainIntent = Intent(context, MyForegroundService::class.java).apply {
+                action = MyForegroundService.ACTION_START_FOREGROUND_SERVICE
+                // Flag para asegurar que el sistema priorice esta intención
+                addFlags(Intent.FLAG_FROM_BACKGROUND) 
+            }
+            ContextCompat.startForegroundService(context, brainIntent)
+            Log.d("PasoApp", "🧠 Iniciando Cerebro...")
 
-  // 2. Use ContextCompat to handle startForegroundService safely
-  ContextCompat.startForegroundService(context, intent)
+            // 2. Iniciar PasoService (GPS)
+            // Agregamos un pequeño delay de 100ms o lo lanzamos justo después
+            val gpsIntent = Intent(context, PasoService::class.java).apply {
+                addFlags(Intent.FLAG_FROM_BACKGROUND)
+            }
+            ContextCompat.startForegroundService(context, gpsIntent)
+            Log.d("PasoApp", "🛰️ Iniciando GPS...")
 
-  Log.d("PLUGIN_DEBUG", "MyServicePlugin.startService called 2")
-  call.resolve()
-}
+            call.resolve()
+        } catch (e: Exception) {
+            Log.e("PasoApp", "❌ Error al lanzar servicios: ${e.message}")
+            call.reject("Error al iniciar servicios nativos: ${e.message}")
+        }
+    }
 
     @PluginMethod
     fun stopService(call: PluginCall) {
         val ctx = context
-        val intent = Intent(ctx, MyForegroundService::class.java)
-        ctx.stopService(intent)
-
-        Log.d("PLUGIN_DEBUG", "MyServicePlugin.stopService called")
+        ctx.stopService(Intent(ctx, MyForegroundService::class.java))
+        ctx.stopService(Intent(ctx, PasoService::class.java))
         call.resolve()
     }
 
-    @PluginMethod
-    fun isXiaomi(call: PluginCall) {
-        val manufacturer = android.os.Build.MANUFACTURER
-        val isXiaomi = manufacturer.equals("Xiaomi", ignoreCase = true)
-        val ret = JSObject()
-        ret.put("value", isXiaomi)
-        call.resolve(ret)
+    fun sendLocationToJS(loc: Location) {
+        val data = JSObject().apply {
+            put("latitude", loc.latitude)
+            put("longitude", loc.longitude)
+            put("accuracy", loc.accuracy)
+            put("altitude", loc.altitude)
+            put("speed", loc.speed)
+            put("time", loc.time)
+            
+            val isSimulated = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                loc.isMock
+            } else {
+                @Suppress("DEPRECATION") loc.isFromMockProvider
+            }
+            put("simulated", isSimulated)
+        }
+        notifyListeners("location", data)
     }
 
-    @PluginMethod
-    fun openAutostartSettings(call: PluginCall) {
-        try {
-            val intent = Intent()
-            intent.component = ComponentName(
-                "com.miui.securitycenter",
-                "com.miui.permcenter.autostart.AutoStartManagementActivity"
-            )
-            context.startActivity(intent)
-            call.resolve()
-        } catch (e: Exception) {
-            // Si no es MIUI o la actividad cambió de nombre, abrimos ajustes generales
-            try {
-                val intent = Intent(Settings.ACTION_SETTINGS)
-                context.startActivity(intent)
-                call.resolve()
-            } catch (ex: Exception) {
-                call.reject("No se pudo abrir la configuración")
-            }
-        }
-    }
+    // --- MÉTODOS XIAOMI / OPTIMIZACIÓN ---
 
     @PluginMethod
     fun openBatteryOptimization(call: PluginCall) {
         val packageName = context.packageName
-
-        // Intento 1: Abrir el diálogo directo de "Permitir"
-        // Requiere <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+        val intent = Intent().apply {
+            action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         try {
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:$packageName")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
             context.startActivity(intent)
             call.resolve()
-            return
         } catch (e: Exception) {
-            Log.e("PasoPlugin", "Fallo Intento 1 (Directo): ${e.message}")
-        }
-
-        // Intento 2: Abrir la lista general de optimización (Fallback)
-        try {
+            // Fallback a la lista general si el diálogo directo falla
             val intentFallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intentFallback)
             call.resolve()
-        } catch (e: Exception) {
-            Log.e("PasoPlugin", "Fallo Intento 2 (Ajustes): ${e.message}")
-            call.reject("No se pudo abrir ningún ajuste de batería")
         }
     }
+
+    // ... (Mantén isXiaomi y openAutostartSettings igual que los tenías)
 }

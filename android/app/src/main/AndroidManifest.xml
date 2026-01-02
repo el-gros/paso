@@ -22,6 +22,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <intent-filter android:label="Abrir con Paso">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+
+                <data android:mimeType="application/gpx+xml" />
+                <data android:mimeType="application/octet-stream" /> <data android:pathSuffix=".gpx" />
+
+                <data android:mimeType="application/vnd.google-earth.kml+xml" />
+                <data android:mimeType="application/vnd.google-earth.kmz" />
+                <data android:pathSuffix=".kml" />
+                <data android:pathSuffix=".kmz" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -40,7 +58,8 @@
             android:exported="false" /> 
          <service
             android:name="io.elgros.paso.PasoService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="location|dataSync"
+            android:enabled="true"
             android:exported="false" />   
     </application>
 
@@ -62,5 +81,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
 </manifest>

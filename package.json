@@ -19,6 +19,7 @@
     "@angular/platform-browser": "^20.0.6",
     "@angular/platform-browser-dynamic": "^20.0.6",
     "@angular/router": "^20.0.6",
+    "@awesome-cordova-plugins/background-mode": "^8.1.0",
     "@awesome-cordova-plugins/file": "^8.1.0",
     "@awesome-cordova-plugins/file-path": "^8.1.0",
     "@awesome-cordova-plugins/social-sharing": "^8.1.0",

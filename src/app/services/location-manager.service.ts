@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { GeographyService } from '../services/geography.service';
 import { ReferenceService } from '../services/reference.service';
@@ -10,7 +10,7 @@ import { AudioService } from './audio.service'
 import { firstValueFrom, filter, timeout } from 'rxjs';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
-import { MyPasoPlugin } from '../../plugins/MyPasoPlugin';
+import MyService from 'src/plugins/MyServicePlugin';
 
 @Injectable({
   providedIn: 'root'
@@ -28,9 +28,7 @@ export class LocationManagerService {
   shareToken: string | null = null;
   deviceId: string | null = null;
   foreground: boolean = true;
-  toForeground: boolean = false;
-  toBackground: boolean = false;
-
+  private lastAlertStatus: boolean = false;
 
   // ----------------------------------------------------------------------------
   // 1) PUBLIC API → components/services subscribe here
@@ -38,8 +36,7 @@ export class LocationManagerService {
   private latestLocationSubject = new BehaviorSubject<Location | null>(null);
   latestLocation$ = this.latestLocationSubject.asObservable();
 
-  public lastAccepted: Location | null = null;
-  private watcherId: string | undefined = undefined;
+  //public lastAccepted: Location | null = null;
 
   constructor(
     private audio: AudioService,
@@ -48,6 +45,7 @@ export class LocationManagerService {
     private reference: ReferenceService,
     private styler: StylerService,
     private supabase: SupabaseService,
+    private ngZone: NgZone
   ) { }
 
  
@@ -55,166 +53,36 @@ export class LocationManagerService {
   // 2) RAW + SAMPLING → (merged from the 3 services)
   // ----------------------------------------------------------------------------
   private processRawLocation(raw: Location) {
-    // First point
-    if (this.lastAccepted && raw.time - this.lastAccepted.time < 10000) return false
-    // excessive uncertainty / no altitude or time measured
     if (raw.accuracy > this.threshold ||
       !raw.altitude || raw.altitude == 0 ||
       raw.altitudeAccuracy > this.altitudeThreshold ||
       !raw.time) return false
-    // Once passed filters
-    this.lastAccepted = raw;
     this.latestLocationSubject.next(raw);
     console.log('[LocationManager] new accepted location:', raw);
     return true;
   }
 
-/*  
-async ensurePermissions(): Promise<boolean> {
-    const PACKAGE_SETTINGS_URL = 'package:io.elgros.paso';
+  async getCurrentPosition(): Promise<[number, number] | null> {
+    // 1) Intentamos obtener el valor actual del Subject directamente
+    const last = this.latestLocationSubject.value;
+    
+    if (last) {
+      return [last.longitude, last.latitude];
+    }
 
+    // 2) Si no hay nada, esperamos al siguiente con un margen un poco mayor (ej. 2s)
     try {
-        // 1. COMPROVACIÓ INICIAL (Check current status)
-        let status = await BackgroundGeolocation.checkPermissions();
-
-        if (status.locationAndNotification === 'granted') {
-            console.log('✅ Permissions already granted (Allow All the Time).');
-            return true;
-        }
-
-        // 2. SOL·LICITUD DE PERMISOS (Request Permissions)
-        console.log('Requesting permissions...');
-        // Aquesta crida obre el diàleg "Allow while in use" / "Allow once" / "Deny"
-        status = await BackgroundGeolocation.requestPermissions();
-
-        // 3. GESTIÓ DE LA RESPOSTA
-        
-        if (status.locationAndNotification === 'denied') {
-            // Això passa si l'usuari ha denegat la sol·licitud inicial.
-            console.error('🛑 Permissions permanently denied by user or request denied. Opening settings...');
-            
-            // Si el permís ha estat denegat, obrim directament la configuració 
-            // per permetre a l'usuari canviar-ho manualment.
-            await AppLauncher.openUrl({ url: PACKAGE_SETTINGS_URL });
-            
-            // Retornem false i esperem que el listener de 'resume' comprovi l'estat.
-            return false;
-            
-        } else if (status.locationAndNotification === 'granted' || status.locationAndNotification === 'limited') {
-            // Això normalment vol dir que tenim "Allow while in use" o "Limited".
-            // Hem d'intentar forçar la concessió de "Allow All the Time" (Background).
-            
-            if (status.locationAndNotification === 'granted') {
-                console.log('✅ Initial permission granted ("Allow while in use").');
-            } else if (status.locationAndNotification === 'limited') {
-                console.warn('⚠️ Permission granted as "limited".');
-            }
-            
-            // Pas obligatori per a la localització en segon pla (Background Location):
-            console.warn('⚠️ Opening settings to allow "Allow All the Time" (Background Location).');
-            await AppLauncher.openUrl({ url: PACKAGE_SETTINGS_URL }); 
-            
-            // Retornem false i esperem la represa (resume) per comprovar l'estat final.
-            return false;
-        }
-        
-        // Fallback per a qualsevol altre estat imprevist.
-        return false; 
-
+      const nextLoc = await firstValueFrom(
+        this.latestLocation$.pipe(
+          filter(v => !!v),
+          timeout(2000) // 1s a veces es poco para un arranque en frío
+        )
+      );
+      return [nextLoc.longitude, nextLoc.latitude];
     } catch (err) {
-        console.error('An unexpected error occurred during permission process:', err);
-        return false;
+      return null;
     }
-} */
-
-
-// ----------------------------------------------------------------------------
-  // 4) START TRACKING
-  // ----------------------------------------------------------------------------
-  /*
-  async startBackgroundTracking() {
-      try {
-          await this.ensurePermissions();
-          await this.stopBackgroundTracking();
-          this.watcherId = await BackgroundGeolocation.addWatcher (
-              {
-                enableHighAccuracy: true, 
-                timeout: 20000, 
-                requestPermissions: true,
-                distanceFilter: 1,
-                interval: 5000, 
-                minimumUpdateInterval: 5000,
-              }, 
-              // New location
-              async (location: any, error: any) => { 
-                  if (!location || error) return;
-                  // Check location
-                  const success: boolean = this.processRawLocation(location);
-                  if (!success) return
-                   // If tracking ...
-                  if (this.state == 'tracking') {
-                      const updated = await this.updateTrack(location);
-                      if (!updated) return;    // new point..
-                  }
-                  // If sharing ...
-                  if (this.isSharing) await this.shareLocationIfActive(location)
-              }
-          ); 
-          console.log('[LocationManager] Watcher started:', this.watcherId);
-          
-      } catch (err) {
-          console.error('[LocationManager] Start error:', err);
-      }
   }
-  */    
-
-  // ----------------------------------------------------------------------------
-  // 5) STOP TRACKING
-  // ----------------------------------------------------------------------------
-  /*
-  async stop() {
-    if (this.watcherId) {
-      BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-      this.watcherId = undefined;
-    }
-    if (this.audio.beepInterval) {
-      clearInterval(this.audio.beepInterval);
-      this.audio.beepInterval = null;
-    }
-    await this.stopBackgroundTracking();
-  }
-*/
-
-    async checkLocation(location: Location) {
-      // excessive uncertainty / no altitude or time measured
-      if (location.accuracy > this.threshold ||
-        !location.altitude || location.altitude == 0 ||
-        location.altitudeAccuracy > this.altitudeThreshold ||
-        !location.time) return false
-      else return true;  
-    }
-
-    async getCurrentPosition(): Promise<[number, number] | null> {
-      // 1) If we already have a location → return it immediately
-      const last = this.lastAccepted;
-      if (last) {
-        return [last.longitude, last.latitude];
-      }
-      // 2) Otherwise wait for the next location for max 1s
-      try {
-        const nextLoc = await firstValueFrom(
-          this.latestLocation$.pipe(
-            filter(v => !!v),   // only non-null values
-            timeout(1000)       // give up after 1 second
-          )
-        );
-        return [nextLoc.longitude, nextLoc.latitude];
-      } catch (err) {
-        // timeout OR stream error
-        return null;
-      }
-    }
-
 
   async fillGeojson(track: Track | undefined, location: Location): Promise<void> {
     if (!track) return;
@@ -302,24 +170,19 @@ async ensurePermissions(): Promise<boolean> {
     location.speed = location.speed * 3.6;
     // Add point to geojson
     await this.fillGeojson(this.present.currentTrack, location);
-    // Optional route check
-    if (this.reference.archivedTrack && this.audio.alert === 'on') {
-      await this.checkWhetherOnRoute();
-    } else {
-      this.audio.status = 'black';
-    }
     return true;
   }
 
-  async checkWhetherOnRoute() {
+  /*
+  async checkWhetherOnRoute(location: Location) {
     // Return early if essential conditions are not met
-    if (!this.present.currentTrack || !this.reference.archivedTrack) return;
+    if (!this.reference.archivedTrack) return;
     // Store previous color for comparison
     const previousStatus = this.audio.status;
     // Determine the current route color based on `onRoute` function
-    this.audio.status = await this.onRoute() || 'black';
+    this.audio.status = await this.onRoute(location) || 'black';
     // If audio alerts are off, return
-    if (this.audio.audioAlert == 'off') return;
+    //if (this.audio.audioAlert == 'off') return;
     // Beep for off-route transition
     if (previousStatus === 'green' && this.audio.status === 'red') {
       this.audio.playDoubleBeep(1800, .3, 1, .12);
@@ -330,54 +193,57 @@ async ensurePermissions(): Promise<boolean> {
     }
   }
  
-  async onRoute() {
-    // Return 'black' if conditions aren't met
-    if (!this.present.currentTrack || !this.reference.archivedTrack) return 'black';
-    // Define current and archived coordinates
-    const currentCoordinates = this.present.currentTrack.features[0].geometry.coordinates;
-    const archivedCoordinates = this.reference.archivedTrack.features[0].geometry.coordinates;
-    if (currentCoordinates.length === 0 || archivedCoordinates.length === 0) return 'black';
-    // Define parameters
-    const bounding = (this.audio.status === 'red' ? 0.25 : 42.5) * Math.sqrt(this.threshDist);
-    //const reduction = Math.max(Math.round(archivedCoordinates.length / 2000), 1);
-    const reduction = 1 // no reduction
-    const multiplier = 10;
+  async onRoute(location: Location): Promise<'black' | 'red' | 'green'> {
+    if (!this.reference.archivedTrack) return 'black';
+    const archivedCoords = this.reference.archivedTrack.features[0].geometry.coordinates;
+    const numArchived = archivedCoords.length;
+    if (numArchived === 0) return 'black';
+    const point = [location.longitude, location.latitude];
+    const [lon1, lat1] = point;
+    // 1. Latitude Compensation (Vital for accuracy)
+    const cosLat = Math.cos(lat1 * Math.PI / 180);
+    // 2. Dynamic Threshold (Hysteresis)
+    // If we are currently GREEN, allow a 10% 'grace' distance before turning RED
+    const currentThreshold = (this.audio.status === 'green') 
+      ? this.threshDist * 1.21  // 10% more distance = ~21% more distSq
+      : this.threshDist;
+    // 3. Fast Distance Helper
+    const getDistSq = (p2: number[]) => {
+      const dLon = (lon1 - p2[0]) * cosLat;
+      const dLat = lat1 - p2[1];
+      return dLon * dLon + dLat * dLat;
+    };
+    // 4. Search Window Strategy
+    // Look at the current point and 200 points forward/backward first.
+    const windowSize = 200;
+    const start = Math.max(0, this.currentPoint - windowSize);
+    const end = Math.min(numArchived - 1, this.currentPoint + windowSize);
+    // Look forward from last known point (highest probability)
+    for (let i = this.currentPoint; i <= end; i++) {
+      if (getDistSq(archivedCoords[i]) < currentThreshold) {
+        this.currentPoint = i;
+        return 'green';
+      }
+    }
+    // Look backward within window
+    for (let i = this.currentPoint - 1; i >= start; i--) {
+      if (getDistSq(archivedCoords[i]) < currentThreshold) {
+        this.currentPoint = i;
+        return 'green';
+      }
+    }
+    // 5. Global "Recovery" Search
+    // If not found in the window, search the rest with a 'skip' to save CPU.
+    // This helps if the user took a shortcut or skipped a loop in the track.
     const skip = 5;
-    // Get the point to check from the current track
-    const point = currentCoordinates[currentCoordinates.length - 1];
-    // Boundary check
-    const bbox = this.reference.archivedTrack.features[0].bbox;
-    if (bbox)  {
-      if (point[0] < bbox[0] - bounding || point[0] > bbox[2] + bounding ||
-        point[1] < bbox[1] - bounding || point[1] > bbox[3] + bounding) return 'red'
-    }
-    // Forward search
-    for (let i = this.currentPoint; i < archivedCoordinates.length; i += reduction) {
-      const point2 = archivedCoordinates[i];
-      const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
-      if (distSq < this.threshDist) {
-        //this.lastN = i;
+    for (let i = 0; i < numArchived; i += skip) {
+      if (getDistSq(archivedCoords[i]) < currentThreshold) {
         this.currentPoint = i;
         return 'green';
-      } else if (distSq > multiplier * this.threshDist) {
-        i += (skip - 1) * reduction;
       }
     }
-    // Reverse search
-    for (let i = this.currentPoint; i >= 0; i -= reduction) {
-      const point2 = archivedCoordinates[i];
-      const distSq = (point[0] - point2[0]) ** 2 + (point[1] - point2[1]) ** 2;
-      if (distSq < this.threshDist) {
-        //this.lastN = i;
-        this.currentPoint = i;
-        return 'green';
-      } else if (distSq > multiplier * this.threshDist) {
-        i -= (skip - 1) * reduction;
-      }
-    }
-    // No match found
     return 'red';
-  }
+  } */ 
 
     async shareLocationIfActive(location: Location ) {
     if (!this.isSharing || !this.shareToken) return;
@@ -397,82 +263,54 @@ async ensurePermissions(): Promise<boolean> {
     }
   }
 
-  /*
-  async checkLocationPermissionStatus() {
-    // You can re-run the entire ensurePermissions() or just the background part
-    const bgStatus = await BackgroundGeolocation.checkPermissions();
-    if ((bgStatus as any).background === 'granted') {
-    //if (bgStatus.status === 'always') {
-        console.log('Background permission confirmed upon resume!');
-        // Proceed with starting your foreground service/location tracking
-    } else {
-        console.warn('Background permission still not granted after resume.');
-        // Show a message to the user that they still need to grant it.
-    }
-  }
-  */
-
-  /*
-  async stopBackgroundTracking() {
-      if (this.watcherId) {
-          await BackgroundGeolocation.removeWatcher({ id: this.watcherId });
-          this.watcherId = undefined;
-          console.log('🛑 Background Watcher Stopped.');
-      }
-  }
-  */    
-
-/*  async startForegroundService() {
-    // 1. Create the channel (Safe to call multiple times, Android handles the check)
-    await ForegroundService.createNotificationChannel({
-      id: 'gps_tracking', // Must match notificationChannelId below
-      name: 'Location Tracking', // Visible to the user in Settings
-      description: 'Notifications for background location tracking', // Visible in Settings
-      importance: 4, // 3 = LOW (Silent), 4 = HIGH (Heads-up)
-    });
-    // 2. Start the service using the channel you just created
-    await ForegroundService.startForegroundService({
-      id: 100,
-      title: "Tracking location",
-      body: "Tracking location",
-      smallIcon: 'splash',
-      silent: true,
-      notificationChannelId: 'gps_tracking' // Now this ID exists!
-    });    
-    console.log('✅ Foreground Service started');
-    this.toBackground = false;
-  }
-
-  async stopForegroundService() {
-    await ForegroundService.stopForegroundService()
-    console.log('Foreground Service stopped');
-    this.toForeground = false;
-    const permissionsGranted = await this.ensurePermissions(); 
-    if (permissionsGranted) {
-        console.log('✨ Permissions granted after resume. Starting background service...');
-        // Aquí podeu cridar la funció per iniciar la geolocalització en segon pla (startTracking, etc.)
-    } else {
-        console.warn('🛑 Permissions still not granted after resume.');
-    }
-  } */
-
   async startPaso() {
-    await MyPasoPlugin.startService();
-    MyPasoPlugin.addListener('location', async (location: any) => {
-      console.log('📍 Location', location);
-      if (!location) return;
-      // Check location
-      const success: boolean = this.processRawLocation(location);
-      if (!success) return
-        // If tracking ...
-      if (this.state == 'tracking') {
-          const updated = await this.updateTrack(location);
-          if (!updated) return;    // new point..
-      }
-      // If sharing ...
-      if (this.isSharing) await this.shareLocationIfActive(location)
+    await MyService.startService();
+    MyService.addListener('location', (location: any) => {
+      // Force execution inside the Angular Zone
+      this.ngZone.run(async () => {
+        console.log('📍 Location Received', location);
+        if (!location) return;
+        const success = this.processRawLocation(location);
+        if (!success) return;
+        if (this.state === 'tracking') {
+          await this.updateTrack(location);
+          //if (this.reference.archivedTrack && this.audio.alert === 'on') await this.checkWhetherOnRoute(location);
+          //else this.audio.status = 'black';
+        }
+        if (this.isSharing) {
+          await this.shareLocationIfActive(location);
+        }
+      });
     });
   }
+
+  async syncNativeAlert() {
+    const track = this.reference.archivedTrack;
+    const isAudioOn = this.audio.alert === 'on';
+    // Si no hay track o el audio está apagado, mandamos array vacío
+    if (!track || !isAudioOn) {
+      await MyService.setReferenceTrack({ coordinates: [] });
+      return;
+    }
+    // Aquí ya sabemos que el track existe
+    const coords = track.features[0].geometry.coordinates;
+    await MyService.setReferenceTrack({ coordinates: coords });
+  }
+
+  async sendReferenceToPlugin() {
+    let coordinates: number[][];
+    if (this.state != 'tracking' || this.audio.alert != 'on' || !this.reference.archivedTrack) coordinates = []
+    else coordinates = this.reference.archivedTrack.features[0].geometry.coordinates
+    try {
+        await MyService.setReferenceTrack({
+          coordinates: coordinates
+        });
+        console.log("📍 Track de referencia sincronizado con el servicio nativo");
+    } catch (e) {
+        console.error("❌ Error sincronizando track con nativo:", e);
+    }
+  }
+
 
 }
 

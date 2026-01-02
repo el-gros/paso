@@ -21,7 +21,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 import { applyStyle } from 'ol-mapbox-style';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, filter, take } from 'rxjs/operators';
 import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service';
@@ -29,7 +29,7 @@ import { StylerService } from './styler.service';
 import { ServerService } from './server.service';
 import { LocationManagerService } from './location-manager.service';
 import VectorSource from 'ol/source/Vector';
-import { useGeographic } from 'ol/proj';
+import { fromLonLat, useGeographic } from 'ol/proj';
 import { TranslateService } from '@ngx-translate/core';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
@@ -56,6 +56,9 @@ export class MapService {
 
   public customControl!: CustomControl;  
   public shareControl!: ShareControl;
+
+  mapIsReady: boolean = false;
+  hasPendingDisplay: boolean = false;
 
   constructor(
     private http: HttpClient,
@@ -84,76 +87,86 @@ export class MapService {
 
   // 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
-    // Custom and share controls
     this.customControl = new CustomControl(this.geography);
-    this.shareControl = new ShareControl(this.locationService, this.translate)
-    // Ensure layers exist
+    this.shareControl = new ShareControl(this.locationService, this.translate);
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
     this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
-    // Always (re)create the base layer and credits
-    const { olLayer, credits } = await this.createMapLayer();
-    if (!olLayer) {
-      console.warn('No base layer created.');
-      return;
-    }
-    // Common zoom limits
-    let minZoom = 0;
-    let maxZoom = 19;
-    let zoom = 9;
+    const { olLayer } = await this.createMapLayer();
+    if (!olLayer) return;
+    let minZoom = 0, maxZoom = 19, zoom = 9;
     if (this.geography.mapProvider.toLowerCase() === 'catalonia') {
-      minZoom = 0;
-      maxZoom = 14;
-      zoom = 8
+      minZoom = 0; maxZoom = 14; zoom = 8;
     }
-    // 🟢 CASE 1 — map already exists → only update base layer and zoom limits
+    // 1. Get Initial Position
+    const initialPosition = await this.locationService.getCurrentPosition();
+    let targetCenter: [number, number];
+    let isWaitingForFirstPoint = false;
+    if (initialPosition) {
+      // Already in [longitude, latitude] format
+      targetCenter = initialPosition;
+    } else {
+      targetCenter = [1.7403, 41.7282]; // Catalonia Default
+      zoom = 7.5;
+      isWaitingForFirstPoint = true;
+    }
+    // 🟢 CASE 1 — Map already exists
     if (this.geography.map) {
       const map = this.geography.map;
       const layers = map.getLayers();
-      // Replace the base layer at index 0
       if (layers && layers.getLength() >= 1) {
         map.removeLayer(layers.item(0));
         map.getLayers().insertAt(0, olLayer);
       }
-      // ✅ Keep view (center, zoom, rotation, etc.), just update zoom limits
       const view = map.getView();
       view.setMinZoom(minZoom);
       view.setMaxZoom(maxZoom);
-      return; // done, no re-centering or re-creating map
+      // REMOVED fromLonLat -> passing raw [lon, lat]
+      view.setCenter(targetCenter);
+      view.setZoom(zoom);
+    } 
+    // 🟢 CASE 2 — Initialize new map
+    else {
+      this.geography.map = new Map({
+        target: 'map',
+        layers: [
+          olLayer,
+          this.geography.currentLayer,
+          this.geography.archivedLayer,
+          this.geography.searchLayer,
+          this.geography.locationLayer,
+        ].filter(Boolean) as any[],
+        view: new View({
+          center: targetCenter, // REMOVED fromLonLat
+          zoom: zoom,
+          minZoom,
+          maxZoom,
+        }),
+        controls: [
+          new Zoom(),
+          new ScaleLine(),
+          new Rotate(),
+          this.customControl,
+          this.shareControl
+        ],
+      });
     }
-    // 🟢 CASE 2 — no existing map → create new one
-    let currentPosition: [number, number] | null = null;
-    if (this.geography.mapProvider !== 'catalonia') {
-      currentPosition = await this.locationService.getCurrentPosition();
+    // 2. AUTO-CENTER (Only once)
+    if (isWaitingForFirstPoint) {
+      this.locationService.latestLocation$.pipe(
+        filter(loc => !!loc),
+        take(1)
+      ).subscribe(nextLoc => {
+        if (this.geography.map && nextLoc) {
+          this.geography.map.getView().animate({
+            center: [nextLoc.longitude, nextLoc.latitude], // REMOVED fromLonLat
+            zoom: 14,
+            duration: 1000
+          });
+        }
+      });
     }
-    if (!currentPosition) {
-      currentPosition = [2, 41];
-    }
-    const view = new View({
-      center: currentPosition,
-      zoom: zoom,
-      minZoom,
-      maxZoom,
-    });
-    this.geography.map = new Map({
-      target: 'map',
-      layers: [
-        olLayer,
-        this.geography.currentLayer,
-        this.geography.archivedLayer,
-        this.geography.searchLayer,
-        this.geography.locationLayer,
-      ].filter(Boolean) as BaseLayer[],
-      view,
-      controls: [
-        new Zoom(),
-        new ScaleLine(),
-        new Rotate(),
-        this.customControl,
-        this.shareControl
-      ],
-    });
     this.mapWrapperElement = document.getElementById('map-wrapper');
   }
 

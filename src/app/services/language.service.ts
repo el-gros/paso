@@ -1,11 +1,3 @@
-/**
- * Service for managing application language settings.
- *
- * Initializes the language based on stored preferences or device settings,
- * provides observables for the current language, and allows updating and persisting
- * the selected language using TranslateService and FunctionsService.
- */
-
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';
@@ -14,9 +6,11 @@ import { Device } from '@capacitor/device';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
+
 export class LanguageService {
   private currentLang$ = new BehaviorSubject<string>('en');
-
+  private readonly SUPPORTED_LANGS = ['en', 'es', 'ca']; 
+  
   constructor(
     private translate: TranslateService,
     public fs: FunctionsService
@@ -42,9 +36,17 @@ export class LanguageService {
   }
 
   async setLanguage(lang: string) {
-    await this.fs.storeSet('lang', lang);
-    await firstValueFrom(this.translate.use(lang));
-    this.currentLang$.next(lang);
+    // Basic normalization: ensures "en-US" becomes "en"
+    const cleanLang = lang.split('-')[0].toLowerCase();
+    const finalLang = this.SUPPORTED_LANGS.includes(cleanLang) ? cleanLang : 'en';
+    await this.fs.storeSet('lang', finalLang);
+    // Use firstValueFrom to ensure the translation file is loaded before moving on
+    try {
+      await firstValueFrom(this.translate.use(finalLang));
+    } catch (e) {
+      console.error("Could not load translation file", e);
+    }
+    this.currentLang$.next(finalLang);
   }
 
   async determineLanguage() {
@@ -58,6 +60,7 @@ export class LanguageService {
       await this.setLanguage(deviceLanguage);
     } catch (error) {
       console.error('Error determining language:', error);
+      await this.setLanguage('en'); // Safe fallback
     }
   }
 

@@ -7,7 +7,7 @@ export class AudioService {
     beepInterval: any = undefined;
     audioCtx: AudioContext | null = null;
     alert: string = 'on';
-    audioAlert: string = 'on';
+    //audioAlert: string = 'on';
     status: 'black' | 'red' | 'green' = 'black';
 
     constructor() {}
