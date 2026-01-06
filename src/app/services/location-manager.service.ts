@@ -108,25 +108,25 @@ export class LocationManagerService {
 
   async updateTrack(location: Location): Promise<boolean> {
     if (!this.geography.map || !this.geography.currentLayer) return false;
-    // If no current track exists → initialize it (first point)
+    // 1. INICIALIZACIÓN (Primer punto)
     if (!this.present.currentTrack) {
-      var features = [new Feature(), new Feature(), new Feature()]
+      // Creamos las features con sus etiquetas 'type'
+      const routeLine = new Feature();
+      routeLine.set('type', 'route_line');
+      const startPin = new Feature();
+      startPin.set('type', 'start_pin');
+      const endPin = new Feature(); // Se crea ahora, se posicionará en stopTracking
+      endPin.set('type', 'end_pin');
+      const features = [routeLine, startPin, endPin];
       this.present.currentTrack = {
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
           properties: {
-            name: '',
-            place: '',
-            date: undefined,
-            description: '',
-            totalDistance: 0,
-            totalElevationGain: 0,
-            totalElevationLoss: 0,
-            totalTime: '00:00:00',
-            totalNumber: 1,
-            currentAltitude: undefined,
-            currentSpeed: undefined
+            name: '', place: '', date: undefined, description: '',
+            totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
+            totalTime: '00:00:00', totalNumber: 1,
+            currentAltitude: undefined, currentSpeed: undefined
           },
           bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
           geometry: {
@@ -147,103 +147,32 @@ export class LocationManagerService {
       };
       this.stopped = 0;
       this.averagedSpeed = 0;
-      // Create markers (start, green, blue)
-      features[1].setGeometry(new Point([location.longitude, location.latitude]));
-      features[1].setStyle(this.styler.createPinStyle('green'));
-      // Register track
-      this.geography.currentLayer.getSource()?.clear();
-      this.geography.currentLayer.getSource()?.addFeatures(features);
+      // Posicionar el pin de inicio
+      startPin.setGeometry(new Point([location.longitude, location.latitude]));
+      startPin.setStyle(this.styler.createPinStyle('green'));
+      // Registrar en el mapa
+      const source = this.geography.currentLayer.getSource();
+      if (source) {
+        source.clear();
+        source.addFeatures(features);
+      }
       return true;
     }
-    // Otherwise, we are adding a new point (subsequent update)
+    // 2. ACTUALIZACIÓN (Puntos sucesivos)
     const num = this.present.currentTrack.features[0].geometry.coordinates.length;
     const prevData = this.present.currentTrack.features[0].geometry.properties.data[num - 1];
     const previousTime = prevData?.time || 0;
     const previousAltitude = prevData?.altitude || 0;
-    // Wrong order
     if (previousTime > location.time) return false;
-    // Avoid unrealistic altitude jumps (if GPS still running)
+    // Suavizado de altitud
     if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
       location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
     }
-    // Convert m/s to km/h
     location.speed = location.speed * 3.6;
-    // Add point to geojson
+    // Añadir punto al geojson y actualizar la geometría de la línea en el mapa
     await this.fillGeojson(this.present.currentTrack, location);
     return true;
   }
-
-  /*
-  async checkWhetherOnRoute(location: Location) {
-    // Return early if essential conditions are not met
-    if (!this.reference.archivedTrack) return;
-    // Store previous color for comparison
-    const previousStatus = this.audio.status;
-    // Determine the current route color based on `onRoute` function
-    this.audio.status = await this.onRoute(location) || 'black';
-    // If audio alerts are off, return
-    //if (this.audio.audioAlert == 'off') return;
-    // Beep for off-route transition
-    if (previousStatus === 'green' && this.audio.status === 'red') {
-      this.audio.playDoubleBeep(1800, .3, 1, .12);
-    }
-    // Beep for on-route transition
-    else if (previousStatus === 'red' && this.audio.status === 'green') {
-      this.audio.playBeep(1800, .4, 1);
-    }
-  }
- 
-  async onRoute(location: Location): Promise<'black' | 'red' | 'green'> {
-    if (!this.reference.archivedTrack) return 'black';
-    const archivedCoords = this.reference.archivedTrack.features[0].geometry.coordinates;
-    const numArchived = archivedCoords.length;
-    if (numArchived === 0) return 'black';
-    const point = [location.longitude, location.latitude];
-    const [lon1, lat1] = point;
-    // 1. Latitude Compensation (Vital for accuracy)
-    const cosLat = Math.cos(lat1 * Math.PI / 180);
-    // 2. Dynamic Threshold (Hysteresis)
-    // If we are currently GREEN, allow a 10% 'grace' distance before turning RED
-    const currentThreshold = (this.audio.status === 'green') 
-      ? this.threshDist * 1.21  // 10% more distance = ~21% more distSq
-      : this.threshDist;
-    // 3. Fast Distance Helper
-    const getDistSq = (p2: number[]) => {
-      const dLon = (lon1 - p2[0]) * cosLat;
-      const dLat = lat1 - p2[1];
-      return dLon * dLon + dLat * dLat;
-    };
-    // 4. Search Window Strategy
-    // Look at the current point and 200 points forward/backward first.
-    const windowSize = 200;
-    const start = Math.max(0, this.currentPoint - windowSize);
-    const end = Math.min(numArchived - 1, this.currentPoint + windowSize);
-    // Look forward from last known point (highest probability)
-    for (let i = this.currentPoint; i <= end; i++) {
-      if (getDistSq(archivedCoords[i]) < currentThreshold) {
-        this.currentPoint = i;
-        return 'green';
-      }
-    }
-    // Look backward within window
-    for (let i = this.currentPoint - 1; i >= start; i--) {
-      if (getDistSq(archivedCoords[i]) < currentThreshold) {
-        this.currentPoint = i;
-        return 'green';
-      }
-    }
-    // 5. Global "Recovery" Search
-    // If not found in the window, search the rest with a 'skip' to save CPU.
-    // This helps if the user took a shortcut or skipped a loop in the track.
-    const skip = 5;
-    for (let i = 0; i < numArchived; i += skip) {
-      if (getDistSq(archivedCoords[i]) < currentThreshold) {
-        this.currentPoint = i;
-        return 'green';
-      }
-    }
-    return 'red';
-  } */ 
 
     async shareLocationIfActive(location: Location ) {
     if (!this.isSharing || !this.shareToken) return;
@@ -274,8 +203,6 @@ export class LocationManagerService {
         if (!success) return;
         if (this.state === 'tracking') {
           await this.updateTrack(location);
-          //if (this.reference.archivedTrack && this.audio.alert === 'on') await this.checkWhetherOnRoute(location);
-          //else this.audio.status = 'black';
         }
         if (this.isSharing) {
           await this.shareLocationIfActive(location);
@@ -284,7 +211,7 @@ export class LocationManagerService {
     });
   }
 
-  async syncNativeAlert() {
+/*  async syncNativeAlert() {
     const track = this.reference.archivedTrack;
     const isAudioOn = this.audio.alert === 'on';
     // Si no hay track o el audio está apagado, mandamos array vacío
@@ -295,16 +222,14 @@ export class LocationManagerService {
     // Aquí ya sabemos que el track existe
     const coords = track.features[0].geometry.coordinates;
     await MyService.setReferenceTrack({ coordinates: coords });
-  }
+  } */
 
   async sendReferenceToPlugin() {
     let coordinates: number[][];
     if (this.state != 'tracking' || this.audio.alert != 'on' || !this.reference.archivedTrack) coordinates = []
     else coordinates = this.reference.archivedTrack.features[0].geometry.coordinates
     try {
-        await MyService.setReferenceTrack({
-          coordinates: coordinates
-        });
+        await MyService.setReferenceTrack({ coordinates: coordinates });
         console.log("📍 Track de referencia sincronizado con el servicio nativo");
     } catch (e) {
         console.error("❌ Error sincronizando track con nativo:", e);

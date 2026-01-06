@@ -272,26 +272,34 @@ export class MapService {
     for (const item of this.fs.collection) {
       const key = JSON.stringify(item.date);
       const track = await this.fs.storeGet(key);
-      const coord = track.features[0]?.geometry?.coordinates;
       if (!track && key) {
         await this.fs.storeRem(key);
         continue;
       }
-      if (coord) {
+      const coord = track.features[0]?.geometry?.coordinates;
+      if (coord && coord.length > 0) {
         multiLine.push(coord);
         multiPoint.push(coord[0]);
         multiKey.push(item.date);
       }
     }
-    const features = [new Feature(), new Feature()];
-    features[0].setGeometry(new MultiLineString(multiLine));
-    features[0].setStyle(this.stylerService.setStrokeStyle('black'));
-    features[1].setGeometry(new MultiPoint(multiPoint));
-    features[1].set('multikey', multiKey);
-    const greenPin = this.stylerService.createPinStyle('green');
-    features[1].setStyle(greenPin);
-    this.geography.archivedLayer?.getSource()?.clear();
-    this.geography.archivedLayer?.getSource()?.addFeatures(features);
+    // 1. Crear Features con Tipos Identificativos
+    const allLinesFeature = new Feature();
+    allLinesFeature.set('type', 'all_tracks_lines'); // Etiqueta para el conjunto de líneas
+    const allStartsFeature = new Feature();
+    allStartsFeature.set('type', 'all_tracks_starts'); // Etiqueta para los puntos de inicio
+    // 2. Configurar Geometrías y Datos
+    allLinesFeature.setGeometry(new MultiLineString(multiLine));
+    allLinesFeature.setStyle(this.stylerService.setStrokeStyle('black'));
+    allStartsFeature.setGeometry(new MultiPoint(multiPoint));
+    allStartsFeature.set('multikey', multiKey); // Mantenemos tu metadata
+    allStartsFeature.setStyle(this.stylerService.createPinStyle('green'));
+    // 3. Actualizar el Source de forma segura
+    const source = this.geography.archivedLayer.getSource();
+    if (source) {
+      source.clear();
+      source.addFeatures([allLinesFeature, allStartsFeature]);
+    }
     await this.centerAllTracks();
   }
 

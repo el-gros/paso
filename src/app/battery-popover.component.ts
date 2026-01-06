@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 
+
 @Component({
   selector: 'app-battery-popover',
   standalone: true,
@@ -45,28 +46,70 @@ export class BatteryPopoverComponent implements OnInit {
   constructor(private popoverCtrl: PopoverController) {}
 
   ngOnInit() {
+    this.brand = (this.brand || 'generic').toLowerCase().trim();
     this.configureContent();
   }
 
   configureContent() {
-    // Dynamic instructions based on brand
-    switch (this.brand.toLowerCase()) {
+    // Limpiamos la marca para evitar errores por espacios o mayúsculas
+    const brandNorm = (this.brand || 'generic').toLowerCase().trim();
+
+    switch (brandNorm) {
       case 'xiaomi':
+      case 'redmi':
+      case 'poco':
         this.title = 'Optimización Xiaomi';
-        this.steps = ['Activar "Inicio Automático"', 'Batería: "Sin restricciones"'];
+        this.steps = [
+          'Activar "Inicio Automático"',
+          'Ahorro de batería: "Sin restricciones"'
+        ];
         break;
+
       case 'samsung':
         this.title = 'Ajuste de Samsung';
-        this.steps = ['Batería: "No restringido"', 'Desactivar "Poner en inactividad"'];
+        this.steps = [
+          'Batería: Seleccionar "No restringido"',
+          'Desactivar "Poner en inactividad profunda"'
+        ];
         break;
+
       case 'huawei':
+      case 'honor':
         this.title = 'Ajuste de Huawei';
-        this.steps = ['Ajustes de Aplicación > Inicio', 'Cambiar a "Gestionar manualmente"'];
+        this.steps = [
+          'Ajustes > Aplicaciones > Inicio',
+          'Desactivar "Gestionar automáticamente"',
+          'Asegurar "Actividad en segundo plano" activo'
+        ];
         break;
+
+      case 'oneplus':
+      case 'oppo':
+      case 'realme':
+      case 'vivo':
+        this.title = 'Gestión de Energía';
+        this.steps = [
+          'Uso de batería: "Permitir actividad segundo plano"',
+          'Desactivar "Optimización automática"'
+        ];
+        break;
+
+      case 'google':
+      case 'pixel':
+      case 'motorola':
+        this.title = 'Uso de Batería';
+        this.steps = [
+          'Uso de la batería: "Sin restringir"'
+        ];
+        break;
+
       default:
         this.title = 'Ahorro de Energía';
-        this.message = 'El sistema podría detener el GPS. Para evitarlo:';
-        this.steps = ['Configurar batería como "No restringido"'];
+        this.message = 'Para evitar que el GPS se detenga al apagar la pantalla:';
+        this.steps = [
+          'Configurar la batería como "Sin optimizar"',
+          'Permitir ejecución en segundo plano'
+        ];
         break;
     }
   }

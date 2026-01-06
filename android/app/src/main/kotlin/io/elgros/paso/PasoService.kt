@@ -20,7 +20,7 @@ class PasoService : Service() {
     private lateinit var callback: LocationCallback
     private var wakeLock: PowerManager.WakeLock? = null
     private val NOTIFICATION_ID = 102
-    private var lastUpdateTime: Long = 0L
+    private var lastUpdateTime: Long = -10000L
 
     override fun onCreate() {
         super.onCreate()

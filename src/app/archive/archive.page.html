@@ -1,3 +1,4 @@
+<!--
 <ion-header>
   <ion-toolbar>
     <ion-title id="title">{{ 'ARCHIVE.TRACKS' | translate  }}</ion-title>
@@ -52,27 +53,106 @@
   </ion-menu>
   <ion-content id="main-content"></ion-content>
 </ion-content>
+-->
+
+<ion-content class="custom-content">
+  <div class="ion-content-scroll-host">
+    <ion-list lines="full" class="archive-list">
+      @for (item of fs.collection; track item; let i = $index) {
+        <ion-item-sliding #slidingItem>
+          
+          <ion-item-options side="start">
+            <ion-item-option 
+              [color]="isTrackVisible(item) ? 'medium' : 'primary'" 
+              (click)="toggleVisibility(item, slidingItem)">
+              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+              {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE_REFERENCE' : 'ARCHIVE.SHOW_REFERENCE') | translate }}
+            </ion-item-option>
+            <ion-item-option color="secondary" (click)="presentExportOptions(item, slidingItem)">
+              <ion-icon slot="top" name="share-outline"></ion-icon>
+              {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
+            </ion-item-option>
+          </ion-item-options>
+
+          <ion-item>
+            <ion-checkbox slot="start" [(ngModel)]="item.isChecked" (ionChange)="onChange()"></ion-checkbox>
+            
+            <ion-label (click)="toggleCheck(item)">
+              <div class="item-content">
+                <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
+                <p class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</p>
+              </div>
+            </ion-label>
+            
+            @if (isTrackVisible(item)) {
+              <ion-badge slot="end" color="success">Visible</ion-badge>
+            }
+          </ion-item>
+
+          <ion-item-options side="end">
+            <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
+              <ion-icon slot="top" name="create-outline"></ion-icon>
+              {{ 'ARCHIVE.EDIT_TRACK' | translate }}
+            </ion-item-option>
+            <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
+              <ion-icon slot="top" name="trash-outline"></ion-icon>
+              {{ 'ARCHIVE.REMOVE_TRACK' | translate }}
+            </ion-item-option>
+          </ion-item-options>
+
+        </ion-item-sliding>      
+      }
+    </ion-list>
+    
+    <div class="list-spacer"></div>
+  </div>
+</ion-content>
 
 <!-- space for android controls -->
 <div class="bottom-safe-gray"></div>
 
-  <!-- Navigation buttons -->
-  <ion-fab
-    slot="fixed"
-    horizontal="center"
-    vertical="bottom"
-    class="bottom-safe"
-  >
-    <ion-row>
-      <ion-fab-button (click)="fs.gotoPage('tab1')">
-        <ion-icon name="earth"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button (click)="fs.gotoPage('canvas')">
-        <ion-icon name="analytics"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button (click)="fs.gotoPage('settings')">
-        <ion-icon name="settings"></ion-icon>
-      </ion-fab-button>
-    </ion-row>
-  </ion-fab>
+<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+  <ion-row>
+    <div class="record-button archive-color" (click)="fs.gotoPage('tab1')">
+      <ion-icon name="earth-sharp"></ion-icon>
+      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button archive-color" (click)="fs.gotoPage('canvas')">
+      <ion-icon name="analytics-sharp"></ion-icon>
+      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button archive-color" (click)="fs.gotoPage('settings')">
+      <ion-icon name="settings-sharp"></ion-icon>
+      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+    </div>
+  </ion-row>
+</ion-fab>
 
+<!-- Deletion confirmation popover -->
+
+<ion-popover
+  [isOpen]="isConfirmDeletionOpen"
+  (didDismiss)="isConfirmDeletionOpen = false"
+>
+  <ng-template>
+    <ion-list>
+      <ion-item class="confirm" lines="none">
+        <ion-label><strong>{{ 'RECORD.CONFIRM_DELETION' | translate }}</strong></ion-label>
+      </ion-item>
+      <ion-row>
+        <button class="record-button green-color"
+          (click)=" deleteTrack(); isConfirmDeletionOpen = false"
+        >
+          <ion-icon name="happy-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
+        </button>
+        <button class="record-button red-color"
+          (click)="isConfirmDeletionOpen = false"
+        >
+          <ion-icon name="sad-sharp"></ion-icon>
+          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
+        </button>
+      </ion-row>
+    </ion-list>
+  </ng-template>
+</ion-popover>

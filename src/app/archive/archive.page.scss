@@ -1,80 +1,95 @@
-ion-toolbar {
-  height: 95px;
-  display: flex;                /* enable flex */
-  justify-content: space-between; /* title left, buttons right */
-  align-items: center;          /* vertical centering */
-  padding: 0 20px;              /* horizontal padding only */
+.archive-list {
+  background: transparent;
 }
 
-/* Title Styling */
-#title {
-  font-size: 16px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold;
+.item-content {
   display: flex;
-  align-items: center;  /* vertical centering within toolbar */
-  height: 100%;
-}
+  flex-direction: column;
+  padding: 8px 0;
 
-/* Button Styling */
-.header-button {
-  --background: rgb(255, 100, 100);
-  --padding: 10px;
-  --border-radius: 50%;
-  width: 55px;
-  height: 55px;
-//  margin-right: 15px;
-}
+  strong {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    display: block;
+  }
 
-/* Icon Styling */
-ion-icon {
-  font-size: 22px;
-  color: white;
-}
-
-// ion-checkbox
-
-ion-checkbox {
-    --checkbox-background-checked: rgb(255, 221, 221);
-    --border-color-checked: rgb(255, 221, 221);
-    --checkmark-color: rgb(0, 0, 0);
-}
-
-.checked {
-    background-color: #ffdddd !important;
-}
-
-.unchecked{
-    background-color: white !important;
-}
-
-div{
-    font-size: 14px !important;
-    font-family: 'Arial, sans-serif';
-}
-
-.menu-button {
-  font-size: 16px;
-  font-family: 'Arial, sans-serif';
-  font-weight: bold;
-
-  &[disabled] {
-    font-weight: normal;
-    opacity: 0.5; // optional: visually show it’s disabled
+  .item-date-subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ion-color-step-600);
   }
 }
 
-.empty {
+// Estilo para destacar la ruta activa
+.active-text {
+  color: var(--ion-color-primary);
+}
+
+// EVITAR SUPERPOSICIÓN DE LOS BOTONES FAB
+.list-spacer {
+  height: 100px; // Altura suficiente para que el FAB no tape el último item
   width: 100%;
-  height: 12vh;
 }
 
-ion-fab-button {
-  --background: rgb(255, 100, 100) !important;
-  --color: white !important;
+
+/* Record button */
+.record-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, opacity 0.3s;
+  ion-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1px;
+  }
 }
 
-.custom-content {
-  padding: 16px; // or whatever padding you want for the scrollable area
-  --padding-bottom: 0; // prevent Ionics default bottom padding
+.archive-color {
+  background-color: #ffaaaa !important;
+  color: black;
+  ion-icon {
+    color: black
+  }
+}
+
+ion-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* ----- Default item look ----- */
+.confirm {
+  font-weight: 400;
+  transition: all 0.2s ease-in-out;
+  --inner-padding-end: 0;
+  --inner-padding-start: 0;
+  margin: 4px 0;
+  border-radius: 8px;
+}
+
+/* ----- Confirmation popover ----- */
+
+.green-color {
+  background-color: green !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
+}
+
+.red-color {
+  background-color: red !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
 }

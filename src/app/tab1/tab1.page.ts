@@ -42,6 +42,8 @@ import { PopoverController } from '@ionic/angular';
 import { BatteryPopoverComponent } from '../battery-popover.component';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
+import { SaveTrackPopover } from '../save-track-popover.component';
+
 
 useGeographic();
 register();
@@ -80,7 +82,7 @@ export class Tab1Page {
   loading: boolean = false;
   
   subscription: Subscription | undefined;
-  //private appStateSubscription: Subscription = new Subscription();
+  ngOnInitFinished: boolean = false;
   
   constructor(
     public fs: FunctionsService,
@@ -112,13 +114,15 @@ export class Tab1Page {
   4. removeTrack
   5. stopTracking
   6. setTrackDetails
-  
-  10. showValidationAlert
-  11. saveFile
+  7. saveFile
+  8. foregroundTask  
+  9. checkBatteryOptimizations
+  10. handleClicks
+
   14. show
   15. onDestroy
 
-  18. handleClicks
+  
 
   21. handleMapClick
 
@@ -127,7 +131,7 @@ export class Tab1Page {
 
   29. saveTrack
 
-  31. foregroundTask
+
 
   36. determineColors
   37. waypoint
@@ -145,64 +149,58 @@ export class Tab1Page {
   async ngOnInit() {
     await this.platform.ready();
     console.log("🚀 Plataforma lista, iniciando carga...");
-
     // 1. Tareas rápidas de interfaz y configuración
     this.languageService.determineLanguage();
     this.show('alert', 'none'); 
-
     // 2. Inicialización de datos críticos
     await this.initializeVariables();
     await this.fs.uncheckAll();
-
     // 3. 🛡️ CONTROL DE PERMISOS (Punto de control obligatorio)
     const hasPermission = await this.checkGpsPermissions(); 
-
     if (hasPermission) {
       console.log("✅ Permisos concedidos. Configurando servicios...");
-      
       try {
         // Lanzamos primero el plugin nativo (el "Cerebro")
         // Esto evita el crash de Android 15 al asegurar que hay permisos activos
         await MyService.startService(); 
         console.log("🧠 Servicio nativo (Cerebro) arrancado.");
         await MyService.setReferenceTrack({ coordinates: [] });
-
         // 4. Configuración del Mapa (ahora que tenemos GPS permitido)
         await this.mapService.loadMap();
         this.mapService.mapIsReady = true;
-
+        // 4b. Check whether it has to display a reference map 
         if (this.mapService.hasPendingDisplay && this.reference.archivedTrack) {
           await this.reference.displayArchivedTrack();
           this.mapService.hasPendingDisplay = false;
         }
-
         // 5. Lanzar procesos en segundo plano y tracking de Ionic
         await this.checkBatteryOptimizations(); // Ajustes de Xiaomi
         await this.handleClicks();
         await this.location.startPaso();     // Iniciar tracking de Capacitor
-        
       } catch (error) {
         console.error("❌ Error en la cadena de inicio:", error);
       }
-
     } else {
       // Caso: El usuario no dio permisos
       console.error("❌ Permisos denegados. Modo visor activado.");
       await this.mapService.loadMap();
       this.show('alert', 'block'); // Mostramos el div de alerta (pero con 'block')
     }
-
     // Finalización
-    global.ngOnInitFinished = true;
+    this.ngOnInitFinished = true;
     this.cd.detectChanges();
   }
 
   // 2. ION VIEW DID ENTER
   async ionViewDidEnter() {
-    while (!global.ngOnInitFinished) {
-      await new Promise(resolve => setTimeout(resolve, 50)); // Wait until ngOnInit is done
+    // Check that ngOninit has been completed
+    const timeout = Date.now() + 5000; // 5 segundos máximo
+    while (!this.ngOnInitFinished && Date.now() < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
+    // If track colors have been changed in the settings page
     if (this.fs.reDraw) await this.mapService.updateColors();
+    // If a track image is being built
     if (this.fs.buildTrackImage) await this.buildTrackImage()
   }
 
@@ -248,7 +246,6 @@ export class Tab1Page {
     // show / hide elements
     this.location.state = 'inactive';
     // Reset current track
-    this.audio.status = 'black';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
@@ -259,113 +256,102 @@ export class Tab1Page {
     this.location.state = 'stopped';
     this.show('alert', 'none');
     this.subscription?.unsubscribe();
-    // If no current layer yet → nothing to update on the map, just finish cleanly
-    if (!this.geography.currentLayer?.getSource() || !this.present.currentTrack || !this.geography.map) return;
-    const source = this.geography.currentLayer.getSource();
-    if (!source) return;
-    const features = source.getFeatures();
-    // If we have coordinates, finalize track geometry
+    // Validaciones iniciales
+    const source = this.geography.currentLayer?.getSource();
+    if (!source || !this.present.currentTrack || !this.geography.map) return;
+    // 1. Obtener coordenadas actuales
     let coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length < 1) {
       this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'));
       return;
     }
+    // 2. Finalizar datos de altitud y waypoints
     const final = await this.present.filterAltitude(this.present.currentTrack, this.present.altitudeFiltered + 1, coordinates.length - 1);
-    if (final) this.present.altitudeFiltered = final
+    if (final) this.present.altitudeFiltered = final;
     await this.setWaypointAltitude();
+    // Refrescar coordenadas tras posibles filtros
     coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length < 1) return;
-    if (features.length >= 3) {
-      features[0].setGeometry(new LineString(coordinates));
-      features[0].setStyle(this.stylerService.setStrokeStyle(this.present.currentColor));
-      features[1].setGeometry(new Point(coordinates[0]));
-      features[1].setStyle(this.stylerService.createPinStyle('green'));
-      features[2].setGeometry(new Point(coordinates.at(-1)!));
-      features[2].setStyle(this.stylerService.createPinStyle('red'));
+    // 3. ACTUALIZACIÓN DINÁMICA DE FEATURES (por 'type')
+    const features = source.getFeatures();
+    const routeLine = features.find(f => f.get('type') === 'route_line');
+    const startPin = features.find(f => f.get('type') === 'start_pin');
+    const endPin = features.find(f => f.get('type') === 'end_pin');
+    // Actualizar Línea Final
+    if (routeLine) {
+      routeLine.setGeometry(new LineString(coordinates));
+      routeLine.setStyle(this.stylerService.setStrokeStyle(this.present.currentColor));
     }
+    // Asegurar Pin de Inicio (verde)
+    if (startPin) {
+      startPin.setGeometry(new Point(coordinates[0]));
+      startPin.setStyle(this.stylerService.createPinStyle('green'));
+    }
+    // Posicionar y estilizar Pin de Fin (rojo)
+    if (endPin) {
+      endPin.setGeometry(new Point(coordinates.at(-1)!));
+      endPin.setStyle(this.stylerService.createPinStyle('red'));
+    }
+    // 4. Finalización de vista y Plugin
     this.geography.setMapView(this.present.currentTrack);
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
-    await this.location.sendReferenceToPlugin()
+    // Enviamos [] para que el Plugin deje de comparar la ruta pero el servicio siga vivo
+    await this.location.sendReferenceToPlugin();
   }
 
-  // 6. SET TRACK NAME, TIME, DESCRIPTION, ...
-  async setTrackDetails() {
-    const modalEdit = {
-      name: '',
-      place: '',
-      description: ''
-    };
+  // 6. SET TRACK DETAILS ///////////////////////////////
+  async setTrackDetails(ev?: any) {
+    const modalEdit = { name: '', place: '', description: '' };
     const edit: boolean = true;
-    // Open the modal for editing
-    const modal = await this.modalController.create({
-      component: EditModalComponent,
+    const popover = await this.popoverController.create({
+      component: SaveTrackPopover,
       componentProps: { modalEdit, edit },
-      cssClass: ['modal-class','green-class'] ,
-      backdropDismiss: true, // Allow dismissal by tapping the backdrop
+      event: ev, // Positions the popover at the click location
+      translucent: true,
+      dismissOnSelect: false // Keeps it open while typing
     });
-    await modal.present();
-    // Handle the modal's dismissal
-    const { data } = await modal.onDidDismiss();
-    if (data) {
-      let { action, name, place, description } = data;
-      if (action === 'ok') {
-        // Update collection
-        if (!name) name = 'No name'
-        this.saveFile(name, place, description)
-      }
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+    if (data?.action === 'ok') {
+      const name = data.name || 'No name';
+      this.saveFile(name, data.place, data.description);
     }
   }
 
-  // 10. NO NAME TO SAVE ////////////////////////////////////
-  async showValidationAlert() {
-    const cssClass = 'alert greenishAlert'
-    const header = 'Validation Error'
-    const message = 'Please enter a name for the track.'
-    const buttons = ['OK']
-    const inputs: never[] = []
-    const action = ''
-    await this.fs.showAlert(cssClass, header, message, inputs, buttons, action)
-  }
-
-  // 11. SAVE FILE ////////////////////////////////////////
+  // 7. SAVE FILE ////////////////////////////////////////
   async saveFile(name: string, place: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
-    // 1. Altitude Processing (DEM)
-    if (this.fs.selectedAltitude === 'DEM') {
-      const coordinates = track.features[0].geometry.coordinates;
-      try {
+    this.loading = true; // Start the sandclock
+    try {
+      const trackToSave = JSON.parse(JSON.stringify(track));
+      const feature = trackToSave.features[0];
+      const saveDate = new Date();
+      // 1. Altitude Processing
+      if (this.fs.selectedAltitude === 'DEM') {
+        const coordinates = feature.geometry.coordinates;
         const altSlopes = await this.getAltitudesFromMap(coordinates as [number, number][]);
         if (altSlopes) {
-          const props = track.features[0].properties;
           if (altSlopes.slopes) {
-            props.totalElevationGain = altSlopes.slopes.gain;
-            props.totalElevationLoss = altSlopes.slopes.loss;
+            feature.properties.totalElevationGain = altSlopes.slopes.gain;
+            feature.properties.totalElevationLoss = altSlopes.slopes.loss;
           }
-          if (altSlopes.altitudes && track.features[0].geometry.properties?.data) {
-            track.features[0].geometry.properties.data.forEach((item: any, index: number) => {
+          if (altSlopes.altitudes && feature.geometry.properties?.data) {
+            feature.geometry.properties.data.forEach((item: any, index: number) => {
               item.altitude = altSlopes.altitudes[index];
             });
           }
         }
-      } catch (error) {
-        console.error("Elevation gain calculation failed", error);
       }
-    }
-    // 2. Update Properties
-    const trackProperties = track.features[0].properties;
-    const saveDate = new Date();
-    trackProperties.name = name;
-    trackProperties.place = place;
-    trackProperties.description = description;
-    trackProperties.date = saveDate;
-    // 3. Storage Logic
-    // Use ISO string as key: it's readable and unique
-    const dateKey = JSON.stringify(trackProperties.date);
-    try {
-      // Save the full GeoJSON track once
-      await this.fs.storeSet(dateKey, track);
-      // 4. Update Collection (The "Index" of all tracks)
+      // 2. Update Properties
+      feature.properties.name = name;
+      feature.properties.place = place;
+      feature.properties.description = description;
+      feature.properties.date = saveDate;
+      // 3. Storage Logic (Keeping your original stringification)
+      const dateKey = JSON.stringify(feature.properties.date);
+      await this.fs.storeSet(dateKey, trackToSave);
+      // 4. Update Collection (Newest first with unshift)
       const trackDef: TrackDefinition = {
         name,
         date: saveDate,
@@ -373,133 +359,177 @@ export class Tab1Page {
         description,
         isChecked: false
       };
-      this.fs.collection.push(trackDef);
+      this.fs.collection.unshift(trackDef); // Newest at the top
       await this.fs.storeSet('collection', this.fs.collection);
       // 5. UI Feedback
       this.fs.displayToast(this.translate.instant('MAP.SAVED'));
       this.location.state = 'saved';
       this.show('alert', 'none');
     } catch (e) {
-      console.error("Failed to save to storage", e);
+      console.error("Save failed", e);
       this.fs.displayToast("Error saving track");
+    } finally {
+      this.loading = false; // Stop the sandclock
     }
   }
 
-  // 14. SHOW / HIDE ELEMENTS /////////////////////////////////
-  async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
-    const obj = document.getElementById(id);
-    if (obj) {
-      obj.style.display = action;
+  // 8. FOREGROUND TASK ////////////////////////
+  async foregroundTask() {
+    const track = this.present.currentTrack;
+    if (!track) return;
+    const coords = track.features[0].geometry.coordinates;
+    const num = coords.length;
+    // 1. Filtrado de Altitud (Evitamos índices negativos)
+    const startIndex = Math.max(0, this.present.altitudeFiltered + 1);
+    const endIndex = Math.max(0, num - this.fs.lag - 1);
+    const final = await this.present.filterAltitude(track, startIndex, endIndex);
+    if (final) this.present.altitudeFiltered = final;
+    // 2. Cálculos de distancia y filtrado de velocidad
+    await this.present.accumulatedDistances();
+    const data = track.features[0].geometry.properties.data;
+    track.features[0].geometry.properties.data = await this.fs.filterSpeed(data, this.speedFiltered + 1);
+    this.speedFiltered = num - 1;
+    // 3. UI y Mapa (Dentro de la zona para asegurar refresco de etiquetas)
+    await this.present.htmlValues();
+    await this.present.displayCurrentTrack(track);
+    this.zone.run(() => {
+      this.cd.detectChanges();
+    });
+    console.log('Foreground:', track.features[0].properties.totalNumber, 'points processed.');
+  }
+
+  // 9. CHECK BATTERY OPTIMIZATIONS /////////////////////////////////
+  async checkBatteryOptimizations(evento?: any) {
+    try {
+      // 1. Verificación REAL del estado del sistema (Nativo)
+      const { value: isAlreadyIgnored } = await MyService.isIgnoringBatteryOptimizations();
+      if (isAlreadyIgnored) {
+        console.log("🚀 El usuario ya concedió permisos 'Sin Restricciones'.");
+        return; // Salimos, no hace falta hacer nada más.
+      }
+      // 2. Si no tiene permiso, verificamos si ya ignoró el aviso anteriormente
+      // Esto evita ser demasiado intrusivo en cada inicio.
+      const hasBeenWarned = localStorage.getItem('battery_warning_dismissed');
+      if (hasBeenWarned) return;
+      // 3. Obtener info del dispositivo
+      const info = await Device.getInfo();
+      const brand = info.manufacturer.toLowerCase();
+      const aggressiveBrands = ['xiaomi', 'samsung', 'huawei', 'oneplus', 'oppo', 'vivo', 'realme'];
+      // 4. Si es una marca agresiva Y no tiene permiso, mostramos el Popover
+      if (aggressiveBrands.includes(brand)) {
+        const popover = await this.popoverController.create({
+          component: BatteryPopoverComponent,
+          componentProps: { brand: brand },
+          event: evento,
+          translucent: true,
+          backdropDismiss: false 
+        });
+        await popover.present();
+        const { data } = await popover.onDidDismiss();
+        if (data?.action === 'settings') {
+          try {
+            // Lógica según marca usando tus nuevos métodos nativos
+            if (brand === 'xiaomi') {
+              await MyService.openAutostartSettings();
+              // También abrimos la optimización estándar para Xiaomi
+              await MyService.openBatteryOptimization(); 
+            } else {
+              // Generalizado para Samsung, Huawei, etc.
+              await MyService.openBatteryOptimization();
+            }
+            // Marcamos como avisado para que no salga más
+            localStorage.setItem('battery_warning_dismissed', 'true');
+          } catch (err) {
+            console.error('Error al abrir ajustes nativos:', err);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error general en checkBatteryOptimizations:', error);
     }
   }
 
-  // 18. CREATE MAP ////////////////////////////////////////
+  // 10. HANDLE CLICKS ////////////////////////////////////////
   async handleClicks() {
     try {
-      if (!this.geography.map) return
-      // Type guard ensures map is defined before calling 'on'
-      (this.geography.map as Map).on('click', this.handleMapClick.bind(this));
+      if (!this.geography.map) return;
+      // Remove existing listener first to prevent duplicates
+      this.geography.map.un('click', this.handleMapClick.bind(this));
+      // Register the listener
+      this.geography.map.on('click', (ev: any) => this.handleMapClick(ev));
     } catch (error) {
-      console.error('Error creating map:', error);
+      console.error('Error attaching map click listener:', error);
     }
   }
 
   // 21. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
-    if (this.geography.archivedLayer?.getSource() && !this.reference.archivedTrack) {
-      const source = this.geography.archivedLayer?.getSource();
-      if (!source || !this.geography.map) return;
-      const features = source.getFeatures();
-      if (!features || features.length<2) return;
-      this.geography.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-        if (feature === features[1]) {
-          // Retrieve clicked coordinate and find its index
-          const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-          const multiPointCoordinates = feature.getGeometry().getCoordinates();
-          const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
-            coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
-          );
-          // Retrieve the archived track based on the index key
-          const multiKey = feature.get('multikey'); // Retrieve stored waypoints
+    if (!this.geography.map || !this.geography.archivedLayer) return;
+    // Track if we hit a high-priority feature (like a pin) to avoid clicking the line underneath
+    let hitPriority = false;
+    this.geography.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
+      if (hitPriority) return; // Stop if we already handled a top-layer feature
+      const type = feature.get('type');
+      if (!type) return;
+      // --- CASE 1: LOADING AN ARCHIVED TRACK (Via points/markers) ---
+      // If we haven't loaded a specific track yet and clicked an archived point
+      if (type === 'archived_points' && !this.reference.archivedTrack) {
+        const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
+        const coords = feature.getGeometry().getCoordinates();
+        const index = this.findClosestIndex(coords, clickedCoordinate);
+        if (index !== -1) {
+          const multiKey = feature.get('multikey');
           const key = multiKey[index];
           this.reference.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
-          // Display archived track details if it exists
           if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
+          hitPriority = true;
         }
-      }); }
-    else if (this.reference.archivedTrack) {
-      let hit: boolean = false;
-      const asource = this.geography.archivedLayer?.getSource();
-      if (!asource || !this.geography.map) return;
-      const afeatures = asource.getFeatures();
-      if (!afeatures || afeatures.length<5) return;
-      this.geography.map.forEachFeatureAtPixel(event.pixel, feature => {
-        const match = [afeatures?.[1], afeatures?.[3]].includes(feature as Feature<Geometry>);
-        if (!match) return;
-        hit = true;
-        const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
-        const index = this.fs.collection.findIndex(
-          (item: TrackDefinition) =>
-            item.date instanceof Date &&
-            archivedDate instanceof Date &&
-            item.date.getTime() === archivedDate.getTime()
-        );
-        if (index >= 0) {
-          this.fs.editTrack(index, '#ffffbb', false).catch(console.error);
+      }
+      // --- CASE 2: EDITING THE CURRENTLY VIEWED ARCHIVED TRACK ---
+      else if (this.reference.archivedTrack) {
+        // A) Editing Track Details (Clicking Line, Start Pin, or End Pin)
+        const trackElements = ['archived_line', 'archived_start', 'archived_end'];
+        if (trackElements.includes(type)) {
+          hitPriority = true;
+          const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
+          const index = this.fs.collection.findIndex((item: TrackDefinition) => {
+            // Ensure both dates exist before trying to create Date objects
+            if (!item.date || !archivedDate) return false;
+            const d1 = new Date(item.date).getTime();
+            const d2 = new Date(archivedDate).getTime();
+            return d1 === d2;
+          });
+          if (index >= 0) {
+            await this.fs.editTrack(index, '#ffffbb', false);
+          }
         }
-      });
-      if (!hit && this.geography.map) this.geography.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-        if (feature === afeatures[4]) {
-          // Retrieve clicked coordinate and find its index
+        // B) Editing Specific Waypoints (Clicking yellow Multipoint pins)
+        else if (type === 'archived_waypoints') {
+          hitPriority = true;
           const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-          const multiPointCoordinates = feature.getGeometry().getCoordinates();
-          const index = multiPointCoordinates.findIndex((coord: [number, number]) =>
-            coord[0] === clickedCoordinate[0] && coord[1] === clickedCoordinate[1]
-          );
+          const coords = feature.getGeometry().getCoordinates();
+          const index = this.findClosestIndex(coords, clickedCoordinate);
           if (index !== -1) {
-            // Retrieve the waypoint data using the index
-            let waypoints: Waypoint[] = feature.get('waypoints'); // Retrieve stored waypoints
-            const clickedWaypoint: Waypoint = waypoints[index];
-            const response: {action: string, name: string, comment: string} = await this.fs.editWaypoint(clickedWaypoint, true, false)
-            if (response.action == 'ok') {
+            let waypoints: Waypoint[] = feature.get('waypoints');
+            const response = await this.fs.editWaypoint(waypoints[index], true, false);
+            if (response.action === 'ok') {
               waypoints[index].name = response.name;
               waypoints[index].comment = response.comment;
-              if (this.reference.archivedTrack) {
-                this.reference.archivedTrack.features[0].waypoints = waypoints;
-                if (this.fs.key) await this.fs.storeSet(this.fs.key,this.reference.archivedTrack)
+              this.reference.archivedTrack.features[0].waypoints = waypoints;
+              if (this.fs.key) {
+                await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
+                this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'));
               }
             }
           }
-        };
-      });
-    }
+        }
+      }
+    });
   }
 
-  // 31. FOREGROUND TASK ////////////////////////
-  async foregroundTask() {
-    const num = this.present.currentTrack?.features[0].geometry.coordinates.length ?? 0;
-    // filter altitude
-    const final = await this.present.filterAltitude(this.present.currentTrack, this.present.altitudeFiltered + 1, num - this.fs.lag - 1);
-    if (final) this.present.altitudeFiltered = final
-    // compute distances
-    await this.present.accumulatedDistances();
-    // filter speed
-    if (this.present.currentTrack) {
-      this.present.currentTrack.features[0].geometry.properties.data = await this.fs.filterSpeed(
-        this.present.currentTrack.features[0].geometry.properties.data,
-        this.speedFiltered + 1
-      );
-    }
-    this.speedFiltered = num - 1;
-    // html values
-    await this.present.htmlValues();
-    // display the current track
-    await this.present.displayCurrentTrack(this.present.currentTrack);
-    // Ensure UI updates are reflected
-    this.zone.run(() => {
-      this.cd.detectChanges();
-    });
-    console.log('Foreground',this.present.currentTrack?.features[0].properties.totalNumber || 0, 'points. Process completed')
+  private findClosestIndex(coords: any[], target: any): number {
+    const eps = 0.000001;
+    return coords.findIndex(c => Math.abs(c[0] - target[0]) < eps && Math.abs(c[1] - target[1]) < eps);
   }
 
   // 37. ADD WAYPOINT ////////////////////////////////////
@@ -990,65 +1020,9 @@ export class Tab1Page {
   }
 
   async onDestroy()  {
-    //await this.location.stopBackgroundTracking();
     MyService.stopService();
-/*    if (this.appStateSubscription) {
-      this.appStateSubscription.unsubscribe();
-    } */
   }
 
-async checkBatteryOptimizations(evento?: any) {
-  try {
-    const info = await Device.getInfo();
-    const brand = info.manufacturer.toLowerCase();
-    
-    // 1. Check if we have already warned the user
-    const hasBeenWarned = localStorage.getItem('battery_warning_dismissed');
-    if (hasBeenWarned) return;
-
-    // 2. Identify aggressive brands
-    const aggressiveBrands = ['xiaomi', 'samsung', 'huawei', 'oneplus', 'oppo', 'vivo', 'realme'];
-    
-    if (aggressiveBrands.includes(brand)) {
-      const popover = await this.popoverController.create({
-        component: BatteryPopoverComponent,
-        componentProps: { brand: brand },
-        event: evento,
-        translucent: true,
-        backdropDismiss: false 
-      });
-
-      await popover.present();
-
-      const { data } = await popover.onDidDismiss();
-      
-      if (data?.action === 'settings') {
-        try {
-          // Action Branching
-          if (data?.action === 'settings') {
-            if (brand === 'xiaomi') {
-              await MyService.openAutostartSettings();
-              localStorage.setItem('battery_warning_dismissed', 'true');
-            } else {
-              // For other brands, since we can't open settings, 
-              // we just inform them and save the dismissal.
-              console.log('Manual configuration required for:', brand);
-              localStorage.setItem('battery_warning_dismissed', 'true');
-            }
-          }
-
-          // Optional: Mark as warned so they aren't nagged every time they open the app
-          localStorage.setItem('battery_warning_dismissed', 'true');
-          
-        } catch (err) {
-          console.error('Action failed. MyService might be missing native implementation.', err);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error checking device info:', error);
-  }
-}
 
 async checkGpsPermissions(): Promise<boolean> {
   try {
@@ -1080,6 +1054,15 @@ async checkGpsPermissions(): Promise<boolean> {
     return false;
   }
 }
+
+ // 14. SHOW / HIDE ELEMENTS /////////////////////////////////
+  async show(id: string, action: 'block' | 'none' | 'inline' | 'flex') {
+    const obj = document.getElementById(id);
+    if (obj) {
+      obj.style.display = action;
+    }
+  } 
+
 
 }
 

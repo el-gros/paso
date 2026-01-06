@@ -1,6 +1,7 @@
 import { Component, NgZone, EnvironmentInjector, inject, ChangeDetectorRef } from '@angular/core';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { FunctionsService } from './services/functions.service';
+import { GeographyService } from './services/geography.service';
 import { IonicModule, IonicRouteStrategy, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,6 +41,7 @@ export class AppComponent {
     public location: LocationManagerService,
     private reference: ReferenceService,
     private translate: TranslateService,
+    private geography: GeographyService,
     private mapService: MapService,
     private trackingControlService: TrackingControlService,
     private present: PresentService,
@@ -204,30 +206,30 @@ export class AppComponent {
 
   // 7. MORNING TASK ////////////////////////////////////////
   async morningTask() {
-    // 1. Guard: Don't process if there's no data
     if (!this.present.currentTrack) return;
-    // Run updates outside of Angular's zone to avoid change detection overhead
+    // Procesamos el "atracón" de datos fuera de Angular para no bloquear la UI
     this.zone.runOutsideAngular(async () => {
-      try{
-        var data = this.present.currentTrack?.features[0].geometry.properties.data;
-        const coords = this.present.currentTrack?.features[0].geometry.coordinates;
-        const num = coords?.length || 0;
-        // display current track
-        await this.present.displayCurrentTrack(this.present.currentTrack);
-        // Filter altitude data
-        const final: number = await this.present.filterAltitude(this.present.currentTrack, this.present.altitudeFiltered + 1, num - this.fs.lag - 1);
-        if (final) this.present.altitudeFiltered = final
-        // compute distances
+      try {
+        const track = this.present.currentTrack!;
+        const num = track.features[0].geometry.coordinates.length;
+        // 1. Dibujamos el track completo de golpe
+        await this.present.displayCurrentTrack(track);
+        // 2. Procesamos datos acumulados
+        const final = await this.present.filterAltitude(track, this.present.altitudeFiltered + 1, num - this.fs.lag - 1);
+        if (final) this.present.altitudeFiltered = final;
         await this.present.accumulatedDistances();
-        // Filter speed data
-        if (data) data = await this.fs.filterSpeed(data, this.speedFiltered + 1);
+        let data = track.features[0].geometry.properties.data;
+        track.features[0].geometry.properties.data = await this.fs.filterSpeed(data, this.speedFiltered + 1);
         this.speedFiltered = num - 1;
-        // Update HTML values
-        await this.present.htmlValues();
-        // Trigger Angular's change detection
-        this.cd.detectChanges();
+        // 3. Volvemos a la zona de Angular para actualizar la interfaz
+        this.zone.run(async () => {
+          await this.present.htmlValues();
+          this.cd.detectChanges();
+          // Opcional: Re-centrar el mapa al despertar para ver dónde estamos ahora
+          this.geography.setMapView(track);
+        });
       } catch (error) {
-        console.error('Error during foreground transition processing:', error);
+        console.error('Error during morningTask:', error);
       }
     });
   }

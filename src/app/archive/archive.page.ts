@@ -1,14 +1,5 @@
-/**
- * Archive page component for managing archived tracks.
- *
- * Provides functionality to view, edit, delete, export, and display archived tracks,
- * including conversion to GPX format and sharing via device capabilities.
- * Integrates with translation, language, and storage services, and supports menu actions.
- * Handles UI state for checked tracks and layer visibility.
- */
-
 import { Component } from '@angular/core';
-import { AlertController, IonicModule } from '@ionic/angular';
+import { ActionSheetController, IonicModule } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
@@ -36,11 +27,13 @@ import { LocationManagerService } from '../services/location-manager.service';
 export class ArchivePage {
 
   numChecked: number = 0;
+  isConfirmDeletionOpen: boolean = false;
+  index: number = NaN;
+  slidingItem: any = undefined;
 
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
-    private alertController: AlertController,
     private menu: MenuController,
     private languageService: LanguageService,
     private translate: TranslateService,
@@ -48,6 +41,7 @@ export class ArchivePage {
     public reference: ReferenceService,
     public geography: GeographyService,
     public location: LocationManagerService,
+    private actionSheetCtrl: ActionSheetController,
   ) {  }
 
   /* FUNCTIONS
@@ -95,29 +89,6 @@ export class ArchivePage {
     if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
   }
 
-  // 4. DELETE TRACKS /////////////////////////////
-  async deleteTracks() {
-    //const cancel = this.translate.instant('ARCHIVE.CANCEL');
-    const header = this.translate.instant('ARCHIVE.HEADER');
-    const message = this.translate.instant('ARCHIVE.MESSAGE');
-    // create alert control
-    const alert = await this.alertController.create({
-      cssClass: 'alert redAlert',
-      header,
-      message,
-      buttons: [{
-        text: this.translate.instant('SETTINGS.CANCEL'),
-        role: 'cancel',
-        cssClass: 'alert-cancel-button',
-        handler: () => { this.fs.uncheckAll(); }
-      }, {
-        text: 'OK',
-        cssClass: 'alert-ok-button',
-        handler: () => { this.yesDeleteTracks(); }
-      }]
-    });
-    await alert.present();
-  }
 
   // 5. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
@@ -125,14 +96,13 @@ export class ArchivePage {
       // retrieve archived track
       console.log('active?',active)
       this.reference.archivedTrack = await this.fs.retrieveTrack() ?? this.reference.archivedTrack;
-      await this.location.sendReferenceToPlugin()
       if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
     }
     else {
       this.reference.archivedTrack = undefined;
-      await this.location.sendReferenceToPlugin()
       this.geography.archivedLayer?.getSource()?.clear();
     }
+    await this.location.sendReferenceToPlugin()
     this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
   }
@@ -202,6 +172,7 @@ export class ArchivePage {
     return gpxText;
   }
 
+  /*
   // 8. EXPORT TRACK //////////////////////////
   async exportTrackFile() {
     // Helper to sanitize file names for cross-platform compatibility
@@ -251,6 +222,7 @@ export class ArchivePage {
     }
     this.menu.close();
   }
+  */  
 
   // 9. DISPLAY ALL TRACKS ///////////////////////
   async displayAllTracks(active: boolean) {
@@ -409,6 +381,116 @@ export class ArchivePage {
     // return base64 string
     return await zip.generateAsync({ type: "base64" });
   }
+
+  // Helper to toggle checkbox if user clicks the label text
+  toggleCheck(item: any) {
+    item.isChecked = !item.isChecked;
+    this.onChange();
+  }
+
+  async displaySpecificTrack(item: any, slidingItem: any) {
+    slidingItem.close(); // Close the swipe menu
+    
+    // Logic: Uncheck everything else, check this one, and show it
+    this.fs.collection.forEach(t => t.isChecked = false);
+    item.isChecked = true;
+    this.onChange();
+    
+    await this.displayTrack(true);
+  }
+
+  async editSpecificTrack(index: number, slidingItem: any) {
+    slidingItem.close();
+    // Call your existing edit function directly using the index
+    await this.fs.editTrack(index, '#ffffbb', false);
+  }
+
+  async deleteSpecificTrack(index: number, slidingItem: any) {
+    slidingItem.close();
+    // You can show a confirmation alert here before deleting
+    this.fs.collection.splice(index, 1);
+    await this.fs.storeSet('collection', this.fs.collection);
+    this.onChange();
+  }
+
+  async hideSpecificTrack(slidingItem: any) {
+    if (slidingItem) slidingItem.close();
+    
+    // Change this line from null to undefined
+    this.reference.archivedTrack = undefined; 
+    
+    const source = this.geography.archivedLayer?.getSource();
+    if (source) {
+      source.clear();
+    }
+    
+    this.onChange();
+  }
+
+  isTrackVisible(item: any): boolean {
+    // 1. Safety check: Is there even an archived track loaded?
+    if (!this.reference.archivedTrack) return false;
+
+    // 2. Extract the dates safely
+    const activeDate = this.reference.archivedTrack.features?.[0]?.properties?.date;
+    const itemDate = item.date;
+
+    // 3. Type Guard: If either date is missing, they can't be a match
+    if (!activeDate || !itemDate) return false;
+
+    // 4. Compare timestamps (this works whether the input is a string or Date object)
+    return new Date(activeDate).getTime() === new Date(itemDate).getTime();
+  }
+
+  async toggleVisibility(item: any, slidingItem: any) {
+    if (this.isTrackVisible(item)) {
+      await this.hideSpecificTrack(slidingItem);
+    } else {
+      await this.displaySpecificTrack(item, slidingItem);
+    }
+  }
+
+  confirmDeletion(index: number, slidingItem: any) {
+    this.isConfirmDeletionOpen = true;
+    this.index = index;
+    this.slidingItem = slidingItem;
+  }
+
+  async deleteTrack() {
+    await this.deleteSpecificTrack(this.index, this.slidingItem);
+  }
+
+  /**
+   * Export Options (File vs Description)
+   */
+  async presentExportOptions(item: any, slidingItem: any) {
+    slidingItem.close();
+    
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: this.translate.instant('ARCHIVE.EXPORT_TITLE'),
+      buttons: [
+        {
+          text: this.translate.instant('ARCHIVE.EXPORT_FILE'),
+          icon: 'document-outline',
+          handler: () => { this.exportTrackFile(item); }
+        },
+        {
+          text: this.translate.instant('ARCHIVE.EXPORT_DESCRIPTION'),
+          icon: 'text-outline',
+          handler: () => { this.exportTrackDescription(item); }
+        },
+        {
+          text: this.translate.instant('COMMON.CANCEL'),
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+  }
+
+  exportTrackFile(index: number) {}
+
+  exportTrackDescription(index: number) {}
 
 }
 

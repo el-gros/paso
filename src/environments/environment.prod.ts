@@ -215,7 +215,6 @@ export var global: any = {
       },
    ],
   } as unknown as JSON,
-  onInitFinished: false as boolean,
   authorization: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23' as string
 }
 

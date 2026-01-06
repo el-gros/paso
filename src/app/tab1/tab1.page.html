@@ -356,5 +356,12 @@
   </ng-template>
 </ion-popover>
 
-
+@if (loading) {
+  <ion-row class="spinner-row">
+    <ion-col class="ion-text-center">
+      <span class="sandclock">⏳</span>
+      <p>Procesando altitudes...</p>
+    </ion-col>
+  </ion-row>
+}  
 

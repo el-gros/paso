@@ -33,22 +33,31 @@ import { FunctionsService } from '../services/functions.service';
   }
 
   async displayCurrentTrack(currentTrack: any): Promise<void> {
-    if (!this.geography.map || !currentTrack || !this.geography.currentLayer) return;
-    const source = this.geography.currentLayer.getSource();
-    if (!source) return;
-    const features = source.getFeatures();
-    const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
-    const num = coordinates.length;
-    if (!Array.isArray(coordinates) || coordinates.length < 3) return;
-    // Update geometries efficiently
-    features[0].setGeometry(new LineString(coordinates));
-    features[0].setStyle(this.stylerService.setStrokeStyle(this.currentColor));
-    features[1].setGeometry(new Point(coordinates[0]));
-    features[1].setStyle(this.stylerService.createPinStyle('green'));
-    // Adjust map view occasionally
-    if ([5, 10, 25].includes(num) || num % 50 === 0) {
-      this.geography.setMapView(currentTrack);
-    }
+      if (!this.geography.map || !currentTrack || !this.geography.currentLayer) return;
+      const source = this.geography.currentLayer.getSource();
+      if (!source) return;
+      const coordinates = currentTrack.features?.[0]?.geometry?.coordinates;
+      if (!Array.isArray(coordinates) || coordinates.length < 1) return;
+      const num = coordinates.length;
+      // 1. Buscamos las features por su etiqueta de tipo
+      const features = source.getFeatures();
+      const routeLine = features.find(f => f.get('type') === 'route_line');
+      const startPin = features.find(f => f.get('type') === 'start_pin');
+      // 2. Actualizamos la Línea (Solo si tenemos suficientes puntos)
+      if (routeLine && num >= 2) {
+          routeLine.setGeometry(new LineString(coordinates));
+          routeLine.setStyle(this.stylerService.setStrokeStyle(this.currentColor));
+      }
+      // 3. Actualizamos el Pin de Inicio (Solo si existe)
+      if (startPin) {
+          startPin.setGeometry(new Point(coordinates[0]));
+          startPin.setStyle(this.stylerService.createPinStyle('green'));
+      }
+      // 4. Ajustar la vista del mapa ocasionalmente
+      // (Mantenemos tu lógica de intervalos, es muy buena para no marear al usuario)
+      if ([5, 10, 25].includes(num) || num % 50 === 0) {
+          this.geography.setMapView(currentTrack);
+      }
   }
 
   // ACCUMULATED DISTANCES ////////////////////////////////

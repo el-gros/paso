@@ -11,6 +11,7 @@ export interface MyServicePlugin {
   isXiaomi(): Promise<{ value: boolean }>;
   openAutostartSettings(): Promise<void>;
   openBatteryOptimization(): Promise<void>;
+  isIgnoringBatteryOptimizations(): Promise<{ value: boolean }>;
   addListener(
     eventName: 'location',
     listenerFunc: (data: any) => void

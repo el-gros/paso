@@ -10,7 +10,8 @@
     <div class='elementData card' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
       @if (present.currentTrack) {
         <table>
-          <tr [ngClass]="audio.status">
+<!--          <tr [ngClass]="audio.status"> -->
+          <tr>
             <td colspan="2">{{ 'CANVAS.CURTITLE' | translate }}</td>
           </tr>
           <tr>
@@ -65,6 +66,7 @@
               }
             </td>
           </tr>
+          <!--
           @if (audio.status == 'green' && reference.archivedTrack && location.currentPoint) {
             <tr>
               <td>{{ 'CANVAS.FROM_START' | translate }}</td>
@@ -79,6 +81,7 @@
               </td>
             </tr>
           }
+          -->  
         </table>
       }
     </div>

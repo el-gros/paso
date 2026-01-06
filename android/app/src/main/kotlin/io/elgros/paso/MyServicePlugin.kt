@@ -13,6 +13,8 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import android.location.Location
 import android.os.Build
+import android.content.Context  
+import android.os.PowerManager  
 
 @CapacitorPlugin(name = "PasoServicePlugin") 
 class MyServicePlugin : Plugin() {
@@ -136,5 +138,17 @@ class MyServicePlugin : Plugin() {
         }
     }
 
+    @PluginMethod
+    fun isIgnoringBatteryOptimizations(call: PluginCall) {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val isIgnoring = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pm.isIgnoringBatteryOptimizations(context.packageName)
+        } else {
+            true
+        }
+        val ret = JSObject()
+        ret.put("value", isIgnoring)
+        call.resolve(ret)
+    }
     // ... (Mantén isXiaomi y openAutostartSettings igual que los tenías)
 }
