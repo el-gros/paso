@@ -1,12 +1,3 @@
-/**
- * CanvasComponent is responsible for displaying and managing interactive canvas charts
- * for both the current and archived tracks, including statistics such as distance,
- * elevation gain/loss, speed, and time. It initializes canvases, subscribes to track
- * and status updates, computes average and motion speeds, and renders graphical
- * representations of track data with dynamic scaling and grid overlays. The component
- * supports multilingual labels and adapts canvas size to the viewport.
- */
-
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, OnDestroy, OnInit, Inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Track, PartialSpeed, Data, Waypoint } from '../../globald';
@@ -14,7 +5,6 @@ import { FunctionsService } from '../services/functions.service';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { AppStateService } from '../services/appState.service';
-import { AudioService } from '../services/audio.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -36,7 +26,7 @@ register();
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class CanvasComponent implements OnInit, OnDestroy {
+export class CanvasComponent implements OnInit {
 
   currentUnit: string = '' // time unit for canvas ('s' seconds, 'min' minutes, 'h' hours)
   currentCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
@@ -61,7 +51,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
     public present: PresentService,
     private appState: AppStateService,
     public location: LocationManagerService,
-    public audio: AudioService,
   ) {
 
     }
@@ -81,53 +70,60 @@ export class CanvasComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     // Create canvas
     await this.createCanvas();
-    // 1️⃣ Run updates when currentTrack changes (foreground only)
-    this.trackSub = this.present.currentTrack$.subscribe(async track => {
-      if (!this.appState.isForeground()) return;
-      if (!track) return;
-      await this.runCanvasUpdates();
-    });
-    // 2️⃣ Run updates when app comes back to foreground
-    this.fgSub = this.appState.onEnterForeground().subscribe(async () => {
-      await this.runCanvasUpdates();
-    });
-  }
-
-  // 2. ON DESTROY ///////////////////
-  ngOnDestroy() {
-    this.trackSub?.unsubscribe();
-    this.fgSub?.unsubscribe();
-  }
-
-  // 3. ION VIEW WILL LEAVE
-  ionViewWillLeave() {
-    this.trackSub?.unsubscribe();
-    this.fgSub?.unsubscribe();
   }
 
   // 4. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
+     // A. Comprobar si estamos en primer plano y actualizar datos básicos
     if (this.appState.isForeground()) {
       await this.runCanvasUpdates();
     }
-    // Update archived track
+
+    // B. Actualizar track archivado (Slide 2)
     if (this.reference.archivedTrack) {
       this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.reference.archivedTrack);
       this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
     }
-    // In case of exporting track
+
+    // C. GESTIÓN DE SUBSCRIPCIONES (Limpiamos antes de crear para evitar duplicados)
+    this.trackSub?.unsubscribe();
+    this.trackSub = this.present.currentTrack$.subscribe(async track => {
+      if (!this.appState.isForeground() || !track) return;
+      await this.runCanvasUpdates();
+    });
+
+    this.fgSub?.unsubscribe();
+    this.fgSub = this.appState.onEnterForeground().subscribe(async () => {
+      await this.runCanvasUpdates();
+    });
+
+    // D. LÓGICA DE EXPORTACIÓN (Si venimos de Archive con la bandera activada)
     if (this.fs.buildTrackImage) {
-      var success: boolean = false;
-      success = await this.triggerExport();
+      // Pequeño delay extra para que Swiper y los Canvas se estabilicen en el DOM
+      await new Promise(r => setTimeout(r, 300));
+
+      const success = await this.triggerExport();
+      
+      // Resetear siempre la bandera para no entrar en bucle
+      this.fs.buildTrackImage = false;
+
       if (success) {
+        console.log("Exportación exitosa, volviendo a Archive");
         this.fs.gotoPage('archive');
       } else {
-        // End process
-        this.fs.buildTrackImage = false;
+        console.error("Fallo al generar imagen");
         await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
         this.fs.gotoPage('archive');
       }
     }
+  }
+
+  // 3. ION VIEW WILL LEAVE //////////////////
+  ionViewWillLeave() {
+    // Cortamos las suscripciones inmediatamente al salir para ahorrar CPU y batería
+    this.trackSub?.unsubscribe();
+    this.fgSub?.unsubscribe();
+    console.log("Suscripciones cerradas al salir de Canvas");
   }
 
   // 5. RUN CANVAS UPDATES //////////////////////////////////
@@ -256,51 +252,71 @@ export class CanvasComponent implements OnInit, OnDestroy {
   ): Promise<string> {
     let tUnit = '';
     if (!ctx) return tUnit;
+
+    // 1. Reset y Limpieza
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
-    if (!track) return tUnit;
+
+    if (!track || !track.features[0].geometry.properties.data.length) return tUnit;
+    
     const data = track.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num === 0) return tUnit;
+    const num = data.length;
+
+    // 2. Cálculo de unidades de tiempo/distancia (X)
     let xDiv = 1;
     let xTot: number;
     if (xParam === 'x') {
       xTot = data[num - 1].distance;
     } else {
-      xTot = data[num - 1].time - data[0].time;
-      if (xTot > 3600000) {
-        tUnit = 'h'; xDiv = 3600000;
-      } else if (xTot > 60000) {
-        tUnit = 'min'; xDiv = 60000;
-      } else {
-        tUnit = 's'; xDiv = 1000;
-      }
-      xTot /= xDiv;
+      const timeDiff = data[num - 1].time - data[0].time;
+      if (timeDiff > 3600000) { tUnit = 'h'; xDiv = 3600000; }
+      else if (timeDiff > 60000) { tUnit = 'min'; xDiv = 60000; }
+      else { tUnit = 's'; xDiv = 1000; }
+      xTot = timeDiff / xDiv;
     }
+
+    // Evitar división por cero si el track acaba de empezar
+    if (xTot <= 0) xTot = 0.0001; 
+
+    // 3. Cálculo de límites (Y)
     const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
     if (bounds.max === bounds.min) {
-      bounds.max += 2; bounds.min -= 2;
+      bounds.max += 2; 
+      bounds.min -= 2;
     }
-    const scaleX = (this.canvasNum - 2 * this.margin) / xTot;
-    const scaleY = (this.canvasNum - 2 * this.margin) / (bounds.min - bounds.max);
+
+    // 4. Transformación Matemática
+    // El eje Y en HTML Canvas está invertido (0 arriba), por eso usamos (min - max)
+    const availSize = this.canvasNum - 2 * this.margin;
+    const scaleX = availSize / xTot;
+    const scaleY = availSize / (bounds.min - bounds.max);
     const offsetX = this.margin;
     const offsetY = this.margin - bounds.max * scaleY;
+
+    // 5. Dibujo de la Sombra/Área
     ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
     ctx.beginPath();
-    ctx.moveTo(0, bounds.min);
-    for (const point of data) {
-      const xValue = xParam === 'x'
-        ? point.distance
-        : (point.time - data[0].time) / xDiv;
-      const yValue = point[propertyName];
-      ctx.lineTo(xValue, yValue);
+    ctx.moveTo(0, bounds.min); // Empezar en el "suelo" de la gráfica
+
+    const startTime = data[0].time;
+    for (let i = 0; i < num; i++) {
+      const p = data[i];
+      const x = xParam === 'x' ? p.distance : (p.time - startTime) / xDiv;
+      const y = p[propertyName] as number;
+      ctx.lineTo(x, y);
     }
-    ctx.lineTo(xTot, bounds.min);
+
+    ctx.lineTo(xTot, bounds.min); // Cerrar hacia el suelo al final
     ctx.closePath();
-    ctx.fillStyle = 'yellow';
+    
+    // Estilo de la gráfica
+    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)'; // Amarillo con un poco de transparencia queda mejor
     ctx.fill();
+
+    // 6. Reset para dibujar la rejilla (labels y líneas)
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
+
     return tUnit;
   }
 

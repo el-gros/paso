@@ -56,7 +56,7 @@ import { FunctionsService } from '../services/functions.service';
       // 4. Ajustar la vista del mapa ocasionalmente
       // (Mantenemos tu lógica de intervalos, es muy buena para no marear al usuario)
       if ([5, 10, 25].includes(num) || num % 50 === 0) {
-          this.geography.setMapView(currentTrack);
+          await this.geography.setMapView(currentTrack);
       }
   }
 

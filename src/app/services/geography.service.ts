@@ -22,28 +22,34 @@ export class GeographyService {
   constructor(
   ) { }
 
-  setMapView(track: any) {
-    if (!this.map) return;
-    const boundaries = track.features[0].bbox;
-    if (!boundaries) return;
-    // Set a minimum area
-    const minVal = 0.002;
-    if ((boundaries[2] - boundaries[0] < minVal) && (boundaries[3] - boundaries[1] < minVal)) {
-      const centerX = 0.5 * (boundaries[0] + boundaries[2]);
-      const centerY = 0.5 * (boundaries[1] + boundaries[3]);
-      boundaries[0] = centerX - minVal / 2;
-      boundaries[2] = centerX + minVal / 2;
-      boundaries[1] = centerY - minVal / 2;
-      boundaries[3] = centerY + minVal / 2;
-    }
-    // map view
-    setTimeout(() => {
-      this.map?.getView().fit(boundaries, {
-        size: this.map.getSize(),
-        padding: [50, 50, 50, 50],
-        duration: 100  // Optional: animation duration in milliseconds
+  // 1. SET MAP VIEW
+  async setMapView(track: any): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.map) { resolve(); return; }
+      const boundaries = track.features[0].bbox;
+      if (!boundaries) { resolve(); return; }
+      let viewExtent = [...boundaries];
+      // Lógica de área mínima
+      const minVal = 0.002;
+      if ((viewExtent[2] - viewExtent[0] < minVal) && (viewExtent[3] - viewExtent[1] < minVal)) {
+        const centerX = 0.5 * (viewExtent[0] + viewExtent[2]);
+        const centerY = 0.5 * (viewExtent[1] + viewExtent[3]);
+        viewExtent[0] = centerX - (minVal / 2);
+        viewExtent[2] = centerX + (minVal / 2);
+        viewExtent[1] = centerY - (minVal / 2);
+        viewExtent[3] = centerY + (minVal / 2);
+      }
+      this.map.updateSize();
+      // Usamos el fit sin la propiedad inexistente
+      this.map.getView().fit(viewExtent, {
+        padding: [50, 50, 50, 50], 
+        duration: 200
       });
-    })
+      this.map.once('rendercomplete', () => {
+        resolve();
+      });
+      setTimeout(resolve, 500);
+    });
   }
 
 }  

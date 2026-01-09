@@ -1,13 +1,17 @@
 import { Feature } from 'ol';
-import { StylerService } from './styler.service'
+import { StylerService } from './styler.service';
+import { FunctionsService } from '../services/functions.service';
 import { LineString, MultiPoint, Point } from 'ol/geom';
 import { Track } from 'src/globald';
 import { GeographyService } from './geography.service';
 import { Injectable } from '@angular/core';
 import { Style } from 'ol/style';
+import { PopoverController } from '@ionic/angular';
+import { SaveTrackPopover } from '../save-track-popover.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 
   export class ReferenceService {
@@ -17,7 +21,10 @@ import { Style } from 'ol/style';
 
   constructor(
     private stylerService: StylerService,
-    private geography: GeographyService
+    private geography: GeographyService,
+    private fs: FunctionsService,
+    private popoverCtrl: PopoverController,
+    private translate: TranslateService,
   ) { }
 
   async displayArchivedTrack(): Promise<void> {
@@ -71,7 +78,6 @@ import { Style } from 'ol/style';
       if (multiPoint.length > 0) featuresToAdd.push(waypointsFeature);
       source.addFeatures(featuresToAdd);
     }
-    this.geography.setMapView(this.archivedTrack);
   }
 
   private applyZIndex(style: any, z: number) {
@@ -84,4 +90,44 @@ import { Style } from 'ol/style';
     }
   }
 
+  async editTrack(index: number) {
+    const trackToEdit = this.fs.collection[index];
+    if (!trackToEdit) return;
+    const modalEdit = { 
+      name: trackToEdit.name, 
+      place: trackToEdit.place, 
+      description: trackToEdit.description || '' 
+    };
+    const popover = await this.popoverCtrl.create({
+      component: SaveTrackPopover,
+      componentProps: { modalEdit: modalEdit, edit: true },
+      cssClass: 'central-popover',
+      backdropDismiss: false
+    });
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+    if (data?.action === 'ok') {
+      // 1. Actualizar la lista en Functions Service
+      this.fs.collection[index].name = data.name;
+      this.fs.collection[index].description = data.description;
+      await this.fs.storeSet('collection', this.fs.collection);
+      // 2. Actualizar el archivo GeoJSON
+      if (trackToEdit.date) {
+        const storageKey = JSON.stringify(trackToEdit.date);
+        const fullTrack = await this.fs.storeGet(storageKey);
+        if (fullTrack && fullTrack.features?.[0]) {
+          fullTrack.features[0].properties.name = data.name;
+          fullTrack.features[0].properties.description = data.description;
+          await this.fs.storeSet(storageKey, fullTrack);
+          // 3. ¡Sincronización inmediata! Como estamos en ReferenceService,
+          // tenemos acceso directo al track que se está dibujando.
+          if (this.archivedTrack && this.archivedTrack.features?.[0]) {
+            this.archivedTrack.features[0].properties.name = data.name;
+            this.archivedTrack.features[0].properties.description = data.description;
+          }
+        }
+      }
+      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'));
+    }
+  }
 }  

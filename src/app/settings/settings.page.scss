@@ -22,3 +22,34 @@
     border-top: 6px solid #444; /* or use 'darkgrey' or '#333' */
     margin-top: 2px;
   }
+
+.settings-color {
+  background-color: #aaaaff !important;
+  color: black;
+  ion-icon {
+    color: black
+  }
+}
+
+ion-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.color-display-v2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(var(--ion-color-medium-rgb), 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.color-sample {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+

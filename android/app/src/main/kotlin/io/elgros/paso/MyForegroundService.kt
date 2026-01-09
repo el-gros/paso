@@ -115,44 +115,49 @@ class MyForegroundService : Service() {
     }
 
     private fun triggerAlertLostPath() {
-        // 1. Vibración: DOBLE PULSO CORTO (Aviso de error)
+        // 1. VIBRACIÓN: Doble pulso corto
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        if (vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val pattern = longArrayOf(0, 200, 100, 200) // Espera, vibra, espera, vibra
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
-            }
+        val pattern = longArrayOf(0, 200, 100, 200)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
         }
-        // 2. Sonido: DOBLE PITIDO GRAVE (Tipo "Error")
+        // 2. SONIDO: Tono de error (Grave)
         try {
-            val tg = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-            tg.startTone(ToneGenerator.TONE_CDMA_PIP, 300) // Sonido doble estándar de red
-        } catch (e: Exception) {
-            Log.e("PasoService", "Error sonido: ${e.message}")
+            val tg = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+            tg.startTone(ToneGenerator.TONE_SUP_ERROR, 500) 
+            // Liberar recursos
+            Handler(Looper.getMainLooper()).postDelayed({ 
+                tg.release() 
+            }, 1000)
+        } catch (e: Exception) { 
+            Log.e("Paso", "Error sonido: ${e.message}") 
         }
     }
 
     private fun triggerAlertBackOnTrack() {
-        // 1. Vibración: UN PULSO LARGO (Confirmación positiva)
+        // 1. VIBRACIÓN: Un solo pulso largo (Confirmación)
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        if (vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(500)
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(500)
         }
-        // 2. Sonido: TONO ASCENDENTE / ALEGRE
+        // 2. SONIDO: Tono de confirmación (Agudo y breve)
         try {
-            val tg = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-            // El tono DTMF_D es un sonido más armónico y agudo
-            tg.startTone(ToneGenerator.TONE_DTMF_D, 200)
-        } catch (e: Exception) {
-            Log.e("PasoService", "Error sonido: ${e.message}")
+            // Bajamos ligeramente el volumen (80) para que sea menos intrusivo que la alerta de error
+            val tg = ToneGenerator(AudioManager.STREAM_ALARM, 80)
+            // TONE_PROP_ACK: Es el sonido estándar de "comando aceptado"
+            tg.startTone(ToneGenerator.TONE_PROP_ACK, 200) 
+            // Liberamos el recurso rápido (500ms) porque el tono es corto
+            Handler(Looper.getMainLooper()).postDelayed({ 
+                tg.release() 
+            }, 500)
+        } catch (e: Exception) { 
+            Log.e("Paso", "Error sonido: ${e.message}") 
         }
     }
 
@@ -246,7 +251,6 @@ class MyForegroundService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setSilent(true) // Evita que el móvil vibre/suene cada vez que actualizas la notificación
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW) // Cambiado a LOW para servicios en segundo plano
             .setCategory(NotificationCompat.CATEGORY_SERVICE) // Ayuda al sistema a clasificar el servicio

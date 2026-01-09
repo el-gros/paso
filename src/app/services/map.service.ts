@@ -3,7 +3,6 @@ import Map from 'ol/Map';
 import { global } from '../../environments/environment';
 import Feature from 'ol/Feature';
 import { MultiLineString, MultiPoint } from 'ol/geom';
-import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
 import TileLayer from 'ol/layer/Tile';
 import { OSM, XYZ } from 'ol/source';
@@ -53,10 +52,8 @@ export class MapService {
   scaleSteps = [1, 1.75, 3.5];
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
-
   public customControl!: CustomControl;  
   public shareControl!: ShareControl;
-
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
 
@@ -74,19 +71,27 @@ export class MapService {
   }
 
   // 1. CENTER ALL TRACKS
-
   async centerAllTracks(): Promise<void> {
-    // get current position
-    let currentPosition: [number, number] | null = await this.locationService.getCurrentPosition();
-    // center map
-    if (currentPosition) {
-      this.geography.map?.getView().setCenter(currentPosition);
-      this.geography.map?.getView().setZoom(8);
+    // 1. Obtener posición con un timeout o manejo de nulos
+    const currentPosition = await this.locationService.getCurrentPosition();
+    if (currentPosition && this.geography.map) {
+      const view = this.geography.map.getView();
+      // 2. Animación suave en lugar de salto brusco
+      view.animate({
+        center: currentPosition,
+        zoom: 8,         // Zoom más apropiado para tracking
+        duration: 1000    // 1 segundo de transición
+      });
+    } else {
+      console.warn("No se pudo obtener la ubicación para centrar el mapa.");
+      // Aquí podrías disparar un Toast informativo al usuario
     }
   }
 
   // 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
+    const mapElement = document.getElementById('map');
+    if (!mapElement) return;
     this.customControl = new CustomControl(this.geography);
     this.shareControl = new ShareControl(this.locationService, this.translate);
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
@@ -263,17 +268,21 @@ export class MapService {
   }
 
   // 4. DISPLAY ALL TRACKS
-
   async displayAllTracks() {
-    if (!this.geography.map || !this.fs.collection || this.fs.collection.length == 0 || !this.geography.archivedLayer) return;
+    if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) return;
+    // 1. CARGA PARALELA: Leemos todos los archivos del storage al mismo tiempo
+    const keys = this.fs.collection.map(item => JSON.stringify(item.date));
+    const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key)));
     const multiLine: any[] = [];
     const multiPoint: any[] = [];
     const multiKey: any[] = [];
-    for (const item of this.fs.collection) {
-      const key = JSON.stringify(item.date);
-      const track = await this.fs.storeGet(key);
-      if (!track && key) {
-        await this.fs.storeRem(key);
+    // 2. PROCESAMIENTO SÍNCRONO: Ahora que ya tenemos los datos en memoria, iteramos rápido
+    for (let i = 0; i < rawTracks.length; i++) {
+      const track = rawTracks[i];
+      const item = this.fs.collection[i];
+      if (!track) {
+        // Si un track falta, lo eliminamos del storage (opcional, como hacías antes)
+        await this.fs.storeRem(keys[i]);
         continue;
       }
       const coord = track.features[0]?.geometry?.coordinates;
@@ -283,28 +292,26 @@ export class MapService {
         multiKey.push(item.date);
       }
     }
-    // 1. Crear Features con Tipos Identificativos
+    // 3. ACTUALIZACIÓN DEL MAPA (Igual que antes)
     const allLinesFeature = new Feature();
-    allLinesFeature.set('type', 'all_tracks_lines'); // Etiqueta para el conjunto de líneas
-    const allStartsFeature = new Feature();
-    allStartsFeature.set('type', 'all_tracks_starts'); // Etiqueta para los puntos de inicio
-    // 2. Configurar Geometrías y Datos
+    allLinesFeature.set('type', 'all_tracks_lines');
     allLinesFeature.setGeometry(new MultiLineString(multiLine));
     allLinesFeature.setStyle(this.stylerService.setStrokeStyle('black'));
+    const allStartsFeature = new Feature();
+    allStartsFeature.set('type', 'all_tracks_starts');
     allStartsFeature.setGeometry(new MultiPoint(multiPoint));
-    allStartsFeature.set('multikey', multiKey); // Mantenemos tu metadata
+    allStartsFeature.set('multikey', multiKey);
     allStartsFeature.setStyle(this.stylerService.createPinStyle('green'));
-    // 3. Actualizar el Source de forma segura
     const source = this.geography.archivedLayer.getSource();
     if (source) {
       source.clear();
       source.addFeatures([allLinesFeature, allStartsFeature]);
+      // 4. ZOOM 
+      await this.centerAllTracks();
     }
-    await this.centerAllTracks();
   }
 
   // 5. CREATE SOURCE //////////////////////////////
-
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
       return new VectorTileSource({
@@ -359,7 +366,6 @@ export class MapService {
   }
 
   // 6. CYCLE ZOOM //////////////////////////////
-
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
       console.warn('Map wrapper element not found');
@@ -371,7 +377,6 @@ export class MapService {
   }
 
   // 7. CREATE LAYER ///////////////////////////////////////
-
   async createLayer(layer?: VectorLayer) {
     if (!layer) layer = new VectorLayer();
     if (!layer.getSource()) layer.setSource(new VectorSource());
@@ -379,7 +384,6 @@ export class MapService {
   }
 
   // 8. UPDATE COLORS /////////////////////////////////////////
-  
   async updateColors() {
     const updateLayer = (layer: VectorLayer | undefined, color: string) => {
       const features = layer?.getSource()?.getFeatures();
@@ -396,66 +400,35 @@ export class MapService {
     this.fs.reDraw = false;
   }
 
+  // 9. REVERSE GEOCODE //////////////////////////////////
   reverseGeocode(lat: number, lon: number): Observable<any | null> {
-    // --- Validate arguments ---
+    // --- Validación ---
     if (
       typeof lat !== 'number' || typeof lon !== 'number' ||
       isNaN(lat) || isNaN(lon) ||
       lat < -90 || lat > 90 ||
       lon < -180 || lon > 180
     ) {
-      return throwError(() =>
-        new Error('Latitude and longitude must be valid numbers within their allowed ranges.')
-      );
+      return throwError(() => new Error('Invalid coordinates'));
     }
-
-    // --- Helper to build short name ---
-    const buildMapTilerShortName = (f: any): string => {
-      if (!f) return '(no name)';
-      const main = f.text ?? '(no name)';
-
-      const city = f.context?.find((c: any) =>
-        c.id.startsWith('place') || c.id.startsWith('locality')
-      )?.text;
-
-      return city ? `${main}, ${city}` : main;
-    };
-
-    // --- Build the MapTiler API request ---
     const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
-
     return this.http.get<any>(url).pipe(
       map((response: any) => {
         const f = response?.features?.[0];
         if (!f) return null;
-
-        const [lon, lat] = f.geometry.coordinates;
-
-        // Build bounding box if MapTiler provides one
-        let bbox;
-        if (f.bbox) {
-          // MapTiler bbox = [west, south, east, north]
-          bbox = [
-            f.bbox[1], // south
-            f.bbox[3], // north
-            f.bbox[0], // west
-            f.bbox[2]  // east
-          ];
-        } else {
-          // Default bbox is a single point
-          bbox = [lat, lat, lon, lon];
-        }
-
-        // Normalized output consistent with forward geocoding
+        const [featureLon, featureLat] = f.geometry.coordinates;
+        // MapTiler entrega [minLon, minLat, maxLon, maxLat] 
+        // Este formato es el estándar [minX, minY, maxX, maxY] para OpenLayers
+        const bbox = f.bbox ? f.bbox : [featureLon, featureLat, featureLon, featureLat];
         return {
-          lat,
-          lon,
+          lat: featureLat,
+          lon: featureLon,
           name: f.text ?? '(no name)',
           display_name: f.place_name ?? f.text ?? '(no name)',
-          short_name: buildMapTilerShortName(f),
+          short_name: this.buildMapTilerShortName(f),
           type: f.place_type?.[0] ?? 'unknown',
           place_id: f.id ?? null,
-          boundingbox: bbox,
+          boundingbox: bbox, // Compatible con view.fit(bbox)
           geojson: f.geometry
         };
       }),
@@ -465,6 +438,16 @@ export class MapService {
       })
     );
   }
+
+// Extraído como método de clase para limpieza
+private buildMapTilerShortName(f: any): string {
+  if (!f) return '(no name)';
+  const main = f.text ?? '(no name)';
+  const city = f.context?.find((c: any) =>
+    c.id.startsWith('place') || c.id.startsWith('locality')
+  )?.text;
+  return city ? `${main}, ${city}` : main;
+}
 
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpxXml(gpxText: string) {

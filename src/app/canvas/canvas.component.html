@@ -22,8 +22,10 @@
             <td>{{ 'CANVAS.EGAIN' | translate }}</td>
             <td>{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>
           </tr>
+          <tr>
             <td>{{ 'CANVAS.ELOSS' | translate }}</td>
             <td>{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
+          </tr>
           <tr>
             <td>{{ 'CANVAS.TIME' | translate }}</td>
             <td>{{ present.currentTrack.features[0].properties.totalTime }}</td>
@@ -206,23 +208,19 @@
 <!-- space for android controls -->
 <div class="bottom-safe-gray"></div>
 
-  <!-- buttons to navigate -->
-  <ion-fab
-    slot="fixed"
-    horizontal="center"
-    vertical="bottom"
-    class="bottom-safe no-export"
-  >
-    <ion-row>
-      <ion-fab-button (click)="fs.gotoPage('tab1')">
-        <ion-icon name="earth"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='list' (click)="fs.gotoPage('archive')">
-        <ion-icon name="list"></ion-icon>
-      </ion-fab-button>
-      <ion-fab-button id='settings' (click)="fs.gotoPage('settings')">
-        <ion-icon name="settings"></ion-icon>
-      </ion-fab-button>
-    </ion-row>
-  </ion-fab>
-
+<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+  <ion-row>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('tab1')">
+      <ion-icon name="earth-sharp"></ion-icon>
+      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('archive')">
+      <ion-icon name="list-sharp"></ion-icon>
+      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('settings')">
+      <ion-icon name="settings-sharp"></ion-icon>
+      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+    </div>
+  </ion-row>
+</ion-fab>

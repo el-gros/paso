@@ -86,49 +86,24 @@ ion-item#cancel {
   --background: #ffebee;
 }
 
-/* Record button */
-.record-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 15px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, opacity 0.3s;
-  ion-icon {
-    font-size: 1.5rem;
-    margin-bottom: 1px;
-  }
-}
+
 
 .map-color {
-  background-color: #45ff2f !important;
+  background-color: #aaffaa !important;
   color: black;
   ion-icon {
     color: black
   }
 }
 
-.green-color {
-  background-color: green !important;
-  color: white;
+.reddish-color {
+  background-color: #ffaaaa !important;
+  color: black;
   ion-icon {
-    color: white
+    color: black
   }
 }
 
-.red-color {
-  background-color: red !important;
-  color: white;
-  ion-icon {
-    color: white
-  }
-}
 
 .record-button:disabled {
   opacity: 0.3;

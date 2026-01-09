@@ -9,6 +9,12 @@
       <ion-icon name="help-sharp"></ion-icon>
       <span>{{ 'SEARCH.BUTTON' | translate }}</span>
     </div>
+    @if (geography.searchLayer?.getSource()?.getFeatures()?.length) {
+      <div class="record-button reddish-color" (click)="clearSearch()">
+        <ion-icon name="close-circle-outline"></ion-icon>
+        <span>{{ 'SEARCH.BUTTON' | translate }}</span>
+      </div>
+    }
     <div class="record-button map-color" (click)="mapService.cycleZoom()">
       <ion-icon name="search-sharp"></ion-icon>
       <span>Zoom</span>
@@ -166,7 +172,7 @@
     <ion-list>
       <ion-row>
         <button class="record-button map-color"
-          (click)="search(); isSearchGuidePopoverOpen = false"
+          (click)="isSearchPopoverOpen = true; isSearchGuidePopoverOpen = false"
         >
           <ion-icon name="location-sharp"></ion-icon>
           <span>{{ 'SEARCH.LOCATION' | translate }}</span>
@@ -231,7 +237,7 @@
         <ion-list class="results-list">
           @for (result of results; track result) {
             <ion-item
-              (click)="selectResult(result)"
+              (click)="handleLocationSelection(result)"
               class="result-item">
 
               <ion-label>
@@ -336,7 +342,7 @@
         <ion-list class="results-list">
           @for (result of results; track result) {
             <ion-item
-              (click)="selectResult(result)"
+              (click)="handleLocationSelection(result)"
               class="result-item">
 
               <ion-label>

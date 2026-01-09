@@ -13,14 +13,11 @@ import { ParsedPoint, Location, Track, TrackDefinition, Data, Waypoint } from '.
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { ServerService } from '../services/server.service';
-import { global } from '../../environments/environment';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useGeographic } from 'ol/proj.js';
-import { Geometry, MultiLineString, MultiPoint } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Filesystem, Encoding, Directory } from '@capacitor/filesystem';
 import { IonicModule, ModalController, isPlatform } from '@ionic/angular';
-import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { SearchModalComponent } from '../search-modal/search-modal.component';
 import { lastValueFrom, Subscription } from 'rxjs';
 import { LanguageService } from '../services/language.service';
@@ -31,7 +28,6 @@ import { FormsModule } from '@angular/forms';
 import { TrackingControlService } from '../services/trackingControl.service';
 import { LocationSharingService } from '../services/locationSharing.service';
 import { LocationManagerService } from '../services/location-manager.service';
-import { AudioService } from '../services/audio.service';
 import { StylerService } from '../services/styler.service';
 import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
@@ -97,10 +93,9 @@ export class Tab1Page {
     private trackingControlService: TrackingControlService,
     private locationSharingService: LocationSharingService,
     public location: LocationManagerService,
-    private audio: AudioService,
     private stylerService: StylerService,
     public reference: ReferenceService,
-    private geography: GeographyService,
+    public geography: GeographyService,
     private present: PresentService,
     private platform: Platform,
     private popoverController: PopoverController
@@ -118,6 +113,7 @@ export class Tab1Page {
   8. foregroundTask  
   9. checkBatteryOptimizations
   10. handleClicks
+  11. handleMapClicks
 
   14. show
   15. onDestroy
@@ -154,7 +150,6 @@ export class Tab1Page {
     this.show('alert', 'none'); 
     // 2. Inicialización de datos críticos
     await this.initializeVariables();
-    await this.fs.uncheckAll();
     // 3. 🛡️ CONTROL DE PERMISOS (Punto de control obligatorio)
     const hasPermission = await this.checkGpsPermissions(); 
     if (hasPermission) {
@@ -170,7 +165,8 @@ export class Tab1Page {
         this.mapService.mapIsReady = true;
         // 4b. Check whether it has to display a reference map 
         if (this.mapService.hasPendingDisplay && this.reference.archivedTrack) {
-          await this.reference.displayArchivedTrack();
+          this.reference.displayArchivedTrack();
+          await this.geography.setMapView(this.reference.archivedTrack);
           this.mapService.hasPendingDisplay = false;
         }
         // 5. Lanzar procesos en segundo plano y tracking de Ionic
@@ -293,7 +289,7 @@ export class Tab1Page {
       endPin.setStyle(this.stylerService.createPinStyle('red'));
     }
     // 4. Finalización de vista y Plugin
-    this.geography.setMapView(this.present.currentTrack);
+    await this.geography.setMapView(this.present.currentTrack);
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
     // Enviamos [] para que el Plugin deje de comparar la ruta pero el servicio siga vivo
     await this.location.sendReferenceToPlugin();
@@ -322,12 +318,15 @@ export class Tab1Page {
   async saveFile(name: string, place: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
-    this.loading = true; // Start the sandclock
+    this.loading = true;
     try {
+      // 1. Clonación y preparación de fecha
       const trackToSave = JSON.parse(JSON.stringify(track));
       const feature = trackToSave.features[0];
       const saveDate = new Date();
-      // 1. Altitude Processing
+      // Mantenemos tu formato de clave original
+      const dateKey = JSON.stringify(saveDate); 
+      // 2. Procesamiento de Altitud (DEM)
       if (this.fs.selectedAltitude === 'DEM') {
         const coordinates = feature.geometry.coordinates;
         const altSlopes = await this.getAltitudesFromMap(coordinates as [number, number][]);
@@ -343,15 +342,14 @@ export class Tab1Page {
           }
         }
       }
-      // 2. Update Properties
+      // 3. Actualización de Propiedades
       feature.properties.name = name;
       feature.properties.place = place;
       feature.properties.description = description;
-      feature.properties.date = saveDate;
-      // 3. Storage Logic (Keeping your original stringification)
-      const dateKey = JSON.stringify(feature.properties.date);
+      feature.properties.date = saveDate; // Esto se guardará como ISO string en el JSON
+      // 4. Guardado del archivo GeoJSON (Clave: '"2023-10-27T..."')
       await this.fs.storeSet(dateKey, trackToSave);
-      // 4. Update Collection (Newest first with unshift)
+      // 5. Actualización de la Colección (Lista del Archivo)
       const trackDef: TrackDefinition = {
         name,
         date: saveDate,
@@ -359,17 +357,17 @@ export class Tab1Page {
         description,
         isChecked: false
       };
-      this.fs.collection.unshift(trackDef); // Newest at the top
+      this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
-      // 5. UI Feedback
+      // 6. Feedback y Limpieza
       this.fs.displayToast(this.translate.instant('MAP.SAVED'));
       this.location.state = 'saved';
       this.show('alert', 'none');
     } catch (e) {
       console.error("Save failed", e);
-      this.fs.displayToast("Error saving track");
+      this.fs.displayToast(this.translate.instant('ERRORS.SAVE_FAILED'));
     } finally {
-      this.loading = false; // Stop the sandclock
+      this.loading = false;
     }
   }
 
@@ -462,69 +460,74 @@ export class Tab1Page {
     }
   }
 
-  // 21. HANDLE MAP CLICK //////////////////////////////
+  // 11. HANDLE MAP CLICK //////////////////////////////
   async handleMapClick(event: { coordinate: any; pixel: any }) {
     if (!this.geography.map || !this.geography.archivedLayer) return;
-    // Track if we hit a high-priority feature (like a pin) to avoid clicking the line underneath
-    let hitPriority = false;
-    this.geography.map.forEachFeatureAtPixel(event.pixel, async (feature: any) => {
-      if (hitPriority) return; // Stop if we already handled a top-layer feature
-      const type = feature.get('type');
-      if (!type) return;
-      // --- CASE 1: LOADING AN ARCHIVED TRACK (Via points/markers) ---
-      // If we haven't loaded a specific track yet and clicked an archived point
-      if (type === 'archived_points' && !this.reference.archivedTrack) {
-        const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-        const coords = feature.getGeometry().getCoordinates();
-        const index = this.findClosestIndex(coords, clickedCoordinate);
-        if (index !== -1) {
-          const multiKey = feature.get('multikey');
-          const key = multiKey[index];
-          this.reference.archivedTrack = await this.fs.storeGet(JSON.stringify(key));
-          if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
-          hitPriority = true;
+    // 1. Buscamos la feature de forma síncrona primero
+    let selectedFeature: any = null;
+    this.geography.map.forEachFeatureAtPixel(event.pixel, (feature: any) => {
+      if (!selectedFeature) {
+        const type = feature.get('type');
+        if (type) {
+          selectedFeature = feature; // Capturamos la primera que tenga tipo
+          return true; // Detiene el bucle de OpenLayers
         }
       }
-      // --- CASE 2: EDITING THE CURRENTLY VIEWED ARCHIVED TRACK ---
-      else if (this.reference.archivedTrack) {
-        // A) Editing Track Details (Clicking Line, Start Pin, or End Pin)
-        const trackElements = ['archived_line', 'archived_start', 'archived_end'];
-        if (trackElements.includes(type)) {
-          hitPriority = true;
-          const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
-          const index = this.fs.collection.findIndex((item: TrackDefinition) => {
-            // Ensure both dates exist before trying to create Date objects
-            if (!item.date || !archivedDate) return false;
-            const d1 = new Date(item.date).getTime();
-            const d2 = new Date(archivedDate).getTime();
-            return d1 === d2;
-          });
-          if (index >= 0) {
-            await this.fs.editTrack(index, '#ffffbb', false);
-          }
+      return false;
+    }, { hitTolerance: 5 });
+    if (!selectedFeature) return;
+    // 2. Ejecutamos la lógica asíncrona fuera del bucle
+    const type = selectedFeature.get('type');
+    // --- CASO 1: CARGAR TRACK ---
+    if (type === 'archived_points' && !this.reference.archivedTrack) {
+      const clickedCoordinate = selectedFeature.getGeometry().getClosestPoint(event.coordinate);
+      const coords = selectedFeature.getGeometry().getCoordinates();
+      const index = this.findClosestIndex(coords, clickedCoordinate);
+      if (index !== -1) {
+        const multiKey = selectedFeature.get('multikey');
+        this.fs.key = JSON.stringify(multiKey[index]);
+        this.reference.archivedTrack = await this.fs.storeGet(this.fs.key);
+        if (this.reference.archivedTrack) {
+          this.reference.displayArchivedTrack();
+          await this.geography.setMapView(this.reference.archivedTrack);
         }
-        // B) Editing Specific Waypoints (Clicking yellow Multipoint pins)
-        else if (type === 'archived_waypoints') {
-          hitPriority = true;
-          const clickedCoordinate = feature.getGeometry().getClosestPoint(event.coordinate);
-          const coords = feature.getGeometry().getCoordinates();
-          const index = this.findClosestIndex(coords, clickedCoordinate);
-          if (index !== -1) {
-            let waypoints: Waypoint[] = feature.get('waypoints');
-            const response = await this.fs.editWaypoint(waypoints[index], true, false);
-            if (response.action === 'ok') {
-              waypoints[index].name = response.name;
-              waypoints[index].comment = response.comment;
-              this.reference.archivedTrack.features[0].waypoints = waypoints;
-              if (this.fs.key) {
-                await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
-                this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'));
-              }
+      }
+    }
+    // --- CASO 2: EDITAR TRACK O WAYPOINTS ---
+    else if (this.reference.archivedTrack) {
+      // A) Detalles del Track (Línea o Extremos)
+      const trackElements = ['archived_line', 'archived_start', 'archived_end'];
+      if (trackElements.includes(type)) {
+        const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
+        const index = this.fs.collection.findIndex((item: TrackDefinition) => {
+          if (!item.date || !archivedDate) return false;
+          return new Date(item.date).getTime() === new Date(archivedDate).getTime();
+        });
+        if (index >= 0) {
+          // Llamada centrada (sin pasar el evento)
+          await this.reference.editTrack(index);
+        }
+      }
+      // B) Waypoints
+      else if (type === 'archived_waypoints') {
+        const clickedCoordinate = selectedFeature.getGeometry().getClosestPoint(event.coordinate);
+        const coords = selectedFeature.getGeometry().getCoordinates();
+        const index = this.findClosestIndex(coords, clickedCoordinate);
+        if (index !== -1) {
+          let waypoints: Waypoint[] = selectedFeature.get('waypoints');
+          const response = await this.fs.editWaypoint(waypoints[index], true, false);
+          if (response.action === 'ok') {
+            waypoints[index].name = response.name;
+            waypoints[index].comment = response.comment;
+            this.reference.archivedTrack.features[0].waypoints = waypoints;
+            if (this.fs.key) {
+              await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
+              this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'));
             }
           }
         }
       }
-    });
+    }
   }
 
   private findClosestIndex(coords: any[], target: any): number {
@@ -578,7 +581,7 @@ export class Tab1Page {
     console.log(this.present.currentTrack)
   }
 
-  async search() {
+/*  async search() {
     if (!this.geography.map || !this.geography.searchLayer) return;
     // Define a style function for the search results
     const styleSearch = (featureLike: FeatureLike) => {
@@ -595,7 +598,7 @@ export class Tab1Page {
     };
     this.geography.searchLayer.setStyle(styleSearch);
     this.isSearchPopoverOpen = true;
-  }
+  } */
 
   // 40. SEARCH ROUTE /////////////////////////////////////////////
   async guide() {
@@ -664,7 +667,10 @@ export class Tab1Page {
         };
       }
     }
-    if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
+    if (this.reference.archivedTrack) {
+      await this.reference.displayArchivedTrack();
+      await this.geography.setMapView(this.reference.archivedTrack);
+    }
   }
 
   // 43. COMPUTE ALTITUDES
@@ -814,9 +820,7 @@ export class Tab1Page {
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
     this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
     // Aert
-    this.audio.alert = await this.fs.check(this.audio.alert,'alert')
-    // Audio alert
-    //this.audio.audioAlert = await this.fs.check(this.audio.audioAlert,'audioAlert')
+    this.fs.alert = await this.fs.check(this.fs.alert,'alert')
     // Altitude method
     this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     // Geocoding Service
@@ -828,7 +832,6 @@ export class Tab1Page {
     this.isConfirmDeletionOpen = false;
     this.isRecordPopoverOpen = false;
     this.isSearchPopoverOpen = false;
-    //this.isSharingPopoverOpen = false;
   }
 
   async selectResult(location: LocationResult | null) {
@@ -855,60 +858,50 @@ export class Tab1Page {
 
   async openList() {
     if (!this.query) return;
-
     this.loading = true;
 
     try {
-      const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(this.query)}.json?key=${global.mapTilerKey}`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&polygon_geojson=1&addressdetails=1&limit=5`;
 
       const response = await CapacitorHttp.get({
         url,
-        headers: { 'Accept': 'application/json' }
+        headers: { 
+          'Accept': 'application/json',
+          'User-Agent': 'MyMappingApp/1.0' // Nominatim requires a User-Agent
+        }
       });
 
-      // Normalize MapTiler results
-      const features = response.data?.features ?? [];
+      // 1. Ensure we are dealing with an object/array
+      let data = response.data;
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
 
-      this.results = features.map((f: any, idx: number) => {
-        const [lon, lat] = f.geometry.coordinates;
+      // 2. Check if data is actually an array before calling .map()
+      if (!Array.isArray(data)) {
+        console.error('Nominatim returned non-array data:', data);
+        this.results = [];
+        return;
+      }
 
-        // compute bbox from geometry when available
-        const coords = f.geometry.type === 'Point'
-          ? [[lon, lat]]
-          : f.geometry.coordinates
-              .flat(Infinity)
-              .reduce((acc: any[], v: any, i: number) => {
-                if (i % 2 === 0) acc.push([v]);
-                else acc[acc.length - 1].push(v);
-                return acc;
-              }, []);
-
-        const lons = coords.map((c: any) => c[0]);
-        const lats = coords.map((c: any) => c[1]);
-
-        const boundingbox = [
-          Math.min(...lats), // south
-          Math.max(...lats), // north
-          Math.min(...lons), // west
-          Math.max(...lons)  // east
-        ];
+      this.results = data.map((item: any) => {
+        // Nominatim's boundingbox is [latMin, latMax, lonMin, lonMax]
+        const bbox = item.boundingbox ? item.boundingbox.map(Number) : [];
 
         return {
-          lat,
-          lon,
-          name: f.text ?? '(no name)',
-          display_name: f.place_name ?? f.text ?? '(no name)',
-          short_name: f.text ?? f.place_name ?? '(no name)',
-          type: f.place_type?.[0] ?? 'unknown',
-          place_id: f.id ?? idx,
-          boundingbox,
-          geojson: f.geometry
+          lat: Number(item.lat),
+          lon: Number(item.lon),
+          name: item.display_name.split(',')[0],
+          display_name: item.display_name,
+          type: item.type,
+          place_id: item.place_id,
+          boundingbox: bbox,
+          geojson: item.geojson 
         };
       });
 
     } catch (error) {
-      console.error('Error fetching MapTiler geocoding data:', error);
-      this.fs.displayToast(this.translate.instant('SEARCH.NETWORK_ERROR'));
+      console.error('Nominatim Error:', error);
       this.results = [];
     } finally {
       this.loading = false;
@@ -1063,6 +1056,78 @@ async checkGpsPermissions(): Promise<boolean> {
     }
   } 
 
+  async handleLocationSelection(location: LocationResult | null) {
+    if (!location?.boundingbox || !location?.geojson) return;
+    this.isSearchPopoverOpen = false;
+
+    const layer = this.geography.searchLayer;
+    const source = layer?.getSource();
+    if (!layer || !source) return;
+
+    source.clear();
+    layer.setZIndex(1000);
+
+    const geojson = typeof location.geojson === 'string' ? JSON.parse(location.geojson) : location.geojson;
+    
+    // readFeatures handles Point, Polygon, or MultiPolygon automatically
+    const features = new GeoJSON().readFeatures(geojson);
+
+    // LOGIC: If the API gave us a Polygon, we ALSO want a Pin at the center
+    const hasPolygon = features.some(f => f.getGeometry()?.getType().includes('Polygon'));
+    if (hasPolygon) {
+      const centerPin = new Feature(new Point([location.lon, location.lat]));
+      features.push(centerPin);
+    }
+
+    if (features.length > 0) {
+      source.addFeatures(features);
+      layer.setStyle((f) => this.applySearchStyle(f));
+
+      // Zoom to the extent of the boundary
+      const extent = this.calculateExtendedPadding(location.boundingbox);
+      this.geography.map?.getView().fit(extent, { 
+        duration: 800, 
+        padding: [50, 50, 50, 50] 
+      });
+      
+      this.geography.map?.render();
+    }
+  }
+
+  private applySearchStyle(feature: FeatureLike): Style | Style[] {
+    const type = feature.getGeometry()?.getType();
+
+    if (type === 'Point') {
+      return this.stylerService.createPinStyle('black');
+    }
+    
+    if (type === 'Polygon' || type === 'MultiPolygon') {
+      return new Style({
+        stroke: new Stroke({ color: '#000', width: 2.5 }),
+        fill: new Fill({ color: 'rgba(0, 0, 0, 0.15)' }),
+      });
+    }
+
+    return this.stylerService.setStrokeStyle('black');
+  }
+
+  private calculateExtendedPadding(bbox: any[]): number[] {
+    // bbox is [minLat, maxLat, minLon, maxLon]
+    const [minLat, maxLat, minLon, maxLon] = bbox.map(Number);
+    
+    const latRange = maxLat - minLat;
+    const lonRange = maxLon - minLon;
+    const padding = Math.max(Math.max(latRange, lonRange) * 0.1, 0.005);
+    
+    // Returns [minLon, minLat, maxLon, maxLat] for OpenLayers
+    return [minLon - padding, minLat - padding, maxLon + padding, maxLat + padding];
+  }
+
+  // REMOVE SEARCH LAYER
+  clearSearch() {
+    this.geography.searchLayer?.getSource()?.clear();
+    this.fs.gotoPage('tab1');
+  }
 
 }
 

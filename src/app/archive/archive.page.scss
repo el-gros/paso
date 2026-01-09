@@ -1,7 +1,4 @@
-.archive-list {
-  background: transparent;
-}
-
+// 1. LISTA Y CONTENIDO
 .item-content {
   display: flex;
   flex-direction: column;
@@ -10,7 +7,6 @@
   strong {
     font-size: 1.1rem;
     margin-bottom: 4px;
-    display: block;
   }
 
   .item-date-subtitle {
@@ -20,76 +16,44 @@
   }
 }
 
-// Estilo para destacar la ruta activa
 .active-text {
   color: var(--ion-color-primary);
 }
 
-// EVITAR SUPERPOSICIÓN DE LOS BOTONES FAB
-.list-spacer {
-  height: 100px; // Altura suficiente para que el FAB no tape el último item
-  width: 100%;
-}
-
-
-/* Record button */
-.record-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 15px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, opacity 0.3s;
-  ion-icon {
-    font-size: 1.5rem;
-    margin-bottom: 1px;
-  }
-}
-
-.archive-color {
-  background-color: #ffaaaa !important;
-  color: black;
-  ion-icon {
-    color: black
-  }
-}
-
+// 2. BOTONES Y FILAS (Se aplica a FABs y Popover)
 ion-row {
   display: flex;
   justify-content: center;
   gap: 5px;
 }
 
-/* ----- Default item look ----- */
-.confirm {
-  font-weight: 400;
-  transition: all 0.2s ease-in-out;
-  --inner-padding-end: 0;
-  --inner-padding-start: 0;
-  margin: 4px 0;
-  border-radius: 8px;
+.archive-color {
+  background-color: #ffaaaa !important;
+  color: black;
+  ion-icon { color: black; }
 }
 
-/* ----- Confirmation popover ----- */
+// 3. POSICIONAMIENTO
+.list-spacer {
+  height: 100px;
+  width: 100%;
+}
 
-.green-color {
-  background-color: green !important;
-  color: white;
-  ion-icon {
-    color: white
+ion-fab[vertical="top"] {
+  margin-top: 12px !important;
+}
+
+// 4. POPOVER 
+ion-popover {
+  --width: 90%;
+  --max-width: 400px;
+  
+  ion-list {
+    padding: 10px;
   }
-}
-
-.red-color {
-  background-color: red !important;
-  color: white;
-  ion-icon {
-    color: white
+  
+  .confirm {
+    --inner-padding-end: 0;
+    text-align: center;
   }
 }

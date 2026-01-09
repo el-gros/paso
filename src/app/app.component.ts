@@ -112,6 +112,7 @@ export class AppComponent {
         if (track) {
           if (this.mapService.mapIsReady) {
             await this.reference.displayArchivedTrack();
+                await this.geography.setMapView(this.reference.archivedTrack);
           } else {
             // Mark that we have something to show as soon as the map finishes loading
             this.mapService.hasPendingDisplay = true;
@@ -226,7 +227,7 @@ export class AppComponent {
           await this.present.htmlValues();
           this.cd.detectChanges();
           // Opcional: Re-centrar el mapa al despertar para ver dónde estamos ahora
-          this.geography.setMapView(track);
+          await this.geography.setMapView(track);
         });
       } catch (error) {
         console.error('Error during morningTask:', error);

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ActionSheetController, IonicModule } from '@ionic/angular';
+import { ActionSheetController, PopoverController, IonicModule } from '@ionic/angular';
 import { TrackDefinition, Waypoint } from '../../globald';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
@@ -14,6 +14,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
+import { SaveTrackPopover } from '../save-track-popover.component';
+import { jsPDF } from "jspdf";
+import polyline from '@mapbox/polyline';
+import { global } from '../../environments/environment';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Style, Stroke } from 'ol/style';
 
 @Component({
     standalone: true,
@@ -42,15 +54,14 @@ export class ArchivePage {
     public geography: GeographyService,
     public location: LocationManagerService,
     private actionSheetCtrl: ActionSheetController,
+    private popoverCtrl: PopoverController,
   ) {  }
 
   /* FUNCTIONS
     1. ionViewDidEnter()
-    2. onChange()
     3. editTrack()
-    4. deleteTracks()
     5. displayTrack()
-    6. yesDeleteTracks()
+
     7. geoJsonToGpx()
     8.  exportTrack()
     9. displayAllTracks()
@@ -70,23 +81,10 @@ export class ArchivePage {
     if (this.fs.buildTrackImage) await this.shareImages();
   }
 
-  // 2. ON CHANGE, COUNT CHECKED ITEMS AND SAVE
-  async onChange() {
-    // Copute numChecked
-    this.numChecked = this.fs.collection.filter((item: { isChecked: any; }) => item.isChecked).length;
-    // Find the first checked item
-    const firstCheckedItem = this.fs.collection.find((item: { isChecked: any; }) => item.isChecked);
-    // Extract the date, or set to null if no checked item is found
-    const firstCheckedDate = firstCheckedItem ? firstCheckedItem.date : null;
-    this.fs.key = JSON.stringify(firstCheckedDate)
-    console.log(this.numChecked)
-  }
-
   // 3. EDIT TRACK DETAILS //////////////////////////////
-  async editTrack() {
-    // Find the index of the selected track
-    const selectedIndex = this.fs.collection.findIndex((item: { isChecked: boolean }) => item.isChecked);
-    if (selectedIndex >= 0) this.fs.editTrack(selectedIndex, '#ffbbbb', true);
+  async editSpecificTrack(index: number, slidingItem: any) {
+    if (slidingItem) slidingItem.close();
+    await this.reference.editTrack(index);
   }
 
 
@@ -96,38 +94,18 @@ export class ArchivePage {
       // retrieve archived track
       console.log('active?',active)
       this.reference.archivedTrack = await this.fs.retrieveTrack() ?? this.reference.archivedTrack;
-      if (this.reference.archivedTrack) await this.reference.displayArchivedTrack();
+      if (this.reference.archivedTrack) {
+        await this.reference.displayArchivedTrack();
+        await this.geography.setMapView(this.reference.archivedTrack);
+      }
+        
     }
     else {
       this.reference.archivedTrack = undefined;
       this.geography.archivedLayer?.getSource()?.clear();
     }
     await this.location.sendReferenceToPlugin()
-    this.fs.uncheckAll();
     this.fs.gotoPage('tab1');
-  }
-
-  // 6. CONFIRM, YES, DELETE TRACKS ////////////////////////
-  async yesDeleteTracks() {
-    // Separate items into "to-remove" and "to-keep" categories
-    const { toRemove, toKeep } = this.fs.collection.reduce(
-      (acc: { toRemove: any[]; toKeep: any[]; }, item: { isChecked: any; }) => {
-        item.isChecked ? acc.toRemove.push(item) : acc.toKeep.push(item);
-        return acc;
-      },
-      { toRemove: [] as typeof this.fs.collection, toKeep: [] as typeof this.fs.collection }
-    );
-    // Update the collection and save the updated list
-    this.fs.collection = toKeep;
-    await this.fs.storeSet('collection', this.fs.collection);
-    // Remove the selected items (batch operation if supported)
-    for (const item of toRemove) {
-      await this.fs.storeRem(JSON.stringify(item.date));
-    }
-    // Reset the count of checked items
-    await this.fs.uncheckAll();
-    // informretrievetrack
-    await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST3'));
   }
 
   // 7. GEOJSON TO GPX //////////////////////
@@ -172,78 +150,69 @@ export class ArchivePage {
     return gpxText;
   }
 
-  /*
-  // 8. EXPORT TRACK //////////////////////////
-  async exportTrackFile() {
-    // Helper to sanitize file names for cross-platform compatibility
-    const sanitizeFilename = (name: string): string =>
-      (name ?? 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-    const dialog_title = this.translate.instant('ARCHIVE.DIALOG_TITLE');
-    const track = await this.fs.retrieveTrack();
-    if (!track) {
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
-      return;
-    }
-    await this.fs.uncheckAll();
-    var gpxText = await this.geoJsonToGpx(track.features?.[0]);
-    const sanitizedName = sanitizeFilename(track.features?.[0]?.properties?.name.replaceAll(' ', '_'));
-    const file: string = `${sanitizedName}.gpx`;
-    // Generate KMZ file using geoJsonToKmz
-    const base64Kmz = await this.geoJsonToKmz(track.features?.[0]);
-    const kmzFile: string = `${sanitizedName}.kmz`;
+  // 8. EXPORT TRACK ////////////////////////// BO
+  async exportTrackFile(item: any) {
+    if (!item) return;
+
+    const sanitize = (name: string) => (name ?? 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    
     try {
-      // Save gpx file into public Downloads folder
-      const savedFile = await Filesystem.writeFile({
-        path: file,       // 👈 goes into /storage/emulated/0/Download
+      // 1. RECUPERAR LOS DATOS REALES (Puntos GPS)
+      // Usamos la fecha como clave tal como indicas
+      const storageKey = JSON.stringify(item.date);
+      const trackData = await this.fs.storeGet(storageKey);
+
+      if (!trackData) {
+        await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
+        return;
+      }
+
+      // 2. PREPARAR ARCHIVOS
+      const safeName = sanitize(item.name || 'track');
+      const gpxName = `${safeName}.gpx`;
+      const kmzName = `${safeName}.kmz`;
+
+      // 3. GENERAR CONTENIDOS
+      // Asegúrate de pasar la feature (normalmente trackData.features[0])
+      const featureToExport = trackData.features ? trackData.features[0] : trackData;
+      
+      const gpxText = await this.geoJsonToGpx(featureToExport);
+      const base64Kmz = await this.geoJsonToKmz(featureToExport);
+
+      // 4. GUARDAR EN CACHÉ TEMPORAL
+      const savedGpx = await Filesystem.writeFile({
+        path: gpxName,
         data: gpxText,
         directory: Directory.ExternalCache,
-        recursive: true,
         encoding: Encoding.UTF8,
       });
-      // Save kmz file into public Downloads folder
-      const savedKmzFile = await Filesystem.writeFile({
-        path: kmzFile,
-        data: base64Kmz,
+
+      const savedKmz = await Filesystem.writeFile({
+        path: kmzName,
+        data: base64Kmz, 
         directory: Directory.ExternalCache,
-        recursive: true,
       });
+
+      // 5. COMPARTIR
       await this.socialSharing.shareWithOptions({
-        //message: this.translate.instant('ARCHIVE.TEXT'),
-        files: [savedFile.uri, savedKmzFile.uri],
+        files: [savedGpx.uri, savedKmz.uri],
         chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
-      // Cleanup files
-      await this.cleanupGpxFiles(file);
-      // Show success toast
+
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
+
+      // 6. LIMPIEZA
+      setTimeout(async () => {
+        try {
+          await Filesystem.deleteFile({ path: gpxName, directory: Directory.ExternalCache });
+          await Filesystem.deleteFile({ path: kmzName, directory: Directory.ExternalCache });
+        } catch (err) { console.warn('Clean error', err); }
+      }, 5000); // 5 segundos para dar tiempo extra a apps lentas
+
     } catch (e) {
-      // Show error toast
+      console.error('Export error:', e);
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
     }
-    this.menu.close();
-  }
-  */  
-
-  // 9. DISPLAY ALL TRACKS ///////////////////////
-  async displayAllTracks(active: boolean) {
-    this.reference.archivedTrack = undefined;
-    await this.location.sendReferenceToPlugin()
-    this.geography.archivedLayer?.getSource()?.clear();
-    this.fs.uncheckAll();
-    this.fs.gotoPage('tab1');
-    if (active) await this.mapService.displayAllTracks();
-  }
-
-  // 10. ION VIEW WILL LEAVE
-  async ionViewWillLeave() {
-    await this.fs.storeSet('collection', this.fs.collection);
-  }
-
-  // 11. REMOVE SEARCH LAYER
-  removeSearch() {
-    this.geography.searchLayer?.getSource()?.clear();
-    this.fs.uncheckAll();
-    this.fs.gotoPage('tab1');
   }
 
   // 12. OPEN MENU ///////////////////////
@@ -382,27 +351,22 @@ export class ArchivePage {
     return await zip.generateAsync({ type: "base64" });
   }
 
-  // Helper to toggle checkbox if user clicks the label text
-  toggleCheck(item: any) {
-    item.isChecked = !item.isChecked;
-    this.onChange();
-  }
-
   async displaySpecificTrack(item: any, slidingItem: any) {
-    slidingItem.close(); // Close the swipe menu
-    
-    // Logic: Uncheck everything else, check this one, and show it
-    this.fs.collection.forEach(t => t.isChecked = false);
-    item.isChecked = true;
-    this.onChange();
-    
-    await this.displayTrack(true);
-  }
-
-  async editSpecificTrack(index: number, slidingItem: any) {
-    slidingItem.close();
-    // Call your existing edit function directly using the index
-    await this.fs.editTrack(index, '#ffffbb', false);
+    // 1. Limpieza de UI
+    if (slidingItem) slidingItem.close();
+    // 2. Carga de datos (Esto es rápido, se queda aquí)
+    const trackData = await this.fs.storeGet(JSON.stringify(item.date));
+    this.reference.archivedTrack = trackData;
+    // 3. NAVEGAR PRIMERO
+    this.fs.gotoPage('tab1');
+    // 4. PEQUEÑA ESPERA (Crucial en Ionic/Capacitor)
+    // Damos 150-200ms para que la animación de la pestaña termine
+    await new Promise(r => setTimeout(r, 200));
+    // 5. RENDERIZAR Y CENTRAR
+    this.reference.displayArchivedTrack();
+    await this.geography.setMapView(this.reference.archivedTrack);
+    // 6. Sincronizar plugin en segundo plano
+    await this.location.sendReferenceToPlugin();
   }
 
   async deleteSpecificTrack(index: number, slidingItem: any) {
@@ -410,21 +374,19 @@ export class ArchivePage {
     // You can show a confirmation alert here before deleting
     this.fs.collection.splice(index, 1);
     await this.fs.storeSet('collection', this.fs.collection);
-    this.onChange();
+    //this.onChange();
   }
 
   async hideSpecificTrack(slidingItem: any) {
     if (slidingItem) slidingItem.close();
-    
     // Change this line from null to undefined
     this.reference.archivedTrack = undefined; 
-    
     const source = this.geography.archivedLayer?.getSource();
     if (source) {
       source.clear();
     }
-    
-    this.onChange();
+    await this.location.sendReferenceToPlugin()
+    this.fs.gotoPage('tab1');    
   }
 
   isTrackVisible(item: any): boolean {
@@ -488,10 +450,131 @@ export class ArchivePage {
     await actionSheet.present();
   }
 
-  exportTrackFile(index: number) {}
-
   exportTrackDescription(index: number) {}
 
+  async displayAllTracks(show: boolean) {
+    try {
+      if (show) {
+        // Hide reference track (if it exists)
+        if (this.reference.archivedTrack) {
+          this.reference.archivedTrack = undefined;
+          await this.location.sendReferenceToPlugin()
+          this.geography.archivedLayer?.getSource()?.clear();
+        }
+        this.mapService.displayAllTracks(); 
+        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'));
+      } else {
+        // Hide everything
+        this.geography.archivedLayer?.getSource()?.clear();      
+        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'));
+      }
+      this.fs.gotoPage('tab1');
+    }
+    catch {
+      console.error("Failed to update track display:", Error);
+      // Optionally show an error toast to the user
+    }
+  }
+
+  // 2. FUNCIÓN PRINCIPAL DE EXPORTACIÓN
+async exportFullReport(item: any) {
+  console.log("1. Iniciando exportación para:", item.name);
+  try {
+    // A. Recuperar datos (Punto crítico)
+    const storageKey = JSON.stringify(item.date);
+    const trackData = await this.fs.storeGet(storageKey);
+    
+    if (!trackData) {
+      console.error("No hay datos en el storage para la clave:", storageKey);
+      this.fs.displayToast("Error: No hay datos de GPS");
+      return;
+    }
+    console.log("2. Datos recuperados con éxito");
+
+    // B. Crear PDF básico (Sin imagen para descartar errores)
+    const doc = new jsPDF();
+    doc.text(`Ruta: ${item.name}`, 20, 20);
+    doc.text(`Distancia: ${item.stats?.distance || '--'} km`, 20, 30);
+    
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    const safeName = "test_paso_" + Date.now();
+
+    // C. Escribir archivo (Punto crítico)
+    console.log("3. Escribiendo archivo PDF...");
+    const savedPdf = await Filesystem.writeFile({
+      path: `${safeName}.pdf`,
+      data: pdfBase64,
+      directory: Directory.ExternalCache
+    });
+    console.log("4. Archivo escrito en:", savedPdf.uri);
+
+    // D. Compartir (Sin GPX de momento, solo el PDF)
+    console.log("5. Intentando abrir Social Sharing...");
+    await this.socialSharing.share(
+      "Informe de mi ruta",
+      "App Paso",
+      [savedPdf.uri]
+    );
+    console.log("6. Selector de compartir abierto");
+
+  } catch (err) {
+    // Esto nos dirá exactamente qué línea falla
+    console.error("ERROR CRÍTICO:", err);
+    this.fs.displayToast("Error interno: " + err);
+  }
 }
 
+  // 3. GENERADOR DE IMAGEN (OPENLAYERS)
+private async generateMapImage(trackData: any): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      const vectorSource = new VectorSource({
+        features: new GeoJSON().readFeatures(trackData, {
+          featureProjection: 'EPSG:3857'
+        })
+      });
 
+      const mapExport = new Map({
+        target: 'map-export',
+        layers: [
+          new TileLayer({ 
+            // ESTO ES LO MÁS IMPORTANTE PARA QUE NO FALLE EL PDF
+            source: new OSM({ crossOrigin: 'anonymous' }) 
+          }),
+          new VectorLayer({
+            source: vectorSource,
+            style: new Style({ stroke: new Stroke({ color: '#ff0000', width: 4 }) })
+          })
+        ],
+        view: new View({ padding: [30, 30, 30, 30] })
+      });
+
+      mapExport.getView().fit(vectorSource.getExtent());
+
+      mapExport.once('rendercomplete', () => {
+        const size = mapExport.getSize();
+        const mapCanvas = document.createElement('canvas');
+        if (!size) { resolve(''); return; }
+        
+        mapCanvas.width = size[0];
+        mapCanvas.height = size[1];
+        const mapContext = mapCanvas.getContext('2d');
+        if (!mapContext) { resolve(''); return; }
+
+        // Recogemos todos los canvas generados por OpenLayers
+        const canvases = document.querySelectorAll('#map-export .ol-layer canvas');
+        canvases.forEach((canvas: any) => {
+          mapContext.drawImage(canvas, 0, 0);
+        });
+
+        const data = mapCanvas.toDataURL('image/jpeg', 0.7); // Bajamos calidad a 0.7 para que el archivo sea más ligero
+        mapExport.setTarget(undefined);
+        resolve(data);
+      });
+    } catch (e) {
+      resolve('');
+    }
+  });
+}
+
+}

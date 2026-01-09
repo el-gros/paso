@@ -1,169 +1,142 @@
 <ion-content>
+  <ion-list-header>
+    <ion-label>{{ 'SETTINGS.GENERAL_GROUP' | translate }}</ion-label>
+  </ion-list-header>
 
-  <!-- Language selector -->
-  <ion-item lines="none" class="top-margin-selector">
-    <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
-    <ion-select
-      [value]="selectedLanguage.code"
-      (ionChange)="onLanguageChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (lang of languages; track lang.code) {
-        <ion-select-option [value]="lang.code">{{ lang.name }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+  <ion-list inset="true">
+    <ion-item lines="full">
+      <ion-icon name="language-outline" slot="start" color="primary"></ion-icon>
+      <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
+      <ion-select [value]="selectedLanguage.code" (ionChange)="onLanguageChange($event.detail.value)" interface="popover" slot="end">
+        @for (lang of languages; track lang.code) {
+          <ion-select-option [value]="lang.code">{{ lang.name }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
 
-  <!-- Map selector -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
-    <ion-select
-      [value]="geography.mapProvider"
-      (ionChange)="onMapChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (map of baseMaps; track map) {
-        <ion-select-option [value]="map">{{ map }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+    <ion-item lines="none">
+      <ion-icon name="map-outline" slot="start" color="primary"></ion-icon>
+      <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
+      <ion-select [value]="geography.mapProvider" (ionChange)="onMapChange($event.detail.value)" interface="popover" slot="end">
+        @for (map of baseMaps; track map) {
+          <ion-select-option [value]="map">{{ map }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+  </ion-list>
 
-  <!-- Current track color selection -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
-    <ion-button fill="clear" (click)="openColorPopover($event, 'current')">
-      <div class="color-display">
-        <div class="color-line" [ngStyle]="{ 'background-color': present.currentColor }"></div>
-        <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
-      </div>
-    </ion-button>
-  </ion-item>
+  <ion-list-header>
+    <ion-label>{{ 'SETTINGS.VISUAL_STYLE' | translate }}</ion-label>
+  </ion-list-header>
 
-  <!-- Archived track color selection -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
-    <ion-button fill="clear" (click)="openColorPopover($event, 'archived')">
-      <div class="color-display">
-        <div class="color-line" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
-        <div class="triangle" [ngStyle]="{ 'border-top-color': 'gray' }"></div>
-      </div>
-    </ion-button>
-  </ion-item>
+  <ion-list inset="true">
+    <ion-item lines="full">
+      <ion-icon name="git-commit-outline" slot="start"></ion-icon>
+      <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
+      <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'current')">
+        <div class="color-display-v2">
+          <div class="color-sample" [ngStyle]="{ 'background-color': present.currentColor }"></div>
+          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
+        </div>
+      </ion-button>
+    </ion-item>
 
-  <!-- Alert on /off -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
-    <ion-select
-      [value]="audio.alert"
-      (ionChange)="onAlertChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (alert of alerts; track alert) {
-        <ion-select-option [value]="alert">{{ alert }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+    <ion-item lines="none">
+      <ion-icon name="trail-sign-outline" slot="start"></ion-icon>
+      <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
+      <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'archived')">
+        <div class="color-display-v2">
+          <div class="color-sample" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
+          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
+        </div>
+      </ion-button>
+    </ion-item>
+  </ion-list>
 
-  <!-- Audio alert on / off 
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.AUDIO_ALERT' | translate }}</ion-label>
-    <ion-select
-      [value]="audio.audioAlert"
-      (ionChange)="onAudioAlertChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (alert of audioAlerts; track alert) {
-        <ion-select-option [value]="alert">{{ alert }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item> -->
+  <ion-list-header>
+    <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
+  </ion-list-header>
 
-  <!-- Geocoding service selector -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.GEOCODING' | translate }}</ion-label>
-    <ion-select
-      [value]="fs.geocoding"
-      (ionChange)="onGeocodingServiceChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (service of geocodingServices; track service) {
-        <ion-select-option [value]="service">{{ service }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+  <ion-list inset="true">
+    <ion-item lines="full">
+      <ion-icon name="notifications-outline" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
+      <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
+      <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
+    </ion-item>
 
-  <!-- Altitude method selector -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.SAVED_TRACK_ALTITUDE' | translate }}</ion-label>
-    <ion-select
-      [value]="fs.selectedAltitude"
-      (ionChange)="onAltitudeChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (altitude of altitudes; track altitude) {
-        <ion-select-option [value]="altitude">{{ altitude }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+    <ion-item lines="full">
+      <ion-label>{{ 'SETTINGS.GEOCODING' | translate }}</ion-label>
+      <ion-select [value]="fs.geocoding" (ionChange)="onGeocodingServiceChange($event.detail.value)" interface="popover" slot="end">
+        @for (service of geocodingServices; track service) {
+          <ion-select-option [value]="service">{{ service }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
 
-  <!-- Upload offline maps -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.UPLOAD_MAPS' | translate }}</ion-label>
-    <ion-select
-      [value]=""
-      (ionChange)="onMapUploadChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (map of missingOfflineMaps; track map) {
-        <ion-select-option [value]="map">{{ map }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+    <ion-item lines="none">
+      <ion-label>{{ 'SETTINGS.SAVED_TRACK_ALTITUDE' | translate }}</ion-label>
+      <ion-select [value]="fs.selectedAltitude" (ionChange)="onAltitudeChange($event.detail.value)" interface="popover" slot="end">
+        @for (altitude of altitudes; track altitude) {
+          <ion-select-option [value]="altitude">{{ altitude }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+  </ion-list>
 
-  <!-- Remove offline maps -->
-  <ion-item lines="none" class="selector">
-    <ion-label>{{ 'SETTINGS.REMOVE_MAPS' | translate }}</ion-label>
-    <ion-select
-      [value]=""
-      (ionChange)="onMapRemoveChange($event.detail.value)"
-      interface="popover"
-      slot="end"
-    >
-      @for (map of availableOfflineMaps; track map) {
-        <ion-select-option [value]="map">{{ map }}</ion-select-option>
-      }
-    </ion-select>
-  </ion-item>
+  <ion-list-header>
+    <ion-label>{{ 'SETTINGS.OFFLINE_MAPS' | translate }}</ion-label>
+  </ion-list-header>
 
-  <!-- 🔹 Show progress bar only when downloading -->
-  @if (isDownloading) {
-    <ion-progress-bar [value]="downloadProgress / 100"></ion-progress-bar>
-    <p>{{ downloadProgress }}% downloaded</p>
-  }
+  <ion-list inset="true">
+    <ion-item lines="full">
+      <ion-icon name="download-outline" slot="start" color="success"></ion-icon>
+      <ion-label>{{ 'SETTINGS.UPLOAD_MAPS' | translate }}</ion-label>
+      <ion-select [value]="" (ionChange)="onMapUploadChange($event.detail.value)" placeholder="{{ 'SETTINGS.SELECT_MAP' | translate }}" interface="popover" slot="end">
+        @for (map of missingOfflineMaps; track map) {
+          <ion-select-option [value]="map">{{ map }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
 
+    <ion-item lines="none">
+      <ion-icon name="trash-outline" slot="start" color="danger"></ion-icon>
+      <ion-label>{{ 'SETTINGS.REMOVE_MAPS' | translate }}</ion-label>
+      <ion-select [value]="" (ionChange)="onMapRemoveChange($event.detail.value)" placeholder="{{ 'SETTINGS.SELECT_MAP' | translate }}" interface="popover" slot="end">
+        @for (map of availableOfflineMaps; track map) {
+          <ion-select-option [value]="map">{{ map }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+
+    @if (isDownloading) {
+      <ion-item lines="none" class="download-progress-item">
+        <div style="width: 100%; padding: 10px 0;">
+          <ion-progress-bar [value]="downloadProgress / 100" color="success"></ion-progress-bar>
+          <ion-note class="ion-text-center ion-display-block" style="margin-top: 8px;">
+            {{ downloadProgress }}% {{ 'SETTINGS.DOWNLOADED' | translate }}
+          </ion-note>
+        </div>
+      </ion-item>
+    }
+  </ion-list>
+
+  <div style="height: 120px;"></div>
 </ion-content>
 
-<!-- space for android controls -->
 <div class="bottom-safe-gray"></div>
-
-<!-- Navigation buttons -->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row>
-    <ion-fab-button id="databutton" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="earth"></ion-icon>
-    </ion-fab-button>
-    <ion-fab-button id="databutton" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics"></ion-icon>
-    </ion-fab-button>
-    <ion-fab-button id="list" (click)="fs.gotoPage('archive')">
-      <ion-icon name="list"></ion-icon>
-    </ion-fab-button>
+  <ion-row class="button-container">
+    <div class="record-button settings-color" (click)="fs.gotoPage('tab1')">
+      <ion-icon name="earth-sharp"></ion-icon>
+      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button settings-color" (click)="fs.gotoPage('canvas')">
+      <ion-icon name="analytics-sharp"></ion-icon>
+      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button settings-color" (click)="fs.gotoPage('archive')">
+      <ion-icon name="list-sharp"></ion-icon>
+      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+    </div>
   </ion-row>
 </ion-fab>

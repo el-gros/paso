@@ -5,11 +5,13 @@ import { Storage } from '@ionic/storage-angular';
 import { ToastController, AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
-import { EditModalComponent } from '../edit-modal/edit-modal.component';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import { register } from 'swiper/element';
 import { GeographyService } from '../services/geography.service';
 register();
+
+const DEG_TO_RAD = Math.PI / 180;
+const EARTH_RADIUS_KM = 6371;
 
 @Injectable({
   providedIn: 'root'
@@ -27,11 +29,10 @@ export class FunctionsService {
   geocoding: string = 'maptiler';
   collection: TrackDefinition []= [];
   properties: (keyof Data)[] = ['altitude', 'compSpeed'];
- 
-  // Re-draw tracks?
+   // Re-draw tracks?
   reDraw: boolean = false;
-  // Beep interval
-
+  alert: string = 'on';
+    
   constructor(
     private storage: Storage,
     private toastController: ToastController,
@@ -60,13 +61,14 @@ export class FunctionsService {
     15. fillProperties
     16. computeMinMaxProperty
     17. createTimes
-    18. editTrack
+
     19. editWaypoint
     20. gotoPage
 
     23. adjustCoordinatesAndProperties
     24. sanitize
   */
+
 
   async init() {
     this._storage = await this.storage.create();
@@ -75,7 +77,6 @@ export class FunctionsService {
   // 1. COMPUTES DISTANCES /////////////////////////////////////
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     // differences in latitude and longitude in radians
-    const DEG_TO_RAD = Math.PI / 180;
     const dLat = (lat2 - lat1) * DEG_TO_RAD;
     const dLon = (lon2 - lon1) * DEG_TO_RAD;
     // Haversine formula
@@ -86,8 +87,7 @@ export class FunctionsService {
     // angular distance in radians
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     // distance in km
-    const earthRadiusKm = 6371;
-    return earthRadiusKm * c;
+    return EARTH_RADIUS_KM * c;
   }
 
   // 2. FORMAT MILISECONDS TO HH:MM:SS
@@ -154,16 +154,6 @@ export class FunctionsService {
       cssClass: 'toast', // Add your custom class here
     });
     await toast.present();
-  }
-
-  // 10. UNCHECK ALL ///////////////////////////////////////////
-  async uncheckAll() {
-    for (const item of this.collection) {
-      if ('isChecked' in item) {
-        item.isChecked = false;
-      }
-    }
-    await this.storeSet('collection', this.collection);
   }
 
   // 11. COMPUTE CUUMULATIVE DISTANCES
@@ -239,16 +229,23 @@ export class FunctionsService {
     if (data.length === 0) {
       throw new Error('Data array is empty.');
     }
-    const values = data.map(datum => datum[propertyName]);
-    // Validate numeric values
-    if (!values.every(Number.isFinite)) {
-      throw new Error(`Property ${String(propertyName)} contains non-numeric or invalid values.`);
+
+    // Inicializamos con el primer valor
+    let min = data[0][propertyName] as number;
+    let max = data[0][propertyName] as number;
+
+    // Recorremos una sola vez (O(n)) sin duplicar el array en memoria
+    for (let i = 1; i < data.length; i++) {
+      const val = data[i][propertyName] as number;
+
+      // Validación rápida de seguridad
+      if (!Number.isFinite(val)) continue; 
+
+      if (val < min) min = val;
+      if (val > max) max = val;
     }
-    // Compute and return bounds
-    return {
-      min: Math.min(...values),
-      max: Math.max(...values)
-    };
+
+    return { min, max };
   }
 
   // 17. CREATE TIMES /////////////////////////////////////////
@@ -262,61 +259,6 @@ export class FunctionsService {
       const timeOffset = ratio * totalDuration;
       return Math.round(startTime + timeOffset); // in ms
     });
-  }
-
-  // 18. EDIT TRACK DETAILS //////////////////////////////
-  async editTrack(selectedIndex: number, backgroundColor: string, edit: boolean) {
-    // Extract selected track details
-    const selectedTrack = this.collection[selectedIndex];
-    const modalEdit = {
-      name: this.sanitize(selectedTrack.name || ''),
-      place: this.sanitize(selectedTrack.place || ''),
-      description: this.sanitize((selectedTrack.description || '')
-        .replace("<![CDATA[", "")
-        .replace("]]>", "")
-        .replace(/\n/g, '<br>')),
-    };
-    // Select cssClass
-    let cssClass: string[] = []
-    if (backgroundColor == '#ffbbbb') cssClass = ['modal-class','red-class']
-    else cssClass = ['modal-class','yellow-class']
-    // Open the modal for editing
-    const modal = await this.modalController.create({
-      component: EditModalComponent,
-      componentProps: { modalEdit, edit },
-      cssClass: cssClass,
-      backdropDismiss: true, // Allow dismissal by tapping the backdrop
-    });
-    await modal.present();
-    // Handle the modal's dismissal
-    const { data } = await modal.onDidDismiss();
-    if (data) {
-      let { action, name, place, description } = data;
-      if (action === 'ok') {
-        // Sanitize all returned user inputs before saving or displaying
-        name = this.sanitize(name);
-        place = this.sanitize(place);
-        description = this.sanitize(description);
-        if (!name) name = 'No name'
-        Object.assign(selectedTrack, {
-          name,
-          place,
-          description
-        });
-        await this.storeSet('collection', this.collection);
-        if (!this.key) return;
-        const track = await this.storeGet(this.key);
-        if (track) {
-          Object.assign(track.features[0].properties, {
-            name,
-            place,
-            description
-          });
-          if (this.key) await this.storeSet(this.key, track);
-        }
-        this.refreshCollectionUI?.();
-      }
-    }
   }
 
   // 19. EDIT WAYPOINT DETAILS //////////////////////////////

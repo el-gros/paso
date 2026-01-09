@@ -402,22 +402,12 @@
   z-index: 10;
 }
 
-/* Ensure FAB stays above the gray bar and not overlapped */
-.bottom-safe {
-  /*margin-bottom: env(safe-area-inset-bottom);*/
-  margin-bottom: 50px;
-  z-index: 20;
-}
-
-.top-safe {
-  margin-top: 25px;
-  z-index: 20;
-}
 
   .top-margin-selector {
     margin-top: 70px;       /* if you still need a 70px top margin */
     background: #a3bfff;
   }
+
   .top-margin-selector ion-label {
     font-weight: bold;      /* make the label text bold */
   }
@@ -425,11 +415,12 @@
   .selector {
     background: #a3bfff;
   }
+
   .selector ion-label {
     font-weight: bold;      /* make the label text bold */
   }
 
-  ion-select-option[aria-selected="true"] {
+ion-select-option[aria-selected="true"] {
   font-weight: bold;
 }
 
@@ -580,4 +571,104 @@ ion-input::part(native) {
 
 .result-item:hover {
   background: #f0f0f0;
+}
+
+/* --- ESTILO GLOBAL DE BOTONES (60x60) --- */
+.record-button {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center;
+  justify-content: center;
+  
+  /* Forzamos el tamaño exacto */
+  width: 62px !important;
+  height: 60px !important;
+  min-width: 62px;
+  min-height: 60px;
+  
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 0.70rem; /* Tamaño reducido para que el texto quepa en el cuadrado */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease;
+  color: black;
+  margin: 0;
+  padding: 0;
+
+  ion-icon {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+  }
+
+  span {
+    line-height: 1;
+    text-align: center;
+    white-space: normal;
+    padding: 0 2px;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  /* Estado deshabilitado (para popovers) */
+  &:disabled {
+    opacity: 0.4;
+    filter: grayscale(1);
+  }
+}
+
+/* --- COLORES --- 
+.map-color { background-color: #45ff2f !important; }      /* Verde Mapa 
+.settings-color { background-color: #aaaaff !important; } /* Púrpura Ajustes 
+.green-color { background-color: #27ae60 !important; color: white; ion-icon { color: white; } }
+.red-color { background-color: #eb445a !important; color: white; ion-icon { color: white; } }
+*/
+
+/* --- CONTENEDOR SUPERIOR --- */
+.top-safe {
+  /* Tu configuración original */
+  margin-top: 25px;
+  z-index: 20;
+  
+  /* Aseguramos que el contenedor no limite la altura de los botones */
+  height: auto;
+  pointer-events: none; /* Permite tocar el mapa a través de los huecos del FAB */
+
+  ion-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    align-items: flex-start;
+    pointer-events: auto; /* Reactiva los clics solo en los botones */
+  }
+}
+
+/* --- CONTENEDOR INFERIOR --- */
+.bottom-safe {
+  margin-bottom: 50px; 
+  z-index: 20;
+
+  ion-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px; 
+  }
+}
+
+.green-color {
+  background-color: green !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
+}
+
+.red-color {
+  background-color: red !important;
+  color: white;
+  ion-icon {
+    color: white
+  }
 }

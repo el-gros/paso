@@ -6,11 +6,11 @@ import { PresentService } from '../services/present.service';
 import { StylerService } from './styler.service';
 import { SupabaseService } from './supabase.service';
 import { Location, Track } from 'src/globald';
-import { AudioService } from './audio.service'
 import { firstValueFrom, filter, timeout } from 'rxjs';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import MyService from 'src/plugins/MyServicePlugin';
+import { FunctionsService } from '../services/functions.service';
 
 @Injectable({
   providedIn: 'root'
@@ -39,13 +39,13 @@ export class LocationManagerService {
   //public lastAccepted: Location | null = null;
 
   constructor(
-    private audio: AudioService,
     private geography: GeographyService,
     private present: PresentService,
     private reference: ReferenceService,
     private styler: StylerService,
     private supabase: SupabaseService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private fs: FunctionsService
   ) { }
 
  
@@ -211,22 +211,9 @@ export class LocationManagerService {
     });
   }
 
-/*  async syncNativeAlert() {
-    const track = this.reference.archivedTrack;
-    const isAudioOn = this.audio.alert === 'on';
-    // Si no hay track o el audio está apagado, mandamos array vacío
-    if (!track || !isAudioOn) {
-      await MyService.setReferenceTrack({ coordinates: [] });
-      return;
-    }
-    // Aquí ya sabemos que el track existe
-    const coords = track.features[0].geometry.coordinates;
-    await MyService.setReferenceTrack({ coordinates: coords });
-  } */
-
   async sendReferenceToPlugin() {
     let coordinates: number[][];
-    if (this.state != 'tracking' || this.audio.alert != 'on' || !this.reference.archivedTrack) coordinates = []
+    if (this.state != 'tracking' || this.fs.alert != 'on' || !this.reference.archivedTrack) coordinates = []
     else coordinates = this.reference.archivedTrack.features[0].geometry.coordinates
     try {
         await MyService.setReferenceTrack({ coordinates: coordinates });
