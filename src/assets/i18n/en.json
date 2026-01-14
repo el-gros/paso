@@ -28,6 +28,8 @@
     "REMOVE_TRACK": "Remove",
     "EDIT_TRACK": "Edit",
     "EXPORT_TRACK": "Export",
+    "ALL_DISPLAYED": "All tracks displayed",
+    "ALL_HIDDEN": "All tracks hidden",
 
     "CANCEL": "Cancel",
     "HEADER": "Confirm deletion",

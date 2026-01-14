@@ -29,6 +29,8 @@
     "REMOVE_TRACK": "Eliminar",
     "EDIT_TRACK": "Editar",
     "EXPORT_TRACK": "Exportar",
+    "ALL_DISPLAYED": "Es mostren tots els trajectes",
+    "ALL_HIDDEN": "S'han amagat tots els trajectes",
 
     "CANCEL": "Cancel·lar",
     "HEADER": "Confirma l'esborrat",

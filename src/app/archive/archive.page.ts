@@ -1,11 +1,9 @@
 import { Component } from '@angular/core';
 import { ActionSheetController, PopoverController, IonicModule } from '@ionic/angular';
-import { TrackDefinition, Waypoint } from '../../globald';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FunctionsService } from '../services/functions.service';
 import { ReferenceService } from '../services/reference.service';
 import { MapService } from '../services/map.service';
-import { MenuController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
@@ -14,10 +12,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
-import { SaveTrackPopover } from '../save-track-popover.component';
 import { jsPDF } from "jspdf";
-import polyline from '@mapbox/polyline';
-import { global } from '../../environments/environment';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -38,7 +33,6 @@ import { Style, Stroke } from 'ol/style';
 })
 export class ArchivePage {
 
-  numChecked: number = 0;
   isConfirmDeletionOpen: boolean = false;
   index: number = NaN;
   slidingItem: any = undefined;
@@ -46,34 +40,32 @@ export class ArchivePage {
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
-    private menu: MenuController,
     private languageService: LanguageService,
     private translate: TranslateService,
     private socialSharing: SocialSharing,
     public reference: ReferenceService,
     public geography: GeographyService,
     public location: LocationManagerService,
-    private actionSheetCtrl: ActionSheetController,
-    private popoverCtrl: PopoverController,
   ) {  }
 
   /* FUNCTIONS
     1. ionViewDidEnter()
-    3. editTrack()
-    5. displayTrack()
-
-    7. geoJsonToGpx()
-    8.  exportTrack()
-    9. displayAllTracks()
-    10. ionViewWillLeave()
-    11. removeSearch()
-    12. openMenu()
-    13. selectOption()
-
-    15. onInit()
-    16. prepareImageExport()
-    17. shareImages()
-    18. cleanupGpxFiles()
+    2. editSpecificTrack()
+    3. displayTrack()
+    4. geoJsonToGpx()
+    5. exportTrack()
+    6. onInit()
+    7. prepareImageExport()
+    8. shareImages()    
+    9. geojsonToKmz()
+    10. displaySpecificTrack()
+    11. deleteSpecificTrack()
+    12. hideSpecificTrack()
+    13. isTrackVisible()
+    14. toggleVisibility()
+    15. confirmDeletion()
+    16. deleteTrack()
+    17. displayAllTracks()
   */
 
   // 1. ON VIEW DID ENTER ////////////
@@ -81,14 +73,13 @@ export class ArchivePage {
     if (this.fs.buildTrackImage) await this.shareImages();
   }
 
-  // 3. EDIT TRACK DETAILS //////////////////////////////
+  // 2. EDIT TRACK DETAILS //////////////////////////////
   async editSpecificTrack(index: number, slidingItem: any) {
     if (slidingItem) slidingItem.close();
     await this.reference.editTrack(index);
   }
 
-
-  // 5. DISPLAY TRACK ///////////////////////////
+  // 3. DISPLAY TRACK ///////////////////////////
   async displayTrack(active: boolean) {
     if (active) {
       // retrieve archived track
@@ -98,7 +89,6 @@ export class ArchivePage {
         await this.reference.displayArchivedTrack();
         await this.geography.setMapView(this.reference.archivedTrack);
       }
-        
     }
     else {
       this.reference.archivedTrack = undefined;
@@ -108,77 +98,78 @@ export class ArchivePage {
     this.fs.gotoPage('tab1');
   }
 
-  // 7. GEOJSON TO GPX //////////////////////
+  // 4. GEOJSON TO GPX //////////////////////
   async geoJsonToGpx(feature: any): Promise<string> {
-    // Format timestamp into ISO 8601 format
-    const formatDate = (timestamp: number): string => {
-      const date = new Date(timestamp);
-      return date.toISOString();
-    };
-    // Initialize GPX text
+    // Formateador de fecha ISO
+    const formatDate = (timestamp: number): string => new Date(timestamp).toISOString();
+    // Helper para escapar caracteres XML prohibidos
+    const escapeXml = (unsafe: string | undefined) =>
+      (unsafe ?? '').replace(/[<>&'"]/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+      }[c] as string));
+    // Cabecera estándar GPX 1.1
     let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-      <gpx version="1.1" creator="elGros"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="http://www.topografix.com/GPX/1/1"
-        xsi:schemaLocation="http://www.topografix.com/GPX/1/1
-        http://www.topografix.com/GPX/1/1/gpx.xsd">`
-    // Add waypoints
+    <gpx version="1.1" creator="elGros"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://www.topografix.com/GPX/1/1"
+    xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">`;
+    // 1. WAYPOINTS (Opcionales)
     if (feature.waypoints && feature.waypoints.length > 0) {
-      const escapeXml = (unsafe: string | undefined) =>
-        (unsafe ?? '').replace(/[<>&'"]/g, c => ({
-          '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
-        }[c] as string));
-      feature.waypoints.forEach((wp: Waypoint) => {
-        const { latitude, longitude, altitude = '', name = '', comment = '' } = wp;
-        gpxText += `
-          <wpt lat="${latitude}" lon="${longitude}">
-            <ele>${escapeXml(String(altitude))}</ele>
-            <name><![CDATA[${name.replace(/]]>/g, ']]]]><![CDATA[>')}]]></name>
-            <cmt><![CDATA[${comment.replace(/]]>/g, ']]]]><![CDATA[>')}]]></cmt>
-          </wpt>`;
+      feature.waypoints.forEach((wp: any) => {
+        const { latitude, longitude, altitude, name = '', comment = '' } = wp;
+        gpxText += `\n  <wpt lat="${latitude}" lon="${longitude}">`;
+        // Solo añadimos la etiqueta <ele> si hay un valor válido
+        if (altitude !== undefined && altitude !== null && altitude !== '') {
+          gpxText += `\n    <ele>${altitude}</ele>`;
+        }
+        gpxText += `\n    <name><![CDATA[${name.replace(/]]>/g, ']]]]><![CDATA[>')}]]></name>`;
+        gpxText += `\n    <cmt><![CDATA[${comment.replace(/]]>/g, ']]]]><![CDATA[>')}]]></cmt>`;
+        gpxText += `\n  </wpt>`;
       });
     }
-    gpxText += `
-      <trk><name>${feature.properties.name}</name><trkseg>`;
+    // 2. TRACK
+    const trackName = escapeXml(feature.properties?.name || 'Track');
+    gpxText += `\n  <trk>\n    <name>${trackName}</name>\n    <trkseg>`;
+    // 3. PUNTOS DEL TRACK (trkpt)
     feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
-      const time = feature.geometry.properties.data[index]?.time || Date.now();
-      const altitude = feature.geometry.properties.data[index]?.altitude || 0;
-      gpxText += `<trkpt lat="${coordinate[1]}" lon="${coordinate[0]}">
-        <ele>${altitude}</ele><time>${formatDate(time)}</time></trkpt>`;
+      // Mantenemos tu ruta específica de datos
+      const dataPoint = feature.geometry.properties?.data?.[index];
+      const time = dataPoint?.time || Date.now();
+      const altitude = dataPoint?.altitude;
+      gpxText += `\n      <trkpt lat="${coordinate[1]}" lon="${coordinate[0]}">`;
+      // Etiqueta de altitud condicional para los puntos del track
+      if (altitude !== undefined && altitude !== null) {
+        gpxText += `\n        <ele>${altitude}</ele>`;
+      }
+      gpxText += `\n        <time>${formatDate(time)}</time>`;
+      gpxText += `\n      </trkpt>`;
     });
-    gpxText += `</trkseg></trk></gpx>`;
+    gpxText += `\n    </trkseg>\n  </trk>\n</gpx>`;
     return gpxText;
   }
 
-  // 8. EXPORT TRACK ////////////////////////// BO
-  async exportTrackFile(item: any) {
+  // 5. EXPORT TRACK ////////////////////////// BO
+  async exportTrackFile(item: any, slidingItem: { close: () => void; }) {
     if (!item) return;
-
     const sanitize = (name: string) => (name ?? 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-    
     try {
       // 1. RECUPERAR LOS DATOS REALES (Puntos GPS)
       // Usamos la fecha como clave tal como indicas
-      const storageKey = JSON.stringify(item.date);
+      const storageKey = item.date.toISOString();
       const trackData = await this.fs.storeGet(storageKey);
-
       if (!trackData) {
         await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
         return;
       }
-
       // 2. PREPARAR ARCHIVOS
       const safeName = sanitize(item.name || 'track');
       const gpxName = `${safeName}.gpx`;
       const kmzName = `${safeName}.kmz`;
-
       // 3. GENERAR CONTENIDOS
       // Asegúrate de pasar la feature (normalmente trackData.features[0])
       const featureToExport = trackData.features ? trackData.features[0] : trackData;
-      
       const gpxText = await this.geoJsonToGpx(featureToExport);
       const base64Kmz = await this.geoJsonToKmz(featureToExport);
-
       // 4. GUARDAR EN CACHÉ TEMPORAL
       const savedGpx = await Filesystem.writeFile({
         path: gpxName,
@@ -186,21 +177,17 @@ export class ArchivePage {
         directory: Directory.ExternalCache,
         encoding: Encoding.UTF8,
       });
-
       const savedKmz = await Filesystem.writeFile({
         path: kmzName,
         data: base64Kmz, 
         directory: Directory.ExternalCache,
       });
-
       // 5. COMPARTIR
       await this.socialSharing.shareWithOptions({
         files: [savedGpx.uri, savedKmz.uri],
         chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
-
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
-
       // 6. LIMPIEZA
       setTimeout(async () => {
         try {
@@ -208,29 +195,20 @@ export class ArchivePage {
           await Filesystem.deleteFile({ path: kmzName, directory: Directory.ExternalCache });
         } catch (err) { console.warn('Clean error', err); }
       }, 5000); // 5 segundos para dar tiempo extra a apps lentas
-
     } catch (e) {
       console.error('Export error:', e);
       await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
     }
+    // 1. Limpieza de UI
+    if (slidingItem) slidingItem.close();
   }
 
-  // 12. OPEN MENU ///////////////////////
-  openMenu() {
-    this.menu.open();
-  }
-
-  // 13. SELECT OPTION FROM MENU ////////////
-  selectOption(option: string) {
-    this.menu.close();
-  }
-
-  // 15. ON INIT //////////////////////////////////////
+  // 6. ON INIT //////////////////////////////////////
   onInit() {
     const lang = this.languageService.getCurrentLanguage();
   }
 
-  // 16. PREPARE IMAGE EXPORT //////////////////////////////
+  // 7. PREPARE IMAGE EXPORT //////////////////////////////
   async prepareImageExport() {
     // Inform tab1 on action to do
     this.fs.buildTrackImage = true;
@@ -238,7 +216,7 @@ export class ArchivePage {
     await this.displayTrack(true);
   }
 
-  // 17. SHARE IMAGES
+  // 8. SHARE IMAGES
   async shareImages() {
     try {
       // 1. Get file URIs from cache
@@ -270,92 +248,73 @@ export class ArchivePage {
     }
   }
 
-  // 18. CLEANUP GPX FILES
-  async cleanupGpxFiles(fileName: string) {
-    try {
-      const result = await Filesystem.readdir({
-        path: '',
-        directory: Directory.ExternalCache,
-      });
-      for (const file of result.files) {
-        if (file.name.endsWith('.gpx') || file.name.endsWith('.GPX')) {
-          if (file.name !== fileName) {
-            await Filesystem.deleteFile({
-              path: file.name,
-              directory: Directory.ExternalCache,
-            });
-          }
-        }
-      }
-      console.log('Cleanup finished.');
-    } catch (err) {
-      console.error('Error cleaning GPX files:', err);
-    }
-  }
-
-  // GEOJSON TO KMZ //////////////////////
+    // 9. GEOJSON TO KMZ //////////////////////
   async geoJsonToKmz(feature: any): Promise<string> {
-    // Format timestamp into ISO 8601 format
-    const formatDate = (timestamp: number): string => {
-      const date = new Date(timestamp);
-      return date.toISOString();
-    };
-    // Escape unsafe XML characters
+    // Nota: Eliminamos formatDate si no lo usamos en LineString estándar, 
+    // o lo usamos en la descripción si quieres conservar el tiempo de inicio.
     const escapeXml = (unsafe: string | undefined) =>
       (unsafe ?? '').replace(/[<>&'"]/g, c => ({
         '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
       }[c] as string));
-    // Initialize KML text
     let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
-      <kml xmlns="http://www.opengis.net/kml/2.2">
-        <Document>
-          <name>${escapeXml(feature.properties?.name ?? "Track")}</name>`;
-    console.log('kmltext ', kmlText)
-    // Add waypoints
+  <kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+      <name>${escapeXml(feature.properties?.name ?? "Track")}</name>
+      <Style id="lineStyle">
+        <LineStyle>
+          <color>ff0000ff</color>
+          <width>4</width>
+        </LineStyle>
+      </Style>`;
+    // 1. Waypoints (Opcional, igual que tenías)
     if (feature.waypoints && feature.waypoints.length > 0) {
-      feature.waypoints.forEach((wp: Waypoint) => {
-        const { latitude, longitude, altitude = '', name = '', comment = '' } = wp;
+      feature.waypoints.forEach((wp: any) => {
+        const { latitude, longitude, altitude = 0, name = '', comment = '' } = wp;
         kmlText += `
-          <Placemark>
-            <name><![CDATA[${name.replace(/]]>/g, ']]]]><![CDATA[>')}]]></name>
-            <description><![CDATA[${comment.replace(/]]>/g, ']]]]><![CDATA[>')}]]></description>
-            <Point>
-              <coordinates>${longitude},${latitude},${altitude}</coordinates>
-            </Point>
-          </Placemark>`;
+      <Placemark>
+        <name><![CDATA[${name}]]></name>
+        <description><![CDATA[${comment}]]></description>
+        <Point>
+          <coordinates>${longitude},${latitude},${altitude}</coordinates>
+        </Point>
+      </Placemark>`;
       });
     }
-    // Add track (LineString with timestamps as gx:Track if desired)
+    // 2. Track usando LineString (El estándar que Paso sí entenderá)
     kmlText += `
       <Placemark>
         <name>${escapeXml(feature.properties?.name ?? "Track")}</name>
+        <styleUrl>#lineStyle</styleUrl>
         <LineString>
           <tessellate>1</tessellate>
+          <altitudeMode>clampToGround</altitudeMode>
           <coordinates>`;
+    // Importante: El formato de coordinates en KML es "lon,lat,alt" separado por espacios
     feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
-      const altitude = feature.geometry.properties.data[index]?.altitude || 0;
-      kmlText += `
-        ${coordinate[0]},${coordinate[1]},${altitude}`;
+      const altitude = feature.geometry.properties?.data?.[index]?.altitude ?? 0;
+      kmlText += `${coordinate[0]},${coordinate[1]},${altitude} `;
     });
-    kmlText += `
-          </coordinates>
+    kmlText += `</coordinates>
         </LineString>
-      </Placemark>`;
-    kmlText += `
-        </Document>
-      </kml>`;
-    // Wrap into KMZ (ZIP)
+      </Placemark>
+    </Document>
+  </kml>`;
     const zip = new JSZip();
     zip.file("doc.kml", kmlText);
-    // return base64 string
-    return await zip.generateAsync({ type: "base64" });
+    // Generamos el base64
+    return await zip.generateAsync({ 
+      type: "base64", 
+      compression: "DEFLATE",
+      compressionOptions: { level: 9 }
+    });
   }
 
+  // 10. DISPLAY SPECIFIC TRACK ///////////////////////////////
   async displaySpecificTrack(item: any, slidingItem: any) {
     // 1. Limpieza de UI
     if (slidingItem) slidingItem.close();
     // 2. Carga de datos (Esto es rápido, se queda aquí)
-    const trackData = await this.fs.storeGet(JSON.stringify(item.date));
+    const trackData = await this.fs.storeGet(item.date.toISOString());
     this.reference.archivedTrack = trackData;
     // 3. NAVEGAR PRIMERO
     this.fs.gotoPage('tab1');
@@ -369,14 +328,20 @@ export class ArchivePage {
     await this.location.sendReferenceToPlugin();
   }
 
+  // 11. DELETE SPECIFIC TRACK ////////////////////////////
   async deleteSpecificTrack(index: number, slidingItem: any) {
     slidingItem.close();
+    // delete it
+    const trackToRemove = this.fs.collection[index];
+    const key = trackToRemove.date?.toISOString()
+    if (key) this.fs.storeRem(key);
     // You can show a confirmation alert here before deleting
     this.fs.collection.splice(index, 1);
     await this.fs.storeSet('collection', this.fs.collection);
     //this.onChange();
   }
 
+  // 12. HEIDE SPECIFIC TRACK //////////////////
   async hideSpecificTrack(slidingItem: any) {
     if (slidingItem) slidingItem.close();
     // Change this line from null to undefined
@@ -389,21 +354,20 @@ export class ArchivePage {
     this.fs.gotoPage('tab1');    
   }
 
+  // 13. IS TRACK VISIBLE() //////////////////////////// 
   isTrackVisible(item: any): boolean {
     // 1. Safety check: Is there even an archived track loaded?
     if (!this.reference.archivedTrack) return false;
-
     // 2. Extract the dates safely
     const activeDate = this.reference.archivedTrack.features?.[0]?.properties?.date;
     const itemDate = item.date;
-
     // 3. Type Guard: If either date is missing, they can't be a match
     if (!activeDate || !itemDate) return false;
-
     // 4. Compare timestamps (this works whether the input is a string or Date object)
     return new Date(activeDate).getTime() === new Date(itemDate).getTime();
   }
 
+  // 14. TOGGLE VISIBILITY ///////////////////////////
   async toggleVisibility(item: any, slidingItem: any) {
     if (this.isTrackVisible(item)) {
       await this.hideSpecificTrack(slidingItem);
@@ -412,46 +376,19 @@ export class ArchivePage {
     }
   }
 
+  // 15. CONFIRM DELETION ////////////////////////////
   confirmDeletion(index: number, slidingItem: any) {
     this.isConfirmDeletionOpen = true;
     this.index = index;
     this.slidingItem = slidingItem;
   }
 
+  // 16. DELETE TRACK ///////////////////////////////////////
   async deleteTrack() {
     await this.deleteSpecificTrack(this.index, this.slidingItem);
   }
 
-  /**
-   * Export Options (File vs Description)
-   */
-  async presentExportOptions(item: any, slidingItem: any) {
-    slidingItem.close();
-    
-    const actionSheet = await this.actionSheetCtrl.create({
-      header: this.translate.instant('ARCHIVE.EXPORT_TITLE'),
-      buttons: [
-        {
-          text: this.translate.instant('ARCHIVE.EXPORT_FILE'),
-          icon: 'document-outline',
-          handler: () => { this.exportTrackFile(item); }
-        },
-        {
-          text: this.translate.instant('ARCHIVE.EXPORT_DESCRIPTION'),
-          icon: 'text-outline',
-          handler: () => { this.exportTrackDescription(item); }
-        },
-        {
-          text: this.translate.instant('COMMON.CANCEL'),
-          role: 'cancel'
-        }
-      ]
-    });
-    await actionSheet.present();
-  }
-
-  exportTrackDescription(index: number) {}
-
+  // 17. DISPLAY ALL TRACKS ///////////////////////////////
   async displayAllTracks(show: boolean) {
     try {
       if (show) {
@@ -463,10 +400,12 @@ export class ArchivePage {
         }
         this.mapService.displayAllTracks(); 
         this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'));
+        this.mapService.visibleAll = true;
       } else {
         // Hide everything
         this.geography.archivedLayer?.getSource()?.clear();      
         this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'));
+        this.mapService.visibleAll = false;
       }
       this.fs.gotoPage('tab1');
     }
@@ -476,12 +415,17 @@ export class ArchivePage {
     }
   }
 
-  // 2. FUNCIÓN PRINCIPAL DE EXPORTACIÓN
+
+
+
+
+
+ // 2. FUNCIÓN PRINCIPAL DE EXPORTACIÓN
 async exportFullReport(item: any) {
   console.log("1. Iniciando exportación para:", item.name);
   try {
     // A. Recuperar datos (Punto crítico)
-    const storageKey = JSON.stringify(item.date);
+    const storageKey = item.date.toISOString();
     const trackData = await this.fs.storeGet(storageKey);
     
     if (!trackData) {

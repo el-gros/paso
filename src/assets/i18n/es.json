@@ -28,6 +28,8 @@
     "REMOVE_TRACK": "Eliminar",
     "EDIT_TRACK": "Editar",
     "EXPORT_TRACK": "Exportar",
+    "ALL_DISPLAYED": "Se muestran todos los trayectos",
+    "ALL_HIDDEN": "Se han escondido todos los trayectos",
 
     "CANCEL": "Cancelar",
     "HEADER": "Confirma el borrado",

@@ -20,7 +20,7 @@
               <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
               {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
             </ion-item-option>
-            <ion-item-option color="secondary" (click)="exportTrackFile(item)">
+            <ion-item-option color="secondary" (click)="exportTrackFile(item, slidingItem)">
               <ion-icon slot="top" name="share-outline"></ion-icon>
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
@@ -109,18 +109,20 @@
 <!-- FAB CON LOS BOTONES SUPERIORS PARA MOSTRAR O ESCONDER TODOS LOS TRAYECTOS -->
 
     <ion-fab slot="fixed" horizontal="end" vertical="top" class="bottom-safe">
-      <ion-row>
+      @if (!mapService.visibleAll) {
         <div class="record-button archive-color" (click)="displayAllTracks(true)">
           <span>{{ 'ARCHIVE.SHOW' | translate }}</span>
           <ion-icon name="eye-outline"></ion-icon>
           <span>{{ 'ARCHIVE.ALL' | translate }}</span>
         </div>
+      }
+      @if (mapService.visibleAll) {        
         <div class="record-button archive-color" (click)="displayAllTracks(false)">
           <span>{{ 'ARCHIVE.HIDE' | translate }}</span>
           <ion-icon name="eye-off-outline"></ion-icon>
           <span>{{ 'ARCHIVE.ALL' | translate }}</span>
         </div>
-      </ion-row>
+      }  
     </ion-fab>
 
 <!-- MAPA OCULTO -->

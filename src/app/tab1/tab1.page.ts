@@ -1,14 +1,12 @@
-
-import { Component, NgZone, Inject } from '@angular/core';
+import { Component, NgZone, Inject, inject } from '@angular/core';
 import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { CapacitorHttp, PluginListenerHandle, registerPlugin } from "@capacitor/core";
 import { Storage } from '@ionic/storage-angular';
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
+import {  ChangeDetectorRef } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
 import Feature, { FeatureLike } from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import LineString from 'ol/geom/LineString';
 import { ParsedPoint, Location, Track, TrackDefinition, Data, Waypoint } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
@@ -36,10 +34,9 @@ import MyService from '../../plugins/MyServicePlugin';
 import { Platform } from '@ionic/angular';
 import { PopoverController } from '@ionic/angular';
 import { BatteryPopoverComponent } from '../battery-popover.component';
+import { RecordPopoverComponent } from '../record-popover.component';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
-import { SaveTrackPopover } from '../save-track-popover.component';
-
 
 useGeographic();
 register();
@@ -50,22 +47,17 @@ register();
     templateUrl: 'tab1.page.html',
     styleUrls: ['tab1.page.scss'],
     imports: [
-      IonicModule, CommonModule, FormsModule, TranslateModule
+      IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent
     ],
     providers: [DecimalPipe, DatePipe],
-    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class Tab1Page {
 
-  speedFiltered: number = 0;
   vMin: number = 1;
 
   styleSearch?: (featureLike: FeatureLike) => Style | Style[] | undefined;
 
-  isRecordPopoverOpen = false;
-  isConfirmStopOpen = false;
-  isConfirmDeletionOpen = false;
   isSearchGuidePopoverOpen = false;
   isSearchPopoverOpen = false;
   isGuidePopoverOpen = false;
@@ -79,13 +71,15 @@ export class Tab1Page {
   
   subscription: Subscription | undefined;
   ngOnInitFinished: boolean = false;
-  
+
+  // Deja el constructor vacío temporalmente
+
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
     public server: ServerService,
     public storage: Storage,
-    @Inject(NgZone) private zone: NgZone,
+    private zone: NgZone,
     private cd: ChangeDetectorRef,
     private modalController: ModalController,
     private languageService: LanguageService,
@@ -96,47 +90,36 @@ export class Tab1Page {
     private stylerService: StylerService,
     public reference: ReferenceService,
     public geography: GeographyService,
-    private present: PresentService,
+    public present: PresentService, 
     private platform: Platform,
-    private popoverController: PopoverController
+    private popoverController: PopoverController,
+    private styler: StylerService,
   ) {}
 
   /* FUNCTIONS
 
   1. ngOnInit
   2. ionViewDidEnter
-  3. startTracking
-  4. removeTrack
-  5. stopTracking
-  6. setTrackDetails
-  7. saveFile
-  8. foregroundTask  
-  9. checkBatteryOptimizations
+  3. checkBatteryOptimizations
+
   10. handleClicks
   11. handleMapClicks
 
   14. show
   15. onDestroy
 
-  
-
   21. handleMapClick
-
-  23. htmValues
-
 
   29. saveTrack
 
-
-
   36. determineColors
-  37. waypoint
+
   38. setWaypointAltitude
   39. search
   40. guide
   41. addSearchLayer
 
-  43. gettitudes
+  43. getAltitudes
   44. getAltitudesFromMap
 
   */
@@ -147,7 +130,7 @@ export class Tab1Page {
     console.log("🚀 Plataforma lista, iniciando carga...");
     // 1. Tareas rápidas de interfaz y configuración
     this.languageService.determineLanguage();
-    this.show('alert', 'none'); 
+    //this.show('alert', 'none'); 
     // 2. Inicialización de datos críticos
     await this.initializeVariables();
     // 3. 🛡️ CONTROL DE PERMISOS (Punto de control obligatorio)
@@ -172,7 +155,7 @@ export class Tab1Page {
         // 5. Lanzar procesos en segundo plano y tracking de Ionic
         await this.checkBatteryOptimizations(); // Ajustes de Xiaomi
         await this.handleClicks();
-        await this.location.startPaso();     // Iniciar tracking de Capacitor
+        await this.startPaso();     // Iniciar tracking de Capacitor
       } catch (error) {
         console.error("❌ Error en la cadena de inicio:", error);
       }
@@ -180,7 +163,7 @@ export class Tab1Page {
       // Caso: El usuario no dio permisos
       console.error("❌ Permisos denegados. Modo visor activado.");
       await this.mapService.loadMap();
-      this.show('alert', 'block'); // Mostramos el div de alerta (pero con 'block')
+      //this.show('alert', 'block'); // Mostramos el div de alerta (pero con 'block')
     }
     // Finalización
     this.ngOnInitFinished = true;
@@ -200,203 +183,7 @@ export class Tab1Page {
     if (this.fs.buildTrackImage) await this.buildTrackImage()
   }
 
-  async startTracking() {
-    // 1. Guard: If already tracking, don't start again
-    if (this.location.state === 'tracking') return;
-    // 2. Clean up old subscriptions (Crucial to prevent memory leaks)
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-    // 3. Reset Live Data
-    this.present.currentTrack = undefined;
-    this.location.currentPoint = 0;
-    this.speedFiltered = 0;
-    this.present.altitudeFiltered = -1;
-    this.location.averagedSpeed = 0;
-    this.present.computedDistances = 0;
-    // 4. Clear Map Visuals immediately
-    if (this.geography.currentLayer) {
-      this.geography.currentLayer.getSource()?.clear();
-    }
-    // 5. Update UI values to zero/empty instantly
-    await this.present.htmlValues();
-    // 6. Subscribe to Location Updates
-    this.subscription = this.location.latestLocation$.subscribe(async (loc) => {
-      if (!loc) return;
-      // Only run expensive tasks if in foreground
-      if (this.location.foreground) {
-        try {
-          await this.foregroundTask();
-        } catch (err) {
-          console.error("Foreground task failed:", err);
-        }
-      } 
-    });
-    // 7. Finalize State
-    this.location.state = 'tracking';
-    await this.location.sendReferenceToPlugin()
-  }
-
-  // 4. REMOVE TRACK ///////////////////////////////////
-  async deleteTrack() {
-    // show / hide elements
-    this.location.state = 'inactive';
-    // Reset current track
-    this.present.currentTrack = undefined;
-    this.geography.currentLayer?.getSource()?.clear();
-    this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
-  }
-
-  // 5. STOP TRACKING //////////////////////////////////
-  async stopTracking(): Promise<void> {
-    this.location.state = 'stopped';
-    this.show('alert', 'none');
-    this.subscription?.unsubscribe();
-    // Validaciones iniciales
-    const source = this.geography.currentLayer?.getSource();
-    if (!source || !this.present.currentTrack || !this.geography.map) return;
-    // 1. Obtener coordenadas actuales
-    let coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 1) {
-      this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'));
-      return;
-    }
-    // 2. Finalizar datos de altitud y waypoints
-    const final = await this.present.filterAltitude(this.present.currentTrack, this.present.altitudeFiltered + 1, coordinates.length - 1);
-    if (final) this.present.altitudeFiltered = final;
-    await this.setWaypointAltitude();
-    // Refrescar coordenadas tras posibles filtros
-    coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 1) return;
-    // 3. ACTUALIZACIÓN DINÁMICA DE FEATURES (por 'type')
-    const features = source.getFeatures();
-    const routeLine = features.find(f => f.get('type') === 'route_line');
-    const startPin = features.find(f => f.get('type') === 'start_pin');
-    const endPin = features.find(f => f.get('type') === 'end_pin');
-    // Actualizar Línea Final
-    if (routeLine) {
-      routeLine.setGeometry(new LineString(coordinates));
-      routeLine.setStyle(this.stylerService.setStrokeStyle(this.present.currentColor));
-    }
-    // Asegurar Pin de Inicio (verde)
-    if (startPin) {
-      startPin.setGeometry(new Point(coordinates[0]));
-      startPin.setStyle(this.stylerService.createPinStyle('green'));
-    }
-    // Posicionar y estilizar Pin de Fin (rojo)
-    if (endPin) {
-      endPin.setGeometry(new Point(coordinates.at(-1)!));
-      endPin.setStyle(this.stylerService.createPinStyle('red'));
-    }
-    // 4. Finalización de vista y Plugin
-    await this.geography.setMapView(this.present.currentTrack);
-    this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
-    // Enviamos [] para que el Plugin deje de comparar la ruta pero el servicio siga vivo
-    await this.location.sendReferenceToPlugin();
-  }
-
-  // 6. SET TRACK DETAILS ///////////////////////////////
-  async setTrackDetails(ev?: any) {
-    const modalEdit = { name: '', place: '', description: '' };
-    const edit: boolean = true;
-    const popover = await this.popoverController.create({
-      component: SaveTrackPopover,
-      componentProps: { modalEdit, edit },
-      event: ev, // Positions the popover at the click location
-      translucent: true,
-      dismissOnSelect: false // Keeps it open while typing
-    });
-    await popover.present();
-    const { data } = await popover.onDidDismiss();
-    if (data?.action === 'ok') {
-      const name = data.name || 'No name';
-      this.saveFile(name, data.place, data.description);
-    }
-  }
-
-  // 7. SAVE FILE ////////////////////////////////////////
-  async saveFile(name: string, place: string, description: string) {
-    const track = this.present.currentTrack;
-    if (!track?.features?.[0]) return;
-    this.loading = true;
-    try {
-      // 1. Clonación y preparación de fecha
-      const trackToSave = JSON.parse(JSON.stringify(track));
-      const feature = trackToSave.features[0];
-      const saveDate = new Date();
-      // Mantenemos tu formato de clave original
-      const dateKey = JSON.stringify(saveDate); 
-      // 2. Procesamiento de Altitud (DEM)
-      if (this.fs.selectedAltitude === 'DEM') {
-        const coordinates = feature.geometry.coordinates;
-        const altSlopes = await this.getAltitudesFromMap(coordinates as [number, number][]);
-        if (altSlopes) {
-          if (altSlopes.slopes) {
-            feature.properties.totalElevationGain = altSlopes.slopes.gain;
-            feature.properties.totalElevationLoss = altSlopes.slopes.loss;
-          }
-          if (altSlopes.altitudes && feature.geometry.properties?.data) {
-            feature.geometry.properties.data.forEach((item: any, index: number) => {
-              item.altitude = altSlopes.altitudes[index];
-            });
-          }
-        }
-      }
-      // 3. Actualización de Propiedades
-      feature.properties.name = name;
-      feature.properties.place = place;
-      feature.properties.description = description;
-      feature.properties.date = saveDate; // Esto se guardará como ISO string en el JSON
-      // 4. Guardado del archivo GeoJSON (Clave: '"2023-10-27T..."')
-      await this.fs.storeSet(dateKey, trackToSave);
-      // 5. Actualización de la Colección (Lista del Archivo)
-      const trackDef: TrackDefinition = {
-        name,
-        date: saveDate,
-        place,
-        description,
-        isChecked: false
-      };
-      this.fs.collection.unshift(trackDef);
-      await this.fs.storeSet('collection', this.fs.collection);
-      // 6. Feedback y Limpieza
-      this.fs.displayToast(this.translate.instant('MAP.SAVED'));
-      this.location.state = 'saved';
-      this.show('alert', 'none');
-    } catch (e) {
-      console.error("Save failed", e);
-      this.fs.displayToast(this.translate.instant('ERRORS.SAVE_FAILED'));
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  // 8. FOREGROUND TASK ////////////////////////
-  async foregroundTask() {
-    const track = this.present.currentTrack;
-    if (!track) return;
-    const coords = track.features[0].geometry.coordinates;
-    const num = coords.length;
-    // 1. Filtrado de Altitud (Evitamos índices negativos)
-    const startIndex = Math.max(0, this.present.altitudeFiltered + 1);
-    const endIndex = Math.max(0, num - this.fs.lag - 1);
-    const final = await this.present.filterAltitude(track, startIndex, endIndex);
-    if (final) this.present.altitudeFiltered = final;
-    // 2. Cálculos de distancia y filtrado de velocidad
-    await this.present.accumulatedDistances();
-    const data = track.features[0].geometry.properties.data;
-    track.features[0].geometry.properties.data = await this.fs.filterSpeed(data, this.speedFiltered + 1);
-    this.speedFiltered = num - 1;
-    // 3. UI y Mapa (Dentro de la zona para asegurar refresco de etiquetas)
-    await this.present.htmlValues();
-    await this.present.displayCurrentTrack(track);
-    this.zone.run(() => {
-      this.cd.detectChanges();
-    });
-    console.log('Foreground:', track.features[0].properties.totalNumber, 'points processed.');
-  }
-
-  // 9. CHECK BATTERY OPTIMIZATIONS /////////////////////////////////
+  // 3. CHECK BATTERY OPTIMIZATIONS /////////////////////////////////
   async checkBatteryOptimizations(evento?: any) {
     try {
       // 1. Verificación REAL del estado del sistema (Nativo)
@@ -535,51 +322,7 @@ export class Tab1Page {
     return coords.findIndex(c => Math.abs(c[0] - target[0]) < eps && Math.abs(c[1] - target[1]) < eps);
   }
 
-  // 37. ADD WAYPOINT ////////////////////////////////////
-  async waypoint() {
-    if (!this.present.currentTrack) return;
-    const num: number = this.present.currentTrack.features[0].geometry.coordinates.length;
-    const point = this.present.currentTrack.features[0].geometry.coordinates[num - 1];
-    // Wrap the reverse geocode in a timeout
-    const addressObservable = this.mapService.reverseGeocode(point[1], point[0]);
-    const addressPromise = lastValueFrom(addressObservable);
-    // Timeout promise (rejects or resolves after 500 ms)
-    const timeoutPromise = new Promise(resolve =>
-      setTimeout(() => resolve(null), 500)
-    );
-    // Race both
-    const address: any = (await Promise.race([addressPromise, timeoutPromise])) || {
-      name: '',
-      display_name: '',
-      short_name: ''
-    };
-    const waypoint: Waypoint = {
-      longitude: point[0],
-      latitude: point[1],
-      altitude: num - 1,
-      name: address?.short_name ?? address?.name ?? address?.display_name ?? '',
-      comment: ''
-    };
-    const response: { action: string; name: string; comment: string } =
-      await this.fs.editWaypoint(waypoint, false, true);
-    if (response.action === 'ok') {
-      waypoint.name = response.name;
-      waypoint.comment = response.comment;
-      this.present.currentTrack?.features[0].waypoints?.push(waypoint);
-      this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'));
-    }
-  }
 
-  // 38. SET WAYPOINT ALTITUDE ////////////////////////////////////////
-  async setWaypointAltitude() {
-    if (!this.present.currentTrack) return;
-    // Retrieve waypoints
-    const waypoints: Waypoint[] = this.present.currentTrack.features[0].waypoints || [];
-    for (const wp of waypoints) {
-      if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.present.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
-    }
-    console.log(this.present.currentTrack)
-  }
 
 /*  async search() {
     if (!this.geography.map || !this.geography.searchLayer) return;
@@ -825,13 +568,6 @@ export class Tab1Page {
     this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     // Geocoding Service
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
-  }
-
-  closeAllPopovers() {
-    this.isConfirmStopOpen = false;
-    this.isConfirmDeletionOpen = false;
-    this.isRecordPopoverOpen = false;
-    this.isSearchPopoverOpen = false;
   }
 
   async selectResult(location: LocationResult | null) {
@@ -1127,6 +863,96 @@ async checkGpsPermissions(): Promise<boolean> {
   clearSearch() {
     this.geography.searchLayer?.getSource()?.clear();
     this.fs.gotoPage('tab1');
+  }
+
+  async startPaso() {
+    await MyService.startService();
+    MyService.addListener('location', (location: any) => {
+      // Force execution inside the Angular Zone
+      this.zone.run(async () => {
+        console.log('📍 Location Received', location);
+        if (!location) return;
+        const success = this.location.processRawLocation(location);
+        if (!success) return;
+        if (this.location.state === 'tracking') {
+          await this.present.updateTrack(location);
+        }
+        if (this.location.isSharing) {
+          await this.location.shareLocationIfActive(location);
+        }
+      });
+    });
+  }
+
+  async updateTrack(location: Location): Promise<boolean> {
+    if (!this.geography.map || !this.geography.currentLayer) return false;
+    // 1. INICIALIZACIÓN (Primer punto)
+    if (!this.present.currentTrack) {
+      // Creamos las features con sus etiquetas 'type'
+      const routeLine = new Feature();
+      routeLine.set('type', 'route_line');
+      const startPin = new Feature();
+      startPin.set('type', 'start_pin');
+      const endPin = new Feature(); // Se crea ahora, se posicionará en stopTracking
+      endPin.set('type', 'end_pin');
+      const features = [routeLine, startPin, endPin];
+      this.present.currentTrack = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {
+            name: '', place: '', date: undefined, description: '',
+            totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
+            totalTime: '00:00:00', totalNumber: 1,
+            currentAltitude: undefined, currentSpeed: undefined
+          },
+          bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
+          geometry: {
+            type: 'LineString',
+            coordinates: [[location.longitude, location.latitude]],
+            properties: {
+              data: [{
+                altitude: location.altitude,
+                speed: location.speed,
+                time: location.time,
+                compSpeed: 0,
+                compAltitude: location.altitude,
+                distance: 0
+              }]
+            }
+          },
+          waypoints: []
+        }]
+      };
+      this.location.stopped = 0;
+      this.location.averagedSpeed = 0;
+      // Posicionar el pin de inicio
+      startPin.setGeometry(new Point([location.longitude, location.latitude]));
+      startPin.setStyle(this.styler.createPinStyle('green'));
+      // Registrar en el mapa
+      const source = this.geography.currentLayer.getSource();
+      if (source) {
+        source.clear();
+        source.addFeatures(features);
+      }
+      return true;
+    }
+    // 2. ACTUALIZACIÓN (Puntos sucesivos)
+    const num = this.present.currentTrack.features[0].geometry.coordinates.length;
+    const prevData = this.present.currentTrack.features[0].geometry.properties.data[num - 1];
+    const previousTime = prevData?.time || 0;
+    const previousAltitude = prevData?.altitude || 0;
+    if (previousTime > location.time) return false;
+    // Suavizado de altitud
+    if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
+      location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
+    }
+    location.speed = location.speed * 3.6;
+    // Añadir punto al geojson y actualizar la geometría de la línea en el mapa
+    let track: any = this.present.currentTrack;
+    track = await this.location.fillGeojson(track, location);
+    if (this.location.foreground) this.present.currentTrack = await this.present.foregroundTask(track);
+    return true;
   }
 
 }

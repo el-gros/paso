@@ -1,8 +1,9 @@
+<!--
 <ion-content class="custom-content">
 
 <swiper-container id="data" pagination="true">
 
-  <!-- Slide 1: Current track -->
+  <!-- Slide 1: Current track 
   <swiper-slide>
 
     <div class='empty'></div>
@@ -10,7 +11,7 @@
     <div class='elementData card' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
       @if (present.currentTrack) {
         <table>
-<!--          <tr [ngClass]="audio.status"> -->
+<!--          <tr [ngClass]="audio.status"> 
           <tr>
             <td colspan="2">{{ 'CANVAS.CURTITLE' | translate }}</td>
           </tr>
@@ -83,7 +84,7 @@
               </td>
             </tr>
           }
-          -->  
+            
         </table>
       }
     </div>
@@ -103,7 +104,7 @@
 
   </swiper-slide>
 
-  <!-- Slide 2: Archived track -->
+  <!-- Slide 2: Archived track 
   <swiper-slide>
 
     <div class='empty'></div>
@@ -174,7 +175,7 @@
 
   </swiper-slide>
 
-  <!-- Slide 3: Archived track-2 -->
+  <!-- Slide 3: Archived track-2
 
   <swiper-slide>
     <div class='empty'></div>
@@ -205,7 +206,157 @@
 
 </ion-content>
 
-<!-- space for android controls -->
+<!-- space for android controls 
+<div class="bottom-safe-gray"></div>
+
+<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+  <ion-row>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('tab1')">
+      <ion-icon name="earth-sharp"></ion-icon>
+      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('archive')">
+      <ion-icon name="list-sharp"></ion-icon>
+      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button canvas-color" (click)="fs.gotoPage('settings')">
+      <ion-icon name="settings-sharp"></ion-icon>
+      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+    </div>
+  </ion-row>
+</ion-fab>
+-->
+
+
+<ion-content class="custom-content">
+  <swiper-container id="data" pagination="true">
+
+    <swiper-slide>
+      <div class="slide-wrapper">
+        <div class='empty'></div>
+        
+        <div class='elementData card' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
+          @if (present.currentTrack) {
+            <table>
+              <tr><td colspan="2" class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</td></tr>
+              <tr>
+                <td>{{ 'CANVAS.DISTANCE' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.EGAIN' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.ELOSS' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.TIME' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.totalTime }}</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.MOTIONTIME' | translate }}</td>
+                <td>{{ currentMotionTime }}</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.POINTS' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.totalNumber }}</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.ALTITUDE' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} m</td>
+              </tr>
+              <tr>
+                <td>{{ 'CANVAS.SPEED' | translate }}</td>
+                <td>{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} km/h</td>
+              </tr>
+            </table>
+          }
+        </div>
+
+        <div class='elementCanvas' id='cc0' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
+          <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+          <canvas class='canvas' id="currCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+        </div>
+
+        <div class='elementCanvas' id='cc1' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
+          <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
+          <canvas class='canvas' id="currCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+        </div>
+        <div class='empty'></div>
+      </div>
+    </swiper-slide>
+
+    <swiper-slide>
+      <div class="slide-wrapper">
+        <div class='empty'></div>
+        <div id="exportArea">
+          <div class='elementData card' [hidden]="!reference.archivedTrack">
+            @if (reference.archivedTrack) {
+              <table>
+                <tr><td colspan='2' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
+                <tr><td colspan='2' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
+                <tr>
+                  <td>{{'CANVAS.DISTANCE' | translate}}</td>
+                  <td>{{ reference.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
+                </tr>
+                <tr>
+                  <td>{{ 'CANVAS.EGAIN' | translate }}</td>
+                  <td>{{ reference.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
+                </tr>
+                <tr>
+                  <td>{{ 'CANVAS.ELOSS' | translate }}</td>
+                  <td>{{ reference.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
+                </tr>
+                <tr>
+                  <td>{{ 'CANVAS.TIME' | translate }}</td>
+                  <td>{{ reference.archivedTrack.features[0].properties.totalTime }}</td>
+                </tr>
+                <tr>
+                  <td>{{'CANVAS.POINTS' | translate}}</td>
+                  <td>{{reference.archivedTrack.features[0].properties.totalNumber}}</td>
+                </tr>
+              </table>
+            }
+          </div>
+          <div class='elementCanvas' id='ac0' [hidden]="!reference.archivedTrack">
+            <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+            <canvas class='canvas' id="archCanvas0" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+          </div>
+        </div>
+        <div class='elementCanvas' id='ac1' [hidden]="!reference.archivedTrack">
+          <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
+          <canvas class='canvas' id="archCanvas1" [attr.width]="canvasNum" [attr.height]="canvasNum"></canvas>
+        </div>
+        <div class='empty'></div>
+      </div>
+    </swiper-slide>
+
+    <swiper-slide>
+      <div class="slide-wrapper">
+        <div class='empty'></div>
+        <div class='elementData card' [hidden]="!reference.archivedTrack">
+          @if (reference.archivedTrack) {
+            <table class="partials">
+              <tr><td colspan='3' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
+              <tr><td colspan='3' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
+              @for (ps of partialSpeeds; track i; let i = $index) {
+                <tr>
+                  <td>{{ ps[0] }}</td>
+                  <td>{{ ps[1] }}</td>
+                  <td>{{ ps[2] | number:'1.2-2' }} km/h</td>
+                </tr>
+              }
+            </table>
+          }
+        </div>
+      </div>
+    </swiper-slide>
+
+  </swiper-container>
+</ion-content>
+
 <div class="bottom-safe-gray"></div>
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">

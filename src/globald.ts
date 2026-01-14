@@ -15,6 +15,7 @@ export interface Data {
   speed: number,
   time: number,
   compSpeed: number,
+  compAltitude: number  
   distance: number,
 }
 

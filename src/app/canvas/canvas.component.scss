@@ -1,3 +1,4 @@
+/*
 ion-icon {
   color: black
 }
@@ -92,20 +93,88 @@ ion-fab-button {
   .partials {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed; /* force equal column widths */
+    table-layout: fixed; /* force equal column widths 
   }
 
 .partials td {
-  width: 33%;         /* 3 equal columns */
-  text-align: left; /* optional */
+  width: 33%;         /* 3 equal columns 
+  text-align: left; /* optional 
   padding-left: 8px;
   padding-top: 2px;
+}
+*/
+.slide-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 80px; // Espacio para no chocar con el FAB
 }
 
 .canvas-color {
   background-color: #ffffaa !important;
   color: black;
   ion-icon {
-    color: black
+    color: black;
   }
+}
+
+.table-title {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+  font-size: 1.1rem;
+  padding-bottom: 10px;
+}
+
+.subtitle {
+  font-style: italic;
+  color: #666;
+  padding-bottom: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 15px;
+  margin: 10px 15px;
+  // Ajusta este valor según la altura de tu tabla más grande 
+  // para que los canvas queden alineados
+  min-height: 320px; 
+}
+
+// Estilo para el título de los canvas reducido
+.elementCanvas .title {
+  font-size: 0.85rem; // Fuente reducida
+  font-weight: 600;
+  text-align: center;
+  margin: 10px 0 5px 0;
+  color: #444;
+}
+
+.elementCanvas {
+  margin: 10px 15px;
+}
+
+table {
+  width: 100%;
+  td {
+    padding: 6px 0; // Un poco más compacto
+    &:last-child {
+      text-align: right;
+      font-weight: bold;
+    }
+  }
+}
+
+.partials {
+  tr td:nth-child(3) {
+    color: var(--ion-color-secondary);
+  }
+}
+
+.empty {
+  height: 15px;
 }

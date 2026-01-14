@@ -95,13 +95,12 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     if (!trackToEdit) return;
     const modalEdit = { 
       name: trackToEdit.name, 
-      place: trackToEdit.place, 
+      //place: trackToEdit.place, 
       description: trackToEdit.description || '' 
     };
     const popover = await this.popoverCtrl.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit: modalEdit, edit: true },
-      cssClass: 'central-popover',
       backdropDismiss: false
     });
     await popover.present();
@@ -113,7 +112,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       await this.fs.storeSet('collection', this.fs.collection);
       // 2. Actualizar el archivo GeoJSON
       if (trackToEdit.date) {
-        const storageKey = JSON.stringify(trackToEdit.date);
+        const storageKey = trackToEdit.date.toISOString();
         const fullTrack = await this.fs.storeGet(storageKey);
         if (fullTrack && fullTrack.features?.[0]) {
           fullTrack.features[0].properties.name = data.name;

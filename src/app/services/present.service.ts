@@ -1,10 +1,12 @@
+import { Track, Location, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { StylerService } from './styler.service'
-import { Track } from 'src/globald';
 import { GeographyService } from './geography.service';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { LineString, Point } from 'ol/geom';
 import { FunctionsService } from '../services/functions.service';
+import { Feature } from 'ol';
+import { LocationManagerService } from '../services/location-manager.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,12 +18,17 @@ import { FunctionsService } from '../services/functions.service';
   currentTrack$ = this._currentTrack.asObservable(); // 👈 observable for others to subscribe
   currentColor: string = 'orange';
   computedDistances: number = 0;
-  altitudeFiltered: number = -1;
+  filtered: number = 0;
+  isRecordPopoverOpen: boolean = false;
+  isConfirmStopOpen = false;
+  isConfirmDeletionOpen = false;
 
   constructor(
     private stylerService: StylerService,
     private geography: GeographyService,
-    public fs: FunctionsService
+    public fs: FunctionsService,
+    private styler: StylerService,
+    private location: LocationManagerService
   ) { }
 
   get currentTrack(): Track | undefined {
@@ -61,82 +68,124 @@ import { FunctionsService } from '../services/functions.service';
   }
 
   // ACCUMULATED DISTANCES ////////////////////////////////
-  async accumulatedDistances() {
-    if (!this.currentTrack) return;
+  async accumulatedDistances(track: any) {
+    if (!track) return;
     // get coordinates and data arrays
-    const coordinates = this.currentTrack.features[0].geometry.coordinates;
-    const data = this.currentTrack.features[0].geometry.properties.data;
+    let coordinates = track.features[0].geometry.coordinates;
+    let data = track.features[0].geometry.properties.data;
     let num = coordinates.length ?? 0;
     // Ensure data exists and has enough entries
-    if (num < 2 || !data || data.length != num) return;
+    if (num < 2 || !data || data.length != num) return track;
     // Compute distances for each point
-    for (let i = this.computedDistances + 1; i < num; i++) {
+    for (let i = this.filtered + 1; i < num; i++) {
       const lastPoint = coordinates[i - 1];
       const currPoint = coordinates[i];
       // Calculate the distance
       const distance = this.fs.computeDistance(lastPoint[0], lastPoint[1], currPoint[0], currPoint[1]);
       // Update the data with the new distance
       data[i].distance = data[i - 1].distance + distance;
-      // Track the last computed distance index
-      this.computedDistances = i;
     }
+    const startTime = data[0].time;
+    const endTime = data[num-1].time;
+    track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(endTime - startTime) || 0; 
+    track.features[0].properties.totalDistance = data[num-1].distance;
+    track.features[0].properties.totalNumber = num;
+    return track
   }
 
-  async filterAltitude(track: any, initial: number, final: number) {
-    if (!track?.features?.[0]?.geometry?.properties?.data) return NaN;
-    const data = track.features[0].geometry.properties.data;
-    const props = track.features[0].properties;
-    const num = data.length;
-    if (num === 0) return NaN;
-    // Ensure bounds are safe
-    const startIdx = Math.max(0, initial);
-    const endLimit = Math.min(final, num - 1);
-    for (let i = startIdx; i <= endLimit; i++) {
-      // 1. Safety Check: Does the object at this index exist?
-      if (!data[i]) continue;
-      // 2. Smoothing (Moving Average)
-      const lag = this.fs.lag || 2; 
-      const start = Math.max(0, i - lag);
-      const end = Math.min(i + lag, num - 1);
-      let sum = 0;
-      let count = 0;
-      for (let j = start; j <= end; j++) {
-        if (data[j]) {
-          sum += data[j].altitude;
-          count++;
-        }
-      }
-      const smoothedAltitude = sum / count;
-      data[i].altitude = smoothedAltitude;
-      // 3. Elevation Gain/Loss with Threshold (Hysteresis)
-      if (i > 0 && data[i-1]) {
-        const slope = data[i].altitude - data[i - 1].altitude;
-        const minThreshold = 0.25; // Ignore tiny micro-movements
-        if (Math.abs(slope) > minThreshold) {
-          if (slope > 0) {
-            props.totalElevationGain = (props.totalElevationGain || 0) + slope;
-          } else {
-            props.totalElevationLoss = (props.totalElevationLoss || 0) - Math.abs(slope);
-          }
-        }
-      }
-      props.currentAltitude = data[i].altitude;
-    }
-    return endLimit;
-  }
-
-  async htmlValues() {
+    // 38. SET WAYPOINT ALTITUDE ////////////////////////////////////////
+  async setWaypointAltitude() {
     if (!this.currentTrack) return;
-    // Get the data array
-    const data = this.currentTrack.features[0].geometry.properties.data;
-    // Ensure data exists and has elements
-    const num = data.length ?? 0;
-    if (num < 1) return;
-    // Update HTML values
-    this.currentTrack.features[0].properties.totalDistance = data[num - 1].distance;
-    this.currentTrack.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(data[num - 1].time - data[0].time);
-    this.currentTrack.features[0].properties.totalNumber = num;
-    this.currentTrack.features[0].properties.currentSpeed = data[num - 1].compSpeed;
+    // Retrieve waypoints
+    const waypoints: Waypoint[] = this.currentTrack.features[0].waypoints || [];
+    for (const wp of waypoints) {
+      if (wp.altitude != null && wp.altitude >= 0) wp.altitude = this.currentTrack.features[0].geometry.properties.data[wp.altitude].altitude
+    }
+    console.log(this.currentTrack)
   }
 
-}
+  // 8. FOREGROUND TASK ////////////////////////
+  async foregroundTask(track: any) {
+    if (!track) return undefined;   
+    const num = track.features[0].geometry.coordinates.length;
+     // 2. Cálculos de distancia y filtrado de velocidad y altitud
+    track = await this.accumulatedDistances(track);
+    track = await this.fs.filterSpeedAndAltitude(track, this.filtered+1);
+    this.filtered = num - 1;
+    // 3. UI y Mapa (Dentro de la zona para asegurar refresco de etiquetas)
+    await this.displayCurrentTrack(track);
+    return track
+  }
+
+  async updateTrack(location: Location): Promise<boolean> {
+    if (!this.geography.map || !this.geography.currentLayer) return false;
+    // 1. INICIALIZACIÓN (Primer punto)
+    if (!this.currentTrack) {
+      // Creamos las features con sus etiquetas 'type'
+      const routeLine = new Feature();
+      routeLine.set('type', 'route_line');
+      const startPin = new Feature();
+      startPin.set('type', 'start_pin');
+      const endPin = new Feature(); // Se crea ahora, se posicionará en stopTracking
+      endPin.set('type', 'end_pin');
+      const features = [routeLine, startPin, endPin];
+      this.currentTrack = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {
+            name: '', place: '', date: undefined, description: '',
+            totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
+            totalTime: '00:00:00', totalNumber: 1,
+            currentAltitude: undefined, currentSpeed: undefined
+          },
+          bbox: [location.longitude, location.latitude, location.longitude, location.latitude],
+          geometry: {
+            type: 'LineString',
+            coordinates: [[location.longitude, location.latitude]],
+            properties: {
+              data: [{
+                altitude: location.altitude,
+                speed: location.speed,
+                time: location.time,
+                compSpeed: 0,
+                compAltitude: location.altitude,
+                distance: 0
+              }]
+            }
+          },
+          waypoints: []
+        }]
+      };
+      this.location.stopped = 0;
+      this.location.averagedSpeed = 0;
+      // Posicionar el pin de inicio
+      startPin.setGeometry(new Point([location.longitude, location.latitude]));
+      startPin.setStyle(this.styler.createPinStyle('green'));
+      // Registrar en el mapa
+      const source = this.geography.currentLayer.getSource();
+      if (source) {
+        source.clear();
+        source.addFeatures(features);
+      }
+      return true;
+    }
+    // 2. ACTUALIZACIÓN (Puntos sucesivos)
+    const num = this.currentTrack.features[0].geometry.coordinates.length;
+    const prevData = this.currentTrack.features[0].geometry.properties.data[num - 1];
+    const previousTime = prevData?.time || 0;
+    const previousAltitude = prevData?.altitude || 0;
+    if (previousTime > location.time) return false;
+    // Suavizado de altitud
+    if (location.time - previousTime < 60000 && Math.abs(location.altitude - previousAltitude) > 50) {
+      location.altitude = previousAltitude + 10 * Math.sign(location.altitude - previousAltitude);
+    }
+    location.speed = location.speed * 3.6;
+    // Añadir punto al geojson y actualizar la geometría de la línea en el mapa
+    let track: any = this.currentTrack;
+    track = await this.location.fillGeojson(track, location);
+    if (this.location.foreground) this.currentTrack = await this.foregroundTask(track);
+    return true;
+  }
+
+} 

@@ -619,12 +619,6 @@ ion-input::part(native) {
   }
 }
 
-/* --- COLORES --- 
-.map-color { background-color: #45ff2f !important; }      /* Verde Mapa 
-.settings-color { background-color: #aaaaff !important; } /* Púrpura Ajustes 
-.green-color { background-color: #27ae60 !important; color: white; ion-icon { color: white; } }
-.red-color { background-color: #eb445a !important; color: white; ion-icon { color: white; } }
-*/
 
 /* --- CONTENEDOR SUPERIOR --- */
 .top-safe {
@@ -670,5 +664,14 @@ ion-input::part(native) {
   color: white;
   ion-icon {
     color: white
+  }
+}
+
+
+.map-color {
+  background-color: #aaffaa !important;
+  color: black !important;
+  ion-icon {
+    color: black
   }
 }

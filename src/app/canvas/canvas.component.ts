@@ -235,7 +235,7 @@ export class CanvasComponent implements OnInit {
       // Update canvas
       let lastUnit = '';
       for (const [index, property] of Object.entries(this.fs.properties)) {
-        const mode = property === 'altitude' ? 'x' : 't';
+        const mode = property === 'compAltitude' ? 'x' : 't';
         lastUnit = await this.updateCanvas(context[index], track, property, mode);
       }
       return lastUnit;

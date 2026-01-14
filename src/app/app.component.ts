@@ -30,13 +30,23 @@ import JSZip from "jszip";
   ],
 })
 export class AppComponent {
-  //public environmentInjector = inject(EnvironmentInjector);
-  speedFiltered: number = 0;
-  //private isProcessingUrl = false;
+
+  // 1. INITIALIZE APP
+  // 2. LOCK PORTRAIT
+  // 3. INITIALIZE STORAGE
+  // 4. SETUP STATE LISTENER
+  // 5. SETUP FILE LISTENER
+  // 6. PROCESS URL
+
+  // 8. PARSE KMZ FILES
+  // 9. COMPUTE TRACK STATISTICS
+  // 10. CALCULATE ELEVATION GAIN & LOSS
+  // 11. SAVE TRACK
 
   constructor(
     private platform: Platform,
     private zone: NgZone,
+    private cd: ChangeDetectorRef,
     public fs: FunctionsService,
     public location: LocationManagerService,
     private reference: ReferenceService,
@@ -45,7 +55,6 @@ export class AppComponent {
     private mapService: MapService,
     private trackingControlService: TrackingControlService,
     private present: PresentService,
-    private cd: ChangeDetectorRef,
   ) {
     this.initializeApp();
   }
@@ -92,9 +101,7 @@ export class AppComponent {
           if (this.mapService.customControl?.isControlActive()) {
             this.trackingControlService.start();
           }
-          if (this.present.currentTrack) {
-            await this.morningTask(); // Asegúrate de que este método sea accesible
-          }
+          if (this.present.currentTrack) await this.morningTask();
         } else {
           console.log('⬇️ App en segundo plano');
           this.trackingControlService.stop();
@@ -109,6 +116,10 @@ export class AppComponent {
     App.addListener('appUrlOpen', (data: any) => {
       this.zone.run(async () => {
         const track = await this.processUrl(data);
+        // Navegar primero
+        this.fs.gotoPage('tab1');
+        // Pequeña espera
+               await new Promise(r => setTimeout(r, 200));
         if (track) {
           if (this.mapService.mapIsReady) {
             await this.reference.displayArchivedTrack();
@@ -205,30 +216,22 @@ export class AppComponent {
     }
   }
 
-  // 7. MORNING TASK ////////////////////////////////////////
+    // 7. MORNING TASK ////////////////////////////////////////
   async morningTask() {
     if (!this.present.currentTrack) return;
     // Procesamos el "atracón" de datos fuera de Angular para no bloquear la UI
     this.zone.runOutsideAngular(async () => {
       try {
-        const track = this.present.currentTrack!;
+        let track = this.present.currentTrack!;
         const num = track.features[0].geometry.coordinates.length;
         // 1. Dibujamos el track completo de golpe
         await this.present.displayCurrentTrack(track);
         // 2. Procesamos datos acumulados
-        const final = await this.present.filterAltitude(track, this.present.altitudeFiltered + 1, num - this.fs.lag - 1);
-        if (final) this.present.altitudeFiltered = final;
-        await this.present.accumulatedDistances();
-        let data = track.features[0].geometry.properties.data;
-        track.features[0].geometry.properties.data = await this.fs.filterSpeed(data, this.speedFiltered + 1);
-        this.speedFiltered = num - 1;
-        // 3. Volvemos a la zona de Angular para actualizar la interfaz
-        this.zone.run(async () => {
-          await this.present.htmlValues();
-          this.cd.detectChanges();
-          // Opcional: Re-centrar el mapa al despertar para ver dónde estamos ahora
-          await this.geography.setMapView(track);
-        });
+        track = await this.present.accumulatedDistances(track);
+        track = await this.fs.filterSpeedAndAltitude(track, this.present.filtered+1);
+        this.present.filtered = num - 1;
+        this.cd.detectChanges();
+        await this.geography.setMapView(track);
       } catch (error) {
         console.error('Error during morningTask:', error);
       }
@@ -274,93 +277,97 @@ export class AppComponent {
     const name = this.fs.sanitize(trk.getElementsByTagName('name')[0]?.textContent || 'No Name') || 'No Name';
     const desc = this.fs.sanitize(trk.getElementsByTagName('cmt')[0]?.textContent || '') || '';
     const track: Track = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: {
-          name,
-          place: '',
-          date: undefined,
-          description: desc,
-          totalDistance: 0,
-          totalElevationGain: 0,
-          totalElevationLoss: 0,
-          totalTime: '00:00:00',
-          totalNumber: trackPoints.length,
-          currentAltitude: undefined,
-          currentSpeed: undefined
-        },
-        bbox: undefined,
-        geometry: {
-          type: 'LineString',
-          coordinates: [],
-          properties: { data: [] }
-        },
-        waypoints
-      }]
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            properties: {
+                name, place: '', date: undefined, description: desc,
+                totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
+                totalTime: '00:00:00', totalNumber: trackPoints.length,
+                currentAltitude: undefined, currentSpeed: undefined
+            },
+            bbox: undefined,
+            geometry: {
+                type: 'LineString',
+                coordinates: [],
+                properties: { data: [] }
+            },
+            waypoints
+        }]
     };
     let distance = 0;
     let lonMin = Infinity, latMin = Infinity, lonMax = -Infinity, latMax = -Infinity;
     const pointData: any[] = [];
     const coords: [number, number][] = [];
     for (let k = 0; k < trackPoints.length; k++) {
-      const { lat, lon, ele, time } = trackPoints[k];
-      if (isNaN(lat) || isNaN(lon)) continue;
-      // Update Bounds
-      if (lon < lonMin) lonMin = lon;
-      if (lat < latMin) latMin = lat;
-      if (lon > lonMax) lonMax = lon;
-      if (lat > latMax) latMax = lat;
-      coords.push([lon, lat]);
-      // Distance Calculation
-      if (k > 0) {
-        const prev = trackPoints[k - 1];
-        // NO AWAIT HERE -> Instant execution
-        distance += this.fs.quickDistance(prev.lon, prev.lat, lon, lat);
-      }
-      // Altitude Interpolation
-      let alt = ele ?? 0;
-      if (alt === 0 && pointData.length > 0) {
-        alt = pointData[pointData.length - 1].altitude;
-      }
-      pointData.push({
-        altitude: alt,
-        speed: 0,
-        time: time || 0,
-        compSpeed: 0,
-        distance: distance,
-      });
+        const p = trackPoints[k] as any;
+        if (isNaN(p.lat) || isNaN(p.lon)) continue;
+        if (p.lon < lonMin) lonMin = p.lon;
+        if (p.lat < latMin) latMin = p.lat;
+        if (p.lon > lonMax) lonMax = p.lon;
+        if (p.lat > latMax) latMax = p.lat;
+        coords.push([p.lon, p.lat]);
+        if (k > 0) {
+            distance += this.fs.quickDistance(trackPoints[k-1].lon, trackPoints[k-1].lat, p.lon, p.lat);
+        }
+        let alt = p.ele ?? 0;
+        if (alt === 0 && pointData.length > 0) {
+            alt = pointData[pointData.length - 1].altitude;
+        }
+        pointData.push({
+            altitude: alt,
+            speed: 0,
+            time: p.time || 0,
+            compSpeed: 0,
+            compAltitude: alt, 
+            distance: distance,
+        });
     }
-    // Finalize Feature data
     track.features[0].geometry.coordinates = coords;
     track.features[0].geometry.properties.data = pointData;
     track.features[0].bbox = [lonMin, latMin, lonMax, latMax];
     track.features[0].properties.totalDistance = distance;
     const num = pointData.length;
-    if (num > 1 && pointData[0].time !== 0) {
-      track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(
-        pointData[num - 1].time - pointData[0].time
-      );
-    }
-    // Post-process filtering
+    const hasTime = num > 1 && pointData[0].time !== 0;
+    // 2. POST-PROCESADO
     try {
-      // Save current smoothing state to not corrupt live recording
-      const savedAltState = this.present.altitudeFiltered;
-      // Smooth altitude and calculate gains
-      await this.present.filterAltitude(track, 0, num - 1);
-      // Smooth speed (Pass the whole array)
-      track.features[0].geometry.properties.data = await this.fs.filterSpeed(pointData, 1);
-      // Restore state
-      this.present.altitudeFiltered = savedAltState;
+        // Solo calculamos velocidad si hay tiempo
+        if (hasTime) {
+            await this.fs.computeCompSpeed(pointData, 0);
+        } else {
+            pointData.forEach(p => { p.compSpeed = 0; p.speed = 0; });
+        }
+        // Calculamos los totales de desnivel siempre usando la altitud original (no filtrada)
+        this.calculateElevationGains(track);
     } catch (e) {
-      console.error("Post-processing failed", e);
+        console.error("Post-processing failed", e);
     }
+    // 3. Finalización
+    track.features[0].properties.totalTime = hasTime 
+        ? this.fs.formatMillisecondsToUTC(pointData[num - 1].time - pointData[0].time)
+        : '00:00:00';
     track.features[0].properties.date = new Date(pointData[num - 1]?.time || Date.now());
+    console.log(track)
     return track;
   }
 
-  // 10. SAVE TRACK //////////////////////////////////////////////////
+  // 10. CALCULATE ELEVATION GAIN & LOSS /////////////////////////////
+  private calculateElevationGains(track: Track) {
+    const data = track.features[0].geometry.properties.data;
+    let gain = 0;
+    let loss = 0;
+    for (let i = 1; i < data.length; i++) {
+        const diff = data[i].compAltitude - data[i-1].compAltitude;
+        if (diff > 0) gain += diff;
+        else loss += Math.abs(diff);
+    }
+    track.features[0].properties.totalElevationGain = gain;
+    track.features[0].properties.totalElevationLoss = loss;
+}
+
+// 11. SAVE TRACK //////////////////////////////////////////////////
   async saveTrack(track: any) {
+    console.log('START SAVING TRACK')
     // 1. Verificación de seguridad
     if (!track?.features?.[0]) return;
     // 2. Extraer o generar la fecha (debe ser un objeto Date para JSON.stringify)
@@ -369,12 +376,12 @@ export class AppComponent {
       trackDate = trackDate ? new Date(trackDate) : new Date();
     }
     // 3. Generar la clave EXACTAMENTE igual que en saveFile
-    const dateKey = JSON.stringify(trackDate);
+    const dateKey = trackDate.toISOString();
     // 4. Evitar duplicados
     const existing = await this.fs.storeGet(dateKey);
     if (existing) {
       console.log('El track ya existe en el storage');
-      return;
+      return
     }
     try {
       // 5. Guardar el track completo
@@ -383,11 +390,11 @@ export class AppComponent {
       const trackDef: TrackDefinition = {
         name: track.features[0].properties.name || 'Imported Track',
         date: trackDate,
-        place: track.features[0].properties.place || '',
+        place: track.features[0].geometry.coordinates[0],
         description: track.features[0].properties.description || '',
         isChecked: true // Lo marcamos como checked ya que se acaba de importar/abrir
       };
-      this.fs.collection.push(trackDef);
+      this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
       // 7. Feedback (Opcional, similar a saveFile)
       this.fs.displayToast(this.translate.instant('MAP.SAVED'));

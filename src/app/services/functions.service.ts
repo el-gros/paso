@@ -7,7 +7,6 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import { register } from 'swiper/element';
-import { GeographyService } from '../services/geography.service';
 register();
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -28,7 +27,7 @@ export class FunctionsService {
   lag: number = 8;
   geocoding: string = 'maptiler';
   collection: TrackDefinition []= [];
-  properties: (keyof Data)[] = ['altitude', 'compSpeed'];
+  properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
    // Re-draw tracks?
   reDraw: boolean = false;
   alert: string = 'on';
@@ -39,14 +38,13 @@ export class FunctionsService {
     private alertController: AlertController,
     @Inject(Router) private router: Router,
     private modalController: ModalController,
-    private geography: GeographyService
   ) {
   }
 
   /* FUNCTIONS
     1. computeDistance
     2. formatMillisecondsToUTC
-    3. filterSpeed
+
     4. fillGeojson
     5. storeSet
     6. storeGet
@@ -102,18 +100,63 @@ export class FunctionsService {
     return `${padZero(hours)}:${padZero(minutes)}:${padZero(remainingSeconds)}`;
   }
 
-  // 3. FILTER SPEED ///////////////////////////////////////
-  async filterSpeed(data: { altitude: number; speed: number; time: number; compSpeed: number; distance: number }[], initial: number): Promise<typeof data> {
+  async filterSpeedAndAltitude(track: any, initial: number): Promise<typeof data> {
+    let data = track.features[0].geometry.properties.data;
     const num = data.length;
-    // loop for points
+    let gain = 0;
+    let loss = 0;
+
     for (let i = initial; i < num; i++) {
-        const start = Math.max(i - this.lag, 0);
-        const distance = data[i].distance - data[start].distance;
-        const time = data[i].time - data[start].time;
-        // Check to avoid division by zero
-        data[i].compSpeed = time > 0 ? (3600000 * distance) / time : 0;
+      // 1. CÁLCULO DE VELOCIDAD COMPENSADA (Basada en distancias acumuladas)
+      const startSpeed = Math.max(i - this.lag, 0);
+      const distDelta = data[i].distance - data[startSpeed].distance;
+      const timeDelta = data[i].time - data[startSpeed].time;
+      
+      data[i].compSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
+
+      // 2. CÁLCULO DE ALTITUD COMPENSADA (Filtro de Media Móvil)
+      // Usamos un rango centrado (i - lag/2 a i + lag/2) para evitar desplazamientos en la gráfica
+      const halfLag = Math.floor(this.lag / 2);
+      const startAlt = Math.max(i - halfLag, 0);
+      const endAlt = Math.min(i + halfLag, num - 1);
+      
+      let sum = 0;
+      let n = 0;
+      for (let j = startAlt; j <= endAlt; j++) {
+        sum += data[j].altitude; // <--- CORREGIDO: Usamos el índice j
+        n++;
+      } 
+      
+      if (n > 0) {
+        data[i].compAltitude = sum / n;
+      } else {
+        data[i].compAltitude = data[i].altitude;
+      }
+      // Elevation gain and loss
+      const diff = data[i].compAltitude - data[i-1].compAltitude;
+      if (diff > 0) gain += diff;
+      else loss += Math.abs(diff);
     }
-    return data;
+    track.features[0].properties.currentSpeed = data[num-1].compSpeed;
+    track.features[0].properties.currentAltitudedata[num-1].compAltitude;
+    track.features[0].properties.totalElevationGain = gain;
+    track.features[0].properties.totalElevationLoss = loss;
+    return track;
+  }
+ 
+  async computeCompSpeed(data: any[], initial: number): Promise<any[]> {
+      const num = data.length;
+      for (let i = initial; i < num; i++) {
+          const startSpeed = Math.max(i - this.lag, 0);
+          const distDelta = data[i].distance - data[startSpeed].distance;
+          const timeDelta = data[i].time - data[startSpeed].time;
+          
+          // Calculamos velocidad suavizada por el lag
+          data[i].compSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
+          
+          // NO tocamos compAltitude aquí, se mantiene lo que ya tuviera el objeto
+      }
+      return data;
   }
 
   // 5. STORAGE SET ///////////////////
@@ -219,6 +262,7 @@ export class FunctionsService {
       speed: speed,
       time: times[i],
       compSpeed: speed,
+      compAltitude: altitudes[i],
       distance: distance,
     }));
     return result;
@@ -343,6 +387,7 @@ export class FunctionsService {
             speed: interp(prop1.speed, prop2.speed),
             time: interp(prop1.time, prop2.time),
             compSpeed: interp(prop1.compSpeed, prop2.compSpeed),
+            compAltitude: interp(prop1.compAltitude, prop2.compAltitude),
             distance: interp(prop1.distance, prop2.distance),
           };
           idx++;

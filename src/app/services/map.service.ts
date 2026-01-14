@@ -56,6 +56,7 @@ export class MapService {
   public shareControl!: ShareControl;
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
+  visibleAll: boolean = false;
 
   constructor(
     private http: HttpClient,
