@@ -85,9 +85,9 @@ import { LocationManagerService } from '../services/location-manager.service';
       // Update the data with the new distance
       data[i].distance = data[i - 1].distance + distance;
     }
-    const startTime = data[0].time;
-    const endTime = data[num-1].time;
-    track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(endTime - startTime) || 0; 
+    //const startTime = data[0].time;
+    //const endTime = data[num-1].time;
+    //track.features[0].properties.totalTime = this.fs.formatMillisecondsToUTC(endTime - startTime) || 0; 
     track.features[0].properties.totalDistance = data[num-1].distance;
     track.features[0].properties.totalNumber = num;
     return track
@@ -136,7 +136,7 @@ import { LocationManagerService } from '../services/location-manager.service';
           properties: {
             name: '', place: '', date: undefined, description: '',
             totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
-            totalTime: '00:00:00', totalNumber: 1,
+            totalTime: 0, inMotion: 0, totalNumber: 1,
             currentAltitude: undefined, currentSpeed: undefined
           },
           bbox: [location.longitude, location.latitude, location.longitude, location.latitude],

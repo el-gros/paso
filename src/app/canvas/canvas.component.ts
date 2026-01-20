@@ -9,7 +9,8 @@ import { LocationManagerService } from '../services/location-manager.service';
 import { register } from 'swiper/element/bundle';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import * as htmlToImage from 'html-to-image';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
@@ -34,15 +35,14 @@ export class CanvasComponent implements OnInit {
   vMin: number = 1;
   partialSpeeds: PartialSpeed[] = [];
   subscription?: Subscription;
-  trackSub: any;
-  fgSub: any;
+  private trackSub?: Subscription; 
+  private fgSub?: Subscription;
   archivedCtx: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined] = [undefined, undefined];
-  canvasNum: number = 400;
+
   margin: number = 10;
-  // Averages
-  currentAverageSpeed: number | undefined = undefined;
-  currentMotionSpeed: number | undefined = undefined;
   currentMotionTime: string = '00:00:00';
+  private destroy$ = new Subject<void>();
+  canvasSize: number = 400;
 
   constructor(
     public fs: FunctionsService,
@@ -72,9 +72,23 @@ export class CanvasComponent implements OnInit {
     await this.createCanvas();
   }
 
+  // ON DESTROY /////////////////////
+  ngOnDestroy() {
+    // Cerramos el flujo definitivamente
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // 3. ION VIEW WILL LEAVE //////////////////
+  ionViewWillLeave() {
+    // Notificamos que abandonamos la vista para pausar suscripciones
+    this.destroy$.next();
+    console.log("Suscripciones pausadas al salir");
+  }
+
   // 4. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
-     // A. Comprobar si estamos en primer plano y actualizar datos básicos
+    // A. Actualización inmediata al entrar
     if (this.appState.isForeground()) {
       await this.runCanvasUpdates();
     }
@@ -85,45 +99,37 @@ export class CanvasComponent implements OnInit {
       this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
     }
 
-    // C. GESTIÓN DE SUBSCRIPCIONES (Limpiamos antes de crear para evitar duplicados)
-    this.trackSub?.unsubscribe();
-    this.trackSub = this.present.currentTrack$.subscribe(async track => {
-      if (!this.appState.isForeground() || !track) return;
-      await this.runCanvasUpdates();
-    });
+    // C. GESTIÓN DE SUBSCRIPCIONES REACTIVAS
+    // Usamos pipe(takeUntil...) para que se limpien solas al destruir el componente
+    // o al ejecutar el disparador en ionViewWillLeave
+    
+    this.present.currentTrack$
+      .pipe(takeUntil(this.destroy$)) 
+      .subscribe(async track => {
+        if (!this.appState.isForeground() || !track) return;
+        await this.runCanvasUpdates();
+      });
 
-    this.fgSub?.unsubscribe();
-    this.fgSub = this.appState.onEnterForeground().subscribe(async () => {
-      await this.runCanvasUpdates();
-    });
+    this.appState.onEnterForeground()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async () => {
+        await this.runCanvasUpdates();
+      });
 
-    // D. LÓGICA DE EXPORTACIÓN (Si venimos de Archive con la bandera activada)
+    // D. LÓGICA DE EXPORTACIÓN
     if (this.fs.buildTrackImage) {
-      // Pequeño delay extra para que Swiper y los Canvas se estabilicen en el DOM
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 400)); // Un poco más de margen para renderizado
 
       const success = await this.triggerExport();
-      
-      // Resetear siempre la bandera para no entrar en bucle
       this.fs.buildTrackImage = false;
 
       if (success) {
-        console.log("Exportación exitosa, volviendo a Archive");
         this.fs.gotoPage('archive');
       } else {
-        console.error("Fallo al generar imagen");
         await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
         this.fs.gotoPage('archive');
       }
     }
-  }
-
-  // 3. ION VIEW WILL LEAVE //////////////////
-  ionViewWillLeave() {
-    // Cortamos las suscripciones inmediatamente al salir para ahorrar CPU y batería
-    this.trackSub?.unsubscribe();
-    this.fgSub?.unsubscribe();
-    console.log("Suscripciones cerradas al salir de Canvas");
   }
 
   // 5. RUN CANVAS UPDATES //////////////////////////////////
@@ -132,59 +138,40 @@ export class CanvasComponent implements OnInit {
     if (!track || !this.currentCtx) return;
     this.currentUnit = await this.updateAllCanvas(this.currentCtx, track);
     this.partialSpeeds = await this.fs.computePartialSpeeds(track);
-    await this.averageSpeed();
-  }
-
-  // 6. COMPUTE AVERAGE SPEEDS AND TIMES
-  async averageSpeed() {
-    if (!this.present.currentTrack) return;
-    // get data array
-    const data = this.present.currentTrack.features[0].geometry.properties.data;
-    const num = data.length ?? 0;
-    if (num < 2) return;
-    // Compute time at rest
-    for (let i = this.location.averagedSpeed + 1; i < num; i++) {
-      if (data[i].compSpeed < this.vMin) {
-        // Add the time spent at rest
-        this.location.stopped += (data[i].time - data[i - 1].time) / 1000; // Convert milliseconds to seconds
-      }
-      this.location.averagedSpeed = i;  // Track last processed index
-    }
-    // Compute total time
-    let totalTime = (data[num - 1].time - data[0].time)/1000;
-    // Calculate average speed (in km/h)
-    this.currentAverageSpeed = (3600 * data[num - 1].distance) / totalTime;
-    // If the total time minus stopped time is greater than 5 seconds, calculate motion speed
-    if (totalTime - this.location.stopped > 5) {
-      this.currentMotionSpeed = (3600 * data[num - 1].distance) / (totalTime - this.location.stopped);
-    }
-    // Format the motion time
-    this.currentMotionTime = this.fs.formatMillisecondsToUTC(1000 * (totalTime - this.location.stopped));
   }
 
   // 7. CREATE CANVASES //////////////////////////////////////////
   async createCanvas() {
+    // Use a square size based on the viewport
     const size = Math.min(window.innerWidth, window.innerHeight);
-    for (const i in this.fs.properties) {
+    this.canvasSize = size; // Renamed for clarity
+
+    // Use forEach to get the index as a number immediately
+    this.fs.properties.forEach((_, i) => {
       this.initCanvas(`currCanvas${i}`, size, this.currentCtx, i);
       this.initCanvas(`archCanvas${i}`, size, this.archivedCtx, i);
-    }
-    this.canvasNum = size;
+    });
   }
+
   private initCanvas(
-    elementId: string,
-    size: number,
-    ctxArray: [CanvasRenderingContext2D | undefined, CanvasRenderingContext2D | undefined],
-    index: string | number
+    elementId: string, 
+    size: number, 
+    ctxArray: (CanvasRenderingContext2D | undefined)[], // Changed from tuple to array
+    index: number
   ) {
     const canvas = document.getElementById(elementId) as HTMLCanvasElement;
-    if (canvas) {
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (ctx) ctxArray[Number(index)] = ctx;
-    } else {
+    
+    if (!canvas) {
       console.error(`Canvas with ID ${elementId} not found.`);
+      return;
+    }
+
+    canvas.width = size;
+    canvas.height = size;
+    
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctxArray[index] = ctx;
     }
   }
 
@@ -255,7 +242,7 @@ export class CanvasComponent implements OnInit {
 
     // 1. Reset y Limpieza
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.canvasNum, this.canvasNum);
+    ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
 
     if (!track || !track.features[0].geometry.properties.data.length) return tUnit;
     
@@ -287,7 +274,7 @@ export class CanvasComponent implements OnInit {
 
     // 4. Transformación Matemática
     // El eje Y en HTML Canvas está invertido (0 arriba), por eso usamos (min - max)
-    const availSize = this.canvasNum - 2 * this.margin;
+    const availSize = this.canvasSize - 2 * this.margin;
     const scaleX = availSize / xTot;
     const scaleY = availSize / (bounds.min - bounds.max);
     const offsetX = this.margin;
@@ -384,6 +371,17 @@ export class CanvasComponent implements OnInit {
     if (x < 2.5) return 0.5 * (10 ** nx);
     else if (x < 5) return 10 ** nx;
     else return 2 * (10 ** nx);
+  }
+
+  formatMsec(value: number | undefined): string {
+    if (!value) return '00:00:00';
+
+    const totalSeconds = Math.floor(value / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
 
 }

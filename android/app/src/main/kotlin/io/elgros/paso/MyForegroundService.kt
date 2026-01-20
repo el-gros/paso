@@ -25,7 +25,7 @@ class MyForegroundService : Service() {
     private var redCounter = 0
     private val REQUIRED_CONFIRMATIONS = 2
     private var currentPointIdx = 0
-    private var threshDistSq = 0.000000032
+    private var threshDistSq = 0.00000008
 
     private var wakeLock: PowerManager.WakeLock? = null
     private val handler = Handler(Looper.getMainLooper())

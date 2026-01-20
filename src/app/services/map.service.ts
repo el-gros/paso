@@ -19,9 +19,8 @@ import pako from 'pako';
 import VectorTileSource from 'ol/source/VectorTile';
 import { applyStyle } from 'ol-mapbox-style';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
 import { map, catchError, filter, take } from 'rxjs/operators';
-import { ParsedPoint, Waypoint } from '../../globald';
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
@@ -32,6 +31,7 @@ import { fromLonLat, useGeographic } from 'ol/proj';
 import { TranslateService } from '@ngx-translate/core';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
+import { Track, PartialSpeed, ParsedPoint,Data, Waypoint } from '../../globald';
 
 useGeographic();
 
@@ -57,6 +57,11 @@ export class MapService {
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
   visibleAll: boolean = false;
+  public locationActivated$ = new Subject<void>();
+  public locationDeactivated$ = new Subject<void>();
+  public shareStarted$ = new Subject<void>();
+  public shareStopped$ = new Subject<void>();
+  public pendingTrack$ = new BehaviorSubject<Track | null>(null);
 
   constructor(
     private http: HttpClient,
@@ -93,7 +98,7 @@ export class MapService {
   async loadMap(): Promise<void> {
     const mapElement = document.getElementById('map');
     if (!mapElement) return;
-    this.customControl = new CustomControl(this.geography);
+    this.customControl = new CustomControl(this.geography, this);
     this.shareControl = new ShareControl(this.locationService, this.translate);
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);

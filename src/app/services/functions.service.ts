@@ -31,7 +31,10 @@ export class FunctionsService {
    // Re-draw tracks?
   reDraw: boolean = false;
   alert: string = 'on';
-    
+  // Averages
+  averageSpeed: number = 0;
+  averageMotionSpeed: number = 0;
+  
   constructor(
     private storage: Storage,
     private toastController: ToastController,
@@ -103,26 +106,30 @@ export class FunctionsService {
   async filterSpeedAndAltitude(track: any, initial: number): Promise<typeof data> {
     let data = track.features[0].geometry.properties.data;
     const num = data.length;
-    let gain = 0;
-    let loss = 0;
 
     for (let i = initial; i < num; i++) {
       // 1. CÁLCULO DE VELOCIDAD COMPENSADA (Basada en distancias acumuladas)
-      const startSpeed = Math.max(i - this.lag, 0);
-      const distDelta = data[i].distance - data[startSpeed].distance;
-      const timeDelta = data[i].time - data[startSpeed].time;
+      const start = Math.max(i - this.lag, 0);
+      const distDelta = data[i].distance - data[start].distance;
+      const timeDelta = data[i].time - data[start].time;
       
       data[i].compSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
+      track.features[0].properties.totalTime = data[i].time - data[0].time;
+
+      // tiempo en movimiento
+      if (data[i].compSpeed > 1) {
+        const motionTime = (data[i].time - data[i - 1].time); // in msec 
+        track.features[0].properties.inMotion += motionTime 
+      }
+      // Compute average speed
+      this.averageMotionSpeed = track.features[0].properties.inMotion > 0 ? (3600000 * data[i].distance) / track.features[0].properties.inMotion : 0;
+      this.averageSpeed = track.features[0].properties.totalTime > 0 ? (3600000 * data[i].distance) / track.features[0].properties.totalTime : 0;
 
       // 2. CÁLCULO DE ALTITUD COMPENSADA (Filtro de Media Móvil)
-      // Usamos un rango centrado (i - lag/2 a i + lag/2) para evitar desplazamientos en la gráfica
-      const halfLag = Math.floor(this.lag / 2);
-      const startAlt = Math.max(i - halfLag, 0);
-      const endAlt = Math.min(i + halfLag, num - 1);
-      
+     
       let sum = 0;
       let n = 0;
-      for (let j = startAlt; j <= endAlt; j++) {
+      for (let j = start; j <= i; j++) {
         sum += data[j].altitude; // <--- CORREGIDO: Usamos el índice j
         n++;
       } 
@@ -134,13 +141,12 @@ export class FunctionsService {
       }
       // Elevation gain and loss
       const diff = data[i].compAltitude - data[i-1].compAltitude;
-      if (diff > 0) gain += diff;
-      else loss += Math.abs(diff);
+      if (diff > 0) track.features[0].properties.totalElevationGain += diff;
+      else track.features[0].properties.totalElevationLoss -= diff;
     }
     track.features[0].properties.currentSpeed = data[num-1].compSpeed;
-    track.features[0].properties.currentAltitudedata[num-1].compAltitude;
-    track.features[0].properties.totalElevationGain = gain;
-    track.features[0].properties.totalElevationLoss = loss;
+    track.features[0].properties.currentAltitude = data[num-1].compAltitude;
+    
     return track;
   }
  
@@ -153,9 +159,9 @@ export class FunctionsService {
           
           // Calculamos velocidad suavizada por el lag
           data[i].compSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
-          
-          // NO tocamos compAltitude aquí, se mantiene lo que ya tuviera el objeto
       }
+      //const timeDist = data[num-1].time - data[0].time
+      //this.averageSpeed = timeDist > 0 ? (3600000 * data[num-1].distance) / timeDist : 0;
       return data;
   }
 

@@ -80,13 +80,9 @@
   },
 
   "SEARCH": {
-    "TITLE_SEARCH": "Trobeu la ubicació",
     "TITLE_GUIDE": "Trobeu la millor ruta",
     "PLACEHOLDER_SEARCH": "Nom del lloc",
     "PLACEHOLDER_GUIDE": "Inici",
-    "TRANSPORTATION_MEANS": [
-      "En cotxe", "En bicicleta", "A peu", "Senderisme", "En cadira de rodes"
-    ],
     "CURRENT_LOCATION": "Posició actual",
     "UNKNOWN_LOCATION": "No s'ha pogut obtenir la posició actual",
     "NOTICE1": "Introduïu un punt d'inici...",
@@ -101,7 +97,8 @@
     "SEARCH": "Cercar",
     "LIST": "Llista",
     "FROM": "Des de",
-    "TO": "Fins a"
+    "TO": "Fins a",
+    "CLEAR": "Tanca"
   },
 
   "MAP": {
@@ -146,14 +143,7 @@
     "SHARE_NO": "Tancar",
     "SHARE_TEXT": "Seguiment a temps real",
     "SHARE_TRACK": "Comp.",
-        "TRANSPORT": "Transporte",
-    "TRANSPORTATION_MEANS": {
-      "car": "En cotxe",
-      "cycling": "En bicicleta",
-      "walking": "A peu",
-      "hiking": "Senderisme",
-      "wheelchair": "En cadira de rodes"
-    }
+    "TRANSPORT": "Transporte"
   }
 
 }

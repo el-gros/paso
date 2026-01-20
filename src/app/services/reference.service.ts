@@ -18,6 +18,11 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   
     archivedTrack: Track | undefined = undefined;
     archivedColor: string = 'green';
+    isSearchGuidePopoverOpen = false;
+    isSearchPopoverOpen = false;
+    isGuidePopoverOpen = false;
+    foundRoute: boolean = false;
+    foundPlace: boolean = false;
 
   constructor(
     private stylerService: StylerService,

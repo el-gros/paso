@@ -45,6 +45,7 @@ export interface Track {
       description: string,
       totalDistance: number,
       totalTime: any,
+      inMotion: any,
       totalElevationGain: number,
       totalElevationLoss: number,
       totalNumber: number,

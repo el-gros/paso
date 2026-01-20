@@ -79,7 +79,6 @@
   },
 
   "SEARCH": {
-    "TITLE_SEARCH": "Encuentra la ubicación",
     "TITLE_GUIDE": "Encuentra la mejor ruta",
     "PLACEHOLDER_SEARCH": "Nombre del lugar",
     "PLACEHOLDER_GUIDE": "Inicio",
@@ -96,14 +95,8 @@
     "INSTRUCTION": "¿Què busca?",
     "SEARCH": "Buscar",
     "LIST": "Lista",
-        "TRANSPORT": "Transporte",
-    "TRANSPORTATION_MEANS": {
-      "car": "En coche",
-      "cycling": "En bicicleta",
-      "walking": "A pie",
-      "hiking": "Senderismo",
-      "wheelchair": "En silla de ruedas"
-    }
+    "TRANSPORT": "Transporte",
+    "CLEAR": "Búsqueda"
   },
 
   "MAP": {

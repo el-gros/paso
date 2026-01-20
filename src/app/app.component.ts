@@ -13,7 +13,6 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { MapService } from './services/map.service';
 import { TrackingControlService } from './services/trackingControl.service';
 import { PresentService } from './services/present.service';
-//import MyService from 'src/plugins/MyServicePlugin';
 import { ParsedPoint, Track, TrackDefinition, Waypoint } from 'src/globald';
 import JSZip from "jszip";
 
@@ -37,7 +36,7 @@ export class AppComponent {
   // 4. SETUP STATE LISTENER
   // 5. SETUP FILE LISTENER
   // 6. PROCESS URL
-
+  // 7. MORNING TASK
   // 8. PARSE KMZ FILES
   // 9. COMPUTE TRACK STATISTICS
   // 10. CALCULATE ELEVATION GAIN & LOSS
@@ -94,18 +93,15 @@ export class AppComponent {
   private setupAppStateListeners() {
     App.addListener('appStateChange', ({ isActive }) => {
       this.zone.run(async () => {
+        this.location.foreground = isActive;
         if (isActive) {
-          console.log('⬆️ App en primer plano');
-          this.location.foreground = true;
-          // Lógica de reinicio de tracking si el control estaba activo
-          if (this.mapService.customControl?.isControlActive()) {
-            this.trackingControlService.start();
-          }
+          console.log('⬆️ App Active');
+          // Resume heavy UI tasks if needed
           if (this.present.currentTrack) await this.morningTask();
         } else {
-          console.log('⬇️ App en segundo plano');
-          this.trackingControlService.stop();
-          this.location.foreground = false;
+          console.log('⬇️ App Background');
+          // Do NOT stop the tracking service if you want background recording!
+          // Only stop UI-intensive map refreshers here.
         }
       });
     });
@@ -116,18 +112,11 @@ export class AppComponent {
     App.addListener('appUrlOpen', (data: any) => {
       this.zone.run(async () => {
         const track = await this.processUrl(data);
-        // Navegar primero
-        this.fs.gotoPage('tab1');
-        // Pequeña espera
-               await new Promise(r => setTimeout(r, 200));
         if (track) {
-          if (this.mapService.mapIsReady) {
-            await this.reference.displayArchivedTrack();
-                await this.geography.setMapView(this.reference.archivedTrack);
-          } else {
-            // Mark that we have something to show as soon as the map finishes loading
-            this.mapService.hasPendingDisplay = true;
-          }
+          // 1. Push the track into the service
+          this.mapService.pendingTrack$.next(track);
+          // 2. Navigate immediately. No more setTimeout!
+          this.fs.gotoPage('tab1');
         }
       });
     });
@@ -216,7 +205,7 @@ export class AppComponent {
     }
   }
 
-    // 7. MORNING TASK ////////////////////////////////////////
+  // 7. MORNING TASK ////////////////////////////////////////
   async morningTask() {
     if (!this.present.currentTrack) return;
     // Procesamos el "atracón" de datos fuera de Angular para no bloquear la UI
@@ -230,7 +219,11 @@ export class AppComponent {
         track = await this.present.accumulatedDistances(track);
         track = await this.fs.filterSpeedAndAltitude(track, this.present.filtered+1);
         this.present.filtered = num - 1;
-        this.cd.detectChanges();
+        // UI Update: Jump back into Angular Zone
+        this.zone.run(() => {
+          this.cd.detectChanges();
+          console.log("UI Updated after data processing");
+        });
         await this.geography.setMapView(track);
       } catch (error) {
         console.error('Error during morningTask:', error);
@@ -239,41 +232,31 @@ export class AppComponent {
   }
 
   // 8. PARSE KMZ FILES //////////////////////////////////////////////
-  async parseKmz(base64Data: string): Promise<{ waypoints: Waypoint[], trackPoints: ParsedPoint[], trk: Element | null }> {
-    try {         
-      // Decode Base64 → ArrayBuffer
-      const binary = atob(base64Data);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binary.charCodeAt(i);
+  async parseKmz(base64Data: string) {
+    try {
+      // Faster, memory-efficient way to convert base64 to Uint8Array
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
-      // Load KMZ as zip
-      const zip = await JSZip.loadAsync(bytes);
-      // Find the first .kml file in the KMZ
+      const byteArray = new Uint8Array(byteNumbers);
+      const zip = await JSZip.loadAsync(byteArray);
       const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-      if (!kmlFile) {
-        throw new Error('No KML file found inside KMZ.');
-      }
-      // Extract KML text
+      if (!kmlFile) throw new Error('No KML found');
       const kmlText = await zip.files[kmlFile].async('string');
-      if (!kmlText || !kmlText.includes('<kml')) {
-        throw new Error('Invalid KML content in KMZ.');
-      }
-      // Convert string → XML Document
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(kmlText, 'application/xml');
-      // Reuse your existing KML parser
       return this.mapService.parseKmlXml(xmlDoc);
     } catch (error) {
-      console.error('parseKmz failed:', error);
-      this.fs.displayToast(this.translate.instant('MAP.UNSUPPORTED_FILE'));
+      console.error('KMZ Error:', error);
       return { waypoints: [], trackPoints: [], trk: null };
     }
   }
 
   // 9. COMPUTE TRACK STATISTICS
   async computeTrackStats(trackPoints: ParsedPoint[], waypoints: Waypoint[], trk: Element) {
+    if (!trackPoints || trackPoints.length === 0) throw new Error("Empty track points");
     const name = this.fs.sanitize(trk.getElementsByTagName('name')[0]?.textContent || 'No Name') || 'No Name';
     const desc = this.fs.sanitize(trk.getElementsByTagName('cmt')[0]?.textContent || '') || '';
     const track: Track = {
@@ -283,7 +266,7 @@ export class AppComponent {
             properties: {
                 name, place: '', date: undefined, description: desc,
                 totalDistance: 0, totalElevationGain: 0, totalElevationLoss: 0,
-                totalTime: '00:00:00', totalNumber: trackPoints.length,
+                totalTime: 0, inMotion: 0, totalNumber: trackPoints.length,
                 currentAltitude: undefined, currentSpeed: undefined
             },
             bbox: undefined,
@@ -344,8 +327,8 @@ export class AppComponent {
     }
     // 3. Finalización
     track.features[0].properties.totalTime = hasTime 
-        ? this.fs.formatMillisecondsToUTC(pointData[num - 1].time - pointData[0].time)
-        : '00:00:00';
+        ? pointData[num - 1].time - pointData[0].time
+        : 0;
     track.features[0].properties.date = new Date(pointData[num - 1]?.time || Date.now());
     console.log(track)
     return track;
@@ -354,16 +337,23 @@ export class AppComponent {
   // 10. CALCULATE ELEVATION GAIN & LOSS /////////////////////////////
   private calculateElevationGains(track: Track) {
     const data = track.features[0].geometry.properties.data;
+    if (data.length < 2) return;
     let gain = 0;
     let loss = 0;
+    const threshold = 2.5; // Minimum meters to count as real movement
+    let lastSteadyAlt = data[0].compAltitude;
     for (let i = 1; i < data.length; i++) {
-        const diff = data[i].compAltitude - data[i-1].compAltitude;
+      const currentAlt = data[i].compAltitude;
+      const diff = currentAlt - lastSteadyAlt;
+      if (Math.abs(diff) >= threshold) {
         if (diff > 0) gain += diff;
         else loss += Math.abs(diff);
+        lastSteadyAlt = currentAlt;
+      }
     }
     track.features[0].properties.totalElevationGain = gain;
     track.features[0].properties.totalElevationLoss = loss;
-}
+  }
 
 // 11. SAVE TRACK //////////////////////////////////////////////////
   async saveTrack(track: any) {

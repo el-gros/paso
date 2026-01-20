@@ -5,16 +5,10 @@
       <ion-icon name="recording-sharp"></ion-icon>
       <span>{{ 'RECORD.BUTTON' | translate }}</span>
     </div>
-    <div class="record-button map-color" (click)="isSearchGuidePopoverOpen = true;">
+    <div class="record-button map-color" (click)="reference.isSearchGuidePopoverOpen = true;">
       <ion-icon name="help-sharp"></ion-icon>
       <span>{{ 'SEARCH.BUTTON' | translate }}</span>
     </div>
-    @if (geography.searchLayer?.getSource()?.getFeatures()?.length) {
-      <div class="record-button reddish-color" (click)="clearSearch()">
-        <ion-icon name="close-circle-outline"></ion-icon>
-        <span>{{ 'SEARCH.BUTTON' | translate }}</span>
-      </div>
-    }
     <div class="record-button map-color" (click)="mapService.cycleZoom()">
       <ion-icon name="search-sharp"></ion-icon>
       <span>Zoom</span>
@@ -24,7 +18,10 @@
 
 <!-- Regular content -->
 <ion-content>
+  <!-- popovers --> 
   <app-record-popover></app-record-popover>
+  <app-search-guide-popover></app-search-guide-popover>
+  
   <div id="map-wrapper">
     <div id="map"></div>
   </div>
@@ -51,214 +48,4 @@
     </div>
   </ion-row>
 </ion-fab>
-
-<!-- SearchGuide popover. Selection place / route -->
-
-<ion-popover
-  [isOpen]="isSearchGuidePopoverOpen"
-  (didDismiss)="isSearchGuidePopoverOpen = false"
-  cssClass="central"
->
-  <ng-template>
-    <ion-list>
-      <ion-row>
-        <button class="record-button map-color"
-          (click)="isSearchPopoverOpen = true; isSearchGuidePopoverOpen = false"
-        >
-          <ion-icon name="location-sharp"></ion-icon>
-          <span>{{ 'SEARCH.LOCATION' | translate }}</span>
-        </button>
-        <button class="record-button map-color"
-          (click)="guide(); isSearchGuidePopoverOpen = false"
-        >
-          <ion-icon name="walk-sharp"></ion-icon>
-          <span>{{ 'SEARCH.ROUTE' | translate }}</span>
-        </button>
-      </ion-row>
-    </ion-list>
-  </ng-template>
-</ion-popover>
-
-<!-- Search popovwr -->
-
-<ion-popover
-  [isOpen]="isSearchPopoverOpen"
-  (didDismiss)="isSearchPopoverOpen = false"
-  cssClass="long"
->
-  <ng-template>
-    <ion-content class="search-popover-content">
-
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
-
-          <ion-input
-            [(ngModel)]="query"
-            [placeholder]="'SEARCH.SEARCH' | translate"
-            class="search-input"
-          >
-          </ion-input>
-
-          @if (query) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query = ''; results = []">
-            </ion-icon>
-          }
-
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
-
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
-      </div>
-
-            <!-- Search Results -->
-      @if (results.length > 0) {
-        <ion-list class="results-list">
-          @for (result of results; track result) {
-            <ion-item
-              (click)="handleLocationSelection(result)"
-              class="result-item">
-
-              <ion-label>
-                <h2>{{ result.short_name || result.name }}</h2>
-                <p>{{ result.display_name }}</p>
-
-                @if (result.type) {
-                  <p class="type">{{ result.type }}</p>
-                }
-              </ion-label>
-
-            </ion-item>
-          }
-        </ion-list>
-      }
-    </ion-content>
-  </ng-template>
-</ion-popover>
-
-<!-- Guide popovwr -->
-
-<ion-popover
-  [isOpen]="isGuidePopoverOpen"
-  (didDismiss)="isGuidePopoverOpen = false"
-  cssClass="long"
->
-  <ng-template>
-    <ion-content class="search-popover-content">
-
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
-
-          <ion-input
-            [(ngModel)]="query2"
-            [placeholder]="'SEARCH.FROM' | translate"
-            class="search-input"
-          >
-          </ion-input>
-
-          @if (query2) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query2 = ''">
-            </ion-icon>
-          }
-
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
-
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
-      </div>
-
-      <!-- Second line -->
-
-      <div class="search-row">
-        <!-- Search Field -->
-        <div class="search-field">
-          <ion-icon name="search" class="search-icon"></ion-icon>
-
-          <ion-input
-            [(ngModel)]="query3"
-            [placeholder]="'SEARCH.TO' | translate"
-            class="search-input"
-          >
-          </ion-input>
-
-          @if (query3) {
-            <ion-icon
-              name="close-circle"
-              class="clear-icon"
-              (click)="query3 = ''">
-            </ion-icon>
-          }
-
-          <ion-icon
-            name="mic"
-            class="mic-icon"
-            (click)="startDictation()">
-          </ion-icon>
-        </div>
-
-        <!-- List Button -->
-        <button class="list-button" (click)="openList()">
-          <ion-icon name="list" class="list-icon"></ion-icon>
-          <span>{{ 'SEARCH.LIST' | translate }}</span>
-        </button>
-      </div>
-
-            <!-- Search Results -->
-      @if (results.length > 0) {
-        <ion-list class="results-list">
-          @for (result of results; track result) {
-            <ion-item
-              (click)="handleLocationSelection(result)"
-              class="result-item">
-
-              <ion-label>
-                <h2>{{ result.short_name || result.name }}</h2>
-                <p>{{ result.display_name }}</p>
-
-                @if (result.type) {
-                  <p class="type">{{ result.type }}</p>
-                }
-              </ion-label>
-
-            </ion-item>
-          }
-        </ion-list>
-      }
-    </ion-content>
-  </ng-template>
-</ion-popover>
-
-@if (loading) {
-  <ion-row class="spinner-row">
-    <ion-col class="ion-text-center">
-      <span class="sandclock">⏳</span>
-      <p>Procesando altitudes...</p>
-    </ion-col>
-  </ion-row>
-}  
 

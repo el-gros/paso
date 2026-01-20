@@ -18,6 +18,7 @@ export class GeographyService {
   searchLayer?: VectorLayer<VectorSource>;
   locationLayer?: VectorLayer<VectorSource>;
   mapProvider: string ='MapTiler_outdoor';
+  public userLocation: [number, number] | null = null;
 
   constructor(
   ) { }
