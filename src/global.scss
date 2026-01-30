@@ -321,16 +321,6 @@
   font-size: 20px; /* Adjust icon size (optional) */
 }
 
-// CONTROLS
-/* Generic OpenLayers control box */
-.ol-control {
-  position: absolute;
-  z-index: 1000;  /* bring above the map */
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 4px;
-  padding: 2px;
-}
-
 /* Zoom buttons (top-left by default) */
 .ol-zoom {
   top: 25px !important;
@@ -343,47 +333,97 @@
   right: 1em;
 }
 
-.ol-scale-line {
+/* 1. Contenedor principal */
+.ol-scale-line.vertical-scale {
   display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  z-index: 10000; /* ensure it floats above ion-content */
+  z-index: 10000 !important;
   position: absolute !important;
-  bottom: 60px !important;
-  left: 5px !important;
-  pointer-events: none; /* safe so it doesn’t block taps */
-}
-
-.ol-scale-line-inner {
-  color: #000 !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-radius: 4px !important;
-  padding: 2px 6px !important;
-  font-size: 12px !important;
-  border: 1px solid #ccc;
-}
-
-/* Example for your custom control */
-.custom-control {
-  bottom: 60px;      /* adjust position */
-  right: 50px;
-  background: transparent;
-  padding: 6px;
-  border-radius: 8px;
-}
-
-.share-control {
-  bottom: 60px;      /* adjust position */
-  right: 5px;
-  background: transparent;
-  padding: 6px;
-  border-radius: 8px;
-}
-
-.custom-share-control button,
-.custom-control button {
+  
+  /* Ajuste de posición: 60px desde abajo */
+  bottom: 60px !important; 
+  left: 40px !important; /* Ajusta este valor si queda muy pegado al borde */
+  
   background: transparent !important;
-  box-shadow: none !important;
+  pointer-events: none;
+
+  /* Rotación */
+  transform: rotate(-90deg) !important;
+  transform-origin: left bottom !important;
+}
+
+/* 2. El cuadro interno (La Regla) */
+.ol-scale-line.vertical-scale div,
+.ol-scale-line.vertical-scale .vertical-scale-inner,
+.ol-scale-line.vertical-scale .ol-scale-line-inner {
+  color: #000 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  
+  /* 📏 LA LÍNEA VERTICAL:
+     Al estar rotado -90deg, el 'border-bottom' original se convierte 
+     en la línea vertical que queda pegada al mapa. */
+  border: 1px solid #ccc !important;
+  border-bottom: 4px solid #3880ff !important; /* Esta será tu línea vertical azul */
+  
+  border-radius: 4px 4px 0 0 !important; /* Redondeamos las esquinas opuestas a la línea */
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: bold;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  
+  /* Esto define el largo de la "regla" vertical */
+  min-width: 60px !important; 
+}
+
+/* 1. Forzar que ambos contenedores midan lo mismo */
+.location-button-control, .share-control {
+  position: absolute;
+  right: 5px;
+  width: 36px;   /* Ancho fijo */
+  height: 36px;  /* Alto fijo */
+  background-color: white !important;
+  border-radius: 4px;
+  padding: 0 !important; /* Quitamos paddings que ensanchan el cuadrado */
+  margin: 0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Evita que el contenido se salga */
+}
+
+/* 2. Posicionamiento vertical */
+.share-control {
+  bottom: 60px;
+}
+
+.location-button-control {
+  bottom: 104px; /* Encima del anterior */
+}
+
+/* 3. Forzar que los botones internos sean idénticos */
+.location-button-control button, 
+.share-control button {
+  background-color: white !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important; /* Ocupa todo el contenedor de 36px */
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+}
+
+/* 4. Asegurar que los SVGs tengan el mismo tamaño visual */
+.location-button-control svg,
+.share-control svg {
+  width: 22px;
+  height: 22px;
 }
 
 .padded-list {

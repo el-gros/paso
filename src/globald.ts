@@ -132,3 +132,8 @@ export interface ParsedPoint {
   time?: number;
 }
 
+export interface ParseResult {
+  waypoints: Waypoint[];
+  trackPoints: ParsedPoint[];
+  trk: any; // Usamos any para el nodo XML, o null
+}

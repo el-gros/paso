@@ -1,28 +1,29 @@
-import { Feature } from 'ol';
-import { StylerService } from './styler.service';
-import { FunctionsService } from '../services/functions.service';
-import { LineString, MultiPoint, Point } from 'ol/geom';
-import { Track } from 'src/globald';
-import { GeographyService } from './geography.service';
 import { Injectable } from '@angular/core';
+import { Feature } from 'ol';
+import { LineString, MultiPoint, Point } from 'ol/geom';
 import { Style } from 'ol/style';
 import { PopoverController } from '@ionic/angular';
+import { TranslateService } from '@ngx-translate/core';
+
+import { Track, Waypoint } from 'src/globald';
+import { StylerService } from './styler.service';
+import { GeographyService } from './geography.service';
+import { FunctionsService } from '../services/functions.service';
 import { SaveTrackPopover } from '../save-track-popover.component';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Injectable({
   providedIn: 'root',
 })
-
-  export class ReferenceService {
+export class ReferenceService {
+  archivedTrack: Track | undefined = undefined;
+  archivedColor: string = 'green';
   
-    archivedTrack: Track | undefined = undefined;
-    archivedColor: string = 'green';
-    isSearchGuidePopoverOpen = false;
-    isSearchPopoverOpen = false;
-    isGuidePopoverOpen = false;
-    foundRoute: boolean = false;
-    foundPlace: boolean = false;
+  // UI States
+  isSearchGuidePopoverOpen = false;
+  isSearchPopoverOpen = false;
+  isGuidePopoverOpen = false;
+  foundRoute: boolean = false;
+  foundPlace: boolean = false;
 
   constructor(
     private stylerService: StylerService,
@@ -30,108 +31,121 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     private fs: FunctionsService,
     private popoverCtrl: PopoverController,
     private translate: TranslateService,
-  ) { }
+  ) {}
 
+  /**
+   * Renders an archived track on the map with specific Z-Indices for clarity.
+   */
   async displayArchivedTrack(): Promise<void> {
-    if (!this.geography.map || !this.archivedTrack?.features?.length) return;
-    const coordinates = this.archivedTrack.features?.[0]?.geometry?.coordinates;
+    const source = this.geography.archivedLayer?.getSource();
+    if (!this.geography.map || !this.archivedTrack || !source) return;
+
+    const feature0 = this.archivedTrack.features?.[0];
+    const coordinates = feature0?.geometry?.coordinates;
+    
     if (!Array.isArray(coordinates) || coordinates.length === 0) return;
-    // 1. Create features with identifiers
-    const lineFeature = new Feature();
+
+    source.clear();
+
+    const featuresToAdd: Feature[] = [];
+
+    // 1. Track Line (Bottom Layer)
+    const lineFeature = new Feature(new LineString(coordinates));
     lineFeature.set('type', 'archived_line');
-    const startFeature = new Feature();
+    this.applyStyle(lineFeature, this.stylerService.setStrokeStyle(this.archivedColor), 1);
+    featuresToAdd.push(lineFeature);
+
+    // 2. Start & End Pins (Middle Layer)
+    const startFeature = new Feature(new Point(coordinates[0]));
     startFeature.set('type', 'archived_start');
-    const endFeature = new Feature();
+    this.applyStyle(startFeature, this.stylerService.createPinStyle('green'), 5);
+    
+    const endFeature = new Feature(new Point(coordinates.at(-1)!));
     endFeature.set('type', 'archived_end');
-    const waypointsFeature = new Feature();
-    waypointsFeature.set('type', 'archived_waypoints');
-    // 2. Configure Geometries and Styles with Z-Index
-    // Track Line (Z-Index: 1)
-    lineFeature.setGeometry(new LineString(coordinates));
-    const lineStyle = this.stylerService.setStrokeStyle(this.archivedColor);
-    this.applyZIndex(lineStyle, 1);
-    lineFeature.setStyle(lineStyle);
-    // Start point (Z-Index: 5)
-    startFeature.setGeometry(new Point(coordinates[0]));
-    const startStyle = this.stylerService.createPinStyle('green');
-    this.applyZIndex(startStyle, 5);
-    startFeature.setStyle(startStyle);
-    // End point (Z-Index: 5)
-    endFeature.setGeometry(new Point(coordinates.at(-1)!));
-    const endStyle = this.stylerService.createPinStyle('red');
-    this.applyZIndex(endStyle, 5);
-    endFeature.setStyle(endStyle);
-    // 3. Waypoints (Z-Index: 10 - Highest priority)
-    const waypoints = Array.isArray(this.archivedTrack.features?.[0]?.waypoints)
-      ? this.archivedTrack.features[0].waypoints
-      : [];
-    const multiPoint = waypoints
+    this.applyStyle(endFeature, this.stylerService.createPinStyle('red'), 5);
+    
+    featuresToAdd.push(startFeature, endFeature);
+
+    // 3. Waypoints (Top Layer)
+    const waypoints = Array.isArray(feature0.waypoints) ? feature0.waypoints : [];
+    const wpCoords = waypoints
       .filter(p => typeof p.longitude === 'number' && typeof p.latitude === 'number')
       .map(p => [p.longitude, p.latitude]);
-    if (multiPoint.length > 0) {
-      waypointsFeature.setGeometry(new MultiPoint(multiPoint));
-      waypointsFeature.set('waypoints', waypoints); 
-      const waypointStyle = this.stylerService.createPinStyle('yellow');
-      this.applyZIndex(waypointStyle, 10);
-      waypointsFeature.setStyle(waypointStyle);
+
+    if (wpCoords.length > 0) {
+      const wpFeature = new Feature(new MultiPoint(wpCoords));
+      wpFeature.set('type', 'archived_waypoints');
+      wpFeature.set('waypoints', waypoints);
+      this.applyStyle(wpFeature, this.stylerService.createPinStyle('yellow'), 10);
+      featuresToAdd.push(wpFeature);
     }
-    // 4. Update Map Source
-    const source = this.geography.archivedLayer?.getSource();
-    if (source) {
-      source.clear();
-      const featuresToAdd = [lineFeature, startFeature, endFeature];
-      if (multiPoint.length > 0) featuresToAdd.push(waypointsFeature);
-      source.addFeatures(featuresToAdd);
-    }
+
+    source.addFeatures(featuresToAdd);
   }
 
-  private applyZIndex(style: any, z: number) {
-    if (style instanceof Style) {
-      style.setZIndex(z);
-    } else if (Array.isArray(style)) {
-      style.forEach(s => {
-        if (s instanceof Style) s.setZIndex(z);
-      });
+  /**
+   * Helper to set style and Z-Index simultaneously
+   */
+  private applyStyle(feature: Feature, style: Style | Style[], zIndex: number) {
+    if (Array.isArray(style)) {
+      style.forEach(s => s.setZIndex(zIndex));
+    } else {
+      style.setZIndex(zIndex);
     }
+    feature.setStyle(style);
+  }
+
+  /**
+   * Clears the archived track from the map and service state
+   */
+  clearArchivedTrack() {
+    this.archivedTrack = undefined;
+    this.geography.archivedLayer?.getSource()?.clear();
   }
 
   async editTrack(index: number) {
     const trackToEdit = this.fs.collection[index];
     if (!trackToEdit) return;
+
     const modalEdit = { 
       name: trackToEdit.name, 
-      //place: trackToEdit.place, 
       description: trackToEdit.description || '' 
     };
+
     const popover = await this.popoverCtrl.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit: modalEdit, edit: true },
+      componentProps: { modalEdit, edit: true },
       backdropDismiss: false
     });
+
     await popover.present();
     const { data } = await popover.onDidDismiss();
+
     if (data?.action === 'ok') {
-      // 1. Actualizar la lista en Functions Service
+      // Update Collection
       this.fs.collection[index].name = data.name;
       this.fs.collection[index].description = data.description;
       await this.fs.storeSet('collection', this.fs.collection);
-      // 2. Actualizar el archivo GeoJSON
+
+      // Update specific Storage entry
       if (trackToEdit.date) {
         const storageKey = trackToEdit.date.toISOString();
         const fullTrack = await this.fs.storeGet(storageKey);
-        if (fullTrack && fullTrack.features?.[0]) {
+        
+        if (fullTrack?.features?.[0]) {
           fullTrack.features[0].properties.name = data.name;
           fullTrack.features[0].properties.description = data.description;
           await this.fs.storeSet(storageKey, fullTrack);
-          // 3. ¡Sincronización inmediata! Como estamos en ReferenceService,
-          // tenemos acceso directo al track que se está dibujando.
-          if (this.archivedTrack && this.archivedTrack.features?.[0]) {
-            this.archivedTrack.features[0].properties.name = data.name;
-            this.archivedTrack.features[0].properties.description = data.description;
+
+          // Sync current view if this is the track being displayed
+          if (this.archivedTrack?.features?.[0]) {
+            const props = this.archivedTrack.features[0].properties;
+            props.name = data.name;
+            props.description = data.description;
           }
         }
       }
       this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'));
     }
   }
-}  
+}

@@ -1,13 +1,3 @@
-/**
- * Service for managing MBTiles files and vector tile retrieval.
- *
- * Provides methods to download large binary files with progress tracking,
- * list available MBTiles files in the app's data directory, open and manage
- * SQLite database connections to MBTiles files, and retrieve vector tile data
- * by XYZ coordinates. Utilizes Capacitor Filesystem and SQLite libraries for
- * file and database operations.
- */
-
 import { Injectable } from '@angular/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { BehaviorSubject } from 'rxjs';
@@ -22,6 +12,7 @@ export class ServerService {
   private sqlite: SQLiteConnection;
   private db: SQLiteDBConnection | null = null;
   currentMbTiles: string = '';
+  private isInitialized = false;
 
   constructor( ) {
     this.sqlite = new SQLiteConnection(CapacitorSQLite);
@@ -126,39 +117,41 @@ export class ServerService {
     }
   }
 
-  // 5. OPEN MBTILES FILE ///////////////////////
+  async initializePlugin() {
+    if (this.isInitialized) return;
+    try {
+      // On Android, some versions require this to wake up the bridge
+      await this.sqlite.checkConnectionsConsistency();
+      this.isInitialized = true;
+    } catch (e) {
+      console.error('Plugin initialization failed', e);
+    }
+  }
+
   async openMbtiles(mbtilesFile: string) {
     try {
-      // If the database is already open with the same path, do nothing
-      if (this.db && this.currentMbTiles === mbtilesFile) {
-        console.log('Database already opened with the same path:');
-        return;
-      }
-      // If a different database is open, close it
-      if (this.db) {
-        console.log('Closing previous database:', this.currentMbTiles);
-        await this.db.close();
-        this.db = null;
-      }
-      // Check mbtiles path
-      const appDir = await Filesystem.getUri({
+      const result = await Filesystem.getUri({
         directory: Directory.Data,
-        path: ''
+        path: mbtilesFile
       });
-      var dbPath = `${appDir.uri}/${mbtilesFile}`;
-      dbPath = dbPath.replace('file://', '');
-    } catch (statError) {
-      console.error('Database file does not exist. Please download it.', statError);
-      return; // Exit the function if the file doesn't exist
-    }
-    try {
-      // Create the connection to the database
-      this.db = await this.sqlite.createNCConnection(dbPath, 1);
-      // Open the database
+
+      let dbPath = result.uri;
+      if (dbPath.startsWith('file://')) dbPath = dbPath.replace('file://', '');
+      dbPath = decodeURI(dbPath);
+
+      // 🔹 FIX: Check if we already have this connection
+      const isConn = await this.sqlite.isConnection(dbPath, false);
+      
+      if (isConn.result) {
+        this.db = await this.sqlite.retrieveConnection(dbPath, false);
+      } else {
+        this.db = await this.sqlite.createNCConnection(dbPath, 1);
+      }
+
       await this.db.open();
-      this.currentMbTiles = mbtilesFile;
-    } catch (error) {
-      console.error('❌ Failed to open MBTiles:', error);
+      console.log("✅ MBTiles Database is OPEN");
+    } catch (err) {
+      console.error("Connection error:", err);
     }
   }
 
@@ -168,27 +161,45 @@ export class ServerService {
       console.error('❌ Database connection is not open.');
       return null;
     }
-    // Query the database for the tile using XYZ coordinates
-    const resultXYZ = await this.db.query(
-      `SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;`,
-      [zoom, x, y]
-    );
-    if (resultXYZ?.values?.length) {
-      const tileData = resultXYZ.values[0].tile_data;
-      // Ensure tileData is returned as an ArrayBuffer
-      if (tileData instanceof ArrayBuffer) {
-        return tileData;
-      } else if (Array.isArray(tileData)) {
-        return new Uint8Array(tileData).buffer; // Convert array to ArrayBuffer
-      } else {
-        console.error(`❌ Unexpected tile_data format for ${zoom}/${x}/${y}`, tileData);
-        return null;
+
+    // 🔹 MBTiles Flip: OpenLayers is XYZ (top-down), MBTiles is TMS (bottom-up).
+    const tmsY = Math.pow(2, zoom) - 1 - y;
+
+    try {
+      const result = await this.db.query(
+        `SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;`,
+        [zoom, x, tmsY] 
+      );
+
+      // FIX 1 & 2: Use optional chaining (?.) and check for existence to fix "possibly undefined"
+      if (result?.values && result.values.length > 0) {
+        const tileData = result.values[0].tile_data;
+
+        if (!tileData) return null;
+
+        // Handle String/Base64 return
+        if (typeof tileData === 'string') {
+          const binaryString = atob(tileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes.buffer;
+        }
+
+        // FIX 3: Cast to ArrayBuffer | null explicitly to resolve "SharedArrayBuffer" conflict
+        // We wrap it in Uint8Array first to guarantee we have a standard buffer.
+        const buffer = (tileData instanceof ArrayBuffer) 
+          ? tileData 
+          : new Uint8Array(tileData as Iterable<number>).buffer;
+
+        return buffer as ArrayBuffer;
       }
-    } else {
-      console.log(`❌ No tile found: z=${zoom}, x=${x}, y=${y}`);
-      return null;
+    } catch (err) {
+      console.error("SQL Query Error:", err);
     }
+    
+    return null;
   }
 
 }
-

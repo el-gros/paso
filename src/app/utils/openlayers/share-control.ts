@@ -21,7 +21,7 @@ export class ShareControl extends Control {
 
     // MAIN container
     const element = document.createElement('div');
-    element.className = 'ol-unselectable ol-control share-control';
+    element.className = 'share-control';
 
     // MAIN button
     const button = document.createElement('button');

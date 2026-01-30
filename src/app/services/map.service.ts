@@ -9,10 +9,10 @@ import { OSM, XYZ } from 'ol/source';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import { VectorTile, View } from 'ol';
 import { Rotate, ScaleLine, Zoom } from 'ol/control';
-import { CustomControl } from '../utils/openlayers/custom-control';
+import { LocationButtonControl } from '../utils/openlayers/custom-control';
 import { ShareControl } from '../utils/openlayers/share-control';
 import MVT from 'ol/format/MVT';
-import { TileGrid } from 'ol/tilegrid';
+import { createXYZ } from 'ol/tilegrid';
 import RenderFeature from 'ol/render/Feature';
 import TileState from 'ol/TileState';
 import pako from 'pako';
@@ -32,6 +32,8 @@ import { TranslateService } from '@ngx-translate/core';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { Track, PartialSpeed, ParsedPoint,Data, Waypoint } from '../../globald';
+import { get as getProjection } from 'ol/proj';
+import { TrackingControlService } from './trackingControl.service';
 
 useGeographic();
 
@@ -52,7 +54,7 @@ export class MapService {
   scaleSteps = [1, 1.75, 3.5];
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
-  public customControl!: CustomControl;  
+  public customControl!: LocationButtonControl;  
   public shareControl!: ShareControl;
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
@@ -67,19 +69,20 @@ export class MapService {
     private http: HttpClient,
     public fs: FunctionsService,
     private server: ServerService,
-    private locationService: LocationManagerService,
+    private location: LocationManagerService,
     private translate: TranslateService,
     private stylerService: StylerService,
     private geography: GeographyService,
     private reference: ReferenceService,
     private present: PresentService,
+    private trackingService: TrackingControlService
   ) { 
   }
 
   // 1. CENTER ALL TRACKS
   async centerAllTracks(): Promise<void> {
     // 1. Obtener posición con un timeout o manejo de nulos
-    const currentPosition = await this.locationService.getCurrentPosition();
+    const currentPosition = await this.location.getCurrentPosition();
     if (currentPosition && this.geography.map) {
       const view = this.geography.map.getView();
       // 2. Animación suave en lugar de salto brusco
@@ -98,48 +101,41 @@ export class MapService {
   async loadMap(): Promise<void> {
     const mapElement = document.getElementById('map');
     if (!mapElement) return;
-    this.customControl = new CustomControl(this.geography, this);
-    this.shareControl = new ShareControl(this.locationService, this.translate);
+
+    // A. Inicializar Controles (Ahora pasamos el servicio inyectado)
+    this.shareControl = new ShareControl(this.location, this.translate);
+    // Ya no hacemos "new TrackingControlService", usamos this.trackingService
+
+    // B. Inicializar Capas Vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
     this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
+
     const { olLayer } = await this.createMapLayer();
     if (!olLayer) return;
-    let minZoom = 0, maxZoom = 19, zoom = 9;
+
+    let minZoom = 0, maxZoom = 19, zoom = 7.5;
+    const defaultCenter: [number, number] = [1.7403, 41.7282];
+
     if (this.geography.mapProvider.toLowerCase() === 'catalonia') {
       minZoom = 0; maxZoom = 14; zoom = 8;
     }
-    // 1. Get Initial Position
-    const initialPosition = await this.locationService.getCurrentPosition();
-    let targetCenter: [number, number];
-    let isWaitingForFirstPoint = false;
-    if (initialPosition) {
-      // Already in [longitude, latitude] format
-      targetCenter = initialPosition;
-    } else {
-      targetCenter = [1.7403, 41.7282]; // Catalonia Default
-      zoom = 7.5;
-      isWaitingForFirstPoint = true;
-    }
-    // 🟢 CASE 1 — Map already exists
+
+    // 🟢 CASO 1 — El mapa ya existe (Actualizar proveedor)
     if (this.geography.map) {
-      const map = this.geography.map;
-      const layers = map.getLayers();
-      if (layers && layers.getLength() >= 1) {
-        map.removeLayer(layers.item(0));
-        map.getLayers().insertAt(0, olLayer);
+      const layers = this.geography.map.getLayers();
+      if (layers.getLength() >= 1) {
+        layers.setAt(0, olLayer);
       }
-      const view = map.getView();
+      const view = this.geography.map.getView();
       view.setMinZoom(minZoom);
       view.setMaxZoom(maxZoom);
-      // REMOVED fromLonLat -> passing raw [lon, lat]
-      view.setCenter(targetCenter);
-      view.setZoom(zoom);
     } 
-    // 🟢 CASE 2 — Initialize new map
+    // 🟢 CASO 2 — Inicializar mapa nuevo
     else {
-      this.geography.map = new Map({
+      // 1. Crear el mapa
+      const map = new Map({
         target: 'map',
         layers: [
           olLayer,
@@ -149,36 +145,55 @@ export class MapService {
           this.geography.locationLayer,
         ].filter(Boolean) as any[],
         view: new View({
-          center: targetCenter, // REMOVED fromLonLat
+          center: defaultCenter,
           zoom: zoom,
           minZoom,
           maxZoom,
+          multiWorld: false
         }),
+        // Solo controles estándar al principio
         controls: [
           new Zoom(),
-          new ScaleLine(),
-          new Rotate(),
-          this.customControl,
-          this.shareControl
+          new ScaleLine({
+            className: 'ol-scale-line vertical-scale',
+            target: 'scale-container', // Forzamos el renderizado aquí
+            units: 'metric'
+          }),
+          new Rotate()
         ],
       });
+
+      // 2. Guardar referencia
+      this.geography.map = map;
+
+      // 3. Crear y añadir los controles personalizados DESPUÉS de crear el mapa
+      // Esto evita el error "Cannot read properties of undefined (reading 'setMap')"
+      this.customControl = new LocationButtonControl(this.trackingService);
+      
+      map.addControl(this.customControl);
+      map.addControl(this.shareControl);
     }
-    // 2. AUTO-CENTER (Only once)
-    if (isWaitingForFirstPoint) {
-      this.locationService.latestLocation$.pipe(
-        filter(loc => !!loc),
-        take(1)
-      ).subscribe(nextLoc => {
-        if (this.geography.map && nextLoc) {
-          this.geography.map.getView().animate({
-            center: [nextLoc.longitude, nextLoc.latitude], // REMOVED fromLonLat
-            zoom: 14,
-            duration: 1000
-          });
-        }
-      });
-    }
+
+    this.mapIsReady = true;
     this.mapWrapperElement = document.getElementById('map-wrapper');
+    this.initAutoCenter();
+  }
+
+  // 2. BIS. INIT AUTO CENTER //////////////////////////////////
+  private initAutoCenter() {
+    this.location.latestLocation$.pipe(
+      filter(loc => !!loc),
+      take(1) // Only do this for the very first point received
+    ).subscribe(nextLoc => {
+      if (this.geography.map && nextLoc) {
+        this.geography.map.getView().animate({
+          center: [nextLoc.longitude, nextLoc.latitude],
+          zoom: 14,
+          duration: 1500, // Smooth transition
+          easing: (t) => t * (2 - t) // Smooth-out effect
+        });
+      }
+    });
   }
 
   // 3. CREATE MAP LAYER
@@ -239,14 +254,14 @@ export class MapService {
         });
         break;
       case 'catalonia': {
-        credits = 'Institut Cartogràfic i Geològic de Catalunya';
+        // 1. MUST await the database opening fully
         await this.server.openMbtiles('catalonia.mbtiles');
+        
+        // 2. Only THEN create the source
         const sourceResult = await this.createSource(this.server);
-        if (!sourceResult) {
-          throw new Error('Catalonia mbtiles source could not be loaded');
-        }
+        
         olLayer = new VectorTileLayer({
-          source: sourceResult,
+          source: sourceResult!,
           style: this.stylerService.styleFunction
         });
         break;
@@ -320,50 +335,58 @@ export class MapService {
   // 5. CREATE SOURCE //////////////////////////////
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
+      // 🔹 1. Explicitly define the Web Mercator extent to avoid TypeScript 'null' errors
+      // and prevent the "Hemisphere Swap" caused by geographic projection defaults.
+      const epsg3857Extent = [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244];
+
       return new VectorTileSource({
         format: new MVT(),
-        tileClass: VectorTile,
-        tileGrid: new TileGrid({
-          extent: [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-          resolutions: Array.from({ length: 20 }, (_, z) => 156543.03392804097 / Math.pow(2, z)),
-          tileSize: [256, 256],
+        // 🔹 2. Force the XYZ grid to use the square 3857 extent.
+        // This is crucial because MBTiles are tiled based on a square world,
+        // while useGeographic() works on a 2:1 rectangular world.
+        tileGrid: createXYZ({ 
+          extent: epsg3857Extent, 
+          maxZoom: 22,
+          tileSize: 512 // ⚠️ Common for vector tiles; change to 256 if map looks giant.
         }),
 
         tileLoadFunction: (tile) => {
           const vectorTile = tile as VectorTile<RenderFeature>;
           const [z, x, y] = vectorTile.getTileCoord();
 
-          vectorTile.setLoader(async () => {
+          vectorTile.setLoader(async (extent, resolution, projection) => {
             try {
-              // fetch the tile
               const rawData = await server.getVectorTile(z, x, y);
 
-              // validate
-              if (!rawData || !rawData.byteLength) {
+              if (!rawData || rawData.byteLength === 0) {
                 vectorTile.setFeatures([]);
                 vectorTile.setState(TileState.EMPTY);
                 return;
               }
 
-              // decompress and parse features
+              // 🔹 3. Handle Gzip compression (standard for .mbtiles)
               const decompressed = pako.inflate(new Uint8Array(rawData));
-              const safeBuffer = new Uint8Array(decompressed.length);
-              safeBuffer.set(decompressed);
 
-              const features = new MVT().readFeatures(safeBuffer.buffer, {
-                extent: vectorTile.extent ?? [-20037508.34, -20037508.34, 20037508.34, 20037508.34],
-                //git push origin mainfeatureProjection: 'EPSG:3857',
+              // 🔹 4. Projection Bridge: 
+              // dataProjection is 'EPSG:3857' because tiles are stored in Mercator.
+              // featureProjection is 'projection' (EPSG:4326) because of useGeographic().
+              const features = new MVT().readFeatures(decompressed.buffer, {
+                extent: extent,
+                featureProjection: projection, 
+                dataProjection: 'EPSG:3857'   
               });
 
-              vectorTile.setFeatures(features);
+              vectorTile.setFeatures(features as RenderFeature[]);
+              vectorTile.setState(TileState.LOADED);
+
             } catch (error) {
               console.error(`Tile load error (${z}/${x}/${y}):`, error);
               vectorTile.setState(TileState.ERROR);
             }
           });
         },
-
         tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
+        wrapX: true // 🔹 Set to false if you want to see if the "Blue Band" becomes a single square.
       });
     } catch (e) {
       console.error('Error in createSource:', e);
@@ -551,8 +574,3 @@ private buildMapTilerShortName(f: any): string {
 
 
 }
-
-
-
-
-

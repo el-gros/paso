@@ -88,25 +88,32 @@ export class CanvasComponent implements OnInit {
 
   // 4. ION VIEW WILL ENTER //////////////////
   async ionViewWillEnter() {
-    // A. Actualización inmediata al entrar
-    if (this.appState.isForeground()) {
-      await this.runCanvasUpdates();
-    }
+    // 1. RE-INITIALIZE CANVASES
+    // This ensures the element IDs are found and the context is stored in this.currentCtx
+    await this.createCanvas();
 
-    // B. Actualizar track archivado (Slide 2)
-    if (this.reference.archivedTrack) {
-      this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.reference.archivedTrack);
-      this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
-    }
+    // 2. IMMEDIATE DATA RECOVERY
+    // We don't wait for a GPS ping. If data exists, we draw it immediately.
+    // We use a tiny delay (50ms) to ensure the DOM is stable before drawing.
+    setTimeout(async () => {
+      if (this.present.currentTrack) {
+        await this.runCanvasUpdates();
+      }
 
-    // C. GESTIÓN DE SUBSCRIPCIONES REACTIVAS
-    // Usamos pipe(takeUntil...) para que se limpien solas al destruir el componente
-    // o al ejecutar el disparador en ionViewWillLeave
-    
+      // B. Update archived track (Slide 2) if it exists
+      if (this.reference.archivedTrack) {
+        this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, this.reference.archivedTrack);
+        this.partialSpeeds = await this.fs.computePartialSpeeds(this.reference.archivedTrack);
+      }
+    }, 50);
+
+    // 3. REACTIVE SUBSCRIPTIONS
+    // Use takeUntil(this.destroy$) to prevent memory leaks when leaving the page
     this.present.currentTrack$
       .pipe(takeUntil(this.destroy$)) 
       .subscribe(async track => {
-        if (!this.appState.isForeground() || !track) return;
+        // Only draw if the app is in foreground and we have data
+        if (!this.appState.isForeground$() || !track) return;
         await this.runCanvasUpdates();
       });
 
@@ -116,9 +123,10 @@ export class CanvasComponent implements OnInit {
         await this.runCanvasUpdates();
       });
 
-    // D. LÓGICA DE EXPORTACIÓN
+    // 4. EXPORT LOGIC
+    // If the user triggered an export from the previous page
     if (this.fs.buildTrackImage) {
-      await new Promise(r => setTimeout(r, 400)); // Un poco más de margen para renderizado
+      await new Promise(r => setTimeout(r, 500)); // Wait for render to settle
 
       const success = await this.triggerExport();
       this.fs.buildTrackImage = false;
@@ -240,7 +248,7 @@ export class CanvasComponent implements OnInit {
     let tUnit = '';
     if (!ctx) return tUnit;
 
-    // 1. Reset y Limpieza
+    // 1. Reset and Clear
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
 
@@ -249,7 +257,7 @@ export class CanvasComponent implements OnInit {
     const data = track.features[0].geometry.properties.data;
     const num = data.length;
 
-    // 2. Cálculo de unidades de tiempo/distancia (X)
+    // 2. Calculation of X units
     let xDiv = 1;
     let xTot: number;
     if (xParam === 'x') {
@@ -261,46 +269,70 @@ export class CanvasComponent implements OnInit {
       else { tUnit = 's'; xDiv = 1000; }
       xTot = timeDiff / xDiv;
     }
-
-    // Evitar división por cero si el track acaba de empezar
     if (xTot <= 0) xTot = 0.0001; 
 
-    // 3. Cálculo de límites (Y)
+    // 3. Calculation of Y limits
     const bounds = await this.fs.computeMinMaxProperty(data, propertyName);
     if (bounds.max === bounds.min) {
       bounds.max += 2; 
       bounds.min -= 2;
     }
 
-    // 4. Transformación Matemática
-    // El eje Y en HTML Canvas está invertido (0 arriba), por eso usamos (min - max)
+    // 4. Mathematical Transformation
     const availSize = this.canvasSize - 2 * this.margin;
     const scaleX = availSize / xTot;
     const scaleY = availSize / (bounds.min - bounds.max);
     const offsetX = this.margin;
     const offsetY = this.margin - bounds.max * scaleY;
 
-    // 5. Dibujo de la Sombra/Área
-    ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
-    ctx.beginPath();
-    ctx.moveTo(0, bounds.min); // Empezar en el "suelo" de la gráfica
-
     const startTime = data[0].time;
-    for (let i = 0; i < num; i++) {
-      const p = data[i];
-      const x = xParam === 'x' ? p.distance : (p.time - startTime) / xDiv;
-      const y = p[propertyName] as number;
-      ctx.lineTo(x, y);
+
+    // 🔹 TARGET SPECIFIC PLOTS
+    const isSpeedPlot = propertyName === 'compSpeed' || propertyName === 'speed';
+
+    if (isSpeedPlot) {
+      // --- MODE: 4px LINE (Speed) ---
+      ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
+      ctx.beginPath();
+      
+      const firstX = xParam === 'x' ? data[0].distance : 0;
+      ctx.moveTo(firstX, data[0][propertyName] as number);
+
+      for (let i = 1; i < num; i++) {
+        const p = data[i];
+        const x = xParam === 'x' ? p.distance : (p.time - startTime) / xDiv;
+        const y = p[propertyName] as number;
+        ctx.lineTo(x, y);
+      }
+
+      // Reset transform to identity so the 4px stroke is uniform
+      ctx.setTransform(1, 0, 0, 1, 0, 0); 
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#ffff00'; // Pure Yellow
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+    } else {
+      // --- MODE: YELLOW FILL (Altitude) ---
+      ctx.setTransform(scaleX, 0, 0, scaleY, offsetX, offsetY);
+      ctx.beginPath();
+      ctx.moveTo(0, bounds.min); 
+
+      for (let i = 0; i < num; i++) {
+        const p = data[i];
+        const x = xParam === 'x' ? p.distance : (p.time - startTime) / xDiv;
+        const y = p[propertyName] as number;
+        ctx.lineTo(x, y);
+      }
+
+      ctx.lineTo(xTot, bounds.min); 
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 255, 0, 0.6)';
+      ctx.fill();
     }
 
-    ctx.lineTo(xTot, bounds.min); // Cerrar hacia el suelo al final
-    ctx.closePath();
-    
-    // Estilo de la gráfica
-    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)'; // Amarillo con un poco de transparencia queda mejor
-    ctx.fill();
-
-    // 6. Reset para dibujar la rejilla (labels y líneas)
+    // 6. Draw Grid (Labels and Dashed Lines)
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
 

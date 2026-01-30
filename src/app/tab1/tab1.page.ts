@@ -89,7 +89,6 @@ export class Tab1Page {
   // 1. ON INIT ////////////////////////////////
   async ngOnInit() {
     await this.platform.ready();
-    this.languageService.determineLanguage();
     await this.initializeVariables();
     const hasPermission = await this.checkGpsPermissions(); 
     if (hasPermission) {

@@ -25,7 +25,7 @@
     "@awesome-cordova-plugins/social-sharing": "^8.1.0",
     "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor-community/speech-recognition": "^7.0.1",
-    "@capacitor-community/sqlite": "^7.0.0",
+    "@capacitor-community/sqlite": "^7.0.3",
     "@capacitor/android": "7.4.4",
     "@capacitor/app": "^7.1.0",
     "@capacitor/app-launcher": "^7.0.1",

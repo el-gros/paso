@@ -14,3 +14,9 @@ project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor
 
 // Apply Capacitor settings
 apply from: 'capacitor.settings.gradle'
+
+include ':capacitor-community-sqlite'
+project(':capacitor-community-sqlite').projectDir = new File(rootProject.projectDir, '../node_modules/@capacitor-community/sqlite/android')
+
+// Add this line to log where it's looking (check the Build tab in Android Studio)
+println "SQLite Path: " + project(':capacitor-community-sqlite').projectDir

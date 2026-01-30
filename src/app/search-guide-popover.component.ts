@@ -18,6 +18,7 @@ import { Point } from 'ol/geom';
 // Servicios (Asegúrate de que las rutas sean correctas según tu estructura)
 import { FunctionsService } from './services/functions.service';
 import { GeographyService } from './services/geography.service';
+import { MapService } from './services/map.service';
 import { ReferenceService } from './services/reference.service';
 import { LocationManagerService } from './services/location-manager.service';
 import { LanguageService } from './services/language.service';
@@ -410,6 +411,7 @@ styles: [`
 export class SearchGuidePopoverComponent implements OnInit {
   public reference = inject(ReferenceService);
   public geography = inject(GeographyService);
+  public mapService = inject(MapService);
   private location = inject(LocationManagerService); 
   public fs = inject(FunctionsService);
   private languageService = inject(LanguageService);

@@ -115,9 +115,17 @@ constructor(
 
   async onMapChange(map: string) {
     this.geography.mapProvider = map;
+    
+    // 1. Ensure the setting is saved first
     await this.fs.storeSet('mapProvider', this.geography.mapProvider);
-    await this.mapService.loadMap();
-    // No navegamos automáticamente para dejar que el usuario cambie más cosas
+    
+    // 2. Trigger the reload
+    try {
+      await this.mapService.loadMap();
+      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATED'));
+    } catch (error) {
+      console.error("Error reloading map:", error);
+    }
   }
 
   async onAlertChange(value: boolean) {
