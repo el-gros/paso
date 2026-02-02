@@ -28,26 +28,28 @@ export class LocationSharingService {
       this.locationService.deviceId = info.identifier;
     }
 
-    async startSharing() {
-      if (!this.locationService.deviceId) await this.init();
-      this.locationService.shareToken = crypto.randomUUID(); // unguessable token
-      this.locationService.isSharing = true;
+  async startSharing() {
+    if (!this.locationService.deviceId) await this.init();
+    
+    // Generar token
+    this.locationService.shareToken = crypto.randomUUID();
+    this.locationService.isSharing = true;
 
-      // optional: store token locally so you can stop later
-      await this.fs.storeSet('share_token', this.locationService.shareToken);
+    await this.fs.storeSet('share_token', this.locationService.shareToken);
 
-      // Send URL to share
-      const text = this.translate.instant('RECORD.SHARE_TEXT') +
-        ' https://el-gros.github.io/visor/visor.html?t=' + this.locationService.shareToken;
-      try {
-        await this.socialSharing.share(
-          text
-        );
-      } catch (err) {
-        console.error('Sharing failed', err);
-      }
+    // Construir mensaje traducido
+    const baseText = this.translate.instant('RECORD.SHARE_TEXT');
+    const url = `https://el-gros.github.io/visor/visor.html?t=${this.locationService.shareToken}`;
+    const fullMessage = `${baseText} ${url}`;
 
-    } 
+    try {
+      await this.socialSharing.share(fullMessage);
+    } catch (err) {
+      console.error('Sharing failed', err);
+      // Usamos una clave de error que ya deberías tener en tu sistema de traducción
+      this.fs.displayToast('MAP.ERROR_IMPORT'); 
+    }
+  }
 
   async stopSharing() {
     if (!this.locationService.shareToken) return;

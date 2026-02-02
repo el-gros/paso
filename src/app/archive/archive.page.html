@@ -58,25 +58,6 @@
 
 <div class="bottom-safe-gray"></div>
 
-<!-- NAVIGATION BUTTONS -->
-
-<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row>
-    <div class="record-button archive-color" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="earth-sharp"></ion-icon>
-      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button archive-color" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics-sharp"></ion-icon>
-      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button archive-color" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-sharp"></ion-icon>
-      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
-    </div>
-  </ion-row>
-</ion-fab>
-
 <!-- DELETION CONFIRMATION POPOVER -->
 
 <ion-popover
@@ -106,27 +87,42 @@
   </ng-template>
 </ion-popover>
 
-<!-- FAB CON LOS BOTONES SUPERIORS PARA MOSTRAR O ESCONDER TODOS LOS TRAYECTOS -->
+<!-- FAB CON EL BOTON SUPERIOR PARA MOSTRAR O ESCONDER TODOS LOS TRAYECTOS -->
 
-    <ion-fab slot="fixed" horizontal="end" vertical="top" class="bottom-safe">
-      @if (!mapService.visibleAll) {
-        <div class="record-button archive-color" (click)="displayAllTracks(true)">
-          <span>{{ 'ARCHIVE.SHOW' | translate }}</span>
-          <ion-icon name="eye-outline"></ion-icon>
-          <span>{{ 'ARCHIVE.ALL' | translate }}</span>
-        </div>
-      }
-      @if (mapService.visibleAll) {        
-        <div class="record-button archive-color" (click)="displayAllTracks(false)">
-          <span>{{ 'ARCHIVE.HIDE' | translate }}</span>
-          <ion-icon name="eye-off-outline"></ion-icon>
-          <span>{{ 'ARCHIVE.ALL' | translate }}</span>
-        </div>
-      }  
-    </ion-fab>
+<ion-fab slot="fixed" horizontal="end" vertical="top" class="bottom-safe">
+  <button class="nav-item-btn island-style" 
+    [class.red-pill]="mapService.visibleAll"
+    (click)="displayAllTracks(!mapService.visibleAll)">
+    
+    <ion-icon 
+      [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
+      [class.blue-icon]="!mapService.visibleAll">
+    </ion-icon>
+    
+    <p>{{ 'ARCHIVE.ALL' | translate }}</p>
+  </button>
+</ion-fab>
 
 <!-- MAPA OCULTO -->
 
 <div id="export-container" style="position: absolute; top: 0; left: 0; width: 800px; height: 600px; opacity: 0; z-index: -1; pointer-events: none;">
   <div id="map-export" style="width: 100%; height: 100%;"></div>
 </div>
+
+<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+  <ion-row>
+    <div class="record-button" (click)="fs.gotoPage('tab1')">
+      <ion-icon name="earth-sharp"></ion-icon>
+      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button" (click)="fs.gotoPage('canvas')">
+      <ion-icon name="analytics-sharp"></ion-icon>
+      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+    </div>
+    <div class="record-button" (click)="fs.gotoPage('settings')">
+      <ion-icon name="settings-sharp"></ion-icon>
+      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+    </div>
+  </ion-row>
+</ion-fab>
+

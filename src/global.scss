@@ -28,115 +28,133 @@
 /* Open layer styles */
 @import "~ol/ol.css";
 
-// ALERT ////////////////////////////////////
-.alert {
-    --margin: auto; /* Center the modal */
-    --backdrop-opacity: 0.6;
-    --width: 100%;
-    --border-radius: 12px; /* Rounded corners */
-    //--min-width: 400px !important;
-    .alert-title {
-      font-size: 20;
-      color: black;
-    }
-    .alert-button{
-      width: 200px;
-      border-radius: 2px;
-      color: green;
-      font-size: 18px;
-    }
-    .alert-message {
-      color: black;
-      font-size: 16px;
-    }
-    .alert-label {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .alert-wrapper ion-input,
-    .alert-wrapper ion-textarea {
-      --padding-start: 0;      /* Remove extra padding inside Ionic inputs */
-    }
-    .alert-input-group {
-      color: black;
-    }
-    .alert-input{
-      color: black;
-      font-size: 16px;
-      border-bottom-color: black !important;
-      &::placeholder {
-        color: #555;
-        font-size: 16px;
-      }
-    }
-    .alert-cancel-button{
-        width: 200px;
-        border-radius: 2px;
-        color: red;
-        font-size: 18px;
-      }
-      .alert-edit {
-        color: black;
-        background-color: white; /* Set the background to white */
-        border: none;            /* Remove borders */
-        outline: none;           /* Remove focus outline */
-        padding: 8px;            /* Add some padding for a better look */
-        font-size: 16px;         /* Adjust font size */
-        border-radius: 4px;      /* Optional: Add rounded corners */
-        box-shadow: none;        /* Remove any default shadow */
-      }
+// NAVIGATION BAR
+// TOP AND BOTTOM SAFE
+// SCALE LINE
+
+// NAVIGATION  BAR ///////////////////////////////////
+
+.glass-capsule {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 35px; 
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  gap: 12px;
+  pointer-events: auto !important; /* <--- CLAVE: Reactiva los clics aquí */
+}
+
+/* 2. LOS BOTONES (TEXTO DEBAJO) */
+.record-button {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 65px;
+  background: transparent !important;
+  border: none;
+  color: #333 !important;
+  pointer-events: auto !important; /* Refuerzo para asegurar el clic */
+
+  ion-icon {
+    font-size: 26px;
+    margin-bottom: 4px;
+    color: var(--ion-color-primary, #3880ff) !important;
+  }
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  &:active {
+    transform: scale(0.92);
+    opacity: 0.7;
+  }
+}
+
+// TOP AND BOTTOM SAFE //////////////////////////////
+
+.top-safe, .bottom-safe {
+  z-index: 999 !important; /* Subimos el z-index para estar sobre el mapa */
+  pointer-events: none;    /* Deja pasar el clic al mapa en las zonas vacías */
+  
+  ion-row {
+    @extend .glass-capsule;
+  }
+}
+
+.top-safe { margin-top: calc(var(--ion-safe-area-top, 0px) + 10px) !important; }
+.bottom-safe { margin-bottom: calc(var(--ion-safe-area-bottom, 0px) + 15px) !important; }
+
+// SCALE LINE ////////////////////////////////////
+
+/* 1. Contenedor principal */
+.ol-scale-line.vertical-scale {
+  display: block !important;
+  z-index: 10000 !important;
+  position: absolute !important;
+  
+  /* Ajuste de posición: 60px desde abajo */
+  bottom: 25px !important; 
+  left: 40px !important; /* Ajusta este valor si queda muy pegado al borde */
+  
+  background: transparent !important;
+  pointer-events: none;
+
+  /* Rotación */
+  transform: rotate(-90deg) !important;
+  transform-origin: left bottom !important;
+}
+
+/* 2. El cuadro interno (La Regla) */
+.ol-scale-line.vertical-scale div,
+.ol-scale-line.vertical-scale .vertical-scale-inner,
+.ol-scale-line.vertical-scale .ol-scale-line-inner {
+  color: #000 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  
+  /* 📏 LA LÍNEA VERTICAL:
+     Al estar rotado -90deg, el 'border-bottom' original se convierte 
+     en la línea vertical que queda pegada al mapa. */
+  border: 1px solid #ccc !important;
+  border-bottom: 4px solid #3880ff !important; /* Esta será tu línea vertical azul */
+  
+  border-radius: 4px 4px 0 0 !important; /* Redondeamos las esquinas opuestas a la línea */
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: bold;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  
+  /* Esto define el largo de la "regla" vertical */
+  min-width: 60px !important; 
+}
 
 
-      /* General styles for all radio buttons */
-      [aria-checked="true"] .alert-radio-label {
-        font-weight: bold; /* Make the label bold */
-        background-color: rgba(255, 255, 255, 0.5) !important; /* Apply semi-transparent background */
-        border-radius: 4px; /* Add rounded corners */
-        //padding: 4px; /* Optional spacing */
-      }
+/* Efecto al pulsar */
 
-      [aria-checked="true"] .alert-radio-icon {
-        border-color: inherit !important;
-        background: inherit !important;
-      }
 
-      [aria-checked="true"] .alert-radio-inner {
-        background-color: var(--radio-color) !important;
-        transition: none !important; /* Remove transition to avoid flicker */
-      }
+/* --- COLORES TEMÁTICOS --- 
+.map-color {
+  color: #3880ff; /* Azul Ionic 
+}
 
-      /* Ensure default state has no blue */
-      .alert-radio-inner {
-        background-color: transparent !important; /* Transparent background for unselected */
-        transition: none !important; /* Prevent transition to blue */
-      }
-      /* Divider lines for the radio group */
-      .alert-radio-group {
-        border-top: 1px solid black !important; /* Top divider line */
-        border-bottom: 1px solid black !important; /* Bottom divider line */
-      }
-      /* Dynamic styling based on color class */
-      [class*="color-option-"] .alert-radio-label,
-      [class*="color-option-"] .alert-radio-icon {
-        color: var(--radio-color) !important;
-        border-color: var(--radio-color) !important;
-      }
-      /* Individual color definitions */
-      .color-option-crimson { --radio-color: crimson; }
-      .color-option-red { --radio-color: red; }
-      .color-option-orange { --radio-color: orange; }
-      .color-option-gold { --radio-color: gold; }
-      .color-option-yellow { --radio-color: yellow; }
-      .color-option-magenta { --radio-color: magenta; }
-      .color-option-purple { --radio-color: purple; }
-      .color-option-lime { --radio-color: lime; }
-      .color-option-green { --radio-color: green; }
-      .color-option-cyan { --radio-color: cyan; }
-      .color-option-blue { --radio-color: blue; }
+.archive-color {
+  color: #2dd36f; /* Verde Ionic (o el que prefieras para archivo) 
+}
 
-    }
-
+*/
 // GREENISH ALERT ////////////////////////////////////
     .greenishAlert{
       --background: #B5FFAC !important;
@@ -333,49 +351,6 @@
   right: 1em;
 }
 
-/* 1. Contenedor principal */
-.ol-scale-line.vertical-scale {
-  display: block !important;
-  z-index: 10000 !important;
-  position: absolute !important;
-  
-  /* Ajuste de posición: 60px desde abajo */
-  bottom: 60px !important; 
-  left: 40px !important; /* Ajusta este valor si queda muy pegado al borde */
-  
-  background: transparent !important;
-  pointer-events: none;
-
-  /* Rotación */
-  transform: rotate(-90deg) !important;
-  transform-origin: left bottom !important;
-}
-
-/* 2. El cuadro interno (La Regla) */
-.ol-scale-line.vertical-scale div,
-.ol-scale-line.vertical-scale .vertical-scale-inner,
-.ol-scale-line.vertical-scale .ol-scale-line-inner {
-  color: #000 !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  
-  /* 📏 LA LÍNEA VERTICAL:
-     Al estar rotado -90deg, el 'border-bottom' original se convierte 
-     en la línea vertical que queda pegada al mapa. */
-  border: 1px solid #ccc !important;
-  border-bottom: 4px solid #3880ff !important; /* Esta será tu línea vertical azul */
-  
-  border-radius: 4px 4px 0 0 !important; /* Redondeamos las esquinas opuestas a la línea */
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-  font-weight: bold;
-  white-space: nowrap;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  
-  /* Esto define el largo de la "regla" vertical */
-  min-width: 60px !important; 
-}
 
 /* 1. Forzar que ambos contenedores midan lo mismo */
 .location-button-control, .share-control {
@@ -396,11 +371,11 @@
 
 /* 2. Posicionamiento vertical */
 .share-control {
-  bottom: 60px;
+  bottom: 30px;
 }
 
 .location-button-control {
-  bottom: 104px; /* Encima del anterior */
+  bottom: 74px; /* Encima del anterior */
 }
 
 /* 3. Forzar que los botones internos sean idénticos */
@@ -613,83 +588,7 @@ ion-input::part(native) {
   background: #f0f0f0;
 }
 
-/* --- ESTILO GLOBAL DE BOTONES (60x60) --- */
-.record-button {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center;
-  justify-content: center;
-  
-  /* Forzamos el tamaño exacto */
-  width: 62px !important;
-  height: 60px !important;
-  min-width: 62px;
-  min-height: 60px;
-  
-  border: none;
-  border-radius: 15px;
-  font-weight: 600;
-  font-size: 0.70rem; /* Tamaño reducido para que el texto quepa en el cuadrado */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s ease;
-  color: black;
-  margin: 0;
-  padding: 0;
 
-  ion-icon {
-    font-size: 1.5rem;
-    margin-bottom: 2px;
-  }
-
-  span {
-    line-height: 1;
-    text-align: center;
-    white-space: normal;
-    padding: 0 2px;
-  }
-
-  &:active {
-    transform: scale(0.92);
-  }
-
-  /* Estado deshabilitado (para popovers) */
-  &:disabled {
-    opacity: 0.4;
-    filter: grayscale(1);
-  }
-}
-
-
-/* --- CONTENEDOR SUPERIOR --- */
-.top-safe {
-  /* Tu configuración original */
-  margin-top: 25px;
-  z-index: 20;
-  
-  /* Aseguramos que el contenedor no limite la altura de los botones */
-  height: auto;
-  pointer-events: none; /* Permite tocar el mapa a través de los huecos del FAB */
-
-  ion-row {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    align-items: flex-start;
-    pointer-events: auto; /* Reactiva los clics solo en los botones */
-  }
-}
-
-/* --- CONTENEDOR INFERIOR --- */
-.bottom-safe {
-  margin-bottom: 50px; 
-  z-index: 20;
-
-  ion-row {
-    display: flex;
-    justify-content: center;
-    gap: 8px; 
-  }
-}
 
 .green-color {
   background-color: green !important;
@@ -711,7 +610,8 @@ ion-input::part(native) {
 .map-color {
   background-color: #aaffaa !important;
   color: black !important;
-  ion-icon {
+  ion-icon {     
     color: black
   }
 }
+

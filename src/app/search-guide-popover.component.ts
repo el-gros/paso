@@ -52,362 +52,242 @@ interface Data {
   selector: 'app-search-guide-popover',
   imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
   template: `
-        <ion-popover
-        [isOpen]="reference.isSearchGuidePopoverOpen"
-        (didDismiss)="reference.isSearchGuidePopoverOpen = false"
-        cssClass="central"
-        >
-        <ng-template>
-            <ion-list>
-            <ion-row>
-                @if (!reference.foundPlace) {
-                <button class="record-button map-color"
-                    (click)="reference.isSearchPopoverOpen = true; reference.isSearchGuidePopoverOpen = false">
-                    <ion-icon name="location-sharp"></ion-icon>
-                    <span>{{ 'SEARCH.LOCATION' | translate }}</span>
-                </button>
-                } @else {
-                <button class="record-button remove-color"
-                    (click)="clearSearchPlace(); reference.isSearchGuidePopoverOpen = false">
-                    <ion-icon name="trash-outline"></ion-icon>
-                    <span>{{ 'SEARCH.LOCATION' | translate }}</span>
-                </button>
-                }
+  <ion-popover
+    [isOpen]="reference.isSearchGuidePopoverOpen"
+    (didDismiss)="reference.isSearchGuidePopoverOpen = false"
+    class="floating-popover">
+    <ng-template>
+      <div class="popover-island">
+        <div class="button-grid">
+          
+          <button class="nav-item-btn" 
+            [class.red-pill]="reference.foundPlace"
+            (click)="reference.foundPlace ? clearSearchPlace() : (reference.isSearchPopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
+            
+            <ion-icon 
+              [name]="reference.foundPlace ? 'trash-sharp' : 'location-sharp'" 
+              [class.blue-icon]="!reference.foundPlace">
+            </ion-icon>
+            <p>{{ 'SEARCH.LOCATION' | translate }}</p>
+          </button>
 
-                @if (!this.reference.foundRoute) {
-                <button class="record-button map-color"
-                    (click)="reference.isGuidePopoverOpen = true; reference.isSearchGuidePopoverOpen = false">
-                    <ion-icon name="walk-sharp"></ion-icon>
-                    <span>{{ 'SEARCH.ROUTE' | translate }}</span>
-                </button>
-                } @else {
-                <button class="record-button remove-color"
-                    (click)="clearSearchRoute(); reference.isSearchGuidePopoverOpen = false">
-                    <ion-icon name="close-circle-outline"></ion-icon>
-                    <span>{{ 'SEARCH.ROUTE' | translate }}</span>
-                </button>
-                }
-            </ion-row>
-            </ion-list>
-        </ng-template>
-        </ion-popover>
+          <button class="nav-item-btn" 
+            [class.red-pill]="reference.foundRoute"
+            (click)="reference.foundRoute ? clearSearchRoute() : (reference.isGuidePopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
+            
+            <ion-icon 
+              [name]="reference.foundRoute ? 'close-circle-sharp' : 'walk-sharp'" 
+              [class.blue-icon]="!reference.foundRoute">
+            </ion-icon>
+            <p>{{ 'SEARCH.ROUTE' | translate }}</p>
+          </button>
 
-        <ion-popover
-        [isOpen]="reference.isSearchPopoverOpen"
-        (didDismiss)="reference.isSearchPopoverOpen = false"
-        cssClass="long"
-        >
-        <ng-template>
-            <ion-content class="search-popover-content">
-            <div class="search-row">
-                <div class="search-field">
-                <ion-icon name="search" class="search-icon"></ion-icon>
-                <ion-input
-                    [(ngModel)]="query"
-                    (keyup.enter)="openList()"
-                    [placeholder]="'SEARCH.SEARCH' | translate"
-                    class="search-input"
-                ></ion-input>
-                @if (query) {
-                    <ion-icon name="close-circle" class="clear-icon" (click)="query = ''; results = []; hasSearched = false"></ion-icon>
-                }
-                <ion-icon name="mic" class="mic-icon" (click)="startDictation('query')"></ion-icon>
-                </div>
-                <button class="side-action-button" (click)="openList()">
-                @if (loading) { <ion-spinner name="dots"></ion-spinner> } 
-                @else { <ion-icon name="list"></ion-icon> }
-                </button>
-            </div>
-
-            @if (results.length > 0) {
-                <ion-list class="results-list">
-                @for (result of results; track result.place_id) {
-                    <ion-item (click)="handleLocationSelection(result)" class="result-item" button detail="false">
-                    <ion-label>
-                        <h2>{{ result.short_name || result.name }}</h2>
-                        <p>{{ result.display_name }}</p>
-                    </ion-label>
-                    </ion-item>
-                }
-                </ion-list>
-            }
-            </ion-content>
-        </ng-template>
-        </ion-popover>
+        </div>
+      </div>
+    </ng-template>
+  </ion-popover>
 
     <ion-popover
-        [isOpen]="reference.isGuidePopoverOpen"
-        (didDismiss)="resetRouteState()"
-        cssClass="long"
-    >
-    <ng-template>
-        <ion-content class="search-popover-content">
-            <div class="search-row">
-                <div class="search-field" [class.confirmed-field]="originCoords !== null">
-                    <ion-icon name="radio-button-off-outline" class="search-icon" color="success"></ion-icon>
-                    <ion-input 
-                        [(ngModel)]="query2" 
-                        [placeholder]="'SEARCH.FROM' | translate" 
-                        (ionFocus)="activeRouteField = 'origin'"
-                        class="search-input"
-                    ></ion-input>
-                    @if (query2) { 
-                        <ion-icon name="close-circle" class="clear-icon" (click)="query2 = ''; originCoords = null; results = []"></ion-icon> 
-                    }
-                    <ion-icon name="mic" class="mic-icon" (click)="startDictation('query2')"></ion-icon>
-                </div>
-                <button class="side-action-button" (click)="useCurrentLocation('origin')">
-                    @if (loading && activeRouteField === 'origin') { <ion-spinner name="crescent" size="small"></ion-spinner> }
-                    @else { <ion-icon name="locate-outline"></ion-icon> }
-                </button>
-            </div>
+      [isOpen]="reference.isSearchPopoverOpen"
+      (didDismiss)="reference.isSearchPopoverOpen = false"
+      class="search-popover">
+      <ng-template>
+        <div class="popover-island glass-form">
+          <div class="search-input-wrapper">
+            <ion-icon name="search-outline" class="inner-icon"></ion-icon>
+            <ion-input [(ngModel)]="query" (keyup.enter)="openList()" 
+              [placeholder]="'SEARCH.SEARCH' | translate" class="custom-input"></ion-input>
+            <ion-icon *ngIf="query" name="close-circle" class="clear-icon" (click)="query = ''; results = []"></ion-icon>
+            <ion-icon name="mic-outline" class="mic-icon" (click)="startDictation('query')"></ion-icon>
+          </div>
+          
+          <button class="main-action-btn" (click)="openList()">
+            <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+            <span *ngIf="!loading">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
+          </button>
 
-            <div class="search-row" style="margin-top: 10px;">
-                <div class="search-field" [class.confirmed-field]="destinationCoords !== null">
-                    <ion-icon name="location-outline" class="search-icon" color="danger"></ion-icon>
-                    <ion-input 
-                        [(ngModel)]="query3" 
-                        [placeholder]="'SEARCH.TO' | translate" 
-                        (ionFocus)="activeRouteField = 'destination'"
-                        class="search-input"
-                    ></ion-input>
-                    @if (query3) { 
-                        <ion-icon name="close-circle" class="clear-icon" (click)="query3 = ''; destinationCoords = null; results = []"></ion-icon> 
-                    }
-                    <ion-icon name="mic" class="mic-icon" (click)="startDictation('query3')"></ion-icon>
-                </div>
-                <button class="side-action-button" (click)="useCurrentLocation('destination')">
-                    @if (loading && activeRouteField === 'destination') { <ion-spinner name="crescent" size="small"></ion-spinner> }
-                    @else { <ion-icon name="locate-outline"></ion-icon> }
-                </button>
-            </div>
-
-            <div class="transport-container">
-                <p class="section-title">{{ 'SEARCH.TRANSPORT_MODE' | translate }}</p>
-                <div class="transport-row">
-                    @for (mode of transportMeans; track mode.id) {
-                        <div class="transport-chip" 
-                            [class.active-chip]="selectedTransport === mode.id"
-                            (click)="selectedTransport = mode.id">
-                            <ion-icon [name]="mode.icon"></ion-icon>
-                            <span>{{ mode.label | translate }}</span>
-                        </div>
-                    }
-                </div>
-            </div>
-
-        <div class="action-footer ion-padding-top">
-            <button class="route-search-btn" 
-                    (click)="onRouteButtonClick()" 
-                    [disabled]="loading">
-                
-                @if (loading) {
-                    <ion-spinner name="crescent" color="light"></ion-spinner>
-                    <span style="margin-left: 10px;">{{ 'COMMON.LOADING' | translate }}</span>
-                } @else { 
-                    <span>
-                        {{ (originCoords && destinationCoords) ? 
-                        ('SEARCH.GET_ROUTE' | translate) : 
-                        ('SEARCH.FIND_PLACES' | translate) 
-                        }}
-                    </span> 
-                }
-            </button>
-
-            @if (query2 || query3 || originCoords || destinationCoords) {
-                <button class="clear-all-btn" (click)="clearRouteForm()" [disabled]="loading">
-                    <ion-icon name="trash-outline"></ion-icon>
-                </button>
-            }
+          <div class="results-container" *ngIf="results.length > 0">
+            <ion-list lines="none">
+              <ion-item *ngFor="let result of results" (click)="handleLocationSelection(result)" button detail="false">
+                <ion-label>
+                  <h2>{{ result.short_name || result.name }}</h2>
+                  <p>{{ result.display_name }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </div>
         </div>
-
-            @if (results.length > 0) {
-                <ion-list class="results-list">
-                    @for (result of results; track result.place_id) {
-                        <ion-item (click)="selectRoutePoint(result)" class="result-item" button detail="false">
-                            <ion-label>
-                                <h2>{{ result.short_name || result.name }}</h2>
-                                <p>{{ result.display_name }}</p>
-                            </ion-label>
-                        </ion-item>
-                    }
-                </ion-list>
-            }
-        </ion-content>
-    </ng-template>
+      </ng-template>
     </ion-popover>
-    @if (loading) {
-      <div class="spinner-row ion-text-center">
-          <span class="sandclock">⏳</span>
-          <p>Procesando altitudes...</p>
-      </div>
-    }
+
+    <ion-popover
+      [isOpen]="reference.isGuidePopoverOpen"
+      (didDismiss)="resetRouteState()"
+      class="search-popover">
+      <ng-template>
+        <div class="popover-island glass-form">
+          <p class="header-title">{{ 'SEARCH.ROUTE' | translate }}</p>
+          
+          <div class="input-stack" [class.confirmed]="originCoords">
+            <ion-icon name="radio-button-off-outline" color="success"></ion-icon>
+            <ion-input [(ngModel)]="query2" [placeholder]="'SEARCH.FROM' | translate" 
+              (ionFocus)="activeRouteField = 'origin'"></ion-input>
+            <ion-icon name="locate-outline" (click)="useCurrentLocation('origin')" class="action-icon"></ion-icon>
+          </div>
+
+          <div class="input-stack" [class.confirmed]="destinationCoords">
+            <ion-icon name="location-outline" color="danger"></ion-icon>
+            <ion-input [(ngModel)]="query3" [placeholder]="'SEARCH.TO' | translate" 
+              (ionFocus)="activeRouteField = 'destination'"></ion-input>
+            <ion-icon name="locate-outline" (click)="useCurrentLocation('destination')" class="action-icon"></ion-icon>
+          </div>
+
+          <div class="transport-selection">
+            <div *ngFor="let mode of transportMeans" 
+              class="mode-chip" 
+              [class.active]="selectedTransport === mode.id"
+              (click)="selectedTransport = mode.id"
+              [attr.aria-label]="mode.label | translate"> <ion-icon [name]="mode.icon"></ion-icon>
+            </div>
+          </div>
+
+          <div class="footer-buttons">
+            <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
+              <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+              <span *ngIf="!loading">{{ (originCoords && destinationCoords) ? ('SEARCH.GET_ROUTE' | translate) : ('SEARCH.FIND_PLACES' | translate) }}</span>
+            </button>
+            <button class="nav-item-btn red-pill circular" (click)="clearRouteForm()">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+
+          <div class="results-container" *ngIf="results.length > 0">
+             <ion-list lines="none">
+              <ion-item *ngFor="let result of results" (click)="selectRoutePoint(result)" button detail="false">
+                <ion-label>
+                  <h2>{{ result.short_name || result.name }}</h2>
+                  <p>{{ result.display_name }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </div>
+        </div>
+      </ng-template>
+    </ion-popover>
   `,
-styles: [`
-    /* --- 1. Layout & Containers --- */
-    .search-popover-content { padding: 12px; }
-    ion-row { display: flex; justify-content: center; gap: 5px; }
+  styles: [`
+      /* --- ESTRUCTURA BASE FLOTANTE --- */
+      .floating-popover, .search-popover {
+        --background: transparent;
+        --box-shadow: none;
+        --width: 92%;
+      }
 
-    /* --- 2. Form Rows & Search Fields --- */
-    .search-row { 
-      display: flex; 
-      align-items: center; 
-      gap: 8px; 
-      margin-bottom: 8px; 
-    }
+      .popover-island {
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 28px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+      }
 
-    .search-field { 
-      flex: 1; 
-      display: flex; 
-      align-items: center; 
-      background: #ffffff; 
-      border-radius: 8px; 
-      padding: 4px 8px; 
-      border: 1px solid #e0e0e0;
-      transition: all 0.3s ease;
-    }
+      /* --- BOTONES ESTILO NAV --- */
+      .button-grid { display: flex; justify-content: space-around; gap: 10px; }
+      
+      .nav-item-btn {
+        background: transparent; 
+        border: none;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center;
+        flex: 1; 
+        transition: all 0.2s ease;
+        
+        ion-icon { 
+          font-size: 24px; 
+          margin-bottom: 4px; 
+          color: #3880ff; /* Color AZUL por defecto para todos los iconos */
+        }
+        
+        p { 
+          margin: 0; 
+          font-size: 10px; 
+          font-weight: 700; 
+          text-transform: uppercase; 
+          color: #333; /* Texto NEGRO por defecto */
+        }
+        
+        &:active { transform: scale(0.9); }
+      }
 
-    /* --- 3. Input Text Logic (Gris claro vs Oscuro) --- */
-    /* Por defecto: Gris claro mientras se escribe */
-    .search-input { 
-      --padding-start: 8px; 
-      width: 100%; 
-      --color: #a0a0a0 !important; 
-      font-weight: 400;
-    }
+      /* --- ESTADO ACTIVO (ROJO) --- */
+      /* Cuando el botón tiene la clase .red-pill, el icono y el texto cambian a rojo */
+      .red-pill ion-icon, 
+      .red-pill p { 
+        color: #eb445a !important; 
+      }
 
-    /* Cuando hay coordenadas confirmadas: Fondo gris y texto oscuro */
-    .confirmed-field {
-      background: #f4f4f4 !important;
-      border: 1px solid #ccc !important;
-    }
+      /* --- FORMULARIOS Y BUSQUEDA --- */
+      .header-title { 
+        text-align: center; 
+        font-weight: 800; 
+        font-size: 12px; 
+        text-transform: uppercase; 
+        margin-top: 0; 
+        color: #666; 
+      }
 
-    .confirmed-field .search-input {
-      --color: #333333 !important; 
-      font-weight: 600;
-    }
+      .search-input-wrapper, .input-stack {
+        display: flex; 
+        align-items: center;
+        background: rgba(0,0,0,0.05);
+        border-radius: 16px; 
+        padding: 4px 12px; 
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        
+        ion-input { --padding-start: 10px; font-size: 14px; --color: #333; }
+        .inner-icon { font-size: 18px; color: #888; }
+        .action-icon { font-size: 20px; color: var(--ion-color-primary); margin-left: 8px; }
+      }
 
-    /* Resalte azul cuando el usuario hace foco */
-    .search-field:focus-within {
-      border-color: var(--ion-color-primary);
-      box-shadow: 0 0 5px rgba(var(--ion-color-primary-rgb), 0.2);
-    }
+      .confirmed { 
+        background: rgba(var(--ion-color-success-rgb), 0.1); 
+        border: 1px solid rgba(var(--ion-color-success-rgb), 0.3); 
+      }
 
-    /* --- 4. Buttons (Search, Side Actions & Trash) --- */
-    .route-search-btn { 
-      background: var(--ion-color-primary); 
-      color: white; 
-      border: none; 
-      border-radius: 25px;
-      padding: 12px 20px; 
-      font-weight: bold; 
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 48px;
-      transition: all 0.2s ease;
-    }
+      /* --- TRANSPORTE --- */
+      .transport-selection {
+        display: flex; justify-content: center; gap: 12px; margin: 15px 0;
+      }
+      .mode-chip {
+        width: 42px; height: 42px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: #f0f0f0; color: #888; transition: 0.2s;
+        ion-icon { font-size: 20px; }
+        &.active { background: var(--ion-color-primary); color: white; transform: scale(1.1); }
+      }
 
-    .route-search-btn:disabled {
-      opacity: 0.6;
-      filter: grayscale(0.5);
-    }
+      /* --- BOTÓN PRINCIPAL --- */
+      .main-action-btn {
+        width: 100%; background: var(--ion-color-primary); color: white;
+        border: none; border-radius: 18px; padding: 14px;
+        font-weight: 700; text-transform: uppercase; font-size: 12px;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+      }
 
-    .clear-all-btn {
-      background: #fff0f0;
-      color: #eb445a;
-      border: 1px solid #ffc4c9;
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .side-action-button {
-      background: #f0f0f0;
-      border: none;
-      border-radius: 8px;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: var(--ion-color-primary);
-      font-size: 20px;
-    }
-
-    /* Remove state: Reddish */
-    .remove-color {
-    background: #ffaaaa !important;
-    }
-
-    /* Optional: If you want the icons/text to be slightly 
-    darker on the red button for better readability */
-    .remove-color ion-icon, 
-    .remove-color span {
-    color: #600 !important;
-    }
-
-    /* --- 5. Transport Mode Chips --- */
-    .transport-container { margin-top: 15px; padding: 0 4px; }
-    .section-title { 
-      font-size: 11px; text-transform: uppercase; color: #888; 
-      margin-bottom: 8px; font-weight: bold; letter-spacing: 0.5px; 
-    }
-    .transport-row { 
-    display: flex; 
-    gap: 8px; /* Reduce un poco el espacio entre ellos */
-    justify-content: center; /* Mejor que space-between para 3 elementos */
-    width: 100%;
-    }
-
-    .transport-chip { 
-    min-width: 0; /* Permite que el chip se encoja si es necesario */
-    flex: 1; 
-    /* ... resto de tus estilos ... */
-    }
-    .active-chip { 
-      background: rgba(var(--ion-color-primary-rgb), 0.1); 
-      border-color: var(--ion-color-primary); 
-      color: var(--ion-color-primary); 
-    }
-
-    /* --- 6. Results List --- */
-    .results-list { 
-      margin-top: 10px; border-radius: 8px; overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .result-item { --padding-start: 12px; --inner-padding-end: 12px; }
-    .result-item h2 { font-size: 14px; font-weight: 600; }
-    .result-item p { font-size: 11px; color: #777; }
-
-    /* --- 7. Footer & Animations --- */
-    .action-footer {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-top: 15px;
-    }
-
-    .route-search-btn:active, .side-action-button:active, .clear-all-btn:active { 
-      transform: scale(0.95); 
-      opacity: 0.8;
-    }
-
-    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .sandclock { 
-      font-size: 30px; display: block; margin: 10px auto; 
-      animation: rotate 2s infinite; 
-    }
+      /* --- RESULTADOS --- */
+      .results-container {
+        max-height: 200px; overflow-y: auto; margin-top: 15px;
+        border-top: 1px solid #eee;
+        ion-item { --background: transparent; --padding-start: 0; h2 { font-size: 13px; font-weight: 700; } p { font-size: 11px; } }
+      }
   `]
 
 })
-
 export class SearchGuidePopoverComponent implements OnInit {
   public reference = inject(ReferenceService);
   public geography = inject(GeographyService);
@@ -417,6 +297,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   private languageService = inject(LanguageService);
   private styler = inject(StylerService);
   private platform = inject(Platform);
+  private translate = inject(TranslateService);
   private speechPluginListener: any = null;
   activeRouteField: 'origin' | 'destination' = 'origin';
   originCoords: [number, number] | null = null;
@@ -428,12 +309,11 @@ export class SearchGuidePopoverComponent implements OnInit {
   results: LocationResult[] = [];
   loading: boolean = false;
   hasSearched: boolean = false;
-
   transportMeans = [
-    { id: 'foot-walking', icon: 'walk-outline', label: 'Walk' },
-    { id: 'foot-hiking', icon: 'trending-up-outline', label: 'Hike' }, // Nuevo
-    { id: 'cycling-regular', icon: 'bicycle-outline', label: 'Cycle' },
-    { id: 'driving-car', icon: 'car-outline', label: 'Drive' },
+    { id: 'foot-walking', icon: 'walk-outline', label: 'SEARCH.WALK' },
+    { id: 'foot-hiking', icon: 'trending-up-outline', label: 'SEARCH.HIKE' },
+    { id: 'cycling-regular', icon: 'bicycle-outline', label: 'SEARCH.CYCLE' },
+    { id: 'driving-car', icon: 'car-outline', label: 'SEARCH.DRIVE' },
   ];
   // Update default to match the first ID
   public selectedTransport: string = 'foot-walking';
@@ -546,7 +426,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   async guide() {
     // Aquí deberías tener importado SearchModalComponent
     // const modal = await this.modalController.create({ component: SearchModalComponent, ... });
-    this.fs.displayToast("Iniciando guía...");
+    this.fs.displayToast(this.translate.instant('SEARCH.START_GUIDE'));
     // ... (Lógica de procesamiento de track que proporcionaste)
   }
 
@@ -589,7 +469,7 @@ async searchRouteLocations() {
 // Handle clicking a result in the Route Popover
 selectRoutePoint(result: LocationResult) {
   if (this.activeRouteField === 'origin') {
-    this.query2 = result.short_name || result.name;
+    this.query2 = this.translate.instant('SEARCH.MY_LOCATION');
     this.originCoords = [result.lon, result.lat];
     this.activeRouteField = 'destination'; // Auto-focus next field
   } else {
@@ -601,7 +481,7 @@ selectRoutePoint(result: LocationResult) {
 
 async requestRoute() {
   if (!this.originCoords || !this.destinationCoords) {
-    this.fs.displayToast("Please select both origin and destination");
+    this.fs.displayToast(this.translate.instant('SEARCH.SELECT_BOTH'));
     return;
   }
 
@@ -637,11 +517,11 @@ async requestRoute() {
     } else {
       // Handle the 403 or 400 errors specifically
       const errorMsg = responseData?.error?.message || "No route found";
-      this.fs.displayToast(`Error: ${errorMsg}`);
+      this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND'));
     }
   } catch (error) {
     console.error("Routing error:", error);
-    this.fs.displayToast("Check your internet connection or API Key");
+    this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'));
   } finally {
     this.loading = false;
   }
@@ -748,15 +628,15 @@ async useCurrentLocation(type: 'origin' | 'destination') {
 
     if (myPos) {
       if (type === 'origin') {
-        this.query2 = "Mi ubicación";
+        this.query2 = this.translate.instant('SEARCH.MY_LOCATION');
         this.originCoords = myPos; // myPos ya es [number, number]
       } else {
-        this.query3 = "Mi ubicación";
+        this.query3 = this.translate.instant('SEARCH.MY_LOCATION');
         this.destinationCoords = myPos;
       }
-      this.fs.displayToast("Ubicación obtenida");
+      this.fs.displayToast(this.translate.instant('SEARCH.GOT_LOCATION'));
     } else {
-      this.fs.displayToast("No se pudo obtener la posición");
+      this.fs.displayToast(this.translate.instant('SEARCH.LOCATION_ERROR'));
     }
   } catch (error) {
     console.error(error);
@@ -773,7 +653,6 @@ clearRouteForm() {
   this.destinationCoords = null;
   this.results = [];
   this.activeRouteField = 'origin';
-  this.fs.displayToast("Formulario limpio");
 }
 
 clearSearchPlace() {

@@ -2,11 +2,12 @@ import DOMPurify from 'dompurify';
 import { Track, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
-import { ToastController, AlertController } from '@ionic/angular';
+import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
 import { register } from 'swiper/element';
+import { TranslateService } from '@ngx-translate/core'; // Importar
 register();
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -40,9 +41,9 @@ export class FunctionsService {
   constructor(
     private storage: Storage,
     private toastController: ToastController,
-    private alertController: AlertController,
     @Inject(Router) private router: Router,
     private modalController: ModalController,
+    private translate: TranslateService,
   ) {}
 
   async init() {
@@ -180,17 +181,20 @@ export class FunctionsService {
     return (res !== null && res !== undefined) ? res as T : defaultValue;
   }
 
-  async displayToast(message: string) {
-    const toast = await this.toastController.create({ message, duration: 3000, position: 'bottom', color: 'dark', cssClass: 'toast' });
+  async displayToast(message: string, isKey: boolean = true) {
+    // Si isKey es true, busca la traducción; si no, muestra el texto tal cual
+    const finalMessage = isKey ? this.translate.instant(message) : message;
+    const toast = await this.toastController.create({ 
+      message: finalMessage, 
+      duration: 3000, 
+      position: 'bottom', 
+      color: 'dark', 
+      cssClass: 'toast' 
+    });
     await toast.present();
   }
 
-  async showAlert(cssClass: string, header: string, message: string, inputs: any, buttons: any) {
-    const alert = await this.alertController.create({ cssClass, header, message, inputs, buttons });
-    return await alert.present();
-  }
-
-  async computeCumulativeDistances(coords: [number, number][]): Promise<number[]> {
+   async computeCumulativeDistances(coords: [number, number][]): Promise<number[]> {
     const dists = [0];
     for (let i = 1; i < coords.length; i++) dists.push(dists[i-1] + this.computeDistance(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]));
     return dists;

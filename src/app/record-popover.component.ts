@@ -21,8 +21,6 @@ import { StylerService } from './services/styler.service';
 import { SaveTrackPopover } from './save-track-popover.component';
 import { MapService } from './services/map.service';
 
-
-
 useGeographic();
 register();
 
@@ -32,101 +30,154 @@ register();
   imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
   providers: [DecimalPipe, DatePipe],
   template: `
-    <ion-content [fullscreen]="true">
-      <ion-popover [isOpen]="present.isRecordPopoverOpen" (didDismiss)="present.isRecordPopoverOpen = false">
-        <ng-template>
-          <ion-list>
-            <ion-row>
-              <button class="record-button map-color" 
-                [disabled]="location.state !== 'inactive'" 
-                (click)="startTracking(); present.isRecordPopoverOpen = false">
-                <ion-icon name="caret-forward-circle-sharp"></ion-icon>
-                <span>{{ 'RECORD.START_TRACKING' | translate }}</span>
-              </button>
+    <ion-popover 
+      [isOpen]="present.isRecordPopoverOpen" 
+      (didDismiss)="present.isRecordPopoverOpen = false"
+      class="floating-popover">
+      <ng-template>
+        <div class="popover-island">
+          <div class="button-grid">
+            <button class="nav-item-btn" 
+              [disabled]="location.state !== 'inactive'" 
+              (click)="startTracking(); present.isRecordPopoverOpen = false">
+              <ion-icon name="caret-forward-circle-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.START_TRACKING' | translate }}</p>
+            </button>
 
-              <button class="record-button map-color" 
-                [disabled]="location.state !== 'tracking'" 
-                (click)="waypoint(); present.isRecordPopoverOpen = false">
-                <ion-icon name="pin-sharp"></ion-icon>
-                <span>{{ 'RECORD.WAYPOINT' | translate }}</span>
-              </button>
+            <button class="nav-item-btn" 
+              [disabled]="location.state !== 'tracking'" 
+              (click)="waypoint(); present.isRecordPopoverOpen = false">
+              <ion-icon name="pin-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.WAYPOINT' | translate }}</p>
+            </button>
 
-              <button class="record-button map-color" 
-                [disabled]="location.state !== 'tracking'" 
-                (click)="present.isConfirmStopOpen = true; present.isRecordPopoverOpen = false">
-                <ion-icon name="stop-circle-sharp"></ion-icon>
-                <span>{{ 'RECORD.STOP_TRACKING' | translate }}</span>
-              </button>
+            <button class="nav-item-btn" 
+              [disabled]="location.state !== 'tracking'" 
+              (click)="present.isConfirmStopOpen = true; present.isRecordPopoverOpen = false">
+              <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
+            </button>
 
-              <button class="record-button map-color" 
-                [disabled]="location.state !== 'stopped'" 
-                [class.enabled]="location.state === 'stopped'"
-                (click)="setTrackDetails(); present.isRecordPopoverOpen = false">
-                <ion-icon name="save-sharp"></ion-icon>
-                <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
-              </button>
+            <button class="nav-item-btn" 
+              [disabled]="location.state !== 'stopped'" 
+              [class.enabled]="location.state === 'stopped'"
+              (click)="setTrackDetails(); present.isRecordPopoverOpen = false">
+              <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
+            </button>
 
-              <button class="record-button map-color" 
-                [disabled]="location.state !== 'stopped' && location.state !== 'saved'" 
-                (click)="present.isConfirmDeletionOpen = true; present.isRecordPopoverOpen = false">
-                <ion-icon name="trash-sharp"></ion-icon>
-                <span>{{ 'RECORD.REMOVE_TRACK' | translate }}</span>
-              </button>
-            </ion-row>
-          </ion-list>
-        </ng-template>
-      </ion-popover>
+            <button class="nav-item-btn" 
+              [disabled]="location.state !== 'stopped' && location.state !== 'saved'" 
+              (click)="present.isConfirmDeletionOpen = true; present.isRecordPopoverOpen = false">
+              <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+    </ion-popover>
 
-      <ion-popover [isOpen]="present.isConfirmStopOpen" (didDismiss)="present.isConfirmStopOpen = false">
-        <ng-template>
-          <ion-list>
-            <ion-item class="confirm" lines="none">
-              <ion-label class="ion-text-wrap"><strong>{{ 'RECORD.CONFIRM_STOP' | translate }}</strong></ion-label>
-            </ion-item>
-            <ion-row>
-              <button class="record-button green-color" (click)="stopTracking(); closeAllPopovers()">
-                <ion-icon name="happy-sharp"></ion-icon>
-                <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
-              </button>
-              <button class="record-button red-color" (click)="closeAllPopovers()">
-                <ion-icon name="sad-sharp"></ion-icon>
-                <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
-              </button>
-            </ion-row>
-          </ion-list>
-        </ng-template>
-      </ion-popover>
-
-      <ion-popover [isOpen]="present.isConfirmDeletionOpen" (didDismiss)="present.isConfirmDeletionOpen = false">
-        <ng-template>
-          <ion-list>
-            <ion-item class="confirm" lines="none">
-              <ion-label class="ion-text-wrap"><strong>{{ 'RECORD.CONFIRM_DELETION' | translate }}</strong></ion-label>
-            </ion-item>
-            <ion-row>
-              <button class="record-button green-color" (click)="deleteTrack(); closeAllPopovers()">
-                <ion-icon name="happy-sharp"></ion-icon>
-                <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
-              </button>
-              <button class="record-button red-color" (click)="closeAllPopovers()">
-                <ion-icon name="sad-sharp"></ion-icon>
-                <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
-              </button>
-            </ion-row>
-          </ion-list>
-        </ng-template>
-      </ion-popover>
-    </ion-content>
+    <ion-popover 
+      [isOpen]="present.isConfirmStopOpen || present.isConfirmDeletionOpen" 
+      (didDismiss)="closeAllPopovers()"
+      class="confirm-popover">
+      <ng-template>
+        <div class="popover-island confirm-box">
+          <p class="confirm-title">
+            {{ (present.isConfirmStopOpen ? 'RECORD.CONFIRM_STOP' : 'RECORD.CONFIRM_DELETION') | translate }}
+          </p>
+          <div class="button-grid horizontal">
+            <button class="nav-item-btn green-pill" 
+              (click)="present.isConfirmStopOpen ? stopTracking() : deleteTrack(); closeAllPopovers()">
+              <ion-icon name="checkmark-circle-sharp"></ion-icon>
+              <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
+            </button>
+            <button class="nav-item-btn red-pill" (click)="closeAllPopovers()">
+              <ion-icon name="close-circle-sharp"></ion-icon>
+              <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+    </ion-popover>
   `,
   styles: [`
-    .map-color { color: var(--ion-color-primary); }
-    .confirm { font-weight: 400; transition: all 0.2s ease-in-out; --inner-padding-end: 0;
-      --inner-padding-start: 0;  margin: 4px 0;  border-radius: 8px; }
-    ion-row { display: flex; justify-content: center; gap: 5px; }
+    .floating-popover, .confirm-popover {
+      --background: transparent;
+      --box-shadow: none;
+      --width: 95%;
+      --max-width: 420px;
+    }
+
+    .popover-island {
+      background: rgba(255, 255, 255, 0.92) !important;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border-radius: 30px;
+      padding: 15px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .button-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .button-grid.horizontal {
+      justify-content: center;
+      gap: 50px;
+    }
+
+    .nav-item-btn {
+      background: transparent !important;
+      border: none;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.2s ease;
+      min-width: 70px;
+
+      &:active:not(:disabled) { transform: scale(0.85); }
+      &:disabled { opacity: 0.25; filter: grayscale(1); }
+
+      ion-icon {
+        font-size: 28px;
+        margin-bottom: 4px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #333;
+        letter-spacing: 0.4px;
+      }
+    }
+
+    /* Iconos Azules (Igual que el resto de tu App) */
+    .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
+
+    /* Colores de Confirmación (Semáforo) */
+    .green-pill ion-icon { color: #2dd36f !important; }
+    .red-pill ion-icon { color: #eb445a !important; }
+
+    .confirm-box { padding: 25px 15px; }
+    .confirm-title {
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+    }
   `]
 })
-export class RecordPopoverComponent implements OnInit, OnDestroy {
-  // Inyección de servicios con inject() para evitar NG0201
+
+export class RecordPopoverComponent { 
+// ... resto de la lógica permanece igual ...  // Inyección de servicios con inject() para evitar NG0201
   public fs = inject(FunctionsService);
   public geography = inject(GeographyService);
   public location = inject(LocationManagerService);
@@ -261,7 +312,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     await popover.present();
     const { data } = await popover.onDidDismiss();
     if (data?.action === 'ok') {
-      const name = data.name || 'No name';
+      const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
       await this.saveFile(name, data.description);
     }
   }
@@ -329,7 +380,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       console.log(response)
       // Check status
       if (response.status < 200 || response.status >= 300) {
-        this.fs.displayToast('Failed to fetch elevation data.');
+        this.fs.displayToast(this.translate.instant('ERRORS.ELEVATION_FETCH'));
         return [];
       }
       // Parse response as JSON and extract elevations
@@ -337,7 +388,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       return result.results.map((result: any) => result.elevation);
     } catch (error) {
       // Handle network or parsing errors gracefully
-      this.fs.displayToast('Error retrieving elevation data.');
+      this.fs.displayToast(this.translate.instant('ERRORS.ELEVATION_GENERIC'));
       return [];
     }
   }

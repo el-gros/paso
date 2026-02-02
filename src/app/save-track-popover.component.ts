@@ -14,80 +14,152 @@ import { TranslateModule } from '@ngx-translate/core';
     TranslateModule
   ],
   template: `
-    <ion-content class="ion-padding">
-      <div class="popover-header">
-        <ion-label><strong>{{ (edit ? 'ARCHIVE.EDIT_TRACK' : 'RECORD.SAVE_TRACK') | translate }}</strong></ion-label>
-      </div>
+    <ion-content scrollY="false">
+      <div class="popover-island">
+        <div class="popover-header">
+          <p class="header-title">{{ (edit ? 'ARCHIVE.EDIT_TRACK' : 'RECORD.SAVE_TRACK') | translate }}</p>
+        </div>
 
-      <ion-list lines="none">
-        <ion-item>
-          <ion-label position="stacked">{{ 'EDIT_MODAL.NAME' | translate }}</ion-label>
-          <ion-textarea 
-            [(ngModel)]="modalEdit.name" 
-            rows="3" 
-            class="custom-textarea">
-          </ion-textarea>
-        </ion-item>
-        
-        <ion-item>
-          <ion-label position="stacked">{{ 'EDIT_MODAL.DESCRIPTION' | translate }}</ion-label>
-          <ion-textarea 
-            [(ngModel)]="modalEdit.description" 
-            rows="5" 
-            class="custom-textarea">
-          </ion-textarea>
-        </ion-item>
-      </ion-list>
+        <div class="form-container">
+          <div class="input-group">
+            <ion-label class="custom-label">{{ 'EDIT_MODAL.NAME' | translate }}</ion-label>
+            <ion-textarea 
+              [(ngModel)]="modalEdit.name" 
+              rows="2" 
+              class="custom-textarea"
+              placeholder="...">
+            </ion-textarea>
+          </div>
+          
+          <div class="input-group">
+            <ion-label class="custom-label">{{ 'EDIT_MODAL.DESCRIPTION' | translate }}</ion-label>
+            <ion-textarea 
+              [(ngModel)]="modalEdit.description" 
+              rows="3" 
+              class="custom-textarea"
+              placeholder="...">
+            </ion-textarea>
+          </div>
+        </div>
 
-      <div class="button-container">
-        <button class="record-button green-color" (click)="confirm()">
-          <ion-icon name="checkmark-sharp"></ion-icon>
-          <span>OK</span>
-        </button>
-        <button class="record-button red-color" (click)="cancel()">
-          <ion-icon name="close-sharp"></ion-icon>
-          <span>{{ 'EDIT_MODAL.CANCEL' | translate }}</span>
-        </button>
+        <div class="button-grid horizontal">
+          <button class="nav-item-btn green-pill" (click)="confirm()">
+            <ion-icon name="checkmark-sharp"></ion-icon>
+            <p>OK</p>
+          </button>
+          <button class="nav-item-btn red-pill" (click)="cancel()">
+            <ion-icon name="close-sharp"></ion-icon>
+            <p>{{ 'EDIT_MODAL.CANCEL' | translate }}</p>
+          </button>
+        </div>
       </div>
     </ion-content>
   `,
   styles: [`
-    ion-content { --background: var(--ion-item-background); }
-    ion-list { background: transparent; }
-    
+    /* Configuración de la "Isla" */
+    ion-content { 
+      --background: transparent;
+      --padding-top: 0;
+    }
+
+    .popover-island {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 24px;
+      padding: 20px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin: 5px;
+    }
+
     .popover-header {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       text-align: center;
-      font-size: 1.1rem;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #000;
+    }
+
+    /* Estilos del Formulario */
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .custom-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ion-color-primary, #3880ff);
+      margin-left: 8px;
     }
 
     .custom-textarea {
-      --padding-start: 8px;
-      --padding-end: 8px;
-      background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.05);
-      border-radius: 8px;
-      margin-top: 8px;
+      --padding-start: 12px;
+      --padding-end: 12px;
+      --padding-top: 10px;
+      --padding-bottom: 10px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 14px;
+      color: #333;
+      font-size: 14px;
       --background: transparent;
     }
 
-    /* Este contenedor permite que el gap de 8px funcione de verdad */
-    .button-container { 
-      display: flex !important; 
-      justify-content: center !important; 
-      gap: 8px !important; 
-      align-items: center; 
+    /* Botones estilo Nav-Item (Iguales a los anteriores) */
+    .button-grid.horizontal {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
       margin-top: 20px;
-      width: 100%;
     }
 
-    /* Neutralizamos cualquier margen del .record-button global */
-    .record-button {
-      margin: 0 !important;
-      flex-shrink: 0; /* Evita que los botones se deformen */
+    .nav-item-btn {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.2s ease;
+      min-width: 60px;
+
+      &:active {
+        transform: scale(0.9);
+        opacity: 0.7;
+      }
+
+      ion-icon {
+        font-size: 26px;
+        margin-bottom: 4px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #333;
+      }
     }
+
+    .green-pill ion-icon, .green-pill p { color: #2dd36f !important; }
+    .red-pill ion-icon, .red-pill p { color: #eb445a !important; }
   `]
 })
-
 export class SaveTrackPopover implements OnInit {
   @Input() modalEdit: any;
   @Input() edit: boolean | undefined;

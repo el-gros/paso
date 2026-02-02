@@ -1,4 +1,53 @@
 {
+
+  "MAP": {
+    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
+    "DATA_BUTTON": "Dades",
+    "ARCHIVE_BUTTON": "Arxiu",
+    "SETTINGS_BUTTON": "Config.",
+    "ZOOM_BUTTON": "Zoom",
+    "WAYPOINT_UPDATED": "xxx",
+    "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
+    "TRACK_FINISHED": "El trajecte actual ha finalitzat",
+    "WPT_ADDED": "S'ha afegit el punt de pas",
+    "SAVED": "El fitxer s'ha desat correctament",
+    "NO_TRACK_FOUND": "No s'ha trobat cap trajecte al fitxer",
+    "IMPORTED_TRACK": "Trajecte importat",
+    "IMPORT_SUCCESS": "Trajecte importat correctament",
+    "ERROR_UNSUPPORTED": "Tipus de fitxer no suportat",
+    "ERROR_IMPORT": "Error en importar el fitxer",
+    "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
+    "CONFIRM_SHARING": "Segur que vols compartir la teva posició amb una altra persona?",
+    "YES": "Sí",
+    "MAP_BUTTON": "Mapa",
+    "UNSUPPORTED_TYPE": "Format de fitxer no admès",
+    "TRACK_EMPTY": "Trajecte sense dades"
+  },
+
+  "SEARCH": {
+    "BUTTON": "Cercar",
+    "LOCATION": "Lloc",
+    "ROUTE": "Ruta",
+    "SEARCH": "Cercar...",
+    "FROM": "Origen",
+    "TO": "Destinació",
+    "FIND_PLACES": "Cercar llocs",
+    "GET_ROUTE": "Obtenir ruta",
+    "START_GUIDE": "Iniciant guia...",
+    "MY_LOCATION": "La meva ubicació",
+    "SELECT_BOTH": "Si us plau, selecciona origen i destinació",
+    "NO_ROUTE_FOUND": "No s'ha trobat cap ruta",
+    "ROUTING_ERROR": "Error en el servei de rutes",
+    "GOT_LOCATION": "Ubicació obtinguda",
+    "LOCATION_ERROR": "No s'ha pogut obtenir la teva ubicació",
+    "WALK": "Caminar",
+    "HIKE": "Senderisme",
+    "CYCLE": "Ciclisme",
+    "DRIVE": "Cotxe",
+    "CLEAN": "Netejar",
+    "DESCRIPTION": "Perfil de ruta"
+  },
+
   "SETTINGS": {
     "CURRENT_TRACK": "Trajecte actual",
     "REFERENCE_TRACK": "Trajecte de referència",
@@ -20,14 +69,17 @@
     "CANCEL": "Cancel·lar",
     "GEOCODING": "Servei de geocodificació"
   },
-
+  
   "ARCHIVE": {
+    "EDIT_TRACK": "Editar",
+    
+    "xxx": "xxx",
     "TRACKS": "Trajectes",
     "SHOW": "Mostrar",
     "HIDE": "Amagar",
     "ALL": "tots",
     "REMOVE_TRACK": "Eliminar",
-    "EDIT_TRACK": "Editar",
+
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Es mostren tots els trajectes",
     "ALL_HIDDEN": "S'han amagat tots els trajectes",
@@ -65,11 +117,13 @@
   },
 
   "EDIT_MODAL": {
-    "HEADER": "Editeu les dades del trajecte",
     "NAME": "Nom",
-    "PLACE": "Lloc",
     "DESCRIPTION": "Descripció",
-    "CANCEL": "Cancel·lar"
+    "CANCEL": "Cancel·lar",
+    "xxx": "xxx",
+    "HEADER": "Editeu les dades del trajecte",
+
+    "PLACE": "Lloc"  
   },
 
   "WPT": {
@@ -79,54 +133,8 @@
     "ALTITUDE": "Altitud"
   },
 
-  "SEARCH": {
-    "TITLE_GUIDE": "Trobeu la millor ruta",
-    "PLACEHOLDER_SEARCH": "Nom del lloc",
-    "PLACEHOLDER_GUIDE": "Inici",
-    "CURRENT_LOCATION": "Posició actual",
-    "UNKNOWN_LOCATION": "No s'ha pogut obtenir la posició actual",
-    "NOTICE1": "Introduïu un punt d'inici...",
-    "NOTICE2": "... o seleccioneu posició actual",
-    "TOAST1":"No s'ha trobat cap ruta",
-    "NETWORK_ERROR": "Error de xarxa",
-    "DESTINATION": "Destinació",
-    "BUTTON": "Cercar",
-    "LOCATION": "Lloc",
-    "ROUTE": "Ruta",
-    "INSTRUCTION": "Què busqueu?",
-    "SEARCH": "Cercar",
-    "LIST": "Llista",
-    "FROM": "Des de",
-    "TO": "Fins a",
-    "CLEAR": "Tanca"
-  },
-
-  "MAP": {
-    "TOAST1": "El trajecte actual s'ha esborrat",
-    "NOTICE": "S'està seguint la vostra ubicació",
-    "STOP_HEADER": "Finalitzar el trajecte",
-    "DELETE_HEADER": "Esborrar el trajecte",
-    "STOP_MESSAGE": "Esteu segur que voleu finalitzar el trajecte?",
-    "DELETE_MESSAGE": "Esteu segur que voleu eliminar el trajecte?",
-    "IMPORTED": "El fitxer s'ha importat correctament",
-    "NOT_IMPORTED": "No s'ha importat cap fitxer",
-    "SAVED": "El fitxer s'ha desat correctament",
-    "WPT_ADDED": "S'ha afegit el punt de pas",
-    "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
-    "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
-    "TRACK_FINISHED": "El trajecte actual ha finalitzat",
-    "YES": "Sí",
-    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
-    "MAP_BUTTON": "Mapa",
-    "DATA_BUTTON": "Dades",
-    "ARCHIVE_BUTTON": "Arxiu",
-    "SETTINGS_BUTTON": "Config.",
-    "FROM": "From",
-    "TO": "To",
-    "CONFIRM_SHARING": "Segur que vols compartir la teva posició amb una altra persona?"
-  },
-
   "RECORD": {
+    "BUTTON": "Gravar",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
@@ -136,15 +144,74 @@
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Si",
     "DELETE_NO": "No",
-    "BUTTON": "Gravar",
+    "SHARE_TEXT": "Seguiment a temps real",
+    "DEFAULT_NAME": "XXX",
+    "XXX": "xxx",
+
     "FROM": "Desde",
     "TO": "Hasta",
     "SHARE_YES": "Obrir",
     "SHARE_NO": "Tancar",
-    "SHARE_TEXT": "Seguiment a temps real",
+
     "SHARE_TRACK": "Comp.",
     "TRANSPORT": "Transporte"
+  },
+
+  "ERRORS": {
+    "ELEVATION_FETCH": "Error en les dades d'altitud del servidor.",
+    "ELEVATION_GENERIC": "No s'ha pogut obtenir l'elevació.",
+    "xxx": "xxx"
+  },
+
+  "COLORS": {
+    "crimson": "carmesí",
+    "red": "vermell",
+    "orange": "taronja",
+    "gold": "daurat",
+    "yellow": "groc",
+    "magenta": "magenta",
+    "purple": "morat",
+    "lime": "llima",
+    "green": "verd",
+    "cyan": "cian",
+    "blue": "blau"
+  },
+
+  "BATTERY": {
+  "GENERIC_MSG": "Per assegurar que el seguiment GPS no s'aturi, ajusta la configuració de la bateria:",
+  "CONFIRM": "Obrir Ajustos",
+  "CANCEL": "Potser després",
+  "BRANDS": {
+    "XIAOMI": "Optimització Xiaomi",
+    "SAMSUNG": "Ajust de Samsung",
+    "HUAWEI": "Ajust de Huawei",
+    "OPPO": "Gestió d'Energia",
+    "PIXEL": "Ús de Bateria",
+    "DEFAULT": "Estalvi d'Energia"
+  },
+  "STEPS": {
+    "AUTO_START": "Activar 'Inici Automàtic'",
+    "NO_RESTRICTIONS": "Estalvi de bateria: 'Sense restriccions'",
+    "UNRESTRICTED": "Bateria: Seleccionar 'No restringit'",
+    "INACTIVITY": "Desactivar 'Posa en inactivitat profunda'",
+    "HUAWEI_MANAGE": "Ajustos > Aplicacions > Inici",
+    "HUAWEI_AUTO": "Desactivar 'Gestiona automàticament'",
+    "BACKGROUND": "Assegurar 'Activitat en segon pla' actiu",
+    "ALLOW_BG": "Ús de bateria: 'Permetre activitat en segon pla'",
+    "AUTO_OPT": "Desactivar 'Optimització automàtica'",
+    "GENERIC_UNRESTRICTED": "Configurar la bateria com a 'Sense optimitzar'"
+  },
+
+  "MAP_CONTROLS": {
+    "CENTER_LOCATION": "Centrar a la meva ubicació",
+    "STOP_TRACKING": "Aturar seguiment"
+  },
+
+  "LOCATION": {
+    "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS"
   }
+
+}
 
 }
 

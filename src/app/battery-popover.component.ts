@@ -1,36 +1,36 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-battery-popover',
   standalone: true,
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, TranslateModule],
   template: `
     <ion-content class="ion-padding">
       <div style="display: flex; align-items: center; margin-bottom: 12px;">
         <ion-icon name="battery-dead" color="danger" style="font-size: 28px; margin-right: 10px;"></ion-icon>
-        <h4 style="margin: 0; font-weight: bold;">{{ title }}</h4>
+        <h4 style="margin: 0; font-weight: bold;">{{ title | translate }}</h4>
       </div>
       
       <p style="font-size: 0.95em; color: var(--ion-color-step-700);">
-        {{ message }}
+        {{ message | translate }}
       </p>
       
       <ion-list lines="none" style="background: transparent;">
         <ion-item *ngFor="let step of steps" style="--min-height: 35px; --background: transparent;">
           <ion-icon name="settings-outline" slot="start" color="primary" style="font-size: 18px;"></ion-icon>
-          <ion-label class="ion-text-wrap" style="font-size: 0.85em;">{{ step }}</ion-label>
+          <ion-label class="ion-text-wrap" style="font-size: 0.85em;">{{ step | translate }}</ion-label>
         </ion-item>
       </ion-list>
 
       <div style="margin-top: 15px;">
         <ion-button expand="block" (click)="confirmar()">
-          Abrir Ajustes
+          {{ 'BATTERY.CONFIRM' | translate }}
         </ion-button>
         <ion-button expand="block" fill="clear" size="small" color="medium" (click)="cerrar()">
-          Quizás luego
+          {{ 'BATTERY.CANCEL' | translate }}
         </ion-button>
       </div>
     </ion-content>
@@ -39,77 +39,56 @@ import { CommonModule } from '@angular/common';
 export class BatteryPopoverComponent implements OnInit {
   @Input() brand: string = 'generic';
 
-  title: string = 'Ajuste de Batería';
-  message: string = 'Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:';
+  title: string = '';
+  message: string = 'BATTERY.GENERIC_MSG';
   steps: string[] = [];
 
-  constructor(private popoverCtrl: PopoverController) {}
+  private popoverCtrl = inject(PopoverController);
 
   ngOnInit() {
-    this.brand = (this.brand || 'generic').toLowerCase().trim();
     this.configureContent();
   }
 
   configureContent() {
-    // Limpiamos la marca para evitar errores por espacios o mayúsculas
     const brandNorm = (this.brand || 'generic').toLowerCase().trim();
 
     switch (brandNorm) {
       case 'xiaomi':
       case 'redmi':
       case 'poco':
-        this.title = 'Optimización Xiaomi';
-        this.steps = [
-          'Activar "Inicio Automático"',
-          'Ahorro de batería: "Sin restricciones"'
-        ];
+        this.title = 'BATTERY.BRANDS.XIAOMI';
+        this.steps = ['BATTERY.STEPS.AUTO_START', 'BATTERY.STEPS.NO_RESTRICTIONS'];
         break;
 
       case 'samsung':
-        this.title = 'Ajuste de Samsung';
-        this.steps = [
-          'Batería: Seleccionar "No restringido"',
-          'Desactivar "Poner en inactividad profunda"'
-        ];
+        this.title = 'BATTERY.BRANDS.SAMSUNG';
+        this.steps = ['BATTERY.STEPS.UNRESTRICTED', 'BATTERY.STEPS.INACTIVITY'];
         break;
 
       case 'huawei':
       case 'honor':
-        this.title = 'Ajuste de Huawei';
-        this.steps = [
-          'Ajustes > Aplicaciones > Inicio',
-          'Desactivar "Gestionar automáticamente"',
-          'Asegurar "Actividad en segundo plano" activo'
-        ];
+        this.title = 'BATTERY.BRANDS.HUAWEI';
+        this.steps = ['BATTERY.STEPS.HUAWEI_MANAGE', 'BATTERY.STEPS.HUAWEI_AUTO', 'BATTERY.STEPS.BACKGROUND'];
         break;
 
       case 'oneplus':
       case 'oppo':
       case 'realme':
       case 'vivo':
-        this.title = 'Gestión de Energía';
-        this.steps = [
-          'Uso de batería: "Permitir actividad segundo plano"',
-          'Desactivar "Optimización automática"'
-        ];
+        this.title = 'BATTERY.BRANDS.OPPO';
+        this.steps = ['BATTERY.STEPS.ALLOW_BG', 'BATTERY.STEPS.AUTO_OPT'];
         break;
 
       case 'google':
       case 'pixel':
       case 'motorola':
-        this.title = 'Uso de Batería';
-        this.steps = [
-          'Uso de la batería: "Sin restringir"'
-        ];
+        this.title = 'BATTERY.BRANDS.PIXEL';
+        this.steps = ['BATTERY.STEPS.UNRESTRICTED'];
         break;
 
       default:
-        this.title = 'Ahorro de Energía';
-        this.message = 'Para evitar que el GPS se detenga al apagar la pantalla:';
-        this.steps = [
-          'Configurar la batería como "Sin optimizar"',
-          'Permitir ejecución en segundo plano'
-        ];
+        this.title = 'BATTERY.BRANDS.DEFAULT';
+        this.steps = ['BATTERY.STEPS.GENERIC_UNRESTRICTED', 'BATTERY.STEPS.BACKGROUND'];
         break;
     }
   }

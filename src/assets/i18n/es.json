@@ -1,4 +1,51 @@
 {
+
+  "MAP": {
+    "TOIMAGE_FAILED": "Could not generate the image",
+    "DATA_BUTTON": "Data",
+    "ARCHIVE_BUTTON": "Archive",
+    "SETTINGS_BUTTON": "Settings",
+    "ZOOM_BUTTON": "Zoom",
+    "WAYPOINT_UPDATED": "Waypoint updated",
+    "CURRENT_TRACK_DELETED": "Current track deleted",
+    "TRACK_FINISHED": "Track finished",
+    "WPT_ADDED": "Waypoint added",
+    "SAVED": "File saved successfully",
+    "NO_TRACK_FOUND": "No track found in file",
+    "IMPORTED_TRACK": "Imported track",
+    "IMPORT_SUCCESS": "Track imported successfully",
+    "ERROR_UNSUPPORTED": "Unsupported file type",
+    "ERROR_IMPORT": "Error importing file",
+    "NO_FILE_SELECTED": "No file selected",
+    "CONFIRM_SHARING": "Are you sure you want to share your position with someone else?",
+    "YES": "Yes",
+    "MAP_BUTTON": "Map",
+    "UNSUPPORTED_TYPE": "Unsupported file format",
+    "TRACK_EMPTY": "Track has no data"
+  },
+
+   "SEARCH": {
+    "BUTTON": "Search",
+    "LOCATION": "Place",
+    "ROUTE": "Route",
+    "SEARCH": "Search...",
+    "FROM": "From",
+    "TO": "To",
+    "FIND_PLACES": "Find places",
+    "GET_ROUTE": "Get route",
+    "START_GUIDE": "Starting guide...",
+    "MY_LOCATION": "My location",
+    "SELECT_BOTH": "Please select both origin and destination",
+    "NO_ROUTE_FOUND": "No route found",
+    "ROUTING_ERROR": "Routing service error",
+    "GOT_LOCATION": "Location acquired",
+    "LOCATION_ERROR": "Could not get your location",
+    "WALK": "Walk",
+    "HIKE": "Hike",
+    "CYCLE": "Cycle",
+    "DRIVE": "Drive"
+  },
+
   "SETTINGS": {
     "CURRENT_TRACK": "Trayecto actual",
     "REFERENCE_TRACK": "Trayecto de referencia",
@@ -78,50 +125,6 @@
     "ALTITUDE": ["Altitud", "Altitud", "Altitude"]
   },
 
-  "SEARCH": {
-    "TITLE_GUIDE": "Encuentra la mejor ruta",
-    "PLACEHOLDER_SEARCH": "Nombre del lugar",
-    "PLACEHOLDER_GUIDE": "Inicio",
-    "CURRENT_LOCATION": "Posiciónactual",
-    "UNKNOWN_LOCATION": "No se ha podido obtener la ubicación actual",
-    "NOTICE1": "Introducir un punto de inicio...",
-    "NOTICE2": "... o seleccioneu posició actual",
-    "TOAST1": "No se ha encontrado ninguna ruta",
-    "NETWORK_ERROR": "Error de red",
-    "DESTINATION": "Destino",
-    "BUTTON": "Buscar",
-    "LOCATION": "Lugar",
-    "ROUTE": "Ruta",
-    "INSTRUCTION": "¿Què busca?",
-    "SEARCH": "Buscar",
-    "LIST": "Lista",
-    "TRANSPORT": "Transporte",
-    "CLEAR": "Búsqueda"
-  },
-
-  "MAP": {
-    "TOAST1": "El trayecto actual se ha eliminado",
-    "NOTICE": "Rastreando tu posición",
-    "STOP_HEADER": "Finalizar el trayecto",
-    "DELETE_HEADER": "Eliminar el trayecto",
-    "STOP_MESSAGE": "¿Estás seguro de que quieres finalizar el trayecto?",
-    "DELETE_MESSAGE": "¿Estás seguro de que quieres eliminar el trayecto?",
-    "IMPORTED": "El archivo se ha importado correctamente",
-    "NOT_IMPORTED": "No se ha importado ningún archivo",
-    "SAVED": "Archivo guardado correctamente",
-    "WPT_ADDED": "Se ha añadido el punto de paso",
-    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
-    "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
-    "TRACK_FINISHED": "El trayecto actual ha finalizado",
-    "YES": "Sí",
-    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
-    "MAP_BUTTON": "Map",
-    "DATA_BUTTON": "Datos",
-    "ARCHIVE_BUTTON": "Archivo",
-    "SETTINGS_BUTTON": "Config.",
-    "CONFIRM_SHARING": "Are you sure you want to share your location with somebody?"
-  },
-
   "RECORD": {
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Parar",
@@ -137,7 +140,52 @@
     "SHARE_NO": "Cerrar",
     "SHARE_TEXT": "Seguimiento a tiempo real",
     "SHARE_TRACK": "Comp."
-  }
+  },
 
+  "COLORS": {
+  "crimson": "carmesí",
+  "red": "rojo",
+  "orange": "naranja",
+  "gold": "dorado",
+  "yellow": "amarillo",
+  "magenta": "magenta",
+  "purple": "morado",
+  "lime": "lima",
+  "green": "verde",
+  "cyan": "cian",
+  "blue": "azul"
+},
+
+"BATTERY": {
+  "GENERIC_MSG": "Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:",
+  "CONFIRM": "Abrir Ajustes",
+  "CANCEL": "Quizás luego",
+  "BRANDS": {
+    "XIAOMI": "Optimización Xiaomi",
+    "SAMSUNG": "Ajuste de Samsung",
+    "HUAWEI": "Ajuste de Huawei",
+    "OPPO": "Gestión de Energía",
+    "PIXEL": "Uso de Batería",
+    "DEFAULT": "Ahorro de Energía"
+  },
+  "STEPS": {
+    "AUTO_START": "Activar 'Inicio Automático'",
+    "NO_RESTRICTIONS": "Ahorro de batería: 'Sin restricciones'",
+    "UNRESTRICTED": "Batería: Seleccionar 'No restringido'",
+    "INACTIVITY": "Desactivar 'Poner en inactividad profunda'",
+    "HUAWEI_MANAGE": "Ajustes > Aplicaciones > Inicio",
+    "HUAWEI_AUTO": "Desactivar 'Gestionar automáticamente'",
+    "BACKGROUND": "Asegurar 'Actividad en segundo plano' activo",
+    "ALLOW_BG": "Uso de batería: 'Permitir actividad segundo plano'",
+    "AUTO_OPT": "Desactivar 'Optimización automática'",
+    "GENERIC_UNRESTRICTED": "Configurar la batería como 'Sin optimizar'"
+  },
+
+  "MAP_CONTROLS": {
+    "CENTER_LOCATION": "Centrar en mi ubicación",
+    "STOP_TRACKING": "Detener seguimiento"
+  }
 }
+}               
+
 

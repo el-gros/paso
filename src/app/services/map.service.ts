@@ -168,7 +168,7 @@ export class MapService {
 
       // 3. Crear y añadir los controles personalizados DESPUÉS de crear el mapa
       // Esto evita el error "Cannot read properties of undefined (reading 'setMap')"
-      this.customControl = new LocationButtonControl(this.trackingService);
+      this.customControl = new LocationButtonControl(this.trackingService, this.translate);
       
       map.addControl(this.customControl);
       map.addControl(this.shareControl);

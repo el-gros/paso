@@ -70,6 +70,7 @@ export class LocationManagerService {
       );
       return [nextLoc.longitude, nextLoc.latitude];
     } catch (err) {
+      this.fs.displayToast('LOCATION.ERROR_TIMEOUT');
       return null;
     }
   }

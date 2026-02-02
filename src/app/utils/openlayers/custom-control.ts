@@ -1,8 +1,12 @@
 import { Control } from 'ol/control';
 import { TrackingControlService } from '../../services/trackingControl.service';
+import { TranslateService } from '@ngx-translate/core'; // Importa el servicio, no el módulo
 
 export class LocationButtonControl extends Control {
-  constructor(private trackingService: TrackingControlService) {
+  constructor(
+    private trackingService: TrackingControlService,
+    private translate: TranslateService
+  ) {
     const element = document.createElement('div');
     element.className = 'ol-control location-button-control';
 
@@ -25,6 +29,10 @@ export class LocationButtonControl extends Control {
     // 🔄 2. Sincronizar la opacidad del botón con el estado real del servicio
     this.trackingService.isRunning$.subscribe(running => {
       button.style.opacity = running ? "1" : "0.3";
+      // Cambia el texto de ayuda según el estado
+      button.title = running 
+        ? this.translate.instant('MAP_CONTROLS.STOP_TRACKING') 
+        : this.translate.instant('MAP_CONTROLS.CENTER_LOCATION');
     });
 
     // 👆 3. Lógica del Click (Toggle)

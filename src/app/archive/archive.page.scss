@@ -1,4 +1,56 @@
-// 1. LISTA Y CONTENIDO
+// DISPLAY ALL
+
+/* El contenedor blanco tipo "Island" */
+.island-style {
+  background: #ffffff !important;
+  border-radius: 16px;
+  padding: 10px;
+  min-width: 60px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
+}
+
+.nav-item-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  
+  ion-icon { 
+    font-size: 26px; 
+    margin-bottom: 2px; 
+  }
+  
+  p { 
+    margin: 0; 
+    font-size: 10px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    color: #333; 
+  }
+
+  &:active { 
+    transform: scale(0.9); 
+  }
+}
+
+/* Estado NORMAL: Icono Azul, Texto Negro (sin cuadros de fondo) */
+.blue-icon { 
+  color: #3880ff !important; 
+}
+
+/* Estado ACTIVO: Todo Rojo (Icono y Texto) */
+.red-pill ion-icon, 
+.red-pill p { 
+  color: #eb445a !important; 
+}
+
+// LISTA Y CONTENIDO
 .item-content {
   display: flex;
   flex-direction: column;
@@ -20,7 +72,7 @@
   color: var(--ion-color-primary);
 }
 
-// 2. BOTONES Y FILAS (Se aplica a FABs y Popover)
+// BOTONES Y FILAS (Se aplica a FABs y Popover)
 ion-row {
   display: flex;
   justify-content: center;

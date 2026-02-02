@@ -154,7 +154,7 @@ export class AppComponent implements OnDestroy {
       }
 
       if (!trackPoints.length || !trk) {
-        this.fs.displayToast(this.translate.instant('MAP.NO_TRACK'));
+        this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'));
         return null;
       }
 
@@ -163,12 +163,14 @@ export class AppComponent implements OnDestroy {
       
       this.reference.archivedTrack = track;   
       await this.location.sendReferenceToPlugin();
-      this.fs.displayToast(this.translate.instant('MAP.IMPORTED'));
+      this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'));
       
       return track;
     } catch (error: any) {
       console.error('Import failed:', error);
-      const translationKey = error.message === 'UNSUPPORTED_TYPE' ? 'MAP.UNSUPPORTED_FILE' : 'MAP.NOT_IMPORTED';
+      const translationKey = error.message === 'UNSUPPORTED_TYPE' 
+        ? 'MAP.ERROR_UNSUPPORTED' 
+        : 'MAP.ERROR_IMPORT';
       this.fs.displayToast(this.translate.instant(translationKey));
       return null;
     }

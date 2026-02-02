@@ -47,4 +47,11 @@ export class AppStateService {
   onEnterBackground() {
     return this.isForeground$().pipe(filter(v => v === false));
   }
+
+  ngOnDestroy() {
+    if (this.listenerHandle) {
+      this.listenerHandle.remove();
+    }
+  }
+  
 }
