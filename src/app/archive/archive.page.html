@@ -63,42 +63,34 @@
 <ion-popover
   [isOpen]="isConfirmDeletionOpen"
   (didDismiss)="isConfirmDeletionOpen = false"
->
+  class="confirm-popover">
   <ng-template>
-    <ion-list>
-      <ion-item class="confirm" lines="none">
-        <ion-label><strong>{{ 'RECORD.CONFIRM_DELETION' | translate }}</strong></ion-label>
-      </ion-item>
-      <ion-row>
-        <button class="record-button green-color"
-          (click)=" deleteTrack(); isConfirmDeletionOpen = false"
-        >
-          <ion-icon name="happy-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
+    <div class="popover-island confirm-box">
+      <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
+      <div class="button-grid horizontal">
+        <button class="nav-item-btn green-pill" (click)="deleteTrack(); isConfirmDeletionOpen = false">
+          <ion-icon name="checkmark-sharp"></ion-icon>
+          <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
         </button>
-        <button class="record-button red-color"
-          (click)="isConfirmDeletionOpen = false"
-        >
-          <ion-icon name="sad-sharp"></ion-icon>
-          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
+        <button class="nav-item-btn red-pill" (click)="isConfirmDeletionOpen = false">
+          <ion-icon name="close-sharp"></ion-icon>
+          <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
         </button>
-      </ion-row>
-    </ion-list>
+      </div>
+    </div>
   </ng-template>
 </ion-popover>
 
 <!-- FAB CON EL BOTON SUPERIOR PARA MOSTRAR O ESCONDER TODOS LOS TRAYECTOS -->
 
 <ion-fab slot="fixed" horizontal="end" vertical="top" class="bottom-safe">
-  <button class="nav-item-btn island-style" 
+  <button class="nav-item-btn glass-island" 
     [class.red-pill]="mapService.visibleAll"
     (click)="displayAllTracks(!mapService.visibleAll)">
-    
     <ion-icon 
       [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
       [class.blue-icon]="!mapService.visibleAll">
     </ion-icon>
-    
     <p>{{ 'ARCHIVE.ALL' | translate }}</p>
   </button>
 </ion-fab>

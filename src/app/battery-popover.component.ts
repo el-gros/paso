@@ -1,40 +1,155 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-battery-popover',
   standalone: true,
   imports: [IonicModule, CommonModule, TranslateModule],
   template: `
-    <ion-content class="ion-padding">
-      <div style="display: flex; align-items: center; margin-bottom: 12px;">
-        <ion-icon name="battery-dead" color="danger" style="font-size: 28px; margin-right: 10px;"></ion-icon>
-        <h4 style="margin: 0; font-weight: bold;">{{ title | translate }}</h4>
-      </div>
-      
-      <p style="font-size: 0.95em; color: var(--ion-color-step-700);">
-        {{ message | translate }}
-      </p>
-      
-      <ion-list lines="none" style="background: transparent;">
-        <ion-item *ngFor="let step of steps" style="--min-height: 35px; --background: transparent;">
-          <ion-icon name="settings-outline" slot="start" color="primary" style="font-size: 18px;"></ion-icon>
-          <ion-label class="ion-text-wrap" style="font-size: 0.85em;">{{ step | translate }}</ion-label>
-        </ion-item>
-      </ion-list>
+    <ion-content scrollY="false">
+      <div class="popover-island">
+        <div class="header">
+          <div class="icon-circle">
+            <ion-icon name="battery-dead" color="danger"></ion-icon>
+          </div>
+          <div class="header-text">
+            <h4>{{ title | translate }}</h4>
+            <span class="brand-tag">{{ brand }}</span>
+          </div>
+        </div>
+        
+        <p class="message">
+          {{ 'BATTERY.GENERIC_MSG' | translate }}
+        </p>
+        
+        <div class="steps-container">
+          @for (step of steps; track step) {
+            <div class="step-item">
+              <ion-icon name="chevron-forward-circle-outline" color="primary"></ion-icon>
+              <p>{{ step | translate }}</p>
+            </div>
+          }
+        </div>
 
-      <div style="margin-top: 15px;">
-        <ion-button expand="block" (click)="confirmar()">
-          {{ 'BATTERY.CONFIRM' | translate }}
-        </ion-button>
-        <ion-button expand="block" fill="clear" size="small" color="medium" (click)="cerrar()">
-          {{ 'BATTERY.CANCEL' | translate }}
-        </ion-button>
+        <div class="actions">
+          <button class="btn-main" (click)="confirmar()">
+            <ion-icon name="settings-outline" slot="start"></ion-icon>
+            {{ 'BATTERY.CONFIRM' | translate }}
+          </button>
+          <button class="btn-cancel" (click)="cerrar()">
+            {{ 'BATTERY.CANCEL' | translate }}
+          </button>
+        </div>
       </div>
     </ion-content>
-  `
+  `,
+  styles: [`
+    ion-content { --background: transparent; }
+
+    .popover-island {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      margin: 10px;
+      padding: 24px 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .icon-circle {
+      background: rgba(235, 68, 90, 0.1);
+      padding: 10px;
+      border-radius: 15px;
+      ion-icon { font-size: 32px; display: block; }
+    }
+
+    .header-text {
+      h4 { 
+        margin: 0; 
+        font-weight: 800; 
+        font-size: 1.1rem; 
+        color: #1a1a1a;
+        text-transform: uppercase;
+      }
+      .brand-tag {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--ion-color-medium);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+    }
+
+    .message {
+      font-size: 0.9rem;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .steps-container {
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 20px;
+      padding: 15px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(0, 0, 0, 0.02);
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      &:last-child { margin-bottom: 0; }
+      
+      ion-icon { font-size: 18px; margin-top: 2px; }
+      p { margin: 0; font-size: 0.85rem; font-weight: 600; color: #333; }
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-main {
+      background: var(--ion-color-primary);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(var(--ion-color-primary-rgb), 0.3);
+      &:active { transform: scale(0.96); }
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: var(--ion-color-medium);
+      border: none;
+      padding: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      &:active { opacity: 0.6; }
+    }
+  `]
 })
 export class BatteryPopoverComponent implements OnInit {
   @Input() brand: string = 'generic';
@@ -59,18 +174,15 @@ export class BatteryPopoverComponent implements OnInit {
         this.title = 'BATTERY.BRANDS.XIAOMI';
         this.steps = ['BATTERY.STEPS.AUTO_START', 'BATTERY.STEPS.NO_RESTRICTIONS'];
         break;
-
       case 'samsung':
         this.title = 'BATTERY.BRANDS.SAMSUNG';
         this.steps = ['BATTERY.STEPS.UNRESTRICTED', 'BATTERY.STEPS.INACTIVITY'];
         break;
-
       case 'huawei':
       case 'honor':
         this.title = 'BATTERY.BRANDS.HUAWEI';
         this.steps = ['BATTERY.STEPS.HUAWEI_MANAGE', 'BATTERY.STEPS.HUAWEI_AUTO', 'BATTERY.STEPS.BACKGROUND'];
         break;
-
       case 'oneplus':
       case 'oppo':
       case 'realme':
@@ -78,14 +190,12 @@ export class BatteryPopoverComponent implements OnInit {
         this.title = 'BATTERY.BRANDS.OPPO';
         this.steps = ['BATTERY.STEPS.ALLOW_BG', 'BATTERY.STEPS.AUTO_OPT'];
         break;
-
       case 'google':
       case 'pixel':
       case 'motorola':
         this.title = 'BATTERY.BRANDS.PIXEL';
         this.steps = ['BATTERY.STEPS.UNRESTRICTED'];
         break;
-
       default:
         this.title = 'BATTERY.BRANDS.DEFAULT';
         this.steps = ['BATTERY.STEPS.GENERIC_UNRESTRICTED', 'BATTERY.STEPS.BACKGROUND'];

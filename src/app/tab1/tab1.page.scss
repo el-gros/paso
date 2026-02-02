@@ -1,31 +1,82 @@
-/* --- ESTADOS ESPECIALES (Grabando o Errores) --- */
-.reddish-color {
-  background-color: #ffaaaa !important;
-  border-radius: 15px;
-  color: black !important;
-  ion-icon { color: black !important; }
-}
-
-ion-content {
-  --background: transparent !important;
-}
-
+/* --- CONTENEDOR DEL MAPA --- */
 #map-wrapper {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  overflow: hidden;
   z-index: 0;
-  transform-origin: center;
-  transform: scale(1);
 }
 
 #map {
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
 }
 
+/* --- BOTONES ESTILO GLASS (SUPERIOR E INFERIOR) --- */
+.record-button {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 12px;
+  min-width: 85px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
 
+  ion-icon {
+    font-size: 26px;
+    color: var(--ion-color-primary, #3880ff);
+    margin-bottom: 4px;
+  }
+
+  span {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+  }
+
+  &:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* --- ESTADO GRABANDO (REDDISH) --- */
+.reddish-color {
+  background: rgba(235, 68, 90, 0.9) !important; /* Rojo traslúcido */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+  ion-icon, span {
+    color: #ffffff !important;
+  }
+}
+
+/* --- FIX DE INTERACTIVIDAD --- */
+ion-fab {
+  pointer-events: none; /* Deja pasar clics al mapa */
+  
+  ion-row {
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    gap: 8px; /* Un poco más de aire entre botones */
+  }
+}
+
+/* --- AREA SEGURA PARA ANDROID --- */
+.top-safe {
+  margin-top: 10px;
+}
+
+.bottom-safe {
+  margin-bottom: 10px;
+}

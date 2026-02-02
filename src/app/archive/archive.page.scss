@@ -1,25 +1,32 @@
-// DISPLAY ALL
+/* --- ESTILOS LIMPIOS PARA ARCHIVE --- */
 
-/* El contenedor blanco tipo "Island" */
-.island-style {
-  background: #ffffff !important;
-  border-radius: 16px;
-  padding: 10px;
-  min-width: 60px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+/* 1. Corrección de interactividad del FAB */
+ion-fab {
+  pointer-events: none; /* Permite clics a través del contenedor vacío */
+  z-index: 1000;
+}
+
+.glass-island {
+  pointer-events: auto !important; /* Habilita el clic solo en el botón */
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 12px;
+  min-width: 65px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  pointer-events: auto !important;
+  cursor: pointer;
 }
 
+/* 2. Botones Nav (Verticales) */
 .nav-item-btn {
-  border: none;
   background: transparent;
-  cursor: pointer;
+  border: none;
+  transition: transform 0.1s ease;
   
   ion-icon { 
     font-size: 26px; 
@@ -31,81 +38,80 @@
     font-size: 10px; 
     font-weight: 700; 
     text-transform: uppercase; 
-    color: #333; 
+    letter-spacing: 0.5px;
   }
 
-  &:active { 
-    transform: scale(0.9); 
+  &:active { transform: scale(0.92); }
+}
+
+/* 3. Popover de Confirmación */
+.confirm-popover {
+  --background: transparent;
+  --box-shadow: none;
+  --width: 90%;
+  --max-width: 400px;
+
+  .popover-island {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 28px;
+    padding: 24px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .confirm-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    color: #333;
+    letter-spacing: 0.8px;
+  }
+
+  .button-grid.horizontal {
+    display: flex;
+    justify-content: center;
+    gap: 45px;
   }
 }
 
-/* Estado NORMAL: Icono Azul, Texto Negro (sin cuadros de fondo) */
-.blue-icon { 
-  color: #3880ff !important; 
-}
+/* 4. Colores y Estados */
+.blue-icon { color: var(--ion-color-primary, #3880ff) !important; }
+.red-pill ion-icon, .red-pill p { color: #eb445a !important; }
+.green-pill ion-icon, .green-pill p { color: #2dd36f !important; }
 
-/* Estado ACTIVO: Todo Rojo (Icono y Texto) */
-.red-pill ion-icon, 
-.red-pill p { 
-  color: #eb445a !important; 
-}
-
-// LISTA Y CONTENIDO
-.item-content {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 0;
-
+/* 5. Estilo de Lista de Trayectos */
+ion-item {
+  --padding-start: 16px;
+  --background: transparent;
+  
   strong {
-    font-size: 1.1rem;
-    margin-bottom: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
   }
-
+  
   .item-date-subtitle {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--ion-color-step-600);
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
   }
 }
 
 .active-text {
-  color: var(--ion-color-primary);
+  color: var(--ion-color-primary) !important;
 }
 
-// BOTONES Y FILAS (Se aplica a FABs y Popover)
-ion-row {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
-.archive-color {
-  background-color: #ffaaaa !important;
-  color: black;
-  ion-icon { color: black; }
-}
-
-// 3. POSICIONAMIENTO
+/* 6. Espaciado Final */
 .list-spacer {
-  height: 100px;
+  height: 120px;
   width: 100%;
 }
 
+/* Ajuste para que el FAB no toque el header */
 ion-fab[vertical="top"] {
-  margin-top: 12px !important;
-}
-
-// 4. POPOVER 
-ion-popover {
-  --width: 90%;
-  --max-width: 400px;
-  
-  ion-list {
-    padding: 10px;
-  }
-  
-  .confirm {
-    --inner-padding-end: 0;
-    text-align: center;
-  }
+  margin-top: 15px !important;
 }

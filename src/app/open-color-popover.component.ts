@@ -11,21 +11,24 @@ import { TranslateModule } from '@ngx-translate/core';
     <ion-content scrollY="false">
       <div class="popover-island">
         <ion-list lines="none">
-          <ion-item 
-            *ngFor="let color of colors" 
-            (click)="selectColor(color)"
-            [class.selected-item]="color === currentColor"
-            button 
-            detail="false">
-            <ion-label>{{ 'COLORS.' + color | translate }}</ion-label>
-            <div class="color-preview" [style.background-color]="color"></div>
-            <ion-icon 
-              *ngIf="color === currentColor" 
-              name="checkmark-circle" 
-              slot="end" 
-              color="primary">
-            </ion-icon>
-          </ion-item>
+          @for (color of colors; track color) {
+            <ion-item 
+              (click)="selectColor(color)"
+              [class.selected-item]="color === currentColor"
+              button 
+              detail="false">
+              <ion-label>{{ 'COLORS.' + color | translate }}</ion-label>
+              <div class="color-track-preview" [style.background-color]="color"></div>
+              
+              @if (color === currentColor) {
+                <ion-icon 
+                  name="checkmark-sharp" 
+                  slot="end" 
+                  color="primary">
+                </ion-icon>
+              }
+            </ion-item>
+          }
         </ion-list>
       </div>
     </ion-content>
@@ -36,46 +39,56 @@ import { TranslateModule } from '@ngx-translate/core';
     }
 
     .popover-island {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
       margin: 8px;
       overflow: hidden;
     }
 
     ion-list { 
       background: transparent; 
-      padding: 4px 0;
+      padding: 8px;
     }
 
     ion-item {
-      --padding-start: 16px;
+      --padding-start: 12px;
       --background: transparent;
-      --color: #333;
-      font-weight: 500;
-      margin: 2px 8px;
-      border-radius: 12px;
+      --color: #444;
+      --border-radius: 14px;
+      margin-bottom: 4px;
+      font-weight: 600;
+      
+      &::part(native) {
+        padding-right: 12px;
+      }
     }
 
     .selected-item {
-      --background: rgba(var(--ion-color-primary-rgb), 0.1);
+      --background: rgba(var(--ion-color-primary-rgb), 0.08);
       --color: var(--ion-color-primary);
     }
 
-    .color-preview {
-      width: 40px;
-      height: 8px;
-      border-radius: 4px;
-      margin-left: 12px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+    /* Muestra de color estilo "Ruta" */
+    .color-track-preview {
+      width: 45px;
+      height: 6px;
+      border-radius: 3px;
+      margin-left: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     ion-label {
-      font-size: 14px;
-      text-transform: capitalize;
+      font-size: 0.9rem;
+      letter-spacing: 0.3px;
+    }
+
+    ion-icon {
+      font-size: 20px;
+      margin: 0;
     }
   `]
 })

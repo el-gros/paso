@@ -89,11 +89,12 @@ register();
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" 
               (click)="present.isConfirmStopOpen ? stopTracking() : deleteTrack(); closeAllPopovers()">
-              <ion-icon name="checkmark-circle-sharp"></ion-icon>
+              <ion-icon name="checkmark-sharp"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
+            
             <button class="nav-item-btn red-pill" (click)="closeAllPopovers()">
-              <ion-icon name="close-circle-sharp"></ion-icon>
+              <ion-icon name="close-sharp"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>
@@ -101,7 +102,8 @@ register();
       </ng-template>
     </ion-popover>
   `,
-  styles: [`
+styles: [`
+    /* --- ESTRUCTURA BASE FLOTANTE --- */
     .floating-popover, .confirm-popover {
       --background: transparent;
       --box-shadow: none;
@@ -110,26 +112,16 @@ register();
     }
 
     .popover-island {
-      background: rgba(255, 255, 255, 0.92) !important;
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      border-radius: 30px;
-      padding: 15px 10px;
+      background: rgba(255, 255, 255, 0.9) !important; /* Mismo Alpha que tus botones principales */
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 28px;
+      padding: 16px 10px;
       border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    .button-grid {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-    }
-
-    .button-grid.horizontal {
-      justify-content: center;
-      gap: 50px;
-    }
-
+    /* --- BOTÓN TIPO NAV (VERTICAL) --- */
     .nav-item-btn {
       background: transparent !important;
       border: none;
@@ -137,41 +129,87 @@ register();
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
-      transition: all 0.2s ease;
-      min-width: 70px;
-
-      &:active:not(:disabled) { transform: scale(0.85); }
-      &:disabled { opacity: 0.25; filter: grayscale(1); }
+      flex: 1; /* Distribución uniforme */
+      transition: transform 0.1s ease;
+      min-width: 65px;
+      cursor: pointer;
 
       ion-icon {
-        font-size: 28px;
+        font-size: 26px; /* Tamaño estandarizado */
         margin-bottom: 4px;
       }
 
       p {
         margin: 0;
-        font-size: 9px;
-        font-weight: 800;
+        font-size: 10px; /* Tamaño unificado */
+        font-weight: 700;
         text-transform: uppercase;
         color: #333;
-        letter-spacing: 0.4px;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
+
+      &:active:not(:disabled) {
+        transform: scale(0.92);
+        opacity: 0.7;
+      }
+
+      &:disabled {
+        opacity: 0.2;
+        filter: grayscale(1);
       }
     }
 
-    /* Iconos Azules (Igual que el resto de tu App) */
-    .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
+    /* --- GRID Y CONTENEDORES --- */
+    .button-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      gap: 5px;
+    }
 
-    /* Colores de Confirmación (Semáforo) */
-    .green-pill ion-icon { color: #2dd36f !important; }
-    .red-pill ion-icon { color: #eb445a !important; }
+    .button-grid.horizontal {
+      justify-content: center;
+      gap: 40px; /* Espacio mayor para botones de SÍ/NO */
+    }
 
-    .confirm-box { padding: 25px 15px; }
+    /* --- COLORES Y ESTADOS --- */
+    .primary-icon { 
+      color: var(--ion-color-primary, #3880ff) !important; 
+    }
+
+    .green-pill ion-icon, .green-pill p { 
+      color: #2dd36f !important; 
+    }
+
+    .red-pill ion-icon, .red-pill p { 
+      color: #eb445a !important; 
+    }
+
+    /* Clase especial para resaltar el botón de Guardar cuando está listo */
+    .enabled ion-icon {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    /* --- CAJA DE CONFIRMACIÓN --- */
+    .confirm-box { 
+      padding: 24px 16px; 
+      text-align: center;
+    }
+
     .confirm-title {
       margin-bottom: 20px;
-      font-size: 13px;
-      font-weight: 900;
-      color: #000;
+      font-size: 12px;
+      font-weight: 800;
+      color: #555;
       text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
   `]
 })

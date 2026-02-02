@@ -16,9 +16,6 @@ import { TranslateModule } from '@ngx-translate/core';
   template: `
     <ion-content scrollY="false">
       <div class="popover-island">
-        <div class="popover-header">
-          <p class="header-title">{{ (edit ? 'ARCHIVE.EDIT_TRACK' : 'RECORD.SAVE_TRACK') | translate }}</p>
-        </div>
 
         <div class="form-container">
           <div class="input-group">
@@ -55,95 +52,87 @@ import { TranslateModule } from '@ngx-translate/core';
       </div>
     </ion-content>
   `,
-  styles: [`
-    /* Configuración de la "Isla" */
+styles: [`
     ion-content { 
       --background: transparent;
       --padding-top: 0;
     }
 
     .popover-island {
-      background: rgba(255, 255, 255, 0.95);
+      /* Sincronizado con el resto: 0.9 de opacidad y 12px blur */
+      background: rgba(255, 255, 255, 0.9) !important;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 24px;
-      padding: 20px 15px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      margin: 5px;
+      border-radius: 28px;
+      padding: 24px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      margin: 8px;
     }
 
-    .popover-header {
-      margin-bottom: 15px;
-      text-align: center;
-    }
-
-    .header-title {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #000;
-    }
-
-    /* Estilos del Formulario */
+    /* --- FORMULARIO GLASS --- */
     .form-container {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
 
     .input-group {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
     }
 
     .custom-label {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      color: var(--ion-color-primary, #3880ff);
-      margin-left: 8px;
+      color: var(--ion-color-primary);
+      margin-left: 12px;
+      letter-spacing: 0.5px;
     }
 
     .custom-textarea {
-      --padding-start: 12px;
-      --padding-end: 12px;
-      --padding-top: 10px;
-      --padding-bottom: 10px;
+      /* Estilo similar a los campos de búsqueda anteriores */
       background: rgba(0, 0, 0, 0.05);
-      border-radius: 14px;
+      border-radius: 16px;
+      --padding-start: 14px;
+      --padding-end: 14px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
       color: #333;
       font-size: 14px;
-      --background: transparent;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+      
+      /* Efecto de foco sutil */
+      &:focus-within {
+        background: rgba(var(--ion-color-primary-rgb), 0.05);
+        border: 1px solid rgba(var(--ion-color-primary-rgb), 0.2);
+      }
     }
 
-    /* Botones estilo Nav-Item (Iguales a los anteriores) */
+    /* --- BOTONES VERTICALES --- */
     .button-grid.horizontal {
       display: flex;
       justify-content: center;
-      gap: 40px;
-      margin-top: 20px;
+      gap: 45px;
+      margin-top: 24px;
     }
 
     .nav-item-btn {
-      background: transparent;
+      background: transparent !important;
       border: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: all 0.2s ease;
-      min-width: 60px;
-
-      &:active {
-        transform: scale(0.9);
-        opacity: 0.7;
-      }
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      min-width: 65px;
+      cursor: pointer;
+      transition: transform 0.1s ease;
 
       ion-icon {
-        font-size: 26px;
+        /* Iconos de confirmación más grandes (32px) al no tener círculo */
+        font-size: 32px;
         margin-bottom: 4px;
       }
 
@@ -152,10 +141,16 @@ import { TranslateModule } from '@ngx-translate/core';
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
-        color: #333;
+        letter-spacing: 0.5px;
+      }
+
+      &:active {
+        transform: scale(0.92);
+        opacity: 0.7;
       }
     }
 
+    /* Estilo "Limpio" para OK / Cancel */
     .green-pill ion-icon, .green-pill p { color: #2dd36f !important; }
     .red-pill ion-icon, .red-pill p { color: #eb445a !important; }
   `]

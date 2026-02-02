@@ -76,7 +76,7 @@ interface Data {
             (click)="reference.foundRoute ? clearSearchRoute() : (reference.isGuidePopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
             
             <ion-icon 
-              [name]="reference.foundRoute ? 'close-circle-sharp' : 'walk-sharp'" 
+              [name]="reference.foundRoute ? 'trash-sharp' : 'walk-sharp'" 
               [class.blue-icon]="!reference.foundRoute">
             </ion-icon>
             <p>{{ 'SEARCH.ROUTE' | translate }}</p>
@@ -175,119 +175,107 @@ interface Data {
       </ng-template>
     </ion-popover>
   `,
-  styles: [`
-      /* --- ESTRUCTURA BASE FLOTANTE --- */
-      .floating-popover, .search-popover {
-        --background: transparent;
-        --box-shadow: none;
-        --width: 92%;
+styles: [`
+    /* --- SHARED GLASS EFFECT (The Popover Background) --- */
+    .popover-island {
+      background: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 28px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- UNIFIED VERTICAL BUTTONS (The .record-button style) --- */
+    .nav-item-btn {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-width: 65px;
+      background: transparent !important;
+      border: none;
+      transition: transform 0.1s ease;
+      cursor: pointer;
+
+      ion-icon {
+        font-size: 26px; /* Matches your .record-button icon size */
+        margin-bottom: 4px;
+        color: var(--ion-color-primary, #3880ff) !important;
       }
 
-      .popover-island {
-        background: rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 28px;
-        padding: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+      p {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        color: #333 !important;
       }
 
-      /* --- BOTONES ESTILO NAV --- */
-      .button-grid { display: flex; justify-content: space-around; gap: 10px; }
-      
-      .nav-item-btn {
-        background: transparent; 
-        border: none;
-        display: flex; 
-        flex-direction: column; 
-        align-items: center;
-        flex: 1; 
-        transition: all 0.2s ease;
-        
-        ion-icon { 
-          font-size: 24px; 
-          margin-bottom: 4px; 
-          color: #3880ff; /* Color AZUL por defecto para todos los iconos */
-        }
-        
-        p { 
-          margin: 0; 
-          font-size: 10px; 
-          font-weight: 700; 
-          text-transform: uppercase; 
-          color: #333; /* Texto NEGRO por defecto */
-        }
-        
-        &:active { transform: scale(0.9); }
+      &:active {
+        transform: scale(0.92);
+        opacity: 0.7;
       }
+    }
 
-      /* --- ESTADO ACTIVO (ROJO) --- */
-      /* Cuando el botón tiene la clase .red-pill, el icono y el texto cambian a rojo */
-      .red-pill ion-icon, 
-      .red-pill p { 
-        color: #eb445a !important; 
-      }
+    /* --- STATE MODIFIERS (Trash / Cancel state) --- */
+    .red-pill ion-icon, 
+    .red-pill p { 
+      color: #eb445a !important; 
+    }
 
-      /* --- FORMULARIOS Y BUSQUEDA --- */
-      .header-title { 
-        text-align: center; 
-        font-weight: 800; 
-        font-size: 12px; 
-        text-transform: uppercase; 
-        margin-top: 0; 
-        color: #666; 
-      }
+    /* --- INPUT STACKS (The "Form" Glass style) --- */
+    .search-input-wrapper, .input-stack {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 16px;
+      padding: 4px 12px;
+      margin-bottom: 12px;
+      border: 1px solid transparent;
 
-      .search-input-wrapper, .input-stack {
-        display: flex; 
-        align-items: center;
-        background: rgba(0,0,0,0.05);
-        border-radius: 16px; 
-        padding: 4px 12px; 
-        margin-bottom: 12px;
-        transition: all 0.3s ease;
-        
-        ion-input { --padding-start: 10px; font-size: 14px; --color: #333; }
-        .inner-icon { font-size: 18px; color: #888; }
-        .action-icon { font-size: 20px; color: var(--ion-color-primary); margin-left: 8px; }
+      &.confirmed {
+        background: rgba(var(--ion-color-success-rgb), 0.1);
+        border: 1px solid rgba(var(--ion-color-success-rgb), 0.3);
       }
+    }
 
-      .confirmed { 
-        background: rgba(var(--ion-color-success-rgb), 0.1); 
-        border: 1px solid rgba(var(--ion-color-success-rgb), 0.3); 
-      }
+    /* --- MAIN ACTION BUTTON (The large search button) --- */
+    .main-action-btn {
+      width: 100%;
+      background: var(--ion-color-primary);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
 
-      /* --- TRANSPORTE --- */
-      .transport-selection {
-        display: flex; justify-content: center; gap: 12px; margin: 15px 0;
-      }
-      .mode-chip {
-        width: 42px; height: 42px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        background: #f0f0f0; color: #888; transition: 0.2s;
-        ion-icon { font-size: 20px; }
-        &.active { background: var(--ion-color-primary); color: white; transform: scale(1.1); }
-      }
+      &:active { transform: scale(0.98); }
+    }
 
-      /* --- BOTÓN PRINCIPAL --- */
-      .main-action-btn {
-        width: 100%; background: var(--ion-color-primary); color: white;
-        border: none; border-radius: 18px; padding: 14px;
-        font-weight: 700; text-transform: uppercase; font-size: 12px;
-        display: flex; justify-content: center; align-items: center;
-        box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
-      }
+    .transport-selection {
+      display: flex; justify-content: center; gap: 12px; margin: 15px 0;
+    }
+    
+    .mode-chip {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: #f4f4f4; color: #888; transition: 0.2s;
+      &.active { background: var(--ion-color-primary); color: white; }
+    }
 
-      /* --- RESULTADOS --- */
-      .results-container {
-        max-height: 200px; overflow-y: auto; margin-top: 15px;
-        border-top: 1px solid #eee;
-        ion-item { --background: transparent; --padding-start: 0; h2 { font-size: 13px; font-weight: 700; } p { font-size: 11px; } }
-      }
+    .button-grid { display: flex; justify-content: space-around; }
+    .footer-buttons { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
   `]
-
 })
+
 export class SearchGuidePopoverComponent implements OnInit {
   public reference = inject(ReferenceService);
   public geography = inject(GeographyService);
