@@ -59,14 +59,7 @@ styles: [`
     }
 
     .popover-island {
-      /* Sincronizado con el resto: 0.9 de opacidad y 12px blur */
-      background: rgba(255, 255, 255, 0.9) !important;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 28px;
       padding: 24px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
       margin: 8px;
     }
 

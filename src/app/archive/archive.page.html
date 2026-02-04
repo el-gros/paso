@@ -33,9 +33,11 @@
                 <p class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</p>
               </div>
             </ion-label>
-            @if (isTrackVisible(item)) {
-              <ion-badge slot="end" color="success">Visible</ion-badge>
-            }
+              @if (isTrackVisible(item)) {
+                <ion-badge slot="end" color="success">
+                  {{ 'ARCHIVE.VISIBLE_LABEL' | translate }}
+                </ion-badge>
+              }
             <ion-icon name="chevron-back-outline" slot="end" color="medium" style="font-size: 12px;"></ion-icon>
           </ion-item>
           <ion-item-options side="end">
@@ -83,16 +85,18 @@
 
 <!-- FAB CON EL BOTON SUPERIOR PARA MOSTRAR O ESCONDER TODOS LOS TRAYECTOS -->
 
-<ion-fab slot="fixed" horizontal="end" vertical="top" class="bottom-safe">
-  <button class="nav-item-btn glass-island" 
-    [class.red-pill]="mapService.visibleAll"
-    (click)="displayAllTracks(!mapService.visibleAll)">
+<ion-fab slot="fixed" horizontal="end" vertical="top" class="top-safe-archive">
+  <div class="record-button" 
+       [class.red-pill]="mapService.visibleAll"
+       (click)="displayAllTracks(!mapService.visibleAll)">
+    
     <ion-icon 
       [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
       [class.blue-icon]="!mapService.visibleAll">
     </ion-icon>
-    <p>{{ 'ARCHIVE.ALL' | translate }}</p>
-  </button>
+    
+    <span>{{ 'ARCHIVE.ALL' | translate }}</span>
+  </div>
 </ion-fab>
 
 <!-- MAPA OCULTO -->

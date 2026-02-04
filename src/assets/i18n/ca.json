@@ -45,56 +45,54 @@
     "CYCLE": "Ciclisme",
     "DRIVE": "Cotxe",
     "CLEAN": "Netejar",
-    "DESCRIPTION": "Perfil de ruta"
+    "DESCRIPTION": "Perfil de ruta",
+    "LISTENING": "Escoltant..."
   },
 
-  "SETTINGS": {
-    "CURRENT_TRACK": "Trajecte actual",
-    "REFERENCE_TRACK": "Trajecte de referència",
+"SETTINGS": {
+    "CURRENT_TRACK": "Color trajecte actual",
+    "REFERENCE_TRACK": "Color trajecte referència",
     "BASE_MAP": "Mapa base",
+    "GENERAL_GROUP": "General",
+    "SYSTEM_GROUP": "Sistema",
     "LANGUAGE": "Idioma",
-    "CHANGE_COLOR": "Canviar color",
-    "UPLOAD_MAPS": "Carregar mapes",
-    "REMOVE_MAPS": "Eliminar mapes",
-    "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
     "ALERT": "Alerta",
-    "COLOR_LIST": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],
-    "COLORS2": ["carmesí", "vermell", "taronja", "daurat", "groc", "magenta", "morat", "llima", "verd", "cian", "blau"],
-    "CURRENT_HEADER": "Trajecte actual",
-    "ARCHIVED_HEADER": "Trajecte de referència",
-    "MESSAGE": "Tria el color del trajecte",
-    "TOAST_REMOVEMAP": "El mapa s'ha eliminat",
-    "TOAST_UPLOADMAP": "El mapa s'ha carregat correctament",
-    "TOAST_FAILED_REMOVEMAP": "No s'ha pogut eliminar el mapa",
-    "CANCEL": "Cancel·lar",
-    "GEOCODING": "Servei de geocodificació"
+    "GEOCODING": "Servei de geocodificació",
+    "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
+    "UPLOAD_MAPS": "Descarregar mapes",
+    "UPLOADMAP": "Mapa descarregat amb èxit",
+    "REMOVEMAP": "El mapa ha estat eliminat",
+    "FAILED_REMOVEMAP": "Error en eliminar el mapa",
+    "FAILED_UPLOADMAP": "Error en descarregar el mapa",
+    "REMOVE_MAP": "Eliminar mapes",
+    "MAP_UPDATED": "Proveïdor de mapa actualitzat",
+    "OFFLINE_MAPS": "Mapes Offline",
+    "DOWNLOADED": "Descarregat"
   },
-  
+
   "ARCHIVE": {
     "EDIT_TRACK": "Editar",
-    
-    "xxx": "xxx",
     "TRACKS": "Trajectes",
     "SHOW": "Mostrar",
     "HIDE": "Amagar",
     "ALL": "tots",
     "REMOVE_TRACK": "Eliminar",
-
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Es mostren tots els trajectes",
     "ALL_HIDDEN": "S'han amagat tots els trajectes",
-
-    "CANCEL": "Cancel·lar",
-    "HEADER": "Confirma l'esborrat",
-    "MESSAGE": "S'esborraran definitivament els trajectes marcats",
-    "TITLE": "Compartir un trajecte",
     "TEXT": "Aquí teniu el trajecte sol·licitat",
     "DIALOG_TITLE": "Compartiu només per Gmail",
     "TOAST1": "S'ha compartit correctament el trajecte",
     "TOAST2": "L'exportació ha fallat",
-    "TOAST3": "S'han esborrat els trajectes seleccionats",
-    "TOAST4": "Error al carregar la col·lecció",
-    "TOAST5": "Error al carregar el trajecte"
+    "TOAST5": "Error al carregar el trajecte",
+    "VISIBLE_LABEL": "Visible",
+
+    "CANCEL": "Cancel·lar",
+    "HEADER": "Confirma l'esborrat",
+    "MESSAGE": "S'esborraran definitivament els trajectes marcats",
+    "TITLE": "Compartir un trajecte"
+
+
   },
 
   "CANVAS": {
@@ -209,6 +207,15 @@
 
   "LOCATION": {
     "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS"
+  },
+
+  "REPORT": {
+    "TITLE": "Activity Report",
+    "ROUTE_NAME": "Route Name",
+    "DATE":	"Date",
+    "DISTANCE":	"Total Distance",
+    "SHARE_SUBJECT": "Tracking Report - Paso App",
+    "SHARE_BODY": "XXX"
   }
 
 }

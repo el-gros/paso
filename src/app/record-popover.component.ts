@@ -104,21 +104,8 @@ register();
   `,
 styles: [`
     /* --- ESTRUCTURA BASE FLOTANTE --- */
-    .floating-popover, .confirm-popover {
-      --background: transparent;
-      --box-shadow: none;
-      --width: 95%;
-      --max-width: 420px;
-    }
-
     .popover-island {
-      background: rgba(255, 255, 255, 0.9) !important; /* Mismo Alpha que tus botones principales */
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 28px;
       padding: 16px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
     /* --- BOTÓN TIPO NAV (VERTICAL) --- */

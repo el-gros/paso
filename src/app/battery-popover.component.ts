@@ -49,12 +49,12 @@ import { TranslateModule } from '@ngx-translate/core';
     ion-content { --background: transparent; }
 
     .popover-island {
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      // Las variables que quieras "personalizar" para este caso concreto
+      --glass-bg: rgba(255, 255, 255, 0.96);
+      --glass-blur: 16px;
+      --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+
+      // La geometría única de este componente
       margin: 10px;
       padding: 24px 20px;
     }

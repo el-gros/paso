@@ -43,29 +43,52 @@
     "WALK": "Caminar",
     "HIKE": "Senderismo",
     "CYCLE": "Ciclismo",
-    "DRIVE": "Conducir"
+    "DRIVE": "Conducir",
+    "LISTENING": "Escuchando..."
   },
 
   "SETTINGS": {
-    "CURRENT_TRACK": "Current track",
-    "REFERENCE_TRACK": "Reference track",
+    "CURRENT_TRACK": "Current track color",
+    "REFERENCE_TRACK": "Reference trackcolor",
     "BASE_MAP": "Base map",
+    "GENERAL_GROUP": "General",
+    "SYSTEM_GROUJP": "System",
     "LANGUAGE": "Language",
-    "CHANGE_COLOR": "Change color",
-    "UPLOAD_MAPS": "Upload maps",
-    "REMOVE_MAPS": "Remove maps",
-    "SAVED_TRACK_ALTITUDE": "Saved track altitude",
     "ALERT": "Alert",
-    "COLOR_LIST": ["crimson", "red", "orange", "gold", "yellow", "magenta", "purple", "lime", "green", "cyan", "blue"],
-    "CURRENT_HEADER": "Current track",
-    "ARCHIVED_HEADER": "Reference track",
-    "MESSAGE": "Set the track color",
-    "TOAST_REMOVEMAP": "The map has been removed",
-    "TOAST_UPLOADMAP": "Map successfully uploaded",
-    "TOAST_FAILED_REMOVEMAP": "Failed to remove the map",
-    "CANCEL": "Cancel",
-    "GEOCODING": "Geocoding service"
+    "GEOCODING": "Geocoding service",
+    "SAVED_TRACK_ALTITUDE": "Saved track altitude",
+    "UPLOAD_MAPS": "Upload maps",
+    "UPLOADMAP": "Map successfully uploaded",
+    "REMOVEMAP": "The map has been removed",
+    "FAILED_REMOVEMAP": "Failed to remove the map",
+    "FAILED_UPLOADMAP": "Error downloading map",
+    "REMOVE_MAP": "Remove maps",
+    "MAP_UPDATED": "Map provider updated",
+    "OFFLINE_MAPS": "Offline Maps",
+    "DOWNLOADED": "Downloaded"
   },
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+    
+
+    
+
+
+
+
 
   "ARCHIVE": {
     "TRACKS": "Tracks",

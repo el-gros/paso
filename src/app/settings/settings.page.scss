@@ -1,6 +1,6 @@
 /* --- FONDO Y CABECERAS --- */
 ion-content {
-  --background: #f4f4f7; /* Un gris muy claro de fondo para que el blanco resalte */
+  --background: #f4f4f7; 
 }
 
 ion-list-header {
@@ -9,102 +9,58 @@ ion-list-header {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  margin-top: 20px;
-  margin-bottom: 5px;
+  margin: 20px 0 5px 0;
 }
 
 /* --- LISTAS ESTILO GLASS --- */
 ion-list[inset="true"] {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 20px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--glass-radius);
   margin: 0 16px 20px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  overflow: hidden; /* Importante para los bordes redondeados */
+  overflow: hidden; 
 }
 
+/* --- ITEMS --- */
 ion-item {
   --background: transparent;
-  --padding-start: 16px;
-  --inner-padding-end: 16px;
   --min-height: 56px;
-  font-size: 0.95rem;
+  --border-color: rgba(0, 0, 0, 0.05);
   color: #333;
 
   ion-icon[slot="start"] {
     font-size: 22px;
     margin-right: 12px;
+    color: var(--ion-color-primary);
   }
 }
 
-/* --- SELECTORES Y CONTROLES --- */
+/* --- CONTROLES ESPECÍFICOS --- */
 ion-select {
-  --placeholder-color: var(--ion-color-medium);
-  --placeholder-opacity: 1;
   font-weight: 600;
   color: var(--ion-color-primary);
 }
 
-/* Selector de color minimalista */
 .color-display-v2 {
   display: flex;
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.04);
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.02);
-
+  
   .color-sample {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%; /* Círculos en lugar de cuadrados para suavizar */
+    width: 22px;
+    height: 22px;
+    border-radius: 50%; 
     box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
   }
 }
 
-/* --- BARRA DE PROGRESO --- */
 .download-progress-item {
   --background: rgba(var(--ion-color-success-rgb), 0.05);
-  
-  ion-progress-bar {
-    height: 8px;
-    border-radius: 4px;
-  }
-  
-  ion-note {
-    font-weight: 700;
-    color: var(--ion-color-success);
-    font-size: 0.8rem;
-  }
-}
-
-/* --- FAB DE NAVEGACIÓN (Consistente) --- */
-.record-button {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 18px;
-  padding: 12px;
-  min-width: 85px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  ion-icon {
-    font-size: 24px;
-    color: var(--ion-color-primary);
-    margin-bottom: 4px;
-  }
-
-  span {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #444;
-  }
+  ion-progress-bar { height: 8px; border-radius: 4px; }
 }

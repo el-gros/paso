@@ -207,7 +207,7 @@ constructor(
     } catch (err) {
       console.error('Download failed:', err);
       this.cleanupSubscription();
-      this.fs.displayToast(this.translate.instant('SETTINGS.TOAST_FAILED_UPLOADMAP'));
+      this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_UPLOADMAP'));
     }
   }
 
@@ -221,7 +221,7 @@ constructor(
     this.downloadProgress = 0;  // Resetea el porcentaje
     
     // Toast de éxito
-    this.fs.displayToast(this.translate.instant('SETTINGS.TOAST_UPLOADMAP'));
+    this.fs.displayToast(this.translate.instant('SETTINGS.UPLOADMAP'));
   }
 
   // 16. REMOVE MAP FILE /////////////////////////////////
@@ -235,10 +235,10 @@ constructor(
       // Refrescar las listas después de borrar
       await this.checkMaps();
       
-      const toast_removeMap = this.translate.instant('SETTINGS.TOAST_REMOVEMAP');
+      const toast_removeMap = this.translate.instant('SETTINGS.REMOVEMAP');
       this.fs.displayToast(toast_removeMap);
     } catch (error) {
-      const toast_failed_removeMap = this.translate.instant('SETTINGS.TOAST_FAILED_REMOVEMAP');
+      const toast_failed_removeMap = this.translate.instant('SETTINGS.FAILED_REMOVEMAP');
       this.fs.displayToast(toast_failed_removeMap);
       console.error(`Error removing file ${filename}:`, error);
     }

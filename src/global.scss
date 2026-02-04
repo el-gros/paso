@@ -1,14 +1,3 @@
-/*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
- */
-
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
 
@@ -28,74 +17,7 @@
 /* Open layer styles */
 @import "~ol/ol.css";
 
-// NAVIGATION BAR
-// TOP AND BOTTOM SAFE
-// SCALE LINE
-
-// NAVIGATION  BAR ///////////////////////////////////
-
-.glass-capsule {
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 8px 16px;
-  border-radius: 35px; 
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  gap: 12px;
-  pointer-events: auto !important; /* <--- CLAVE: Reactiva los clics aquí */
-}
-
-/* 2. LOS BOTONES (TEXTO DEBAJO) */
-.record-button {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-width: 65px;
-  background: transparent !important;
-  border: none;
-  color: #333 !important;
-  pointer-events: auto !important; /* Refuerzo para asegurar el clic */
-
-  ion-icon {
-    font-size: 26px;
-    margin-bottom: 4px;
-    color: var(--ion-color-primary, #3880ff) !important;
-  }
-
-  span {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-  }
-
-  &:active {
-    transform: scale(0.92);
-    opacity: 0.7;
-  }
-}
-
-// TOP AND BOTTOM SAFE //////////////////////////////
-
-.top-safe, .bottom-safe {
-  z-index: 999 !important; /* Subimos el z-index para estar sobre el mapa */
-  pointer-events: none;    /* Deja pasar el clic al mapa en las zonas vacías */
-  
-  ion-row {
-    @extend .glass-capsule;
-  }
-}
-
-.top-safe { margin-top: calc(var(--ion-safe-area-top, 0px) + 10px) !important; }
-.bottom-safe { margin-bottom: calc(var(--ion-safe-area-bottom, 0px) + 15px) !important; }
-
-// SCALE LINE ////////////////////////////////////
+// 1. SCALE LINE ////////////////////////////////////
 
 /* 1. Contenedor principal */
 .ol-scale-line.vertical-scale {
@@ -141,203 +63,13 @@
   min-width: 60px !important; 
 }
 
-
-/* Efecto al pulsar */
-
-
-/* --- COLORES TEMÁTICOS --- 
-.map-color {
-  color: #3880ff; /* Azul Ionic 
-}
-
-.archive-color {
-  color: #2dd36f; /* Verde Ionic (o el que prefieras para archivo) 
-}
-
-*/
-// GREENISH ALERT ////////////////////////////////////
-    .greenishAlert{
-      --background: #B5FFAC !important;
-    }
-
-// RED ALERT ////////////////////////////////////
-  .redAlert{
-    --background: #ffbbbb !important;
-  }
-
-
-// PRIMARY ALERT //////////////////////////////////
-    .primaryAlert {
-      --background: #aac6f7 !important;
-    }
-
-// TOAST //////////////////////////
+// 2. TOAST //////////////////////////
 .toast {
   text-align: center !important; /* Center the text */
   font-size: 16px !important; /* Increase the font size */
 }
 
-// MODAL //////////////////////////////
-
-.modal-class {
-  --width: 90%; /* Adjust width as needed */
-  --height: 70%; /* Set modal height */
-  --border-radius: 12px; /* Rounded corners */
-  --background: #ffffbb; /* Light yellow background */
-  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add shadow for better visual */
-  ion-content {
-    --background: #ffffbb; /* Ensure content has the same background */
-  }
-}
-
-.yellow-class{
-  --background: #ffffbb; /* Light yellow background */
-  ion-content {
-    --background: #ffffbb; /* Ensure content has the same background */
-  }
-}
-
-.green-class{
-  --background: rgb(192, 255, 192);
-  ion-content {
-    --background: rgb(192, 255, 192);
-  }
-}
-
-.red-class {
-  --background: rgb(255, 221, 221); /* Light yellow background */
-  ion-content {
-    --background: rgb(255, 221, 221); /* Ensure content has the same background */
-  }
-}
-
-.blue-class {
-  --background: rgb(221, 221, 255); /* Light yellow background */
-  ion-content {
-    --background: rgb(221, 221, 255); /* Ensure content has the same background */
-  }
-}
-
-/* Header */
-.modal-header {
-  width: 100%; /* Full width */
-  // --background: var(--background-color);
-  box-shadow: none; /* Remove any shadow */
-  border: none; /* Remove borders */
-}
-
-/* Name in header */
-.modal-title {
-  font-size: 20px;
-  text-align: center;
-  margin: 10px;
-}
-
-/* Divider */
-.modal-divider {
-  border: none;
-  border-top: 2px solid black;
-  margin: 10px;
-}
-
-/* Content section */
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%; /* Use full available height */
-  width: 100%;
-  padding: 0; /* No additional padding */
-}
-
-.modal-message {
-  color: black;
-  font-size: 16px;
-  margin: 10px;
-  padding: 10px;
-}
-
-.modal-name {
-  overflow: hidden; /* Avoid text overflow */
-  text-align: left;
-  margin: 10px;
-  padding: 10px;
-  color: black;
-  border: none; /* Optional: Add a subtle border */
-  outline: none; /* Remove the focus outline */
-  font-size: 16px;
-  border-radius: 4px;
-  white-space: pre-wrap; /* Preserve line breaks and spaces */
-  word-wrap: break-word; /* Break long words */
-  overflow-y: auto; /* Make it scrollable */
-}
-
-/* Description */
-.modal-description {
-  flex: 1; /* Allow it to take up all available space */
-  text-align: justify;
-  margin: 10px;
-  color: black;
-  border: none;
-  outline: none;
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 4px;
-  overflow-y: auto; /* Make it scrollable */
-}
-
-.white {
-  background-color: white;
-}
-
-/* Footer */
-.modal-footer {
-  width: 100%;
-  box-shadow: none; /* Remove shadow */
-  border: none; /* Remove borders */
-}
-
-/* Modal buttons */
-.modal-buttons {
-  display: flex;
-  margin: 10px;
-  padding: 10px;
-  justify-content: center; /* Center horizontally */
-  align-items: center; /* Optional: center vertically */
-  width: 100%; /* Full width */
-}
-
-/* OK button */
-.modal-confirm-button {
-  color: green;
-  font-size: 18px;
-}
-
-/* Cancel button */
-.modal-cancel-button {
-  color: red;
-  font-size: 18px;
-}
-
-/* Edit button */
-.modal-edit-button {
-  display: flex; /* Ensures icon is centered within the button */
-  justify-content: center; /* Horizontally center the content */
-  align-items: center; /* Vertically center the content */
-  margin: 8px; /* Ensures the button is 10px away from all borders */
-  width: 100%; /* Full width to make centering easier */
-  height: auto; /* Adjust height as needed */
-}
-
-/* icon */
-.modal-large-icon {
-  color: black; /* Set the icon color to black */
-  font-size: 40px; /* Adjust icon size (optional) */
-}
-
-.modal-small-icon {
-  color: black; /* Set the icon color to black */
-  font-size: 20px; /* Adjust icon size (optional) */
-}
+// 3. CONTROLS ////////////////////////
 
 /* Zoom buttons (top-left by default) */
 .ol-zoom {
@@ -401,11 +133,171 @@
   height: 22px;
 }
 
-.padded-list {
-  padding: 0 5px !important;
+/* --- ADN VISUAL: GLASS-MORPHISM CENTRALIZADO --- */
+
+// 1. Botón Universal de Acción (Utilizado en todas las pantallas)
+.record-button {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 8px;
+  min-width: 60px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 26px;
+    color: var(--ion-color-primary, #3880ff);
+    margin-bottom: 4px;
+  }
+
+  span, p {
+    margin: 0;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+  }
+
+  &:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
 }
 
-/* Add gray area behind the Android bottom bar */
+// 2. Contenedores Flotantes (Cards, Listas Inset, Islas de Popover)
+:root {
+  // Centralizamos los valores para poder cambiarlos en toda la app de un golpe
+  --glass-bg: rgba(255, 255, 255, 0.92); 
+  --glass-blur: 12px;
+  --glass-radius: 28px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* ==========================================================================
+   1. REGLA MAESTRA (DISEÑO VISUAL COMÚN)
+   ========================================================================== */
+.glass-panel, .popover-island, .elementCanvas, .card {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
+  backdrop-filter: blur(var(--glass-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
+  border-radius: var(--glass-radius, 28px);
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.15));
+  overflow: hidden; 
+}
+
+.floating-popover, .confirm-popover {
+  --background: transparent;
+  --box-shadow: none;
+  --width: var(--popover-width, 95%);
+  --max-width: var(--popover-max-width, 420px);
+}
+
+/* ==========================================================================
+   2. REGLAS ESPECÍFICAS (CONFIGURACIÓN DE CADA PIEZA)
+   ========================================================================== */
+
+/* Configuración para las Tarjetas y el contenedor del Canvas */
+.card, .elementCanvas {
+  /* Aquí sobrescribimos las variables solo para estos elementos */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-radius: 24px;
+  --glass-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
+  padding: 20px;
+  margin: 12px 16px;
+}
+
+.card {
+  min-height: auto;
+}
+
+.elementCanvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 15px 0;
+    color: #777;
+    width: 100%;
+    text-align: left;
+  }
+  
+  canvas {
+    width: 100% !important;
+    max-width: 300px;
+    height: auto !important;
+    border-radius: 12px;
+  }
+}
+
+// 3. Ajustes de Interactividad para FABs
+ion-fab {
+  pointer-events: none;
+  z-index: 1000;
+  
+  ion-row, .record-button {
+    pointer-events: auto;
+  }
+}
+
+
+.blue-icon { color: var(--ion-color-primary) !important; }
+
+
+/* --- 4. COLORES Y ESTADOS GLOBALES --- */
+
+// Estado ACTIVO (Fondo blanco Glass, Texto de color)
+.red-pill {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(235, 68, 90, 0.4) !important;
+  ion-icon, span, p { 
+    color: var(--ion-color-danger, #eb445a) !important; 
+  }
+}
+
+.green-pill {
+  background: rgba(255, 255, 255, 0.95) !important;
+  ion-icon, span, p { color: var(--ion-color-success, #2dd36f) !important; }
+}
+
+/* --- ÁREAS SEGURAS (Zonas del Mapa) --- */
+.top-safe, .bottom-safe {
+  position: fixed; // Asegura que floten sobre el mapa
+  z-index: 999;
+  pointer-events: none; // No bloquea el mapa en las zonas vacías
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  ion-row {
+    @extend .glass-panel; // <--- AQUÍ está la clave: usa el nuevo ADN visual
+    padding: 8px 16px;    // Ajuste específico de tamaño
+    pointer-events: auto; // Permite hacer clic en los botones dentro
+    gap: 12px;
+  }
+}
+
+/* Posicionamiento */
+.top-safe { margin-top: 30px; }
+.bottom-safe { bottom: 50px; }
 .bottom-safe-gray {
   position: fixed;
   bottom: 0;
@@ -415,203 +307,5 @@
   height: 50px;
   background-color: #ccc; /* light gray */
   z-index: 10;
-}
-
-
-  .top-margin-selector {
-    margin-top: 70px;       /* if you still need a 70px top margin */
-    background: #a3bfff;
-  }
-
-  .top-margin-selector ion-label {
-    font-weight: bold;      /* make the label text bold */
-  }
-
-  .selector {
-    background: #a3bfff;
-  }
-
-  .selector ion-label {
-    font-weight: bold;      /* make the label text bold */
-  }
-
-ion-select-option[aria-selected="true"] {
-  font-weight: bold;
-}
-
-.blue-first-option-select ion-select-option:first-of-type {
-  background-color: #a3bfff !important;
-}
-
-
-  .color-crimson { color: crimson; }
-  .color-red     { color: red; }
-  .color-orange  { color: orange; }
-  .color-gold    { color: gold; }
-  .color-yellow  { color: yellow; }
-  .color-magenta { color: magenta; }
-  .color-purple  { color: purple; }
-  .color-lime    { color: lime; }
-  .color-green   { color: green; }
-  .color-cyan    { color: cyan; }
-  .color-blue    { color: blue; }
-
- .sandclock {
-  display: inline-block;
-  font-size: 1.8em;        /* bigger */
-  animation: flip 1.5s infinite linear;
-}
-
-@keyframes flip {
-  0%   { transform: rotate(0deg); }
-  45%  { transform: rotate(180deg); }
-  55%  { transform: rotate(180deg); } /* short pause upside down */
-  100% { transform: rotate(360deg); }
-}
-
-.long::part(content) {
-  position: absolute !important;
-  top: 10% !important;                /* 10% from top → leaves small margin */
-  left: 50% !important;               /* center horizontally */
-  transform: translateX(-50%) !important;
-
-  width: 90% !important;              /* cover 90% width */
-  height: 80% !important;             /* cover 80% height */
-
-  border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
-  background: var(--ion-color-light) !important;
-  overflow: auto !important;          /* allows scrolling inside if needed */
-}
-
-.search-popover-content {
-  padding: 5px; /* distance from popover edges */
-}
-
-.search-row {
-  display: flex;
-  align-items: flex-start;
-  width: 100%;
-  gap: 8px; /* space between input and button */
-}
-
-/* Search field (gray box, no green border) */
-.search-field {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  background: #f2f2f2;
-  border-radius: 24px;
-  padding: 4px 10px;
-}
-
-/* Icons inside the field */
-.search-icon,
-.clear-icon,
-.mic-icon {
-  color: #555;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.search-icon {
-  margin-right: 6px;
-}
-
-.clear-icon,
-.mic-icon {
-  margin-left: 6px;
-}
-
-/* Input text + underline */
-.search-input {
-  flex: 1;
-  --background: transparent;
-  --padding-start: 0;
-  --color: #222;
-  --placeholder-color: #666;
-  font-size: 16px;
-
-  /* underline effect */
-  border: none;
-  border-bottom: 2px solid #45ff2f; /* yellowish green */
-  outline: none;
-}
-
-/* Ensure native Ionic input renders without extra underline */
-ion-input::part(native) {
-  border: none;
-  outline: none;
-}
-
-/* List button: icon above text */
-.list-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #45ff2f;
-  color: #000;
-  border: none;
-  border-radius: 12px;
-  padding: 8px 10px;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  width: 60px;
-}
-
-.list-button:hover {
-  background: #3de12a;
-}
-
-.list-icon {
-  font-size: 20px;
-  margin-bottom: 2px;
-}
-
-/* Search results below */
-.results-list {
-  margin-top: 8px;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.result-item {
-  cursor: pointer;
-  color: #333;
-}
-
-.result-item:hover {
-  background: #f0f0f0;
-}
-
-
-
-.green-color {
-  background-color: green !important;
-  color: white;
-  ion-icon {
-    color: white
-  }
-}
-
-.red-color {
-  background-color: red !important;
-  color: white;
-  ion-icon {
-    color: white
-  }
-}
-
-
-.map-color {
-  background-color: #aaffaa !important;
-  color: black !important;
-  ion-icon {     
-    color: black
-  }
 }
 

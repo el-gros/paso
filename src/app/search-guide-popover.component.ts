@@ -1,50 +1,34 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ModalController } from '@ionic/angular';
+import { IonicModule, Platform } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { StylerService } from './services/styler.service';
 import { CapacitorHttp } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Keyboard } from '@capacitor/keyboard';
-import { Platform } from '@ionic/angular';
-import { global } from './../environments/environment';
-
-// OpenLayers & GeoJSON
 import { GeoJSON } from 'ol/format';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
-
-// Servicios (Asegúrate de que las rutas sean correctas según tu estructura)
-import { FunctionsService } from './services/functions.service';
-import { GeographyService } from './services/geography.service';
-import { MapService } from './services/map.service';
-import { ReferenceService } from './services/reference.service';
-import { LocationManagerService } from './services/location-manager.service';
-import { LanguageService } from './services/language.service';
 import { FeatureLike } from 'ol/Feature';
 import { Fill, Stroke, Style } from 'ol/style';
 
-// Importa el modal si ya existe
-// import { SearchModalComponent } from './search-modal.component';
+// Servicios
+import { FunctionsService } from './services/functions.service';
+import { GeographyService } from './services/geography.service';
+import { ReferenceService } from './services/reference.service';
+import { LocationManagerService } from './services/location-manager.service';
+import { LanguageService } from './services/language.service';
+import { StylerService } from './services/styler.service';
+import { global } from './../environments/environment';
 
 interface LocationResult {
   lat: number;
   lon: number;
   name: string;
   display_name: string;
-  type?: string;
-  place_id?: string;
+  short_name?: string;
   boundingbox: number[];
   geojson: any;
-  short_name?: string;
-}
-
-interface Data {
-  distance: number;
-  altitude: number;
-  time: number;
-  speed: number;
 }
 
 @Component({
@@ -59,237 +43,181 @@ interface Data {
     <ng-template>
       <div class="popover-island">
         <div class="button-grid">
-          
           <button class="nav-item-btn" 
             [class.red-pill]="reference.foundPlace"
             (click)="reference.foundPlace ? clearSearchPlace() : (reference.isSearchPopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
-            
-            <ion-icon 
-              [name]="reference.foundPlace ? 'trash-sharp' : 'location-sharp'" 
-              [class.blue-icon]="!reference.foundPlace">
-            </ion-icon>
+            <ion-icon [name]="reference.foundPlace ? 'trash-sharp' : 'location-sharp'" [class.primary-icon]="!reference.foundPlace"></ion-icon>
             <p>{{ 'SEARCH.LOCATION' | translate }}</p>
           </button>
 
           <button class="nav-item-btn" 
             [class.red-pill]="reference.foundRoute"
             (click)="reference.foundRoute ? clearSearchRoute() : (reference.isGuidePopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
-            
-            <ion-icon 
-              [name]="reference.foundRoute ? 'trash-sharp' : 'walk-sharp'" 
-              [class.blue-icon]="!reference.foundRoute">
-            </ion-icon>
+            <ion-icon [name]="reference.foundRoute ? 'trash-sharp' : 'walk-sharp'" [class.primary-icon]="!reference.foundRoute"></ion-icon>
             <p>{{ 'SEARCH.ROUTE' | translate }}</p>
           </button>
-
         </div>
       </div>
     </ng-template>
   </ion-popover>
 
-    <ion-popover
-      [isOpen]="reference.isSearchPopoverOpen"
-      (didDismiss)="reference.isSearchPopoverOpen = false"
-      class="search-popover">
-      <ng-template>
-        <div class="popover-island glass-form">
-          <div class="search-input-wrapper">
-            <ion-icon name="search-outline" class="inner-icon"></ion-icon>
-            <ion-input [(ngModel)]="query" (keyup.enter)="openList()" 
-              [placeholder]="'SEARCH.SEARCH' | translate" class="custom-input"></ion-input>
+  <ion-popover
+    [isOpen]="reference.isSearchPopoverOpen"
+    (didDismiss)="reference.isSearchPopoverOpen = false"
+    class="floating-popover">
+    <ng-template>
+      <div class="popover-island glass-form">
+        <div class="search-input-wrapper">
+          <ion-icon name="search-outline" class="inner-icon"></ion-icon>
+          <ion-input [(ngModel)]="query" (keyup.enter)="openList()" [placeholder]="'SEARCH.SEARCH' | translate"></ion-input>
+          <div class="input-actions-row">
             <ion-icon *ngIf="query" name="close-circle" class="clear-icon" (click)="query = ''; results = []"></ion-icon>
-            <ion-icon name="mic-outline" class="mic-icon" (click)="startDictation('query')"></ion-icon>
-          </div>
-          
-          <button class="main-action-btn" (click)="openList()">
-            <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-            <span *ngIf="!loading">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
-          </button>
-
-          <div class="results-container" *ngIf="results.length > 0">
-            <ion-list lines="none">
-              <ion-item *ngFor="let result of results" (click)="handleLocationSelection(result)" button detail="false">
-                <ion-label>
-                  <h2>{{ result.short_name || result.name }}</h2>
-                  <p>{{ result.display_name }}</p>
-                </ion-label>
-              </ion-item>
-            </ion-list>
+            <ion-icon [name]="(activeTarget === 'query' && isListening) ? 'mic-sharp' : 'mic-outline'" 
+              [class.mic-active]="activeTarget === 'query' && isListening"
+              class="mic-icon" (click)="startDictation('query')"></ion-icon>
           </div>
         </div>
-      </ng-template>
-    </ion-popover>
 
-    <ion-popover
-      [isOpen]="reference.isGuidePopoverOpen"
-      (didDismiss)="resetRouteState()"
-      class="search-popover">
-      <ng-template>
-        <div class="popover-island glass-form">
-          <p class="header-title">{{ 'SEARCH.ROUTE' | translate }}</p>
-          
-          <div class="input-stack" [class.confirmed]="originCoords">
-            <ion-icon name="radio-button-off-outline" color="success"></ion-icon>
-            <ion-input [(ngModel)]="query2" [placeholder]="'SEARCH.FROM' | translate" 
-              (ionFocus)="activeRouteField = 'origin'"></ion-input>
+        <button class="main-action-btn" (click)="openList()" [disabled]="loading">
+          <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+          <span *ngIf="!loading">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
+        </button>
+
+        <div class="results-container" *ngIf="results.length > 0">
+          <ion-list lines="none">
+            <ion-item *ngFor="let result of results" (click)="handleLocationSelection(result)" button detail="false">
+              <ion-label><h2>{{ result.short_name || result.name }}</h2></ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+      </div>
+    </ng-template>
+  </ion-popover>
+
+  <ion-popover
+    [isOpen]="reference.isGuidePopoverOpen"
+    (didDismiss)="reference.isGuidePopoverOpen = false"
+    class="floating-popover">
+    <ng-template>
+      <div class="popover-island glass-form">
+        <p class="header-title">{{ 'SEARCH.ROUTE' | translate }}</p>
+
+        <div class="input-stack" [class.confirmed]="originCoords">
+          <ion-input [(ngModel)]="query2" [placeholder]="'SEARCH.FROM' | translate" (ionFocus)="activeRouteField = 'origin'"></ion-input>
+          <div class="input-actions-row">
+            <ion-icon [name]="(activeTarget === 'query2' && isListening) ? 'mic-sharp' : 'mic-outline'" 
+              [class.mic-active]="activeTarget === 'query2' && isListening"
+              class="mic-icon" (click)="startDictation('query2')"></ion-icon>
             <ion-icon name="locate-outline" (click)="useCurrentLocation('origin')" class="action-icon"></ion-icon>
           </div>
+        </div>
 
-          <div class="input-stack" [class.confirmed]="destinationCoords">
-            <ion-icon name="location-outline" color="danger"></ion-icon>
-            <ion-input [(ngModel)]="query3" [placeholder]="'SEARCH.TO' | translate" 
-              (ionFocus)="activeRouteField = 'destination'"></ion-input>
+        <div class="input-stack" [class.confirmed]="destinationCoords">
+          <ion-input [(ngModel)]="query3" [placeholder]="'SEARCH.TO' | translate" (ionFocus)="activeRouteField = 'destination'"></ion-input>
+          <div class="input-actions-row">
+            <ion-icon [name]="(activeTarget === 'query3' && isListening) ? 'mic-sharp' : 'mic-outline'" 
+              [class.mic-active]="activeTarget === 'query3' && isListening"
+              class="mic-icon" (click)="startDictation('query3')"></ion-icon>
             <ion-icon name="locate-outline" (click)="useCurrentLocation('destination')" class="action-icon"></ion-icon>
           </div>
-
-          <div class="transport-selection">
-            <div *ngFor="let mode of transportMeans" 
-              class="mode-chip" 
-              [class.active]="selectedTransport === mode.id"
-              (click)="selectedTransport = mode.id"
-              [attr.aria-label]="mode.label | translate"> <ion-icon [name]="mode.icon"></ion-icon>
-            </div>
-          </div>
-
-          <div class="footer-buttons">
-            <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
-              <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-              <span *ngIf="!loading">{{ (originCoords && destinationCoords) ? ('SEARCH.GET_ROUTE' | translate) : ('SEARCH.FIND_PLACES' | translate) }}</span>
-            </button>
-            <button class="nav-item-btn red-pill circular" (click)="clearRouteForm()">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
-          </div>
-
-          <div class="results-container" *ngIf="results.length > 0">
-             <ion-list lines="none">
-              <ion-item *ngFor="let result of results" (click)="selectRoutePoint(result)" button detail="false">
-                <ion-label>
-                  <h2>{{ result.short_name || result.name }}</h2>
-                  <p>{{ result.display_name }}</p>
-                </ion-label>
-              </ion-item>
-            </ion-list>
+        </div>
+        
+        <div class="transport-selection">
+          <div *ngFor="let mode of transportMeans" class="mode-chip" [class.active]="selectedTransport === mode.id" (click)="selectedTransport = mode.id">
+            <ion-icon [name]="mode.icon"></ion-icon>
           </div>
         </div>
-      </ng-template>
-    </ion-popover>
+
+        <div class="footer-buttons">
+          <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
+            <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+            <span *ngIf="!loading">{{ (originCoords && destinationCoords) ? ('SEARCH.GET_ROUTE' | translate) : ('SEARCH.FIND_PLACES' | translate) }}</span>
+          </button>
+          <button class="nav-item-btn red-pill circular" (click)="clearRouteForm()">
+            <ion-icon name="trash-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="results-container" *ngIf="results.length > 0">
+           <ion-list lines="none">
+            <ion-item *ngFor="let result of results" (click)="selectRoutePoint(result)" button detail="false">
+              <ion-label><h2>{{ result.short_name || result.name }}</h2></ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+      </div>
+    </ng-template>
+  </ion-popover>
   `,
-styles: [`
-    /* --- SHARED GLASS EFFECT (The Popover Background) --- */
+  styles: [`
     .popover-island {
-      background: rgba(255, 255, 255, 0.9) !important;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 28px;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      padding: 16px 10px;
     }
 
-    /* --- UNIFIED VERTICAL BUTTONS (The .record-button style) --- */
     .nav-item-btn {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      min-width: 65px;
-      background: transparent !important;
-      border: none;
-      transition: transform 0.1s ease;
-      cursor: pointer;
-
-      ion-icon {
-        font-size: 26px; /* Matches your .record-button icon size */
-        margin-bottom: 4px;
-        color: var(--ion-color-primary, #3880ff) !important;
-      }
-
-      p {
-        margin: 0;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-        color: #333 !important;
-      }
-
-      &:active {
-        transform: scale(0.92);
-        opacity: 0.7;
-      }
+      background: transparent !important; border: none;
+      display: flex !important; flex-direction: column !important;
+      align-items: center !important; justify-content: center !important;
+      flex: 1; transition: transform 0.1s ease; min-width: 65px;
+      ion-icon { font-size: 26px; margin-bottom: 4px; }
+      p { margin: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #333; }
+      &:active { transform: scale(0.92); }
     }
 
-    /* --- STATE MODIFIERS (Trash / Cancel state) --- */
-    .red-pill ion-icon, 
-    .red-pill p { 
-      color: #eb445a !important; 
-    }
-
-    /* --- INPUT STACKS (The "Form" Glass style) --- */
     .search-input-wrapper, .input-stack {
-      display: flex;
-      align-items: center;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 16px;
-      padding: 4px 12px;
-      margin-bottom: 12px;
-      border: 1px solid transparent;
-
-      &.confirmed {
-        background: rgba(var(--ion-color-success-rgb), 0.1);
-        border: 1px solid rgba(var(--ion-color-success-rgb), 0.3);
-      }
+      display: flex; align-items: center; background: rgba(0, 0, 0, 0.05);
+      border-radius: 16px; padding: 4px 12px; margin-bottom: 12px;
+      ion-input { --padding-start: 8px; flex: 1; }
+      &.confirmed { background: rgba(45, 211, 111, 0.1); border: 1px solid rgba(45, 211, 111, 0.3); }
     }
 
-    /* --- MAIN ACTION BUTTON (The large search button) --- */
-    .main-action-btn {
-      width: 100%;
-      background: var(--ion-color-primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      padding: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 1px;
-      box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
-
-      &:active { transform: scale(0.98); }
-    }
-
-    .transport-selection {
-      display: flex; justify-content: center; gap: 12px; margin: 15px 0;
-    }
+    .input-actions-row { display: flex; align-items: center; gap: 12px; margin-left: 8px; }
     
-    .mode-chip {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      background: #f4f4f4; color: #888; transition: 0.2s;
-      &.active { background: var(--ion-color-primary); color: white; }
+    .mic-icon { font-size: 20px; color: #888; }
+    .mic-active { color: #007bff !important; animation: pulse 1s infinite; }
+    .action-icon { font-size: 20px; color: var(--ion-color-primary); }
+    .clear-icon { font-size: 18px; color: #eb445a; }
+
+    .main-action-btn {
+      width: 100%; background: var(--ion-color-primary); color: white;
+      border: none; border-radius: 20px; padding: 14px;
+      font-weight: 700; text-transform: uppercase; font-size: 11px;
     }
 
     .button-grid { display: flex; justify-content: space-around; }
-    .footer-buttons { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .header-title { text-align: center; font-weight: 800; font-size: 12px; color: #555; margin-bottom: 12px; text-transform: uppercase; }
+    .transport-selection { display: flex; justify-content: center; gap: 10px; margin: 12px 0; }
+    .mode-chip { 
+      width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      background: #f0f0f0; &.active { background: var(--ion-color-primary); color: white; }
+    }
+    .footer-buttons { display: flex; gap: 10px; align-items: center; }
+    .primary-icon { color: var(--ion-color-primary) !important; }
+    .red-pill ion-icon, .red-pill p { color: #eb445a !important; }
+    .results-container { max-height: 180px; overflow-y: auto; margin-top: 8px; }
+
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
   `]
 })
-
 export class SearchGuidePopoverComponent implements OnInit {
   public reference = inject(ReferenceService);
   public geography = inject(GeographyService);
-  public mapService = inject(MapService);
   private location = inject(LocationManagerService); 
   public fs = inject(FunctionsService);
   private languageService = inject(LanguageService);
   private styler = inject(StylerService);
   private platform = inject(Platform);
   private translate = inject(TranslateService);
+  private cdr = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
+
   private speechPluginListener: any = null;
   activeRouteField: 'origin' | 'destination' = 'origin';
   originCoords: [number, number] | null = null;
   destinationCoords: [number, number] | null = null;
+  isListening: boolean = false;
+  isProcessingSpeech: boolean = false;
+  activeTarget: 'query' | 'query2' | 'query3' | null = null;
 
   query: string = '';
   query2: string = '';
@@ -297,139 +225,343 @@ export class SearchGuidePopoverComponent implements OnInit {
   results: LocationResult[] = [];
   loading: boolean = false;
   hasSearched: boolean = false;
+  selectedTransport: string = 'foot-walking';
+  
   transportMeans = [
     { id: 'foot-walking', icon: 'walk-outline', label: 'SEARCH.WALK' },
     { id: 'foot-hiking', icon: 'trending-up-outline', label: 'SEARCH.HIKE' },
     { id: 'cycling-regular', icon: 'bicycle-outline', label: 'SEARCH.CYCLE' },
     { id: 'driving-car', icon: 'car-outline', label: 'SEARCH.DRIVE' },
   ];
-  // Update default to match the first ID
-  public selectedTransport: string = 'foot-walking';
 
   ngOnInit() {
     this.platform.backButton.subscribeWithPriority(10, () => {
-      if (this.reference.isSearchPopoverOpen) this.reference.isSearchPopoverOpen = false;
-      if (this.reference.isGuidePopoverOpen) this.reference.isGuidePopoverOpen = false;
-      if (this.reference.isSearchGuidePopoverOpen) this.reference.isSearchGuidePopoverOpen = false;
+      this.reference.isSearchPopoverOpen = false;
+      this.reference.isGuidePopoverOpen = false;
+      this.reference.isSearchGuidePopoverOpen = false;
+    });
+  }
+
+  async startDictation(target: 'query' | 'query2' | 'query3') {
+    if (this.isListening) await this.stopListening();
+
+    const available = await SpeechRecognition.available();
+    if (!available.available) {
+      this.fs.displayToast("Speech recognition not available");
+      return;
+    }
+    
+    await SpeechRecognition.requestPermissions();
+    this.activeTarget = target;
+    this.isListening = true;
+    this.cdr.detectChanges();
+
+    // Escuchamos resultados parciales (para feedback visual)
+    this.speechPluginListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
+      if (data.matches && data.matches.length > 0) {
+        this.zone.run(() => {
+          this.assignTextToTarget(data.matches[0]);
+        });
+      }
+    });
+
+    try {
+      const lang = this.languageService.getCurrentLangValue() || 'es-ES';
+      await SpeechRecognition.start({ 
+        language: lang, 
+        partialResults: true, 
+        popup: false 
+      });
+
+      // Auto-stop por seguridad
+      setTimeout(() => { 
+        if (this.isListening && this.activeTarget === target) this.stopListening(); 
+      }, 6000);
+
+    } catch (e) { 
+      this.stopListening(); 
+    }
+  }
+
+  private assignTextToTarget(text: string) {
+    if (this.activeTarget === 'query') this.query = text;
+    else if (this.activeTarget === 'query2') this.query2 = text;
+    else if (this.activeTarget === 'query3') this.query3 = text;
+    this.cdr.detectChanges();
+  }
+
+  private async stopListening() {
+    // Guardamos una referencia temporal antes de limpiar
+    const targetAtStop = this.activeTarget;
+    
+    this.isListening = false;
+    
+    if (this.speechPluginListener) {
+      await this.speechPluginListener.remove();
+      this.speechPluginListener = null;
+    }
+
+    try {
+      await SpeechRecognition.stop();
+    } catch (e) {}
+
+    this.cdr.detectChanges();
+
+    // Ejecutamos la búsqueda automática si había un target
+    if (targetAtStop) {
+      setTimeout(() => {
+        this.executeAutoSearch(targetAtStop);
+        // Limpiamos el target después de iniciar la búsqueda
+        this.activeTarget = null;
+      }, 400);
+    }
+  }
+
+  private async executeAutoSearch(target: string) {
+    this.zone.run(async () => {
+      if (target === 'query2') { this.query = this.query2; this.activeRouteField = 'origin'; }
+      else if (target === 'query3') { this.query = this.query3; this.activeRouteField = 'destination'; }
+      
+      if (this.query?.trim().length > 1) {
+        await this.openList();
+      }
     });
   }
 
   async openList() {
     if (!this.query.trim()) return;
-    
-    // Smooth UI: Hide keyboard and show loading
     if (this.platform.is('capacitor')) await Keyboard.hide();
     
     this.loading = true;
-    this.hasSearched = false; 
-
+    this.results = [];
     try {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&polygon_geojson=1&addressdetails=1&limit=5`;
       const response = await CapacitorHttp.get({
         url,
         headers: { 'Accept': 'application/json', 'User-Agent': 'MyMappingApp/1.0' }
       });
-      
-      let data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-      
-        this.results = Array.isArray(data) ? data.map((item: any) => {
+      const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      this.results = Array.isArray(data) ? data.map((item: any) => {
         const parts = item.display_name.split(',');
         return {
-            lat: Number(item.lat),
-            lon: Number(item.lon),
-            name: parts[0], 
-            short_name: parts.slice(0, 2).join(','), 
-            display_name: item.display_name,
-            type: item.type,                      // Add this
-            place_id: item.place_id,              // Add this
-            boundingbox: item.boundingbox ? item.boundingbox.map(Number) : [], // Required field
-            geojson: item.geojson
+          lat: Number(item.lat), lon: Number(item.lon),
+          name: parts[0], short_name: parts.slice(0, 2).join(','),
+          display_name: item.display_name, boundingbox: item.boundingbox.map(Number), geojson: item.geojson
         };
-        }) : [];
+      }) : [];
+    } catch (e) { this.results = []; }
+    finally { this.loading = false; this.cdr.detectChanges(); }
+  }
 
+  selectRoutePoint(result: LocationResult) {
+    if (this.activeRouteField === 'origin') {
+      this.query2 = result.short_name || result.name;
+      this.originCoords = [result.lon, result.lat];
+      this.activeRouteField = 'destination';
+    } else {
+      this.query3 = result.short_name || result.name;
+      this.destinationCoords = [result.lon, result.lat];
+    }
+    this.results = [];
+  }
+
+  async useCurrentLocation(type: 'origin' | 'destination') {
+    this.loading = true;
+    try {
+      const myPos = await this.location.getCurrentPosition();
+      if (myPos) {
+        if (type === 'origin') { this.query2 = this.translate.instant('SEARCH.MY_LOCATION'); this.originCoords = myPos; }
+        else { this.query3 = this.translate.instant('SEARCH.MY_LOCATION'); this.destinationCoords = myPos; }
+      }
+    } finally { this.loading = false; this.cdr.detectChanges(); }
+  }
+
+  onRouteButtonClick() {
+    if (this.originCoords && this.destinationCoords) this.requestRoute();
+    else { this.query = this.activeRouteField === 'origin' ? this.query2 : this.query3; this.openList(); }
+  }
+
+  clearRouteForm() {
+    this.query2 = ''; this.query3 = '';
+    this.originCoords = null; this.destinationCoords = null;
+    this.results = []; this.activeRouteField = 'origin';
+  }
+
+  clearSearchPlace() { this.geography.searchLayer?.getSource()?.clear(); this.reference.foundPlace = false; }
+  async clearSearchRoute() { 
+    this.reference.archivedTrack = undefined;
+    this.geography.archivedLayer?.getSource()?.clear();
+    this.reference.foundRoute = false;
+    await this.location.sendReferenceToPlugin();
+  }
+
+  async requestRoute() {
+    if (!this.originCoords || !this.destinationCoords) {
+      this.fs.displayToast(this.translate.instant('SEARCH.SELECT_BOTH'));
+      return;
+    }
+
+    this.loading = true;
+    
+    // 1. URL según el perfil de transporte seleccionado
+    const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransport}/geojson`;
+    
+    // 2. El cuerpo debe llevar las coordenadas como [lon, lat]
+    const body = {
+      coordinates: [this.originCoords, this.destinationCoords],
+      elevation: true, 
+      units: 'm'
+    };
+
+    try {
+      const resp = await CapacitorHttp.post({
+        url,
+        headers: {
+          'Accept': 'application/json, application/geo+json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Authorization': global.ors_key // Tu API Key desde el entorno
+        },
+        data: body
+      });
+
+      const responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+
+      if (resp.status === 200 && responseData?.features?.length > 0) {
+        // Éxito: Cerramos el popover y procesamos la ruta
+        this.reference.isGuidePopoverOpen = false;
+        this.handleRouteResponse(responseData);
+      } else {
+        const errorMsg = responseData?.error?.message || "No route found";
+        console.error("ORS Error:", errorMsg);
+        this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND'));
+      }
     } catch (error) {
-      this.results = [];
-    } finally { 
+      console.error("Routing error:", error);
+      this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'));
+    } finally {
       this.loading = false;
-      this.hasSearched = true; // Now we show the "No results" if list is empty
+      this.cdr.detectChanges();
     }
   }
 
-    async startDictation(target: 'query' | 'query2' | 'query3') {
-    const available = await SpeechRecognition.available();
-    if (!available.available) return;
-    
-    await SpeechRecognition.requestPermissions();
+async handleRouteResponse(geoJsonData: any) {
+  console.log ('el geojson', geoJsonData)
+  const source = this.geography.archivedLayer?.getSource();
+  if (!source) return;
 
-    // 1. Clean up existing listener if it exists
-    if (this.speechPluginListener) {
-        await this.speechPluginListener.remove();
-    }
+  source.clear();
 
-    let lang = this.languageService.getCurrentLangValue() || 'es-ES';
-    // Language mapping logic...
+  const format = new GeoJSON();
+  const features = format.readFeatures(geoJsonData); 
+  source.addFeatures(features);
 
-    // 2. Assign the new listener
-    this.speechPluginListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
-        if (data.matches && data.matches.length > 0) {
-        this[target] = data.matches[0];
+  const route = geoJsonData.features[0];
+  const stats = route.properties.summary;
+  const rawBbox = geoJsonData.bbox || route.bbox;
+
+  const cleanBbox = (rawBbox && rawBbox.length === 6) 
+    ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] 
+    : rawBbox;
+
+  this.reference.foundRoute = true;  
+
+  // --- CÁLCULOS ---
+  // 1. Distancia en km (de metros a km)
+  const distanceKm = stats.distance / 1000;
+
+  // 2. Tiempo (de segundos a minutos)
+  const durationInMs = Math.round(stats.duration * 1000);
+
+  // 3. Elevación (ORS la devuelve en properties si se solicita)
+  const ascent = route.properties.ascent || 0;
+  const descent = route.properties.descent || 0;
+
+  this.reference.archivedTrack = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: {
+        currentSpeed: 0,
+        currentAltitude: 0,
+        name: `${this.query2} ➔ ${this.query3}`,
+        place: this.query3,
+        date: new Date(),
+        description: `ORS Profile: ${this.selectedTransport}`,
+        
+        // RESULTADOS FORMATEADOS
+        totalDistance: distanceKm,
+        totalTime: durationInMs,
+        totalElevationGain: Math.round(ascent),
+        totalElevationLoss: Math.round(descent),
+        
+        inMotion: true,
+        totalNumber: route.geometry.coordinates.length,
+      },
+      bbox: cleanBbox,
+      geometry: {
+        type: 'LineString',
+        coordinates: route.geometry.coordinates.map((coord: any) => [coord[0], coord[1]]),
+        properties: {
+          data: route.geometry.coordinates.map((coord: any) => ({
+            distance: 0,
+            altitude: coord[2] || 0, // Altitud si el punto la tiene
+            time: 0,
+            speed: 0
+          }))
         }
-    });
-
-    await SpeechRecognition.start({ 
-        language: lang, 
-        partialResults: true, 
-        popup: false 
-    });
-
-    // 3. Optional: Stop listening automatically after a period of silence
-    // Most plugins have a max duration, but you can add a 'result' listener 
-    // to call SpeechRecognition.stop() and then cleanup.
-    }
+      }
+    }]
+  };
+  console.log('he preparado un reference Track', this.reference.archivedTrack)
+  if (this.reference.archivedTrack) {
+    await this.reference.displayArchivedTrack();
+    await this.geography.setMapView(this.reference.archivedTrack);
+  }
+}
 
   async handleLocationSelection(location: LocationResult) {
     if (!location?.boundingbox || !location?.geojson) return;
+    
+    // Cerramos el popover de búsqueda
     this.reference.isSearchPopoverOpen = false;
+    
     const source = this.geography.searchLayer?.getSource();
     if (!source) return;
 
     source.clear();
     const geojsonFormat = new GeoJSON();
+    
+    // Leemos las geometrías (polígonos, etc)
     const features = geojsonFormat.readFeatures(location.geojson);
     
+    // Si el resultado es un polígono, añadimos también un punto central para el Pin
     if (features.some(f => f.getGeometry()?.getType().includes('Polygon'))) {
       features.push(new Feature(new Point([location.lon, location.lat])));
     }
 
     source.addFeatures(features);
-    // Asumiendo que tienes un método applySearchStyle en tu componente o servicio
+    
+    // Aplicamos el estilo (usando tu styler service)
     this.geography.searchLayer?.setStyle(f => this.applySearchStyle(f));
+    
     this.reference.foundPlace = true;
 
-    // Fit view (Nominatim bbox: [latMin, latMax, lonMin, lonMax])
-    const extent = [location.boundingbox[2], location.boundingbox[0], location.boundingbox[3], location.boundingbox[1]];
-    this.geography.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
+    // Ajustamos la vista del mapa al bounding box del lugar
+    // Nominatim devuelve: [latMin, latMax, lonMin, lonMax]
+    const extent = [
+      location.boundingbox[2], // lonMin
+      location.boundingbox[0], // latMin
+      location.boundingbox[3], // lonMax
+      location.boundingbox[1]  // latMax
+    ];
+    
+    this.geography.map?.getView().fit(extent, { 
+      duration: 800, 
+      padding: [50, 50, 50, 50] 
+    });
   }
 
-  async guide() {
-    // Aquí deberías tener importado SearchModalComponent
-    // const modal = await this.modalController.create({ component: SearchModalComponent, ... });
-    this.fs.displayToast(this.translate.instant('SEARCH.START_GUIDE'));
-    // ... (Lógica de procesamiento de track que proporcionaste)
-  }
-
-  // Helper para altitudes (Simulación)
-  async getAltitudesFromMap(coords: any) {
-    return { altitudes: coords.map(() => 0), slopes: { gain: 0, loss: 0 } };
-  }
-
-  
-  private shortenName(fullName: string): string {
-    if (!fullName) return '(no name)';
-    const parts = fullName.split(',').map(p => p.trim());
-    return parts.slice(0, 2).join(', ');
-  }
-
+  // También asegúrate de tener este helper para el estilo
   private applySearchStyle(feature: FeatureLike): Style | Style[] {
     const type = feature.getGeometry()?.getType();
 
@@ -446,214 +578,4 @@ export class SearchGuidePopoverComponent implements OnInit {
 
     return this.styler.setStrokeStyle('black');
   }
-
-// Search for the active field
-async searchRouteLocations() {
-  this.query = this.activeRouteField === 'origin' ? this.query2 : this.query3;
-  if (!this.query || this.query === "My Location") return;
-  await this.openList();
-}
-
-// Handle clicking a result in the Route Popover
-selectRoutePoint(result: LocationResult) {
-  if (this.activeRouteField === 'origin') {
-    this.query2 = this.translate.instant('SEARCH.MY_LOCATION');
-    this.originCoords = [result.lon, result.lat];
-    this.activeRouteField = 'destination'; // Auto-focus next field
-  } else {
-    this.query3 = result.short_name || result.name;
-    this.destinationCoords = [result.lon, result.lat];
-  }
-  this.results = []; // Clear list after selection
-}
-
-async requestRoute() {
-  if (!this.originCoords || !this.destinationCoords) {
-    this.fs.displayToast(this.translate.instant('SEARCH.SELECT_BOTH'));
-    return;
-  }
-
-  this.loading = true;
-  
-  // 1. Ensure the profile matches ORS exactly
-  const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransport}/geojson`;
-  
-  // 2. Body must be exactly this structure
-  const body = {
-    coordinates: [this.originCoords, this.destinationCoords]
-  };
-
-  try {
-    const resp = await CapacitorHttp.post({
-      url,
-      headers: {
-        'Accept': 'application/json, application/geo+json',
-        'Content-Type': 'application/json; charset=utf-8',
-        // IMPORTANT: ORS usually expects just the key. 
-        // If you saved it as 'Bearer key', remove 'Bearer'
-        'Authorization': global.ors_key // Or your specific variable
-      },
-      data: body
-    });
-
-    // CapacitorHttp response handling
-    const responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
-
-    if (resp.status === 200 && responseData?.features?.length > 0) {
-      this.reference.isGuidePopoverOpen = false;
-      this.handleRouteResponse(responseData);
-    } else {
-      // Handle the 403 or 400 errors specifically
-      const errorMsg = responseData?.error?.message || "No route found";
-      this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND'));
-    }
-  } catch (error) {
-    console.error("Routing error:", error);
-    this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'));
-  } finally {
-    this.loading = false;
-  }
-}
-
-async handleRouteResponse(geoJsonData: any) {
-  const source = this.geography.archivedLayer?.getSource();
-  if (!source) return;
-
-  source.clear();
-
-  // 1. Simplification: No manual transformation needed!
-  // Since you called useGeographic(), OpenLayers expects EPSG:4326 by default.
-  const format = new GeoJSON();
-  const features = format.readFeatures(geoJsonData); 
-
-  source.addFeatures(features);
-
-  // 2. Map data to your reference object
-  const route = geoJsonData.features[0];
-  const stats = route.properties.summary;
-
-  // Get the bbox from root or the first feature
-  const rawBbox = geoJsonData.bbox || route.bbox;
-
-  // Standardize to 2D [minLon, minLat, maxLon, maxLat]
-  const cleanBbox = (rawBbox && rawBbox.length === 6) ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] : rawBbox;
-  this.reference.archivedTrack = {
-    type: 'FeatureCollection',
-    features: [{
-      type: 'Feature',
-      properties: {
-        currentSpeed: 0,
-        currentAltitude: 0,
-        name: `${this.query2} ➔ ${this.query3}`,
-        place: this.query3,
-        date: new Date(),
-        description: `ORS Profile: ${this.selectedTransport}`,
-        totalDistance: stats.distance,
-        totalTime: stats.duration,
-        inMotion: true,
-        totalElevationGain: route.properties.ascent || 0,
-        totalElevationLoss: route.properties.descent || 0,
-        totalNumber: route.geometry.coordinates.length,
-      },
-      bbox: cleanBbox,
-      geometry: {
-        type: 'LineString',
-        coordinates: route.geometry.coordinates, 
-        properties: {
-          data: route.geometry.coordinates.map((coord: any) => ({
-            distance: 0,
-            altitude: coord[2] || 0,
-            time: 0,
-            speed: 0
-          }))
-        }
-      }
-    }]
-  };
-  await this.reference.displayArchivedTrack();
-  this.reference.foundRoute = true;
-  await this.geography.setMapView(this.reference.archivedTrack);
-  await this.location.sendReferenceToPlugin();
-
-}
-
-onRouteButtonClick() {
-  // If both coordinates are set, we don't need to search locations anymore; we fetch the route.
-  if (this.originCoords && this.destinationCoords) {
-    this.requestRoute();
-  } else {
-    // If one is missing, we perform a text search for the active field (Origin or Destination)
-    this.searchRouteLocations();
-  }
-}
-
-resetRouteState() {
-  // Reset the UI state
-  this.reference.isGuidePopoverOpen = false;
-  
-  // Clear the coordinates so the button reverts to "FIND PLACES"
-  this.originCoords = null;
-  this.destinationCoords = null;
-  
-  // Clear the text inputs
-  this.query2 = '';
-  this.query3 = '';
-  
-  // Reset search results and focus
-  this.results = [];
-  this.activeRouteField = 'origin';
-  this.hasSearched = false;
-}
-
-async useCurrentLocation(type: 'origin' | 'destination') {
-  // Ponemos el campo como activo para que el spinner aparezca en el lugar correcto
-  this.activeRouteField = type;
-  this.loading = true;
-
-  try {
-    // Usamos el método tal cual lo tienes en tu servicio
-    const myPos = await this.location.getCurrentPosition();
-
-    if (myPos) {
-      if (type === 'origin') {
-        this.query2 = this.translate.instant('SEARCH.MY_LOCATION');
-        this.originCoords = myPos; // myPos ya es [number, number]
-      } else {
-        this.query3 = this.translate.instant('SEARCH.MY_LOCATION');
-        this.destinationCoords = myPos;
-      }
-      this.fs.displayToast(this.translate.instant('SEARCH.GOT_LOCATION'));
-    } else {
-      this.fs.displayToast(this.translate.instant('SEARCH.LOCATION_ERROR'));
-    }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    this.loading = false;
-  }
-}
-
-// Método para borrar todo (el botón de la papelera)
-clearRouteForm() {
-  this.query2 = '';
-  this.query3 = '';
-  this.originCoords = null;
-  this.destinationCoords = null;
-  this.results = [];
-  this.activeRouteField = 'origin';
-}
-
-clearSearchPlace() {
-      // 10. REMOVE SEARCH LAYER //////////////////////
-    this.geography.searchLayer?.getSource()?.clear();
-    this.reference.foundPlace = false;
-}
-
-async clearSearchRoute() {
-    this.reference.archivedTrack = undefined;
-    this.geography.archivedLayer?.getSource()?.clear();
-    this.reference.foundRoute = false;
-    await this.location.sendReferenceToPlugin()
-}
-
 }

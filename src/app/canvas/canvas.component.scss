@@ -5,23 +5,19 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 10px 0 100px 0; /* Espacio extra para el FAB inferior */
+  /* El padding-bottom de 100px es perfecto para que el FAB no tape la info */
+  padding: 10px 0 100px 0; 
 }
 
-/* --- TARJETAS GLASS (DATA & CANVAS) --- */
+/* --- TARJETAS DE DATOS (GLASS) --- */
+/* Si tus tablas van dentro de un div con clase .card o .elementCanvas, 
+   ya heredan el desenfoque y el borde blanco del global.scss.
+   Solo ajustamos el espaciado interno aquí.
+*/
 .card, .elementCanvas {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 24px;
-  padding: 20px;
   margin: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
-.card {
-  min-height: auto; /* Dejamos que el contenido mande */
+  padding: 20px;
+  // Ya no necesitas repetir backdrop-filter aquí
 }
 
 /* --- TIPOGRAFÍA Y TABLAS --- */
@@ -29,17 +25,17 @@
   font-weight: 800;
   text-transform: uppercase;
   color: var(--ion-color-primary);
-  font-size: 0.9rem;
-  letter-spacing: 1px;
-  padding-bottom: 12px;
+  font-size: 0.8rem; /* Un poco más pequeño para que sea más elegante */
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
   text-align: left;
 }
 
 .subtitle {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #666;
-  padding-bottom: 15px;
+  color: #777;
+  margin-bottom: 15px;
   display: block;
 }
 
@@ -48,10 +44,10 @@ table {
   border-collapse: collapse;
   
   td {
-    padding: 8px 0;
-    font-size: 0.95rem;
+    padding: 10px 0; /* Un poco más de aire para mejorar la lectura */
+    font-size: 0.9rem;
     color: #444;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 
     &:last-child {
       text-align: right;
@@ -65,72 +61,17 @@ table {
   }
 }
 
-/* --- ESTILO DE GRÁFICOS (CANVAS) --- */
-.elementCanvas {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  
-  .title {
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 15px 0;
-    color: #777;
-    width: 100%;
-    text-align: left;
-  }
-  
-  canvas {
-    width: 100% !important;
-    max-width: 300px; /* Ajusta según tu diseño */
-    height: auto !important;
-    border-radius: 12px;
-  }
-}
-
 /* --- ESTILO ESPECIAL PARA PARCIALES --- */
 .partials {
   tr td:nth-child(3) {
     color: var(--ion-color-secondary);
+    font-weight: 600;
   }
 }
 
-/* --- BOTONES INFERIORES (FAB) --- */
-.record-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 18px;
-  padding: 10px;
-  min-width: 80px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border: 1px solid rgba(255,255,255,0.5);
-
-  ion-icon {
-    font-size: 24px;
-    color: var(--ion-color-primary);
-    margin-bottom: 4px;
-  }
-
-  span {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #333;
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
+/* --- SWIPER INDICATORS --- */
 swiper-container {
   --swiper-pagination-color: var(--ion-color-primary);
   --swiper-pagination-bullet-inactive-color: #ccc;
+  --swiper-pagination-bullet-size: 6px;
 }

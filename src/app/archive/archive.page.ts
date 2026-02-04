@@ -415,58 +415,64 @@ export class ArchivePage {
     }
   }
 
+  // 2. FUNCIÓN PRINCIPAL DE EXPORTACIÓN (REWRITTEN)
+  async exportFullReport(item: any) {
+    try {
+      // A. Recuperar datos
+      const storageKey = item.date.toISOString();
+      const trackData = await this.fs.storeGet(storageKey);
+      
+      if (!trackData) {
+        this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
+        return;
+      }
 
+      // B. Crear PDF
+      const doc = new jsPDF();
+      const margin = 20;
+      
+      // Title & Metadata
+      doc.setFontSize(18);
+      doc.text(this.translate.instant('REPORT.TITLE'), margin, 20);
+      
+      doc.setFontSize(12);
+      doc.text(`${this.translate.instant('REPORT.ROUTE_NAME')}: ${item.name}`, margin, 35);
+      doc.text(`${this.translate.instant('REPORT.DATE')}: ${new Date(item.date).toLocaleDateString()}`, margin, 45);
+      doc.text(`${this.translate.instant('REPORT.DISTANCE')}: ${item.stats?.distance || '--'} km`, margin, 55);
 
+      // C. Intentar añadir la imagen del mapa (Opcional)
+      try {
+        const mapImg = await this.generateMapImage(trackData);
+        if (mapImg && mapImg !== '') {
+          // addImage(imageData, format, x, y, width, height)
+          doc.addImage(mapImg, 'JPEG', margin, 65, 170, 120);
+        }
+      } catch (imgErr) {
+        console.warn("Could not include map image in PDF", imgErr);
+      }
+      
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const safeName = `Report_${item.name.replace(/\s+/g, '_')}_${Date.now()}`;
 
+      // D. Escribir archivo
+      const savedPdf = await Filesystem.writeFile({
+        path: `${safeName}.pdf`,
+        data: pdfBase64,
+        directory: Directory.ExternalCache
+      });
 
+      // E. Compartir
+      await this.socialSharing.share(
+        this.translate.instant('REPORT.SHARE_BODY'), // Message
+        this.translate.instant('REPORT.SHARE_SUBJECT'), // Subject
+        [savedPdf.uri] // Files
+      );
 
- // 2. FUNCIÓN PRINCIPAL DE EXPORTACIÓN
-async exportFullReport(item: any) {
-  console.log("1. Iniciando exportación para:", item.name);
-  try {
-    // A. Recuperar datos (Punto crítico)
-    const storageKey = item.date.toISOString();
-    const trackData = await this.fs.storeGet(storageKey);
-    
-    if (!trackData) {
-      console.error("No hay datos en el storage para la clave:", storageKey);
-      this.fs.displayToast("Error: No hay datos de GPS");
-      return;
+    } catch (err) {
+      console.error("ERROR CRÍTICO:", err);
+      this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
     }
-    console.log("2. Datos recuperados con éxito");
-
-    // B. Crear PDF básico (Sin imagen para descartar errores)
-    const doc = new jsPDF();
-    doc.text(`Ruta: ${item.name}`, 20, 20);
-    doc.text(`Distancia: ${item.stats?.distance || '--'} km`, 20, 30);
-    
-    const pdfBase64 = doc.output('datauristring').split(',')[1];
-    const safeName = "test_paso_" + Date.now();
-
-    // C. Escribir archivo (Punto crítico)
-    console.log("3. Escribiendo archivo PDF...");
-    const savedPdf = await Filesystem.writeFile({
-      path: `${safeName}.pdf`,
-      data: pdfBase64,
-      directory: Directory.ExternalCache
-    });
-    console.log("4. Archivo escrito en:", savedPdf.uri);
-
-    // D. Compartir (Sin GPX de momento, solo el PDF)
-    console.log("5. Intentando abrir Social Sharing...");
-    await this.socialSharing.share(
-      "Informe de mi ruta",
-      "App Paso",
-      [savedPdf.uri]
-    );
-    console.log("6. Selector de compartir abierto");
-
-  } catch (err) {
-    // Esto nos dirá exactamente qué línea falla
-    console.error("ERROR CRÍTICO:", err);
-    this.fs.displayToast("Error interno: " + err);
   }
-}
 
   // 3. GENERADOR DE IMAGEN (OPENLAYERS)
 private async generateMapImage(trackData: any): Promise<string> {

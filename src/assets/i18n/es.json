@@ -43,28 +43,29 @@
     "WALK": "Walk",
     "HIKE": "Hike",
     "CYCLE": "Cycle",
-    "DRIVE": "Drive"
+    "DRIVE": "Drive",
+    "LISTENING": "Listening..."
   },
 
-  "SETTINGS": {
-    "CURRENT_TRACK": "Trayecto actual",
-    "REFERENCE_TRACK": "Trayecto de referencia",
+"SETTINGS": {
+    "CURRENT_TRACK": "Color trayecto actual",
+    "REFERENCE_TRACK": "Color trayecto referencia",
     "BASE_MAP": "Mapa base",
+    "GENERAL_GROUP": "General",
+    "SYSTEM_GROUP": "Sistema",
     "LANGUAGE": "Idioma",
-    "CHANGE_COLOR": "Cambiar color",
-    "UPLOAD_MAPS": "Cargar mapas",
-    "REMOVE_MAPS": "Eliminar mapas",
-    "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
     "ALERT": "Alerta",
-    "COLOR_LIST": ["carmesí", "rojo", "naranja", "dorado", "amarillo", "magenta", "morado", "lima", "verde", "cian", "azul"],
-    "CURRENT_HEADER": "Trayecto actual",
-    "ARCHIVED_HEADER": "Trayecto de referencia",
-    "MESSAGE": "Elige el color del trayecto",
-    "TOAST_REMOVEMAP": "El mapa se ha eliminado",
-    "TOAST_UPLOADMAP": "El mapa se ha cargado con éxito",
-    "TOAST_FAILED_REMOVEMAP": "No se ha podido eliminar el mapa",
-    "CANCEL": "Cancelar",
-    "GEOCODING": "Servicio de geocodificación"
+    "GEOCODING": "Servicio de geocodificación",
+    "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
+    "UPLOAD_MAPS": "Descargar mapas",
+    "UPLOADMAP": "Mapa descargado con éxito",
+    "REMOVEMAP": "El mapa ha sido eliminado",
+    "FAILED_REMOVEMAP": "Error al eliminar el mapa",
+    "FAILED_UPLOADMAP": "Error al descargar el mapa",
+    "REMOVE_MAP": "Eliminar mapas",
+    "MAP_UPDATED": "Proveedor de mapa actualizado",
+    "OFFLINE_MAPS": "Mapas Offline",
+    "DOWNLOADED": "Descargado"
   },
 
   "ARCHIVE": {
