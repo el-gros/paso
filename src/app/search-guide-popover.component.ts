@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, NgZone, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, Platform } from '@ionic/angular';
+import { IonicModule, Platform, PopoverController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CapacitorHttp } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
@@ -20,6 +20,7 @@ import { LocationManagerService } from './services/location-manager.service';
 import { LanguageService } from './services/language.service';
 import { StylerService } from './services/styler.service';
 import { global } from './../environments/environment';
+import { WikiService } from './services/wiki.service';
 
 interface LocationResult {
   lat: number;
@@ -148,12 +149,9 @@ interface LocationResult {
       </div>
     </ng-template>
   </ion-popover>
+
   `,
   styles: [`
-    .popover-island {
-      padding: 16px 10px;
-    }
-
     .nav-item-btn {
       background: transparent !important; border: none;
       display: flex !important; flex-direction: column !important;
@@ -197,6 +195,14 @@ interface LocationResult {
     .results-container { max-height: 180px; overflow-y: auto; margin-top: 8px; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .popover-island {
+      padding: 16px 10px; 
+      max-height: 450px;
+      display: flex;
+      flex-direction: column;
+    }
+
   `]
 })
 export class SearchGuidePopoverComponent implements OnInit {
@@ -210,7 +216,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   private translate = inject(TranslateService);
   private cdr = inject(ChangeDetectorRef);
   private zone = inject(NgZone);
-
+  private wikiService = inject(WikiService);
   private speechPluginListener: any = null;
   activeRouteField: 'origin' | 'destination' = 'origin';
   originCoords: [number, number] | null = null;
@@ -218,7 +224,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   isListening: boolean = false;
   isProcessingSpeech: boolean = false;
   activeTarget: 'query' | 'query2' | 'query3' | null = null;
-
+  
   query: string = '';
   query2: string = '';
   query3: string = '';
@@ -233,6 +239,14 @@ export class SearchGuidePopoverComponent implements OnInit {
     { id: 'cycling-regular', icon: 'bicycle-outline', label: 'SEARCH.CYCLE' },
     { id: 'driving-car', icon: 'car-outline', label: 'SEARCH.DRIVE' },
   ];
+
+  constructor(private popoverController: PopoverController) {}
+  @Output() onWikiResult = new EventEmitter<any>();
+
+  // 2. Añade la función close que pide el HTML
+  close() {
+    this.popoverController.dismiss();
+  }
 
   ngOnInit() {
     this.platform.backButton.subscribeWithPriority(10, () => {
@@ -445,7 +459,6 @@ export class SearchGuidePopoverComponent implements OnInit {
   }
 
 async handleRouteResponse(geoJsonData: any) {
-  console.log ('el geojson', geoJsonData)
   const source = this.geography.archivedLayer?.getSource();
   if (!source) return;
 
@@ -512,7 +525,7 @@ async handleRouteResponse(geoJsonData: any) {
       }
     }]
   };
-  console.log('he preparado un reference Track', this.reference.archivedTrack)
+
   if (this.reference.archivedTrack) {
     await this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack);
@@ -559,6 +572,8 @@ async handleRouteResponse(geoJsonData: any) {
       duration: 800, 
       padding: [50, 50, 50, 50] 
     });
+
+    await this.searchWiki(location)
   }
 
   // También asegúrate de tener este helper para el estilo
@@ -578,4 +593,20 @@ async handleRouteResponse(geoJsonData: any) {
 
     return this.styler.setStrokeStyle('black');
   }
+
+  async searchWiki(location: LocationResult) {
+    this.loading = true;
+    const wikiData = await this.wikiService.getWikiData(location);
+    
+    if (wikiData) {
+      // Emitimos el resultado para que el componente WikiCard lo reciba
+      this.onWikiResult.emit(wikiData);
+      // Cerramos el buscador para que no estorbe
+      this.reference.isSearchPopoverOpen = false;
+    }
+    
+    this.loading = false;
+    this.cdr.detectChanges();
+  }
+
 }

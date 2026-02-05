@@ -29,6 +29,7 @@ import { SearchGuidePopoverComponent } from '../search-guide-popover.component';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, take, takeUntil } from 'rxjs';
+import { WikiCardComponent } from '../wiki-card.component'
 
 useGeographic();
 register();
@@ -40,7 +41,7 @@ register();
     styleUrls: ['tab1.page.scss'],
     imports: [
       IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
-      SearchGuidePopoverComponent
+      SearchGuidePopoverComponent, WikiCardComponent
     ],
     providers: [DecimalPipe, DatePipe],
 })
@@ -50,6 +51,7 @@ export class Tab1Page {
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
+  public wikiData: any = null;
 
   constructor(
     public fs: FunctionsService,

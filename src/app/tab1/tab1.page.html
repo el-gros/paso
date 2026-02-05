@@ -17,16 +17,22 @@
 </ion-fab>
 
 <!-- Regular content -->
-<ion-content>
-  <!-- popovers --> 
+<ion-content [fullscreen]="true">
   <app-record-popover></app-record-popover>
-  <app-search-guide-popover></app-search-guide-popover>
+  
+  <app-search-guide-popover (onWikiResult)="wikiData = $event"></app-search-guide-popover>
   
   <div id="map-wrapper">
     <div id="map"></div>
   </div>
   <div class="safe-area"></div>
 </ion-content>
+
+<app-wiki-card 
+  *ngIf="wikiData"
+  [data]="wikiData" 
+  (onClose)="wikiData = null">
+</app-wiki-card>
 
 
 
