@@ -43,12 +43,21 @@ export class LocationManagerService {
   // 2) RAW + SAMPLING → (merged from the 3 services)
   // ----------------------------------------------------------------------------
   processRawLocation(raw: Location) {
+    // 1. Filtros de calidad
     if (raw.accuracy > this.threshold ||
-      !raw.altitude || raw.altitude == 0 ||
-      raw.altitudeAccuracy > this.altitudeThreshold ||
-      !raw.time) return false
+        !raw.altitude || raw.altitude == 0 ||
+        raw.altitudeAccuracy > this.altitudeThreshold ||
+        !raw.time) return false;
+
+    // 2. Notificar a la App (Mapa, etc)
     this.latestLocationSubject.next(raw);
     console.log('[LocationManager] new accepted location:', raw);
+
+    // 3. Envío asíncrono a Supabase (sin await para no frenar el proceso del GPS)
+/*    if (this.isSharing) {
+      this.shareLocationIfActive(raw).catch(err => console.error("Async share fail", err));
+    } */
+
     return true;
   }
 
@@ -129,7 +138,6 @@ export class LocationManagerService {
     }
   }
 
- 
 }
 
     

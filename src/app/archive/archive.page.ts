@@ -91,8 +91,7 @@ export class ArchivePage {
       }
     }
     else {
-      this.reference.archivedTrack = undefined;
-      this.geography.archivedLayer?.getSource()?.clear();
+      this.reference.clearArchivedTrack();
     }
     await this.location.sendReferenceToPlugin()
     this.fs.gotoPage('tab1');
@@ -344,12 +343,7 @@ export class ArchivePage {
   // 12. HEIDE SPECIFIC TRACK //////////////////
   async hideSpecificTrack(slidingItem: any) {
     if (slidingItem) slidingItem.close();
-    // Change this line from null to undefined
-    this.reference.archivedTrack = undefined; 
-    const source = this.geography.archivedLayer?.getSource();
-    if (source) {
-      source.clear();
-    }
+    this.reference.clearArchivedTrack();
     await this.location.sendReferenceToPlugin()
     this.fs.gotoPage('tab1');    
   }
@@ -392,26 +386,36 @@ export class ArchivePage {
   async displayAllTracks(show: boolean) {
     try {
       if (show) {
-        // Hide reference track (if it exists)
+        // 1. Limpieza de seguridad: Si hay un track individual abierto, se cierra
         if (this.reference.archivedTrack) {
-          this.reference.archivedTrack = undefined;
-          await this.location.sendReferenceToPlugin()
-          this.geography.archivedLayer?.getSource()?.clear();
+          this.reference.clearArchivedTrack();
+          // Avisamos al mapa/plugin nativo que la referencia individual ha muerto
+          await this.location.sendReferenceToPlugin();
         }
-        this.mapService.displayAllTracks(); 
-        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'));
+
+        // 2. Activamos el estado global
         this.mapService.visibleAll = true;
+
+        // 3. Navegamos a la pestaña del mapa
+        await this.fs.gotoPage('tab1');
+
+        // 4. Ejecutamos la carga con un pequeño delay para asegurar que el mapa de Tab1 despertó
+        setTimeout(async () => {
+          await this.mapService.displayAllTracks();
+          this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'));
+        }, 200);
+
       } else {
-        // Hide everything
-        this.geography.archivedLayer?.getSource()?.clear();      
-        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'));
+        // Lógica para ocultar
         this.mapService.visibleAll = false;
+        const source = this.geography.archivedLayer?.getSource();
+        if (source) source.clear();
+        
+        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'));
+        await this.fs.gotoPage('tab1');
       }
-      this.fs.gotoPage('tab1');
-    }
-    catch {
-      console.error("Failed to update track display:", Error);
-      // Optionally show an error toast to the user
+    } catch (error) {
+      console.error("Error en el flujo de visualización de tracks:", error);
     }
   }
 

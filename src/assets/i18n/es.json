@@ -1,61 +1,60 @@
 {
-
   "MAP": {
-    "TOIMAGE_FAILED": "Could not generate the image",
-    "DATA_BUTTON": "Data",
-    "ARCHIVE_BUTTON": "Archive",
-    "SETTINGS_BUTTON": "Settings",
+    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
+    "DATA_BUTTON": "Datos",
+    "ARCHIVE_BUTTON": "Archivo",
+    "SETTINGS_BUTTON": "Config.",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Waypoint updated",
-    "CURRENT_TRACK_DELETED": "Current track deleted",
-    "TRACK_FINISHED": "Track finished",
-    "WPT_ADDED": "Waypoint added",
-    "SAVED": "File saved successfully",
-    "NO_TRACK_FOUND": "No track found in file",
-    "IMPORTED_TRACK": "Imported track",
-    "IMPORT_SUCCESS": "Track imported successfully",
-    "ERROR_UNSUPPORTED": "Unsupported file type",
-    "ERROR_IMPORT": "Error importing file",
-    "NO_FILE_SELECTED": "No file selected",
-    "CONFIRM_SHARING": "Are you sure you want to share your position with someone else?",
-    "YES": "Yes",
-    "MAP_BUTTON": "Map",
-    "UNSUPPORTED_TYPE": "Unsupported file format",
-    "TRACK_EMPTY": "Track has no data"
+    "WAYPOINT_UPDATED": "Punto de paso actualizado",
+    "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
+    "TRACK_FINISHED": "El trayecto actual ha finalizado",
+    "WPT_ADDED": "Se ha añadido el punto de paso",
+    "SAVED": "El archivo se ha guardado correctamente",
+    "NO_TRACK_FOUND": "No se ha encontrado ningún trayecto en el archivo",
+    "IMPORTED_TRACK": "Trayecto importado",
+    "IMPORT_SUCCESS": "Trayecto importado correctamente",
+    "ERROR_UNSUPPORTED": "Tipo de archivo no soportado",
+    "ERROR_IMPORT": "Error al importar el archivo",
+    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
+    "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
+    "YES": "Sí",
+    "MAP_BUTTON": "Mapa",
+    "UNSUPPORTED_TYPE": "Formato de archivo no admitido",
+    "TRACK_EMPTY": "Trayecto sin datos"
   },
-
-   "SEARCH": {
-    "BUTTON": "Search",
-    "LOCATION": "Place",
-    "ROUTE": "Route",
-    "SEARCH": "Search...",
-    "FROM": "From",
-    "TO": "To",
-    "FIND_PLACES": "Find places",
-    "GET_ROUTE": "Get route",
-    "START_GUIDE": "Starting guide...",
-    "MY_LOCATION": "My location",
-    "SELECT_BOTH": "Please select both origin and destination",
-    "NO_ROUTE_FOUND": "No route found",
-    "ROUTING_ERROR": "Routing service error",
-    "GOT_LOCATION": "Location acquired",
-    "LOCATION_ERROR": "Could not get your location",
-    "WALK": "Walk",
-    "HIKE": "Hike",
-    "CYCLE": "Cycle",
-    "DRIVE": "Drive",
-    "LISTENING": "Listening..."
+  "SEARCH": {
+    "BUTTON": "Buscar",
+    "LOCATION": "Lugar",
+    "ROUTE": "Ruta",
+    "SEARCH": "Buscar...",
+    "FROM": "Origen",
+    "TO": "Destino",
+    "FIND_PLACES": "Buscar lugares",
+    "GET_ROUTE": "Obtener ruta",
+    "START_GUIDE": "Iniciando guía...",
+    "MY_LOCATION": "Mi ubicación",
+    "SELECT_BOTH": "Por favor, selecciona origen y destino",
+    "NO_ROUTE_FOUND": "No se encontró ninguna ruta",
+    "ROUTING_ERROR": "Error en el servicio de rutas",
+    "GOT_LOCATION": "Ubicación obtenida",
+    "LOCATION_ERROR": "No se pudo obtener tu ubicación",
+    "WALK": "Caminar",
+    "HIKE": "Senderismo",
+    "CYCLE": "Ciclismo",
+    "DRIVE": "Coche",
+    "CLEAN": "Limpiar",
+    "DESCRIPTION": "Perfil de ruta",
+    "LISTENING": "Escuchando..."
   },
-
-"SETTINGS": {
-    "CURRENT_TRACK": "Color trayecto actual",
-    "REFERENCE_TRACK": "Color trayecto referencia",
-    "BASE_MAP": "Mapa base",
+  "SETTINGS": {
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
+    "BASE_MAP": "Mapa base",
     "LANGUAGE": "Idioma",
     "ALERT": "Alerta",
     "GEOCODING": "Servicio de geocodificación",
+    "CURRENT_TRACK": "Color trayecto actual",
+    "REFERENCE_TRACK": "Color trayecto referencia",
     "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
     "UPLOAD_MAPS": "Descargar mapas",
     "UPLOADMAP": "Mapa descargado con éxito",
@@ -67,7 +66,6 @@
     "OFFLINE_MAPS": "Mapas Offline",
     "DOWNLOADED": "Descargado"
   },
-
   "ARCHIVE": {
     "TRACKS": "Trayectos",
     "SHOW": "Mostrar",
@@ -78,20 +76,19 @@
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Se muestran todos los trayectos",
     "ALL_HIDDEN": "Se han escondido todos los trayectos",
-
+    "VISIBLE_LABEL": "Visible",
     "CANCEL": "Cancelar",
     "HEADER": "Confirma el borrado",
     "MESSAGE": "Se borrarán definitivamente los trayectos marcados",
     "TITLE": "Compartir un trayecto",
     "TEXT": "Este es el trayecto solicitado",
     "DIALOG_TITLE": "Compartir sólo por Gmail",
-    "TOAST1": "El trayecto se ha compartido correctamente!",
+    "TOAST1": "¡El trayecto se ha compartido correctamente!",
     "TOAST2": "Ha fallado la exportación",
     "TOAST3": "Los trayectos seleccionados han sido eliminados",
     "TOAST4": "Error al cargar la colección",
     "TOAST5": "Error al cargar el trayecto"
   },
-
   "CANVAS": {
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
     "CURTITLE": "TRAYECTO ACTUAL",
@@ -110,83 +107,91 @@
     "FROM_START": "Distancia desde el inicio",
     "TO_END": "Distancia hasta el final"
   },
-
-  "EDIT_MODAL": {
-    "HEADER": "Editar datos del trayecto",
+  "EDIT": {
     "NAME": "Nombre",
-    "PLACE": "Lugar",
     "DESCRIPTION": "Descripción",
     "CANCEL": "Cancelar"
   },
-
   "WPT": {
-    "HEADER": ["Editeu el punt de ruta", "Editar el punto de ruta", "Edit Waypoint"],
-    "NAME": ["Nom", "Nombre", "Name"],
-    "COMMENT": ["Comentari", "Comentario", "Comment"],
-    "ALTITUDE": ["Altitud", "Altitud", "Altitude"]
+    "HEADER": "Editar el punto de ruta",
+    "NAME": "Nombre",
+    "COMMENT": "Comentario",
+    "ALTITUDE": "Altitud"
   },
-
   "RECORD": {
+    "BUTTON": "Grabar",
     "START_TRACKING": "Iniciar",
-    "STOP_TRACKING": "Parar",
+    "STOP_TRACKING": "Detener",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Guardar",
     "REMOVE_TRACK": "Eliminar",
-    "CONFIRM_STOP": "Confirma la finalización?",
-    "CONFIRM_DELETION": "Confirma la eliminación?",
+    "CONFIRM_STOP": "¿Confirma la finalización?",
+    "CONFIRM_DELETION": "¿Confirma la eliminación?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "BUTTON": "Grabar",
-    "SHARE_YES": "Abrir",
-    "SHARE_NO": "Cerrar",
-    "SHARE_TEXT": "Seguimiento a tiempo real",
-    "SHARE_TRACK": "Comp."
+    "SHARE_TEXT": "Seguimiento en tiempo real"
   },
-
+  "ERRORS": {
+    "ELEVATION_FETCH": "Error en los datos de altitud del servidor.",
+    "ELEVATION_GENERIC": "No se ha podido obtener la elevación."
+  },
   "COLORS": {
-  "crimson": "carmesí",
-  "red": "rojo",
-  "orange": "naranja",
-  "gold": "dorado",
-  "yellow": "amarillo",
-  "magenta": "magenta",
-  "purple": "morado",
-  "lime": "lima",
-  "green": "verde",
-  "cyan": "cian",
-  "blue": "azul"
-},
-
-"BATTERY": {
-  "GENERIC_MSG": "Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:",
-  "CONFIRM": "Abrir Ajustes",
-  "CANCEL": "Quizás luego",
-  "BRANDS": {
-    "XIAOMI": "Optimización Xiaomi",
-    "SAMSUNG": "Ajuste de Samsung",
-    "HUAWEI": "Ajuste de Huawei",
-    "OPPO": "Gestión de Energía",
-    "PIXEL": "Uso de Batería",
-    "DEFAULT": "Ahorro de Energía"
+    "crimson": "carmesí",
+    "red": "rojo",
+    "orange": "naranja",
+    "gold": "dorado",
+    "yellow": "amarillo",
+    "magenta": "magenta",
+    "purple": "morado",
+    "lime": "lima",
+    "green": "verde",
+    "cyan": "cian",
+    "blue": "azul"
   },
-  "STEPS": {
-    "AUTO_START": "Activar 'Inicio Automático'",
-    "NO_RESTRICTIONS": "Ahorro de batería: 'Sin restricciones'",
-    "UNRESTRICTED": "Batería: Seleccionar 'No restringido'",
-    "INACTIVITY": "Desactivar 'Poner en inactividad profunda'",
-    "HUAWEI_MANAGE": "Ajustes > Aplicaciones > Inicio",
-    "HUAWEI_AUTO": "Desactivar 'Gestionar automáticamente'",
-    "BACKGROUND": "Asegurar 'Actividad en segundo plano' activo",
-    "ALLOW_BG": "Uso de batería: 'Permitir actividad segundo plano'",
-    "AUTO_OPT": "Desactivar 'Optimización automática'",
-    "GENERIC_UNRESTRICTED": "Configurar la batería como 'Sin optimizar'"
+  "BATTERY": {
+    "GENERIC_MSG": "Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:",
+    "CONFIRM": "Abrir Ajustes",
+    "CANCEL": "Quizás luego",
+    "BRANDS": {
+      "XIAOMI": "Optimización Xiaomi",
+      "SAMSUNG": "Ajuste de Samsung",
+      "HUAWEI": "Ajuste de Huawei",
+      "OPPO": "Gestión de Energía",
+      "PIXEL": "Uso de Batería",
+      "DEFAULT": "Ahorro de Energía"
+    },
+    "STEPS": {
+      "AUTO_START": "Activar 'Inicio Automático'",
+      "NO_RESTRICTIONS": "Ahorro de batería: 'Sin restricciones'",
+      "UNRESTRICTED": "Batería: Seleccionar 'No restringido'",
+      "INACTIVITY": "Desactivar 'Poner en inactividad profunda'",
+      "HUAWEI_MANAGE": "Ajustes > Aplicaciones > Inicio",
+      "HUAWEI_AUTO": "Desactivar 'Gestionar automáticamente'",
+      "BACKGROUND": "Asegurar 'Actividad en segundo plano' activo",
+      "ALLOW_BG": "Uso de batería: 'Permitir actividad segundo plano'",
+      "AUTO_OPT": "Desactivar 'Optimización automática'",
+      "GENERIC_UNRESTRICTED": "Configurar la batería como 'Sin optimizar'"
+    }
   },
-
   "MAP_CONTROLS": {
     "CENTER_LOCATION": "Centrar en mi ubicación",
     "STOP_TRACKING": "Detener seguimiento"
+  },
+  "SHARE": {
+    "TITLE_MODAL": "Compartir posición",
+    "DIALOG_TITLE": "Enviar enlace a...",
+    "ERROR_GENERATE": "No se ha podido iniciar el seguimiento",
+    "STOPPED": "Has dejado de compartir tu ubicación"
+  },
+  "LOCATION": {
+    "ERROR_TIMEOUT": "Se ha agotado el tiempo de espera del GPS"
+  },
+  "REPORT": {
+    "TITLE": "Informe de actividad",
+    "ROUTE_NAME": "Nombre de la ruta",
+    "DATE": "Fecha",
+    "DISTANCE": "Distancia total",
+    "SHARE_SUBJECT": "Informe de seguimiento - Paso App",
+    "SHARE_BODY": "Aquí está el informe de actividad para mi ruta: "
   }
 }
-}               
-
-

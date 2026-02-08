@@ -5,7 +5,7 @@
 
   <ion-list inset="true">
     <ion-item lines="full">
-      <ion-icon name="language-outline" slot="start" color="primary"></ion-icon>
+      <ion-icon name="language-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
       <ion-select [value]="selectedLanguage.code" (ionChange)="onLanguageChange($event.detail.value)" interface="popover" slot="end">
         @for (lang of languages; track lang.code) {
@@ -15,7 +15,7 @@
     </ion-item>
 
     <ion-item lines="none">
-      <ion-icon name="map-outline" slot="start" color="primary"></ion-icon>
+      <ion-icon name="map-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
       <ion-select [value]="geography.mapProvider" (ionChange)="onMapChange($event.detail.value)" interface="popover" slot="end">
         @for (map of baseMaps; track map) {
@@ -31,23 +31,23 @@
 
   <ion-list inset="true">
     <ion-item lines="full">
-      <ion-icon name="git-commit-outline" slot="start"></ion-icon>
+      <ion-icon name="git-commit-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'current')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': present.currentColor }"></div>
-          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
+          <ion-icon name="caret-down-sharp" color="medium" size="small"></ion-icon>
         </div>
       </ion-button>
     </ion-item>
 
     <ion-item lines="none">
-      <ion-icon name="trail-sign-outline" slot="start"></ion-icon>
+      <ion-icon name="trail-sign-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'archived')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
-          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
+          <ion-icon name="caret-down-sharp" color="medium" size="small"></ion-icon>
         </div>
       </ion-button>
     </ion-item>
@@ -59,7 +59,7 @@
 
   <ion-list inset="true">
     <ion-item lines="full">
-      <ion-icon name="notifications-outline" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
+      <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
@@ -89,7 +89,7 @@
 
   <ion-list inset="true">
     <ion-item lines="full">
-      <ion-icon name="download-outline" slot="start" color="success"></ion-icon>
+      <ion-icon name="download-sharp" slot="start" color="success"></ion-icon>
       <ion-label>{{ 'SETTINGS.UPLOAD_MAPS' | translate }}</ion-label>
       <ion-select [value]="" (ionChange)="onMapUploadChange($event.detail.value)" interface="popover" slot="end">
         @for (map of missingOfflineMaps; track map) {
@@ -99,7 +99,7 @@
     </ion-item>
 
     <ion-item lines="none">
-      <ion-icon name="trash-outline" slot="start" color="danger"></ion-icon>
+      <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
       <ion-label>{{ 'SETTINGS.REMOVE_MAP' | translate }}</ion-label>
       <ion-select [value]="" (ionChange)="onMapRemoveChange($event.detail.value)"  interface="popover" slot="end">
         @for (map of availableOfflineMaps; track map) {

@@ -26,6 +26,7 @@ import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
 import { ServerService } from './server.service';
 import { LocationManagerService } from './location-manager.service';
+import { LocationSharingService } from './locationSharing.service';
 import VectorSource from 'ol/source/Vector';
 import { fromLonLat, useGeographic } from 'ol/proj';
 import { TranslateService } from '@ngx-translate/core';
@@ -75,7 +76,8 @@ export class MapService {
     private geography: GeographyService,
     private reference: ReferenceService,
     private present: PresentService,
-    private trackingService: TrackingControlService
+    private trackingService: TrackingControlService,
+    private sharing: LocationSharingService
   ) { 
   }
 
@@ -104,7 +106,16 @@ export class MapService {
 
     // A. Inicializar Controles (Ahora pasamos el servicio inyectado)
     this.shareControl = new ShareControl(this.location, this.translate);
-    // Ya no hacemos "new TrackingControlService", usamos this.trackingService
+
+    this.shareControl.onShareStart = async () => {
+      console.log('🚀 Iniciando compartido desde el mapa...');
+      return await this.sharing.startSharing();
+    };
+
+    this.shareControl.onShareStop = async () => {
+      console.log('🛑 Deteniendo compartido desde el mapa...');
+      await this.sharing.stopSharing();
+    };
 
     // B. Inicializar Capas Vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
@@ -290,45 +301,94 @@ export class MapService {
 
   // 4. DISPLAY ALL TRACKS
   async displayAllTracks() {
-    if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) return;
-    // 1. CARGA PARALELA: Leemos todos los archivos del storage al mismo tiempo
-    const keys = this.fs.collection.map(item => JSON.stringify(item.date));
-    const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key)));
-    const multiLine: any[] = [];
-    const multiPoint: any[] = [];
-    const multiKey: any[] = [];
-    // 2. PROCESAMIENTO SÍNCRONO: Ahora que ya tenemos los datos en memoria, iteramos rápido
-    for (let i = 0; i < rawTracks.length; i++) {
-      const track = rawTracks[i];
-      const item = this.fs.collection[i];
-      if (!track) {
-        // Si un track falta, lo eliminamos del storage (opcional, como hacías antes)
-        await this.fs.storeRem(keys[i]);
-        continue;
-      }
-      const coord = track.features[0]?.geometry?.coordinates;
-      if (coord && coord.length > 0) {
-        multiLine.push(coord);
-        multiPoint.push(coord[0]);
-        multiKey.push(item.date);
-      }
+    // 1. Validaciones de seguridad
+    if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) {
+      console.warn("MapService: Faltan elementos críticos para mostrar los trayectos.");
+      return;
     }
-    // 3. ACTUALIZACIÓN DEL MAPA (Igual que antes)
-    const allLinesFeature = new Feature();
-    allLinesFeature.set('type', 'all_tracks_lines');
-    allLinesFeature.setGeometry(new MultiLineString(multiLine));
-    allLinesFeature.setStyle(this.stylerService.setStrokeStyle('black'));
-    const allStartsFeature = new Feature();
-    allStartsFeature.set('type', 'all_tracks_starts');
-    allStartsFeature.setGeometry(new MultiPoint(multiPoint));
-    allStartsFeature.set('multikey', multiKey);
-    allStartsFeature.setStyle(this.stylerService.createPinStyle('green'));
-    const source = this.geography.archivedLayer.getSource();
-    if (source) {
-      source.clear();
-      source.addFeatures([allLinesFeature, allStartsFeature]);
-      // 4. ZOOM 
-      await this.centerAllTracks();
+
+    try {
+      // 2. Generación de Keys usando toISOString (igual que cuando guardas)
+      const keys = this.fs.collection
+        .filter(item => item && item.date) // Filtramos solo los que tienen fecha
+        .map(item => {
+          const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date!);
+          return dateObj.toISOString();
+  });
+      // 3. Carga paralela desde Storage
+      const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key)));
+
+      const multiLine: any[] = [];
+      const multiPoint: any[] = [];
+      const multiKey: any[] = [];
+
+      // 4. Procesamiento de los datos recuperados
+      for (let i = 0; i < rawTracks.length; i++) {
+        const track = rawTracks[i];
+        const item = this.fs.collection[i];
+
+        if (!track) {
+          console.warn(`Key no encontrada en Storage: ${keys[i]}`);
+          continue;
+        }
+
+        // Extracción todoterreno de coordenadas (GeoJSON o Feature simple)
+        let coords = null;
+        if (track.features?.[0]?.geometry?.coordinates) {
+          coords = track.features[0].geometry.coordinates;
+        } else if (track.geometry?.coordinates) {
+          coords = track.geometry.coordinates;
+        } else if (Array.isArray(track)) {
+          coords = track;
+        }
+
+        if (coords && coords.length > 0) {
+          multiLine.push(coords);
+          multiPoint.push(coords[0]); // Punto de inicio para el pin verde
+          multiKey.push(item.date);
+        }
+      }
+
+      // 5. Verificación final de datos
+      if (multiLine.length === 0) {
+        this.fs.displayToast("No se encontraron coordenadas válidas en los archivos.");
+        return;
+      }
+
+      // 6. Actualización del Source (capa archivedLayer)
+      const source = this.geography.archivedLayer.getSource();
+      if (source) {
+        source.clear();
+
+        // Feature para las líneas (MultiLineString)
+        const allLinesFeature = new Feature({
+          geometry: new MultiLineString(multiLine)
+        });
+        allLinesFeature.set('type', 'all_tracks_lines');
+        allLinesFeature.setStyle(this.stylerService.setStrokeStyle('black'));
+
+        // Feature para los inicios (MultiPoint)
+        const allStartsFeature = new Feature({
+          geometry: new MultiPoint(multiPoint)
+        });
+        allStartsFeature.set('type', 'all_tracks_starts');
+        allStartsFeature.set('multikey', multiKey);
+        allStartsFeature.setStyle(this.stylerService.createPinStyle('green'));
+
+        source.addFeatures([allLinesFeature, allStartsFeature]);
+
+        // 7. Refresco visual y Zoom (Crítico para useGeographic)
+        this.geography.archivedLayer.changed();
+        
+        setTimeout(async () => {
+          await this.centerAllTracks();
+          this.geography.map?.render();
+        }, 150);
+      }
+
+    } catch (error) {
+      console.error("Error masivo en displayAllTracks:", error);
+      this.fs.displayToast("Error al cargar los trayectos del archivo.");
     }
   }
 
@@ -571,6 +631,5 @@ private buildMapTilerShortName(f: any): string {
     }
     return { waypoints, trackPoints, trk };
   }
-
 
 }

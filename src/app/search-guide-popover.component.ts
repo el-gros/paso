@@ -21,6 +21,7 @@ import { LanguageService } from './services/language.service';
 import { StylerService } from './services/styler.service';
 import { global } from './../environments/environment';
 import { WikiService } from './services/wiki.service';
+import { WeatherService } from './services/weather.service';
 
 interface LocationResult {
   lat: number;
@@ -69,7 +70,7 @@ interface LocationResult {
     <ng-template>
       <div class="popover-island glass-form">
         <div class="search-input-wrapper">
-          <ion-icon name="search-outline" class="inner-icon"></ion-icon>
+          <ion-icon name="search-sharp" class="inner-icon"></ion-icon>
           <ion-input [(ngModel)]="query" (keyup.enter)="openList()" [placeholder]="'SEARCH.SEARCH' | translate"></ion-input>
           <div class="input-actions-row">
             <ion-icon *ngIf="query" name="close-circle" class="clear-icon" (click)="query = ''; results = []"></ion-icon>
@@ -109,7 +110,7 @@ interface LocationResult {
             <ion-icon [name]="(activeTarget === 'query2' && isListening) ? 'mic-sharp' : 'mic-outline'" 
               [class.mic-active]="activeTarget === 'query2' && isListening"
               class="mic-icon" (click)="startDictation('query2')"></ion-icon>
-            <ion-icon name="locate-outline" (click)="useCurrentLocation('origin')" class="action-icon"></ion-icon>
+            <ion-icon name="locate-sharp" (click)="useCurrentLocation('origin')" class="action-icon"></ion-icon>
           </div>
         </div>
 
@@ -119,7 +120,7 @@ interface LocationResult {
             <ion-icon [name]="(activeTarget === 'query3' && isListening) ? 'mic-sharp' : 'mic-outline'" 
               [class.mic-active]="activeTarget === 'query3' && isListening"
               class="mic-icon" (click)="startDictation('query3')"></ion-icon>
-            <ion-icon name="locate-outline" (click)="useCurrentLocation('destination')" class="action-icon"></ion-icon>
+            <ion-icon name="locate-sharp" (click)="useCurrentLocation('destination')" class="action-icon"></ion-icon>
           </div>
         </div>
         
@@ -135,7 +136,7 @@ interface LocationResult {
             <span *ngIf="!loading">{{ (originCoords && destinationCoords) ? ('SEARCH.GET_ROUTE' | translate) : ('SEARCH.FIND_PLACES' | translate) }}</span>
           </button>
           <button class="nav-item-btn red-pill circular" (click)="clearRouteForm()">
-            <ion-icon name="trash-outline"></ion-icon>
+            <ion-icon name="trash-sharp"></ion-icon>
           </button>
         </div>
 
@@ -152,16 +153,6 @@ interface LocationResult {
 
   `,
   styles: [`
-    .nav-item-btn {
-      background: transparent !important; border: none;
-      display: flex !important; flex-direction: column !important;
-      align-items: center !important; justify-content: center !important;
-      flex: 1; transition: transform 0.1s ease; min-width: 65px;
-      ion-icon { font-size: 26px; margin-bottom: 4px; }
-      p { margin: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #333; }
-      &:active { transform: scale(0.92); }
-    }
-
     .search-input-wrapper, .input-stack {
       display: flex; align-items: center; background: rgba(0, 0, 0, 0.05);
       border-radius: 16px; padding: 4px 12px; margin-bottom: 12px;
@@ -191,7 +182,6 @@ interface LocationResult {
     }
     .footer-buttons { display: flex; gap: 10px; align-items: center; }
     .primary-icon { color: var(--ion-color-primary) !important; }
-    .red-pill ion-icon, .red-pill p { color: #eb445a !important; }
     .results-container { max-height: 180px; overflow-y: auto; margin-top: 8px; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
@@ -217,6 +207,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private zone = inject(NgZone);
   private wikiService = inject(WikiService);
+  private weatherService = inject(WeatherService);
   private speechPluginListener: any = null;
   activeRouteField: 'origin' | 'destination' = 'origin';
   originCoords: [number, number] | null = null;
@@ -234,10 +225,10 @@ export class SearchGuidePopoverComponent implements OnInit {
   selectedTransport: string = 'foot-walking';
   
   transportMeans = [
-    { id: 'foot-walking', icon: 'walk-outline', label: 'SEARCH.WALK' },
-    { id: 'foot-hiking', icon: 'trending-up-outline', label: 'SEARCH.HIKE' },
-    { id: 'cycling-regular', icon: 'bicycle-outline', label: 'SEARCH.CYCLE' },
-    { id: 'driving-car', icon: 'car-outline', label: 'SEARCH.DRIVE' },
+    { id: 'foot-walking', icon: 'walk-sharp', label: 'SEARCH.WALK' },
+    { id: 'foot-hiking', icon: 'trending-up-sharp', label: 'SEARCH.HIKE' },
+    { id: 'cycling-regular', icon: 'bicycle-sharp', label: 'SEARCH.CYCLE' },
+    { id: 'driving-car', icon: 'car-sharp', label: 'SEARCH.DRIVE' },
   ];
 
   constructor(private popoverController: PopoverController) {}
@@ -403,8 +394,7 @@ export class SearchGuidePopoverComponent implements OnInit {
 
   clearSearchPlace() { this.geography.searchLayer?.getSource()?.clear(); this.reference.foundPlace = false; }
   async clearSearchRoute() { 
-    this.reference.archivedTrack = undefined;
-    this.geography.archivedLayer?.getSource()?.clear();
+    this.reference.clearArchivedTrack();
     this.reference.foundRoute = false;
     await this.location.sendReferenceToPlugin();
   }
@@ -525,8 +515,8 @@ async handleRouteResponse(geoJsonData: any) {
       }
     }]
   };
-
   if (this.reference.archivedTrack) {
+    await this.location.sendReferenceToPlugin();
     await this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack);
   }
@@ -596,17 +586,46 @@ async handleRouteResponse(geoJsonData: any) {
 
   async searchWiki(location: LocationResult) {
     this.loading = true;
-    const wikiData = await this.wikiService.getWikiData(location);
     
-    if (wikiData) {
-      // Emitimos el resultado para que el componente WikiCard lo reciba
-      this.onWikiResult.emit(wikiData);
-      // Cerramos el buscador para que no estorbe
-      this.reference.isSearchPopoverOpen = false;
+    const currentLang = this.languageService.getCurrentLangValue() || 'es';
+
+    try {
+      // 1. Ejecutamos ambas peticiones en paralelo
+      const [wikiData, weatherData] = await Promise.all([
+        this.wikiService.getWikiData(location),
+        this.weatherService.getWeather(location.lat, location.lon, currentLang)
+      ]);
+
+      // DEBUG: Descomenta la siguiente línea para ver en consola si weatherData tiene algo
+      console.log('Datos recibidos -> Wiki:', !!wikiData, 'Weather:', weatherData);
+
+      // 2. Usamos zone.run para que Angular detecte los cambios del plugin nativo
+      this.zone.run(() => {
+        const combinedResult = {
+          wiki: wikiData,
+          weather: weatherData,
+          locationName: location.name
+        };
+
+        // 3. Emitimos solo si tenemos algo de información
+        if (wikiData || weatherData) {
+          this.onWikiResult.emit(combinedResult);
+          this.reference.isSearchPopoverOpen = false;
+        }
+        
+        // Forzamos el refresco de la UI
+        this.cdr.detectChanges();
+      });
+
+    } catch (error) {
+      console.error("Error fetching location details", error);
+    } finally {
+      // Cerramos el estado de carga
+      this.zone.run(() => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      });
     }
-    
-    this.loading = false;
-    this.cdr.detectChanges();
   }
 
 }

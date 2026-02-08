@@ -17,16 +17,16 @@
             <ion-item-option 
               [color]="isTrackVisible(item) ? 'medium' : 'primary'" 
               (click)="toggleVisibility(item, slidingItem)">
-              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-sharp' : 'eye-sharp'"></ion-icon>
               {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
             </ion-item-option>
             <ion-item-option color="secondary" (click)="exportTrackFile(item, slidingItem)">
-              <ion-icon slot="top" name="share-outline"></ion-icon>
+              <ion-icon slot="top" name="share-sharp"></ion-icon>
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
           </ion-item-options>
           <ion-item>
-            <ion-icon name="chevron-forward-outline" slot="start" color="medium" style="font-size: 12px;"></ion-icon> 
+            <ion-icon name="chevron-forward-sharp" slot="start" color="medium" style="font-size: 12px;"></ion-icon> 
             <ion-label>
               <div class="item-content">
                 <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
@@ -38,15 +38,15 @@
                   {{ 'ARCHIVE.VISIBLE_LABEL' | translate }}
                 </ion-badge>
               }
-            <ion-icon name="chevron-back-outline" slot="end" color="medium" style="font-size: 12px;"></ion-icon>
+            <ion-icon name="chevron-back-sharp" slot="end" color="medium" style="font-size: 12px;"></ion-icon>
           </ion-item>
           <ion-item-options side="end">
             <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
-              <ion-icon slot="top" name="create-outline"></ion-icon>
+              <ion-icon slot="top" name="create-sharp"></ion-icon>
               {{ 'ARCHIVE.EDIT_TRACK' | translate }}
             </ion-item-option>
             <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
-              <ion-icon slot="top" name="trash-outline"></ion-icon>
+              <ion-icon slot="top" name="trash-sharp"></ion-icon>
               {{ 'ARCHIVE.REMOVE_TRACK' | translate }}
             </ion-item-option>
           </ion-item-options>
@@ -91,7 +91,7 @@
        (click)="displayAllTracks(!mapService.visibleAll)">
     
     <ion-icon 
-      [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
+      [name]="mapService.visibleAll ? 'eye-off-sharp' : 'eye-sharp'" 
       [class.blue-icon]="!mapService.visibleAll">
     </ion-icon>
     

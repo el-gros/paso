@@ -85,7 +85,7 @@
 
 
 /* 1. Forzar que ambos contenedores midan lo mismo */
-.location-button-control, .share-control {
+.location-button-control { 
   position: absolute;
   right: 5px;
   width: 36px;   /* Ancho fijo */
@@ -99,11 +99,9 @@
   align-items: center;
   justify-content: center;
   overflow: hidden; /* Evita que el contenido se salga */
-}
-
-/* 2. Posicionamiento vertical */
-.share-control {
-  bottom: 30px;
+  pointer-events: auto !important; /* Asegura que el div sea clicable */
+  cursor: pointer;
+  z-index: 1000; /* Asegúrate de que esté por encima de las capas del mapa */
 }
 
 .location-button-control {
@@ -111,12 +109,9 @@
 }
 
 /* 3. Forzar que los botones internos sean idénticos */
-.location-button-control button, 
-.share-control button {
-  background-color: white !important;
+.location-button-control button {
+  background-color: transparent !important;
   border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
   width: 100% !important; /* Ocupa todo el contenedor de 36px */
   height: 100% !important;
   display: flex;
@@ -258,7 +253,6 @@ ion-fab {
   }
 }
 
-
 .blue-icon { color: var(--ion-color-primary) !important; }
 
 
@@ -309,4 +303,164 @@ ion-fab {
   z-index: 10;
 }
 
+/* ==========================================================================
+   SHARE LOCATION - CORRECCIONES
+   ========================================================================== */
+
+/* ==========================================================================
+   SHARE LOCATION - VERSIÓN CORREGIDA SIN ERRORES
+   ========================================================================== */
+
+.share-control {
+  position: absolute;
+  right: 5px;
+  bottom: 32px !important;
+  width: 36px;
+  height: 36px;
+  background-color: white !important;
+  border-radius: 4px;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto !important;
+
+  button {
+    width: 100% !important;
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+  }
+}
+
+.share-control img { 
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+
+/* 2. Backdrop (Fondo oscuro) */
+.share-backdrop {
+  position: fixed;
+  top: 0; 
+  left: 0;
+  width: 100vw; 
+  height: 100vh;
+  background: rgba(0,0,0,0.35);
+  z-index: 9998;
+  display: none; /* Oculto por defecto */
+  
+  &.active { 
+    display: block; /* Se muestra al añadir la clase .active */
+  }
+}
+
+/* 3. Popup (Ajuste para que sea compatible con confirm-popover) */
+.share-popup {
+  position: fixed;
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: none; /* Oculto por defecto */
+  pointer-events: auto;
+
+  &.active { 
+    display: block; /* Se muestra al añadir la clase .active */
+  }
+
+  /* Forzamos el estilo de "isla" que ya tienes definido arriba */
+  .popover-island {
+    min-width: 260px;
+    padding: 24px 16px;
+  }
+}
+
+/* 5. Action Buttons (Yes/No) */
+.share-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 75px;
+  height: 75px;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  color: white;
+  transition: transform 0.1s;
+
+  img { 
+    width: 26px; 
+    height: 26px; 
+    margin-bottom: 6px; 
+  }
+
+  &:active { transform: scale(0.92); }
+  
+  &.btn-yes { background: #2dd36f; }
+  &.btn-no { background: #eb445a; }
+}
+
+/* CONFIRM POPOVER */
+
+/* Estilos unificados para Popovers de Acción */
+.confirm-popover {
+  --width: 260px;
+  --border-radius: 16px;
+  
+  .popover-island.confirm-box {
+    padding: 24px 16px;
+    text-align: center;
+    background: white;
+  }
+
+  .confirm-title {
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: 1.4;
+  }
+
+  .button-grid.horizontal {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+ 
+}
+
+.nav-item-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  
+  ion-icon { font-size: 32px; margin-bottom: 4px; }
+  p { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  &:active { transform: scale(0.9); }
+  &:disabled {
+    opacity: 0.25 !important;    
+    filter: grayscale(1);       
+    cursor: not-allowed;
+    pointer-events: none;       
+    
+    ion-icon, p {
+      color: #888 !important;   
+    }
+  }
+}
 

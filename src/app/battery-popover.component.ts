@@ -27,7 +27,7 @@ import { TranslateModule } from '@ngx-translate/core';
         <div class="steps-container">
           @for (step of steps; track step) {
             <div class="step-item">
-              <ion-icon name="chevron-forward-circle-outline" color="primary"></ion-icon>
+              <ion-icon name="chevron-forward-circle-sharp" color="primary"></ion-icon>
               <p>{{ step | translate }}</p>
             </div>
           }
@@ -35,7 +35,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
         <div class="actions">
           <button class="btn-main" (click)="confirmar()">
-            <ion-icon name="settings-outline" slot="start"></ion-icon>
+            <ion-icon name="settings-sharp" slot="start"></ion-icon>
             {{ 'BATTERY.CONFIRM' | translate }}
           </button>
           <button class="btn-cancel" (click)="cerrar()">

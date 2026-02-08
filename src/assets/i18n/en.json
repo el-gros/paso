@@ -1,95 +1,71 @@
 {
-
   "MAP": {
-    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
-    "DATA_BUTTON": "Datos",
-    "ARCHIVE_BUTTON": "Archivo",
-    "SETTINGS_BUTTON": "Config.",
+    "TOIMAGE_FAILED": "Could not generate image",
+    "DATA_BUTTON": "Data",
+    "ARCHIVE_BUTTON": "Archive",
+    "SETTINGS_BUTTON": "Settings",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Punto de paso actualizado",
-    "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
-    "TRACK_FINISHED": "El trayecto actual ha finalizado",
-    "WPT_ADDED": "Se ha añadido el punto de paso",
-    "SAVED": "El archivo se ha guardado correctamente",
-    "NO_TRACK_FOUND": "No se ha encontrado ningún trayecto en el archivo",
-    "IMPORTED_TRACK": "Trayecto importado",
-    "IMPORT_SUCCESS": "Trayecto importado correctamente",
-    "ERROR_UNSUPPORTED": "Tipo de archivo no soportado",
-    "ERROR_IMPORT": "Error al importar el archivo",
-    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
-    "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
-    "YES": "Sí",
-    "MAP_BUTTON": "Mapa",
-    "UNSUPPORTED_TYPE": "Formato de archivo no admitido",
-    "TRACK_EMPTY": "Trayecto sin datos"
+    "WAYPOINT_UPDATED": "Waypoint updated",
+    "CURRENT_TRACK_DELETED": "Current track has been deleted",
+    "TRACK_FINISHED": "Current track has finished",
+    "WPT_ADDED": "Waypoint added",
+    "SAVED": "File saved successfully",
+    "NO_TRACK_FOUND": "No track found in file",
+    "IMPORTED_TRACK": "Imported track",
+    "IMPORT_SUCCESS": "Track imported successfully",
+    "ERROR_UNSUPPORTED": "Unsupported file type",
+    "ERROR_IMPORT": "Error importing file",
+    "NO_FILE_SELECTED": "No file selected",
+    "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
+    "YES": "Yes",
+    "MAP_BUTTON": "Map",
+    "UNSUPPORTED_TYPE": "Unsupported file format",
+    "TRACK_EMPTY": "Track without data"
   },
-
   "SEARCH": {
-    "BUTTON": "Buscar",
-    "LOCATION": "Lugar",
-    "ROUTE": "Ruta",
-    "SEARCH": "Buscar...",
-    "FROM": "Origen",
-    "TO": "Destino",
-    "FIND_PLACES": "Buscar lugares",
-    "GET_ROUTE": "Calcular ruta",
-    "START_GUIDE": "Iniciando guía...",
-    "MY_LOCATION": "Mi ubicación",
-    "SELECT_BOTH": "Por favor, selecciona origen y destino",
-    "NO_ROUTE_FOUND": "No se encontró ninguna ruta",
-    "ROUTING_ERROR": "Error en el servicio de rutas",
-    "GOT_LOCATION": "Ubicación obtenida",
-    "LOCATION_ERROR": "No se pudo obtener tu ubicación",
-    "WALK": "Caminar",
-    "HIKE": "Senderismo",
-    "CYCLE": "Ciclismo",
-    "DRIVE": "Conducir",
-    "LISTENING": "Escuchando..."
+    "BUTTON": "Search",
+    "LOCATION": "Place",
+    "ROUTE": "Route",
+    "SEARCH": "Search...",
+    "FROM": "Origin",
+    "TO": "Destination",
+    "FIND_PLACES": "Find places",
+    "GET_ROUTE": "Get route",
+    "START_GUIDE": "Starting guide...",
+    "MY_LOCATION": "My location",
+    "SELECT_BOTH": "Please select both origin and destination",
+    "NO_ROUTE_FOUND": "No route found",
+    "ROUTING_ERROR": "Route service error",
+    "GOT_LOCATION": "Location obtained",
+    "LOCATION_ERROR": "Could not obtain your location",
+    "WALK": "Walk",
+    "HIKE": "Hike",
+    "CYCLE": "Cycle",
+    "DRIVE": "Drive",
+    "CLEAN": "Clean",
+    "DESCRIPTION": "Route profile",
+    "LISTENING": "Listening..."
   },
-
   "SETTINGS": {
-    "CURRENT_TRACK": "Current track color",
-    "REFERENCE_TRACK": "Reference trackcolor",
-    "BASE_MAP": "Base map",
     "GENERAL_GROUP": "General",
-    "SYSTEM_GROUJP": "System",
+    "SYSTEM_GROUP": "System",
+    "BASE_MAP": "Base map",
     "LANGUAGE": "Language",
     "ALERT": "Alert",
     "GEOCODING": "Geocoding service",
+    "CURRENT_TRACK": "Current track color",
+    "REFERENCE_TRACK": "Reference track color",
     "SAVED_TRACK_ALTITUDE": "Saved track altitude",
-    "UPLOAD_MAPS": "Upload maps",
-    "UPLOADMAP": "Map successfully uploaded",
+    "UPLOAD_MAPS": "Download maps",
+    "UPLOADMAP": "Map successfully downloaded",
     "REMOVEMAP": "The map has been removed",
-    "FAILED_REMOVEMAP": "Failed to remove the map",
+    "FAILED_REMOVEMAP": "Failed to remove map",
     "FAILED_UPLOADMAP": "Error downloading map",
     "REMOVE_MAP": "Remove maps",
     "MAP_UPDATED": "Map provider updated",
     "OFFLINE_MAPS": "Offline Maps",
     "DOWNLOADED": "Downloaded"
   },
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-
   "ARCHIVE": {
     "TRACKS": "Tracks",
     "SHOW": "Show",
@@ -100,20 +76,19 @@
     "EXPORT_TRACK": "Export",
     "ALL_DISPLAYED": "All tracks displayed",
     "ALL_HIDDEN": "All tracks hidden",
-
+    "VISIBLE_LABEL": "Visible",
     "CANCEL": "Cancel",
     "HEADER": "Confirm deletion",
-    "MESSAGE": "The selected tracks will be permanently deleted",
+    "MESSAGE": "Selected tracks will be permanently deleted",
     "TITLE": "Share a track",
-    "TEXT": "Here is the file you requested",
+    "TEXT": "Here is the requested track",
     "DIALOG_TITLE": "Share with Gmail only",
-    "TOAST1": "Track exported and shared successfully!",
-    "TOAST2": "Exportation failed",
-    "TOAST3": "The selected tracks have been removed",
+    "TOAST1": "Track shared successfully",
+    "TOAST2": "Export failed",
+    "TOAST3": "Selected tracks have been removed",
     "TOAST4": "Error loading collection",
     "TOAST5": "Error loading track"
   },
-
   "CANVAS": {
     "ARCTITLE": "REFERENCE TRACK",
     "CURTITLE": "CURRENT TRACK",
@@ -121,95 +96,102 @@
     "EGAIN": "Elevation gain",
     "ELOSS": "Elevation loss",
     "TIME": "Time",
-    "MOTIONTIME": "In-motion time",
+    "MOTIONTIME": "Moving time",
     "POINTS": "Recorded points",
     "ALTITUDE": "Current altitude",
     "SPEED": "Current speed",
     "AVGSPEED": "Average speed",
-    "MOTIONAVGSPEED": "In-motion average speed",
+    "MOTIONAVGSPEED": "Average moving speed",
     "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
     "CANVASSPEED": "SPEED (km/h) vs TIME",
     "FROM_START": "Distance from start",
     "TO_END": "Distance to end"
   },
-
-  "EDIT_MODAL": {
-    "HEADER": "Edit track details",
+  "EDIT": {
     "NAME": "Name",
-    "PLACE": "Place",
     "DESCRIPTION": "Description",
     "CANCEL": "Cancel"
   },
-
   "WPT": {
-    "HEADER": "Editar punto de ruta",
-    "NAME": "Nombre",
-    "COMMENT": "Comentario",
-    "ALTITUDE": "Altitud"
+    "HEADER": "Edit waypoint",
+    "NAME": "Name",
+    "COMMENT": "Comment",
+    "ALTITUDE": "Altitude"
   },
-
-
-    "RECORD": {
+  "RECORD": {
+    "BUTTON": "Record",
     "START_TRACKING": "Start",
     "STOP_TRACKING": "Stop",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Save",
-    "REMOVE_TRACK": "Remove",
-    "CONFIRM_STOP": "Confirm stop?",
+    "REMOVE_TRACK": "Delete",
+    "CONFIRM_STOP": "Confirm finish?",
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
-    "BUTTON": "Record",
-    "SHARE_YES": "Open",
-    "SHARE_NO": "Close",
-    "SHARE_TEXT": "Real-time location sharing",
-    "SHARE_TRACK": "Share"
+    "SHARE_TEXT": "Real-time tracking"
   },
-
+  "ERRORS": {
+    "ELEVATION_FETCH": "Error fetching elevation data from server.",
+    "ELEVATION_GENERIC": "Could not obtain elevation."
+  },
   "COLORS": {
-  "crimson": "crimson",
-  "red": "red",
-  "orange": "orange",
-  "gold": "gold",
-  "yellow": "yellow",
-  "magenta": "magenta",
-  "purple": "purple",
-  "lime": "lime",
-  "green": "green",
-  "cyan": "cyan",
-  "blue": "blue"
-},
-
-"BATTERY": {
-  "GENERIC_MSG": "To ensure GPS tracking does not stop, please adjust your battery settings:",
-  "CONFIRM": "Open Settings",
-  "CANCEL": "Maybe later",
-  "BRANDS": {
-    "XIAOMI": "Xiaomi Optimization",
-    "SAMSUNG": "Samsung Settings",
-    "HUAWEI": "Huawei Settings",
-    "OPPO": "Power Management",
-    "PIXEL": "Battery Usage",
-    "DEFAULT": "Battery Saver"
+    "crimson": "crimson",
+    "red": "red",
+    "orange": "orange",
+    "gold": "gold",
+    "yellow": "yellow",
+    "magenta": "magenta",
+    "purple": "purple",
+    "lime": "lime",
+    "green": "green",
+    "cyan": "cyan",
+    "blue": "blue"
   },
-  "STEPS": {
-    "AUTO_START": "Enable 'Auto-start'",
-    "NO_RESTRICTIONS": "Battery saver: 'No restrictions'",
-    "UNRESTRICTED": "Battery: Select 'Unrestricted'",
-    "INACTIVITY": "Disable 'Put to deep sleep'",
-    "HUAWEI_MANAGE": "Settings > Apps > Launch",
-    "HUAWEI_AUTO": "Disable 'Manage automatically'",
-    "BACKGROUND": "Ensure 'Background activity' is enabled",
-    "ALLOW_BG": "Battery usage: 'Allow background activity'",
-    "AUTO_OPT": "Disable 'Auto-optimize'",
-    "GENERIC_UNRESTRICTED": "Set battery to 'Don't optimize'"
+  "BATTERY": {
+    "GENERIC_MSG": "To ensure GPS tracking does not stop, please adjust your battery settings:",
+    "CONFIRM": "Open Settings",
+    "CANCEL": "Maybe later",
+    "BRANDS": {
+      "XIAOMI": "Xiaomi Optimization",
+      "SAMSUNG": "Samsung Settings",
+      "HUAWEI": "Huawei Settings",
+      "OPPO": "Power Management",
+      "PIXEL": "Battery Usage",
+      "DEFAULT": "Battery Saver"
+    },
+    "STEPS": {
+      "AUTO_START": "Enable 'Auto-start'",
+      "NO_RESTRICTIONS": "Battery saver: 'No restrictions'",
+      "UNRESTRICTED": "Battery: Select 'Unrestricted'",
+      "INACTIVITY": "Disable 'Put to deep sleep'",
+      "HUAWEI_MANAGE": "Settings > Apps > Launch",
+      "HUAWEI_AUTO": "Disable 'Manage automatically'",
+      "BACKGROUND": "Ensure 'Background activity' is enabled",
+      "ALLOW_BG": "Battery usage: 'Allow background activity'",
+      "AUTO_OPT": "Disable 'Auto-optimize'",
+      "GENERIC_UNRESTRICTED": "Set battery to 'Don't optimize'"
+    }
   },
-
   "MAP_CONTROLS": {
     "CENTER_LOCATION": "Center on my location",
     "STOP_TRACKING": "Stop tracking"
+  },
+  "SHARE": {
+    "TITLE_MODAL": "Share position",
+    "DIALOG_TITLE": "Send link to...",
+    "ERROR_GENERATE": "Could not start tracking",
+    "STOPPED": "You stopped sharing your location"
+  },
+  "LOCATION": {
+    "ERROR_TIMEOUT": "GPS timeout reached"
+  },
+  "REPORT": {
+    "TITLE": "Activity Report",
+    "ROUTE_NAME": "Route Name",
+    "DATE": "Date",
+    "DISTANCE": "Total Distance",
+    "SHARE_SUBJECT": "Tracking Report - Paso App",
+    "SHARE_BODY": "Here is the activity report for my route: "
   }
-
 }
-}
-

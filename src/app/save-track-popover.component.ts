@@ -19,7 +19,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
         <div class="form-container">
           <div class="input-group">
-            <ion-label class="custom-label">{{ 'EDIT_MODAL.NAME' | translate }}</ion-label>
+            <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
             <ion-textarea 
               [(ngModel)]="modalEdit.name" 
               rows="2" 
@@ -29,7 +29,7 @@ import { TranslateModule } from '@ngx-translate/core';
           </div>
           
           <div class="input-group">
-            <ion-label class="custom-label">{{ 'EDIT_MODAL.DESCRIPTION' | translate }}</ion-label>
+            <ion-label class="custom-label">{{ 'EDIT.DESCRIPTION' | translate }}</ion-label>
             <ion-textarea 
               [(ngModel)]="modalEdit.description" 
               rows="3" 
@@ -46,7 +46,7 @@ import { TranslateModule } from '@ngx-translate/core';
           </button>
           <button class="nav-item-btn red-pill" (click)="cancel()">
             <ion-icon name="close-sharp"></ion-icon>
-            <p>{{ 'EDIT_MODAL.CANCEL' | translate }}</p>
+            <p>{{ 'EDIT.CANCEL' | translate }}</p>
           </button>
         </div>
       </div>
@@ -113,39 +113,6 @@ styles: [`
       margin-top: 24px;
     }
 
-    .nav-item-btn {
-      background: transparent !important;
-      border: none;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      min-width: 65px;
-      cursor: pointer;
-      transition: transform 0.1s ease;
-
-      ion-icon {
-        /* Iconos de confirmación más grandes (32px) al no tener círculo */
-        font-size: 32px;
-        margin-bottom: 4px;
-      }
-
-      p {
-        margin: 0;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      &:active {
-        transform: scale(0.92);
-        opacity: 0.7;
-      }
-    }
-
-    /* Estilo "Limpio" para OK / Cancel */
-    .green-pill ion-icon, .green-pill p { color: #2dd36f !important; }
-    .red-pill ion-icon, .red-pill p { color: #eb445a !important; }
   `]
 })
 export class SaveTrackPopover implements OnInit {

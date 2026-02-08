@@ -2,72 +2,87 @@ import { Injectable } from "@angular/core";
 import { Device } from "@capacitor/device";
 import { FunctionsService } from './functions.service';
 import { TranslateService } from '@ngx-translate/core';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { SupabaseService } from './supabase.service';
-import { Subscription } from 'rxjs';
+import { Subscription, take } from 'rxjs'; // Añadimos take
 import { LocationManagerService } from './location-manager.service'
+import { Share } from '@capacitor/share';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({ 
   providedIn: 'root'
 })
 export class LocationSharingService {
     
-
-    subscription: Subscription | null = null;
+    // Ya no necesitamos la variable 'subscription' porque el flujo es pasivo a través de LocationManager
 
     constructor(
         private fs: FunctionsService,
         private translate: TranslateService,
-        private socialSharing: SocialSharing,
         private supabaseService: SupabaseService,
         private locationService: LocationManagerService
     ) {}
     
     async init() {
       const info = await Device.getId();
+      // Usamos el identificador único del dispositivo para trackear quién envía los puntos
       this.locationService.deviceId = info.identifier;
     }
 
-  async startSharing() {
-    if (!this.locationService.deviceId) await this.init();
-    
-    // Generar token
-    this.locationService.shareToken = crypto.randomUUID();
-    this.locationService.isSharing = true;
-
-    await this.fs.storeSet('share_token', this.locationService.shareToken);
-
-    // Construir mensaje traducido
-    const baseText = this.translate.instant('RECORD.SHARE_TEXT');
-    const url = `https://el-gros.github.io/visor/visor.html?t=${this.locationService.shareToken}`;
-    const fullMessage = `${baseText} ${url}`;
-
+  async startSharing(): Promise<boolean> {
     try {
-      await this.socialSharing.share(fullMessage);
+      if (!this.locationService.deviceId) await this.init();
+      
+      const newToken = crypto.randomUUID();
+      const location = await firstValueFrom(this.locationService.latestLocation$).catch(() => null);
+
+      // 1. CONFIGURAR TOKEN Y ACTIVAR YA EL SERVICIO
+      // Lo hacemos antes del Share.share para que si este falla, el tracking siga vivo
+      this.locationService.shareToken = newToken;
+      this.locationService.isSharing = true; 
+      await this.fs.storeSet('share_token', newToken);
+
+      // 2. INSERTAR PRIMER PUNTO (Opcional pero recomendado aquí)
+      if (location) {
+        await this.supabaseService.supabase
+          .from('public_locations')
+          .insert([{
+            share_token: newToken,
+            owner_user_id: this.locationService.deviceId,
+            lat: location.latitude,
+            lon: location.longitude,
+            updated_at: new Date().toISOString()
+          }]);
+      }
+
+      // 3. INTENTAR MOSTRAR EL DIÁLOGO (Si falla, no importa, el tracking ya está activo)
+      try {
+        const url = `https://el-gros.github.io/visor/visor.html?t=${newToken}`;
+        const canShare = await Share.canShare();
+        if (canShare.value) {
+          await Share.share({
+            title: this.translate.instant('SHARE.TITLE_MODAL') || 'Seguimiento',
+            text: this.translate.instant('RECORD.SHARE_TEXT') || 'Mi ruta:',
+            url: url,
+          });
+        }
+      } catch (shareError) {
+        console.warn("El diálogo de compartir no se pudo mostrar, pero el tracking está activo", shareError);
+      }
+
+      return true; // Devolvemos true porque el proceso de compartir en DB ya arrancó
     } catch (err) {
-      console.error('Sharing failed', err);
-      // Usamos una clave de error que ya deberías tener en tu sistema de traducción
-      this.fs.displayToast('MAP.ERROR_IMPORT'); 
+      console.error("Fallo crítico en base de datos:", err);
+      this.locationService.isSharing = false; // Revertimos si hay error de DB
+      return false;
     }
   }
 
   async stopSharing() {
-    if (!this.locationService.shareToken) return;
-    // Optional: mark the share as inactive
-    await this.supabaseService.supabase
-      .from('shares')
-      .update({ active: false })
-      .eq('share_token', this.locationService.shareToken);
-    // Clear token locally so no further locations are shared
-    await this.fs.storeSet('share_token', null);
-    this.locationService.shareToken = null;
+    // 1. Limpiar estados. Al poner isSharing en false, LocationManager dejará de enviar puntos.
     this.locationService.isSharing = false;
-    // Unsubscribe from location service 
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-      this.subscription = null;
-    }
+    this.locationService.shareToken = null;
+    await this.fs.storeSet('share_token', null);
+
+    this.fs.displayToast(this.translate.instant('SHARE.STOPPED') || 'Ubicación compartida finalizada');
   }
-
-
 }

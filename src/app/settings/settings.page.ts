@@ -41,7 +41,10 @@ export class SettingsPage implements OnDestroy {
   languages: LanguageOption[] = [
     { name: 'Català', code: 'ca' },
     { name: 'Español', code: 'es' },
-    { name: 'English', code: 'en' }
+    { name: 'English', code: 'en' },
+    { name: 'Français', code: 'fr' },
+    { name: 'Русский', code: 'ru' },
+    { name: '中文', code: 'zh' },
   ];
   selectedLanguage: any = {name:'English', code:'en'}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];

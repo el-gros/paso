@@ -1,12 +1,11 @@
 {
-
   "MAP": {
     "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
     "DATA_BUTTON": "Dades",
     "ARCHIVE_BUTTON": "Arxiu",
     "SETTINGS_BUTTON": "Config.",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "xxx",
+    "WAYPOINT_UPDATED": "Punt de pas actualitzat",
     "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
     "TRACK_FINISHED": "El trajecte actual ha finalitzat",
     "WPT_ADDED": "S'ha afegit el punt de pas",
@@ -17,13 +16,12 @@
     "ERROR_UNSUPPORTED": "Tipus de fitxer no suportat",
     "ERROR_IMPORT": "Error en importar el fitxer",
     "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
-    "CONFIRM_SHARING": "Segur que vols compartir la teva posició amb una altra persona?",
+    "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
     "YES": "Sí",
     "MAP_BUTTON": "Mapa",
     "UNSUPPORTED_TYPE": "Format de fitxer no admès",
     "TRACK_EMPTY": "Trajecte sense dades"
   },
-
   "SEARCH": {
     "BUTTON": "Cercar",
     "LOCATION": "Lloc",
@@ -48,16 +46,15 @@
     "DESCRIPTION": "Perfil de ruta",
     "LISTENING": "Escoltant..."
   },
-
-"SETTINGS": {
-    "CURRENT_TRACK": "Color trajecte actual",
-    "REFERENCE_TRACK": "Color trajecte referència",
-    "BASE_MAP": "Mapa base",
+  "SETTINGS": {
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
+    "BASE_MAP": "Mapa base",
     "LANGUAGE": "Idioma",
     "ALERT": "Alerta",
     "GEOCODING": "Servei de geocodificació",
+    "CURRENT_TRACK": "Color trajecte actual",
+    "REFERENCE_TRACK": "Color trajecte referència",
     "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
     "UPLOAD_MAPS": "Descarregar mapes",
     "UPLOADMAP": "Mapa descarregat amb èxit",
@@ -69,32 +66,29 @@
     "OFFLINE_MAPS": "Mapes Offline",
     "DOWNLOADED": "Descarregat"
   },
-
   "ARCHIVE": {
-    "EDIT_TRACK": "Editar",
     "TRACKS": "Trajectes",
     "SHOW": "Mostrar",
     "HIDE": "Amagar",
     "ALL": "tots",
     "REMOVE_TRACK": "Eliminar",
+    "EDIT_TRACK": "Editar",
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Es mostren tots els trajectes",
     "ALL_HIDDEN": "S'han amagat tots els trajectes",
+    "VISIBLE_LABEL": "Visible",
+    "CANCEL": "Cancel·lar",
+    "HEADER": "Confirma l'esborrat",
+    "MESSAGE": "S'esborraran definitivament els trajectes marcats",
+    "TITLE": "Compartir un trajecte",
     "TEXT": "Aquí teniu el trajecte sol·licitat",
     "DIALOG_TITLE": "Compartiu només per Gmail",
     "TOAST1": "S'ha compartit correctament el trajecte",
     "TOAST2": "L'exportació ha fallat",
-    "TOAST5": "Error al carregar el trajecte",
-    "VISIBLE_LABEL": "Visible",
-
-    "CANCEL": "Cancel·lar",
-    "HEADER": "Confirma l'esborrat",
-    "MESSAGE": "S'esborraran definitivament els trajectes marcats",
-    "TITLE": "Compartir un trajecte"
-
-
+    "TOAST3": "Els trajectes seleccionats s'han eliminat",
+    "TOAST4": "Error al carregar la col·lecció",
+    "TOAST5": "Error al carregar el trajecte"
   },
-
   "CANVAS": {
     "ARCTITLE": "TRAJECTE DE REFERÈNCIA",
     "CURTITLE": "TRAJECTE ACTUAL",
@@ -113,24 +107,17 @@
     "FROM_START": "Distància des de l'inici",
     "TO_END": "Distància fins al final"
   },
-
-  "EDIT_MODAL": {
+  "EDIT": {
     "NAME": "Nom",
     "DESCRIPTION": "Descripció",
-    "CANCEL": "Cancel·lar",
-    "xxx": "xxx",
-    "HEADER": "Editeu les dades del trajecte",
-
-    "PLACE": "Lloc"  
+    "CANCEL": "Cancel·lar"
   },
-
   "WPT": {
     "HEADER": "Editeu el punt de ruta",
     "NAME": "Nom",
     "COMMENT": "Comentari",
     "ALTITUDE": "Altitud"
   },
-
   "RECORD": {
     "BUTTON": "Gravar",
     "START_TRACKING": "Iniciar",
@@ -140,27 +127,14 @@
     "REMOVE_TRACK": "Eliminar",
     "CONFIRM_STOP": "Confirmeu la finalització?",
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
-    "DELETE_YES": "Si",
+    "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Seguiment a temps real",
-    "DEFAULT_NAME": "XXX",
-    "XXX": "xxx",
-
-    "FROM": "Desde",
-    "TO": "Hasta",
-    "SHARE_YES": "Obrir",
-    "SHARE_NO": "Tancar",
-
-    "SHARE_TRACK": "Comp.",
-    "TRANSPORT": "Transporte"
+    "SHARE_TEXT": "Seguiment a temps real"
   },
-
   "ERRORS": {
     "ELEVATION_FETCH": "Error en les dades d'altitud del servidor.",
-    "ELEVATION_GENERIC": "No s'ha pogut obtenir l'elevació.",
-    "xxx": "xxx"
+    "ELEVATION_GENERIC": "No s'ha pogut obtenir l'elevació."
   },
-
   "COLORS": {
     "crimson": "carmesí",
     "red": "vermell",
@@ -174,53 +148,50 @@
     "cyan": "cian",
     "blue": "blau"
   },
-
   "BATTERY": {
-  "GENERIC_MSG": "Per assegurar que el seguiment GPS no s'aturi, ajusta la configuració de la bateria:",
-  "CONFIRM": "Obrir Ajustos",
-  "CANCEL": "Potser després",
-  "BRANDS": {
-    "XIAOMI": "Optimització Xiaomi",
-    "SAMSUNG": "Ajust de Samsung",
-    "HUAWEI": "Ajust de Huawei",
-    "OPPO": "Gestió d'Energia",
-    "PIXEL": "Ús de Bateria",
-    "DEFAULT": "Estalvi d'Energia"
+    "GENERIC_MSG": "Per assegurar que el seguiment GPS no s'aturi, ajusta la configuració de la bateria:",
+    "CONFIRM": "Obrir Ajustos",
+    "CANCEL": "Potser després",
+    "BRANDS": {
+      "XIAOMI": "Optimització Xiaomi",
+      "SAMSUNG": "Ajust de Samsung",
+      "HUAWEI": "Ajust de Huawei",
+      "OPPO": "Gestió d'Energia",
+      "PIXEL": "Ús de Bateria",
+      "DEFAULT": "Estalvi d'Energia"
+    },
+    "STEPS": {
+      "AUTO_START": "Activar 'Inici Automàtic'",
+      "NO_RESTRICTIONS": "Estalvi de bateria: 'Sense restriccions'",
+      "UNRESTRICTED": "Bateria: Seleccionar 'No restringit'",
+      "INACTIVITY": "Desactivar 'Posa en inactivitat profunda'",
+      "HUAWEI_MANAGE": "Ajustos > Aplicacions > Inici",
+      "HUAWEI_AUTO": "Desactivar 'Gestiona automàticament'",
+      "BACKGROUND": "Assegurar 'Activitat en segon pla' actiu",
+      "ALLOW_BG": "Ús de bateria: 'Permetre activitat en segon pla'",
+      "AUTO_OPT": "Desactivar 'Optimització automàtica'",
+      "GENERIC_UNRESTRICTED": "Configurar la bateria com a 'Sense optimitzar'"
+    }
   },
-  "STEPS": {
-    "AUTO_START": "Activar 'Inici Automàtic'",
-    "NO_RESTRICTIONS": "Estalvi de bateria: 'Sense restriccions'",
-    "UNRESTRICTED": "Bateria: Seleccionar 'No restringit'",
-    "INACTIVITY": "Desactivar 'Posa en inactivitat profunda'",
-    "HUAWEI_MANAGE": "Ajustos > Aplicacions > Inici",
-    "HUAWEI_AUTO": "Desactivar 'Gestiona automàticament'",
-    "BACKGROUND": "Assegurar 'Activitat en segon pla' actiu",
-    "ALLOW_BG": "Ús de bateria: 'Permetre activitat en segon pla'",
-    "AUTO_OPT": "Desactivar 'Optimització automàtica'",
-    "GENERIC_UNRESTRICTED": "Configurar la bateria com a 'Sense optimitzar'"
-  },
-
   "MAP_CONTROLS": {
     "CENTER_LOCATION": "Centrar a la meva ubicació",
     "STOP_TRACKING": "Aturar seguiment"
   },
-
+  "SHARE": {
+    "TITLE_MODAL": "Compartir posició",
+    "DIALOG_TITLE": "Enviar enllaç a...",
+    "ERROR_GENERATE": "No s'ha pogut iniciar el seguiment",
+    "STOPPED": "Heu deixat de compartir la vostra ubicació"
+  },
   "LOCATION": {
     "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS"
   },
-
   "REPORT": {
-    "TITLE": "Activity Report",
-    "ROUTE_NAME": "Route Name",
-    "DATE":	"Date",
-    "DISTANCE":	"Total Distance",
-    "SHARE_SUBJECT": "Tracking Report - Paso App",
-    "SHARE_BODY": "XXX"
+    "TITLE": "Informe d'activitat",
+    "ROUTE_NAME": "Nom de la ruta",
+    "DATE": "Data",
+    "DISTANCE": "Distància total",
+    "SHARE_SUBJECT": "Informe de seguiment - Paso App",
+    "SHARE_BODY": "Us envio l'informe d'activitat de la meva ruta: "
   }
-
 }
-
-}
-
-
-

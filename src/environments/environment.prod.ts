@@ -10,6 +10,7 @@ export var global: any = {
   mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
   mapbox_public: 'pk.eyJ1IjoiZWxncm9zLTIiLCJhIjoiY21rNm53N256MHF5ajNmcjJwaDhkZGNkcSJ9.oYpUoQSEsWimHyML5ZVOMQ' as string,
   ors_key: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23' as string,
+  weather_key: 'e39530f127b7c58745ddeb78f71e2019' as string,
   
   // Dynamic getter for the cancel button
 

@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
   private currentLang$ = new BehaviorSubject<string>('en');
-  private readonly SUPPORTED_LANGS = ['en', 'es', 'ca']; 
+  private readonly SUPPORTED_LANGS = ['en', 'es', 'ca', 'fr', 'ru', 'zh']; 
   
   constructor(
     private translate: TranslateService,

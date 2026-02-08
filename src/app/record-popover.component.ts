@@ -108,45 +108,6 @@ styles: [`
       padding: 16px 10px;
     }
 
-    /* --- BOTÓN TIPO NAV (VERTICAL) --- */
-    .nav-item-btn {
-      background: transparent !important;
-      border: none;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      flex: 1; /* Distribución uniforme */
-      transition: transform 0.1s ease;
-      min-width: 65px;
-      cursor: pointer;
-
-      ion-icon {
-        font-size: 26px; /* Tamaño estandarizado */
-        margin-bottom: 4px;
-      }
-
-      p {
-        margin: 0;
-        font-size: 10px; /* Tamaño unificado */
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #333;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-      }
-
-      &:active:not(:disabled) {
-        transform: scale(0.92);
-        opacity: 0.7;
-      }
-
-      &:disabled {
-        opacity: 0.2;
-        filter: grayscale(1);
-      }
-    }
-
     /* --- GRID Y CONTENEDORES --- */
     .button-grid {
       display: flex;
@@ -165,14 +126,6 @@ styles: [`
       color: var(--ion-color-primary, #3880ff) !important; 
     }
 
-    .green-pill ion-icon, .green-pill p { 
-      color: #2dd36f !important; 
-    }
-
-    .red-pill ion-icon, .red-pill p { 
-      color: #eb445a !important; 
-    }
-
     /* Clase especial para resaltar el botón de Guardar cuando está listo */
     .enabled ion-icon {
       animation: pulse 2s infinite;
@@ -185,19 +138,7 @@ styles: [`
     }
 
     /* --- CAJA DE CONFIRMACIÓN --- */
-    .confirm-box { 
-      padding: 24px 16px; 
-      text-align: center;
-    }
 
-    .confirm-title {
-      margin-bottom: 20px;
-      font-size: 12px;
-      font-weight: 800;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
   `]
 })
 
