@@ -1,23 +1,43 @@
 /* --- CONTENEDOR DE SLIDES --- */
 .slide-wrapper {
-  display: flex;
-  flex-direction: column;
+  display: block;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  /* El padding-bottom de 100px es perfecto para que el FAB no tape la info */
-  padding: 10px 0 100px 0; 
+  
+  /* Reemplaza a los 'empty' */
+  padding-top: 20px;    // Espacio inicial superior
+  padding-bottom: 140px; // Espacio extra abajo para que el FAB no tape nada al final del scroll
+  
+  background: #f4f4f4;
 }
 
-/* --- TARJETAS DE DATOS (GLASS) --- */
-/* Si tus tablas van dentro de un div con clase .card o .elementCanvas, 
-   ya heredan el desenfoque y el borde blanco del global.scss.
-   Solo ajustamos el espaciado interno aquí.
-*/
-.card, .elementCanvas {
-  margin: 12px 16px;
-  padding: 20px;
-  // Ya no necesitas repetir backdrop-filter aquí
+.card {
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-blur: 12px;
+  --glass-radius: 24px;
+  --glass-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--glass-radius);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--glass-shadow);
+  
+  /* Manejo de márgenes entre tarjetas */
+  margin: 0 16px 20px 16px; // El margen inferior de 20px separa las tarjetas entre sí
+  padding: 24px; // Un poco más de padding interno para que respire mejor el contenido
+  
+  height: auto !important;
+  min-height: min-content;
+  overflow: visible !important;
+  display: block;
+
+  /* La última tarjeta de cada slide no necesita margen extra abajo porque ya tenemos el padding-bottom del wrapper */
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 /* --- TIPOGRAFÍA Y TABLAS --- */
@@ -25,26 +45,18 @@
   font-weight: 800;
   text-transform: uppercase;
   color: var(--ion-color-primary);
-  font-size: 0.8rem; /* Un poco más pequeño para que sea más elegante */
+  font-size: 0.8rem;
   letter-spacing: 1.2px;
   margin-bottom: 8px;
-  text-align: left;
-}
-
-.subtitle {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #777;
-  margin-bottom: 15px;
-  display: block;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  
+  table-layout: auto; // Permite que las columnas se ajusten al texto
+
   td {
-    padding: 10px 0; /* Un poco más de aire para mejorar la lectura */
+    padding: 12px 0;
     font-size: 0.9rem;
     color: #444;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -62,16 +74,94 @@ table {
 }
 
 /* --- ESTILO ESPECIAL PARA PARCIALES --- */
-.partials {
+.partials-table {
+  @extend table;
+  margin-top: 10px;
+  
   tr td:nth-child(3) {
     color: var(--ion-color-secondary);
-    font-weight: 600;
+    font-weight: 700;
   }
 }
 
-/* --- SWIPER INDICATORS --- */
-swiper-container {
-  --swiper-pagination-color: var(--ion-color-primary);
-  --swiper-pagination-bullet-inactive-color: #ccc;
-  --swiper-pagination-bullet-size: 6px;
+/* canvas-container */
+.canvas-container {
+  background: #ffffff;
+  margin-bottom: 20px;
+  padding: 15px 0; // Padding arriba y abajo, pero no a los lados para el canvas
+  
+  .title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #444;
+    margin-left: 15px; // Alineado con el margen de la app
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .canvas-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #ffffff; // O un tono muy oscuro si prefieres modo noche
+    border-radius: 8px;
+    // Aquí el canvas ocupará todo el ancho si quieres
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  height: 80vh;
+
+  .icon-container {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    
+    ion-icon {
+      font-size: 3rem;
+      color: white;
+    }
+
+    /* Degradado amarillo para el track actual */
+    &.current {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+    }
+
+    /* Degradado cian para el track archivado */
+    &.archived {
+      background: linear-gradient(135deg, #00bfff, #007ace);
+      box-shadow: 0 10px 20px rgba(0, 191, 255, 0.3);
+    }
+  }
+
+  h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.5;
+    max-width: 250px;
+    margin-bottom: 20px;
+  }
+
+  ion-button {
+    --color: #007ace;
+    font-weight: 600;
+  }
 }

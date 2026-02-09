@@ -4,10 +4,9 @@
 
     <swiper-slide>
       <div class="slide-wrapper">
-        <div class='empty'></div>
+        @if (present.currentTrack) {
+          <div class='elementData card'>
         
-        <div class='elementData card' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
-          @if (present.currentTrack) {
             <table>
               <tr><td colspan="2" class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</td></tr>
               <tr>
@@ -51,28 +50,35 @@
                 <td>{{ fs.averageMotionSpeed | number: '1.1-1' }} km/h</td>
               </tr>
             </table>
-          }
-        </div>
+          </div>
 
-        <div class='elementCanvas' id='cc0' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
-          <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-          <canvas class='canvas' id="currCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-        </div>
+          <div class='canvas-container' id='cc0'>
+            <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+            <canvas class='canvas' id="currCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+          </div>
 
-        <div class='elementCanvas' id='cc1' [hidden]="!present.currentTrack || present.currentTrack.features[0].geometry.coordinates.length < 2">
-          <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
-          <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-        </div>
-        <div class='empty'></div>
+          <div class='canvas-container' id='cc1'>
+            <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
+            <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <div class="icon-container current">
+              <ion-icon name="stats-chart-outline"></ion-icon>
+            </div>
+            <h3>No hay actividad actual</h3>
+            <p>Inicia una grabación para empezar a visualizar los datos de altitud y velocidad en tiempo real.</p>
+            <ion-button fill="clear" (click)="fs.gotoPage('tab1')">Ir al mapa</ion-button>
+          </div>
+        }
       </div>
     </swiper-slide>
 
     <swiper-slide>
       <div class="slide-wrapper">
-        <div class='empty'></div>
         <div id="exportArea">
-          <div class='elementData card' [hidden]="!reference.archivedTrack">
-            @if (reference.archivedTrack) {
+          @if (reference.archivedTrack) {
+            <div class='elementData card'>
               <table>
                 <tr><td colspan='2' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
                 <tr><td colspan='2' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
@@ -97,26 +103,33 @@
                   <td>{{reference.archivedTrack.features[0].properties.totalNumber}}</td>
                 </tr>
               </table>
-            }
+            </div>
+            <div class='canvas-container' id='ac0'>
+              <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+              <canvas class='canvas' id="archCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            </div>
+            <div class='canvas-container' id='ac1'>
+              <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
+              <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            </div>
+          } @else {
+          <div class="empty-state">
+            <div class="icon-container archived">
+              <ion-icon name="archive-outline"></ion-icon>
+            </div>
+            <h3>Archivo vacío</h3>
+            <p>No has seleccionado ningún track del historial. Ve a la lista de archivos para cargar uno y comparar.</p>
+            <ion-button fill="clear" (click)="fs.gotoPage('archive')">Ver historial</ion-button>
           </div>
-          <div class='elementCanvas' id='ac0' [hidden]="!reference.archivedTrack">
-            <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-            <canvas class='canvas' id="archCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-          </div>
+        }
         </div>
-        <div class='elementCanvas' id='ac1' [hidden]="!reference.archivedTrack">
-          <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
-          <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-        </div>
-        <div class='empty'></div>
       </div>
     </swiper-slide>
 
     <swiper-slide>
       <div class="slide-wrapper">
-        <div class='empty'></div>
-        <div class='elementData card' [hidden]="!reference.archivedTrack">
-          @if (reference.archivedTrack) {
+        @if (reference.archivedTrack) {
+          <div class='elementData card'>
             <table class="partials">
               <tr><td colspan='3' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
               <tr><td colspan='3' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
@@ -128,8 +141,8 @@
                 </tr>
               }
             </table>
-          }
-        </div>
+          </div>
+        }  
       </div>
     </swiper-slide>
 
@@ -153,4 +166,4 @@
       <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
     </div>
   </ion-row>
-</ion-fab>
+</ion-fab>               

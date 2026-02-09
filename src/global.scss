@@ -183,7 +183,7 @@
 /* ==========================================================================
    1. REGLA MAESTRA (DISEÑO VISUAL COMÚN)
    ========================================================================== */
-.glass-panel, .popover-island, .elementCanvas, .card {
+.glass-panel, .popover-island {
   background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
   backdrop-filter: blur(var(--glass-blur, 12px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
@@ -203,45 +203,6 @@
 /* ==========================================================================
    2. REGLAS ESPECÍFICAS (CONFIGURACIÓN DE CADA PIEZA)
    ========================================================================== */
-
-/* Configuración para las Tarjetas y el contenedor del Canvas */
-.card, .elementCanvas {
-  /* Aquí sobrescribimos las variables solo para estos elementos */
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-radius: 24px;
-  --glass-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-
-  padding: 20px;
-  margin: 12px 16px;
-}
-
-.card {
-  min-height: auto;
-}
-
-.elementCanvas {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  .title {
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 15px 0;
-    color: #777;
-    width: 100%;
-    text-align: left;
-  }
-  
-  canvas {
-    width: 100% !important;
-    max-width: 300px;
-    height: auto !important;
-    border-radius: 12px;
-  }
-}
 
 // 3. Ajustes de Interactividad para FABs
 ion-fab {
@@ -299,8 +260,9 @@ ion-fab {
   right: 0;
   width: 100%;
   height: 50px;
-  background-color: #ccc; /* light gray */
+  background-color: #f4f4f4; // Sugerencia: usa el mismo fondo que el slide-wrapper
   z-index: 10;
+  border-top: 1px solid rgba(0,0,0,0.05); // Una línea muy fina para separar
 }
 
 /* ==========================================================================
