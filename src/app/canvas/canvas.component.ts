@@ -245,23 +245,41 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   async grid(ctx: CanvasRenderingContext2D, xMin: number, xMax: number, yMin: number, yMax: number, a: number, d: number, e: number, f: number) {
     ctx.save();
-    ctx.font = '13px Arial';
-    ctx.strokeStyle = '#555';
-    ctx.fillStyle = '#333';
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([4, 8]);
+    
+    // 1. Estética de las líneas: más finas y sutiles
+    ctx.font = '500 11px Inter, system-ui, sans-serif'; // Tipografía más moderna
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'; // Gris muy suave para no manchar el degradado
+    ctx.fillStyle = '#888'; // Color de los textos (gris medio)
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 4]); // Puntos más pequeños para un look más técnico
+    
     const gridx = this.gridValue(xMax - xMin);
     const gridy = this.gridValue(yMax - yMin);
+
+    // --- Líneas Verticales (X) ---
     for (let xi = Math.ceil(xMin / gridx) * gridx; xi <= xMax; xi += gridx) {
       const px = xi * a + e;
-      ctx.beginPath(); ctx.moveTo(px, yMin * d + f); ctx.lineTo(px, yMax * d + f); ctx.stroke();
-      ctx.fillText(xi.toLocaleString(undefined, { maximumFractionDigits: 1 }), px + 2, yMax * d + f + 15);
+      ctx.beginPath();
+      ctx.moveTo(px, yMin * d + f);
+      ctx.lineTo(px, yMax * d + f);
+      ctx.stroke();
+      
+      // Texto del eje X (debajo de la línea)
+      ctx.fillText(xi.toLocaleString(undefined, { maximumFractionDigits: 1 }), px + 4, yMax * d + f + 14);
     }
+
+    // --- Líneas Horizontales (Y) ---
     for (let yi = Math.ceil(yMin / gridy) * gridy; yi <= yMax; yi += gridy) {
       const py = yi * d + f;
-      ctx.beginPath(); ctx.moveTo(xMin * a + e, py); ctx.lineTo(xMax * a + e, py); ctx.stroke();
-      ctx.fillText(yi.toLocaleString(undefined, { maximumFractionDigits: 1 }), xMin * a + e + 2, py - 5);
+      ctx.beginPath();
+      ctx.moveTo(xMin * a + e, py);
+      ctx.lineTo(xMax * a + e, py);
+      ctx.stroke();
+      
+      // Texto del eje Y (encima de la línea para no pisarla)
+      ctx.fillText(yi.toLocaleString(undefined, { maximumFractionDigits: 1 }), xMin * a + e + 4, py - 6);
     }
+
     ctx.restore();
   }
 

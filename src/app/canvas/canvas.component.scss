@@ -4,164 +4,189 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  
-  /* Reemplaza a los 'empty' */
-  padding-top: 20px;    // Espacio inicial superior
-  padding-bottom: 140px; // Espacio extra abajo para que el FAB no tape nada al final del scroll
-  
+  padding-top: 20px;
+  padding-bottom: 140px; 
   background: #f4f4f4;
 }
 
+/* --- TARJETA UNIFICADA (Glassmorphism sutil) --- */
 .card {
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-blur: 12px;
-  --glass-radius: 24px;
-  --glass-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--glass-radius);
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: var(--glass-shadow);
-  
-  /* Manejo de márgenes entre tarjetas */
-  margin: 0 16px 20px 16px; // El margen inferior de 20px separa las tarjetas entre sí
-  padding: 24px; // Un poco más de padding interno para que respire mejor el contenido
-  
-  height: auto !important;
-  min-height: min-content;
-  overflow: visible !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  margin: 0 16px 20px 16px;
+  padding: 24px;
   display: block;
 
-  /* La última tarjeta de cada slide no necesita margen extra abajo porque ya tenemos el padding-bottom del wrapper */
-  &:last-child {
-    margin-bottom: 0;
-  }
+  &:last-child { margin-bottom: 0; }
 }
 
-/* --- TIPOGRAFÍA Y TABLAS --- */
+/* --- TEXTOS --- */
 .table-title {
   font-weight: 800;
   text-transform: uppercase;
   color: var(--ion-color-primary);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   letter-spacing: 1.2px;
   margin-bottom: 8px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: auto; // Permite que las columnas se ajusten al texto
+.subtitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
 
-  td {
-    padding: 12px 0;
+/* --- GRID DE DATOS (ICONOS) --- */
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+
+  &:last-child { border-bottom: none; }
+
+  .label-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-size: 0.9rem;
-    color: #444;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #666;
 
-    &:last-child {
-      text-align: right;
-      font-weight: 700;
-      color: #000;
+    ion-icon {
+      font-size: 1.2rem;
+      padding: 6px;
+      border-radius: 10px;
     }
   }
-  
-  tr:last-child td {
-    border-bottom: none;
-  }
-}
 
-/* --- ESTILO ESPECIAL PARA PARCIALES --- */
-.partials-table {
-  @extend table;
-  margin-top: 10px;
-  
-  tr td:nth-child(3) {
-    color: var(--ion-color-secondary);
+  .value {
     font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+    span { font-size: 0.7rem; color: #999; font-weight: 400; }
   }
 }
 
-/* canvas-container */
+/* --- COLORES DE ICONOS --- */
+.icon-dist { color: #3880ff; background: rgba(56, 128, 255, 0.1); }
+.icon-time { color: #2dd36f; background: rgba(45, 211, 111, 0.1); }
+.icon-motion { color: #10dc60; background: rgba(16, 220, 96, 0.1); }
+.icon-up { color: #ffce00; background: rgba(255, 206, 0, 0.1); }
+.icon-down { color: #ff9f00; background: rgba(255, 159, 0, 0.1); }
+.icon-alt { color: #7044ff; background: rgba(112, 68, 255, 0.1); }
+.icon-speed { color: #eb445a; background: rgba(235, 68, 90, 0.1); }
+.icon-avg { color: #92949c; background: rgba(146, 148, 156, 0.1); }
+.icon-movavg { color: #ff4961; background: rgba(255, 73, 97, 0.1); }
+
+/* --- CONTENEDOR DE CANVAS --- */
 .canvas-container {
-  background: #ffffff;
-  margin-bottom: 20px;
-  padding: 15px 0; // Padding arriba y abajo, pero no a los lados para el canvas
+  background: transparent; // O #ffffff si prefieres que el área del gráfico sea blanca
+  margin-bottom: 30px;
+  padding: 0; 
   
   .title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #444;
-    margin-left: 15px; // Alineado con el margen de la app
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #666;
+    margin: 0 0 12px 20px; // Margen izquierdo para alinear con el texto de las cards
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    border-left: 3px solid var(--ion-color-primary);
+    padding-left: 10px;
   }
 
   .canvas-wrapper {
+    width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
-    background: #ffffff; // O un tono muy oscuro si prefieres modo noche
-    border-radius: 8px;
-    // Aquí el canvas ocupará todo el ancho si quieres
+    background: #ffffff; // Fondo blanco para que el trazo del canvas destaque
+    padding: 10px 0;    // Pequeño aire arriba y abajo del trazo
+    border-top: 1px solid rgba(0,0,0,0.03);
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    
+    canvas {
+      width: 100% !important; // Fuerza el ancho total
+      height: auto !important;
+    }
   }
 }
 
+/* --- PARCIALES --- */
+.partials-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #bbb;
+}
+
+.partial-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 10px;
+  gap: 15px; // Añadimos un pequeño espacio de seguridad entre columnas
+
+  .km-badge {
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+    color: var(--ion-color-primary);
+    font-weight: 800;
+    
+    /* Aumentamos el ancho y permitimos que no se encoja */
+    min-width: 44px; // Antes era 32px, ahora tiene aire suficiente
+    height: 32px;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    flex-shrink: 0; // Evita que la columna se aplaste si el tiempo es largo
+  }
+
+  .pace-value {
+    flex: 2; // Le damos un poco más de peso al tiempo
+    text-align: left; // Opcional: alinearlo a la izquierda suele verse más ordenado si hay mucho espacio
+    padding-left: 10px;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+    color: #444;
+  }
+
+  .speed-value {
+    flex: 1.5; // Ajuste para la velocidad
+    text-align: right;
+    font-weight: 700;
+    color: var(--ion-color-secondary);
+    font-family: 'Roboto Mono', monospace;
+  }
+}
+
+/* --- EMPTY STATE --- */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  height: 70vh;
   text-align: center;
-  height: 80vh;
+  padding: 20px;
 
   .icon-container {
-    width: 100px;
-    height: 100px;
+    width: 80px; height: 80px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    
-    ion-icon {
-      font-size: 3rem;
-      color: white;
-    }
-
-    /* Degradado amarillo para el track actual */
-    &.current {
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
-    }
-
-    /* Degradado cian para el track archivado */
-    &.archived {
-      background: linear-gradient(135deg, #00bfff, #007ace);
-      box-shadow: 0 10px 20px rgba(0, 191, 255, 0.3);
-    }
-  }
-
-  h3 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 12px;
-  }
-
-  p {
-    font-size: 0.95rem;
-    color: #666;
-    line-height: 1.5;
-    max-width: 250px;
+    display: flex; align-items: center; justify-content: center;
     margin-bottom: 20px;
-  }
-
-  ion-button {
-    --color: #007ace;
-    font-weight: 600;
+    ion-icon { font-size: 2.5rem; color: white; }
+    &.current { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+    &.archived { background: linear-gradient(135deg, #00bfff, #007ace); }
   }
 }

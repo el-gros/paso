@@ -1,66 +1,101 @@
 
 <ion-content class="custom-content">
   <swiper-container id="data" pagination="true">
-
     <swiper-slide>
       <div class="slide-wrapper">
         @if (present.currentTrack) {
           <div class='elementData card'>
-        
-            <table>
-              <tr><td colspan="2" class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</td></tr>
-              <tr>
-                <td>{{ 'CANVAS.DISTANCE' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.totalDistance | number: '1.3' }} km</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.EGAIN' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} m</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.ELOSS' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} m</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.TIME' | translate }}</td>
-                <td>{{ formatMsec(present.currentTrack.features[0].properties.totalTime) }}</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.MOTIONTIME' | translate }}</td>
-                <td>{{ formatMsec(present.currentTrack.features[0].properties.inMotion) }}</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.POINTS' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.totalNumber }}</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.ALTITUDE' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} m</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.SPEED' | translate }}</td>
-                <td>{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} km/h</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.AVGSPEED' | translate }}</td>
-                <td>{{ fs.averageSpeed | number: '1.1-1' }} km/h</td>
-              </tr>
-              <tr>
-                <td>{{ 'CANVAS.MOTIONAVGSPEED' | translate }}</td>
-                <td>{{ fs.averageMotionSpeed | number: '1.1-1' }} km/h</td>
-              </tr>
-            </table>
+            <div class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</div>
+            
+            <div class="data-grid">
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="location-outline" class="icon-dist"></ion-icon>
+                  <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
+                </div>
+                <div class="value">{{ present.currentTrack.features[0].properties.totalDistance | number: '1.3' }} <span>km</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="time-outline" class="icon-time"></ion-icon>
+                  <span>{{ 'CANVAS.TIME' | translate }}</span>
+                </div>
+                <div class="value">{{ formatMsec(present.currentTrack.features[0].properties.totalTime) }}</div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="play-circle-outline" class="icon-motion"></ion-icon>
+                  <span>{{ 'CANVAS.MOTIONTIME' | translate }}</span>
+                </div>
+                <div class="value">{{ formatMsec(present.currentTrack.features[0].properties.inMotion) }}</div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
+                  <span>{{ 'CANVAS.EGAIN' | translate }}</span>
+                </div>
+                <div class="value">{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} <span>m</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
+                  <span>{{ 'CANVAS.ELOSS' | translate }}</span>
+                </div>
+                <div class="value">{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} <span>m</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="mountain-outline" class="icon-alt"></ion-icon>
+                  <span>{{ 'CANVAS.ALTITUDE' | translate }}</span>
+                </div>
+                <div class="value">{{ present.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} <span>m</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="speedometer-outline" class="icon-speed"></ion-icon>
+                  <span>{{ 'CANVAS.SPEED' | translate }}</span>
+                </div>
+                <div class="value">{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} <span>km/h</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="analytics-outline" class="icon-avg"></ion-icon>
+                  <span>{{ 'CANVAS.AVGSPEED' | translate }}</span>
+                </div>
+                <div class="value">{{ fs.averageSpeed | number: '1.1-1' }} <span>km/h</span></div>
+              </div>
+
+              <div class="data-row">
+                <div class="label-group">
+                  <ion-icon name="flash-outline" class="icon-movavg"></ion-icon>
+                  <span>{{ 'CANVAS.MOTIONAVGSPEED' | translate }}</span>
+                </div>
+                <div class="value">{{ fs.averageMotionSpeed | number: '1.1-1' }} <span>km/h</span></div>
+              </div>
+            </div>
           </div>
 
           <div class='canvas-container' id='cc0'>
             <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-            <canvas class='canvas' id="currCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            <div class="canvas-wrapper">
+              <canvas class='canvas' id="currCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            </div>
           </div>
 
           <div class='canvas-container' id='cc1'>
             <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
-            <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            <div class="canvas-wrapper">
+              <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            </div>
           </div>
+
         } @else {
           <div class="empty-state">
             <div class="icon-container current">
@@ -79,40 +114,58 @@
         <div id="exportArea">
           @if (reference.archivedTrack) {
             <div class='elementData card'>
-              <table>
-                <tr><td colspan='2' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
-                <tr><td colspan='2' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
-                <tr>
-                  <td>{{'CANVAS.DISTANCE' | translate}}</td>
-                  <td>{{ reference.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} km</td>
-                </tr>
-                <tr>
-                  <td>{{ 'CANVAS.EGAIN' | translate }}</td>
-                  <td>{{ reference.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} m</td>
-                </tr>
-                <tr>
-                  <td>{{ 'CANVAS.ELOSS' | translate }}</td>
-                  <td>{{ reference.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} m</td>
-                </tr>
-                <tr>
-                  <td>{{ 'CANVAS.TIME' | translate }}</td>
-                  <td>{{ formatMsec(reference.archivedTrack.features[0].properties.totalTime) }}</td>
-                </tr>
-                <tr>
-                  <td>{{'CANVAS.POINTS' | translate}}</td>
-                  <td>{{reference.archivedTrack.features[0].properties.totalNumber}}</td>
-                </tr>
-              </table>
-            </div>
-            <div class='canvas-container' id='ac0'>
-              <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-              <canvas class='canvas' id="archCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-            </div>
-            <div class='canvas-container' id='ac1'>
-              <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
-              <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-            </div>
-          } @else {
+                <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
+                <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
+                
+                <div class="data-grid">
+                  <div class="data-row">
+                    <div class="label-group">
+                      <ion-icon name="location-outline" class="icon-dist"></ion-icon>
+                      <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
+                    </div>
+                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} <span>km</span></div>
+                  </div>
+
+                  <div class="data-row">
+                    <div class="label-group">
+                      <ion-icon name="time-outline" class="icon-time"></ion-icon>
+                      <span>{{ 'CANVAS.TIME' | translate }}</span>
+                    </div>
+                    <div class="value">{{ formatMsec(reference.archivedTrack.features[0].properties.totalTime) }}</div>
+                  </div>
+
+                  <div class="data-row">
+                    <div class="label-group">
+                      <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
+                      <span>{{ 'CANVAS.EGAIN' | translate }}</span>
+                    </div>
+                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} <span>m</span></div>
+                  </div>
+
+                  <div class="data-row">
+                    <div class="label-group">
+                      <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
+                      <span>{{ 'CANVAS.ELOSS' | translate }}</span>
+                    </div>
+                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} <span>m</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class='canvas-container' id='ac0'>
+                <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+                <div class="canvas-wrapper">
+                  <canvas class='canvas' id="archCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+                </div>
+              </div>
+
+              <div class='canvas-container' id='ac1'>
+                <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
+                <div class="canvas-wrapper">
+                  <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+                </div>
+              </div>
+            } @else {
           <div class="empty-state">
             <div class="icon-container archived">
               <ion-icon name="archive-outline"></ion-icon>
@@ -130,17 +183,25 @@
       <div class="slide-wrapper">
         @if (reference.archivedTrack) {
           <div class='elementData card'>
-            <table class="partials">
-              <tr><td colspan='3' class="table-title">{{'CANVAS.ARCTITLE' | translate}}</td></tr>
-              <tr><td colspan='3' class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</td></tr>
+            <div class="table-title">{{'CANVAS.ARCTITLE' | translate}}</div>
+            <div class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</div>
+
+            <div class="partials-container">
+            <div class="partials-header">
+              <span>{{ 'CANVAS.KM' | translate }}</span>
+              <span>{{ 'CANVAS.PACE' | translate }}</span>
+              <span>{{ 'CANVAS.SPEED' | translate }}</span>
+            </div>
               @for (ps of partialSpeeds; track i; let i = $index) {
-                <tr>
-                  <td>{{ ps[0] }}</td>
-                  <td>{{ ps[1] }}</td>
-                  <td>{{ ps[2] | number:'1.2-2' }} km/h</td>
-                </tr>
+                <div class="partial-row">
+                  <div class="km-badge">{{ ps[0] }}</div>
+                  <div class="pace-value">{{ ps[1] }}</div>
+                  <div class="speed-value">
+                    {{ ps[2] | number:'1.1-1' }} <span>km/h</span>
+                  </div>
+                </div>
               }
-            </table>
+            </div>
           </div>
         }  
       </div>
