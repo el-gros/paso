@@ -145,7 +145,7 @@ export class ReferenceService {
           }
         }
       }
-      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'));
+      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'), 'success');
     }
   }
 }

@@ -44,7 +44,8 @@
     "DRIVE": "Cotxe",
     "CLEAN": "Netejar",
     "DESCRIPTION": "Perfil de ruta",
-    "LISTENING": "Escoltant..."
+    "LISTENING": "Escoltant...",
+    "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -87,7 +88,8 @@
     "TOAST2": "L'exportació ha fallat",
     "TOAST3": "Els trajectes seleccionats s'han eliminat",
     "TOAST4": "Error al carregar la col·lecció",
-    "TOAST5": "Error al carregar el trajecte"
+    "LOADING_ERROR": "Error al carregar el trajecte",
+    "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers"
   },
   "CANVAS": {
     "ARCTITLE": "TRAJECTE DE REFERÈNCIA",

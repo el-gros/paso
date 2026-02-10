@@ -33,39 +33,41 @@ export interface Bounds {
 }
 
 export interface Track {
-  type: string,
-  features: [{
-    type: string,
+  type: 'FeatureCollection'; 
+  features: TrackFeature[];
+}
+
+export interface TrackFeature {
+  type: 'Feature';
+  properties: {
+    currentSpeed?: number;
+    currentAltitude?: number;
+    name: string;
+    place: string | number[];
+    date?: Date | string | undefined
+    description: string;
+    totalDistance: number;
+    totalTime: number;
+    inMotion: number;
+    totalElevationGain: number;
+    totalElevationLoss: number;
+    totalNumber: number;
+  };
+  bbox?: [number, number, number, number];
+  geometry: {
+    type: 'LineString';
+    coordinates: [number, number][]; // Array de pares longitud, latitud
     properties: {
-      currentSpeed: any
-      currentAltitude: any
-      name: string,
-      place: string,
-      date: Date | undefined,
-      description: string,
-      totalDistance: number,
-      totalTime: any,
-      inMotion: any,
-      totalElevationGain: number,
-      totalElevationLoss: number,
-      totalNumber: number,
-    },
-    bbox?: [number, number, number, number],
-    geometry: {
-      type: 'LineString',
-      coordinates: number[][],
-      properties: {
-        data: Data[]
-      }
-    }
-    waypoints?: Waypoint []
-  }]
+      data: Data[];
+    };
+  };
+  waypoints?: Waypoint[];
 }
 
 export interface TrackDefinition {
   name: string,
   date: Date | undefined,
-  place: string,
+  place: string | number[],
   description: string,
   isChecked: boolean
 }
@@ -102,20 +104,8 @@ export interface PartialSpeed extends Array<string | number> {
   2: number;  
 }
 
-export interface LocationResult {
-  lat: number;
-  lon: number;
-  name: string;
-  display_name: string;
-  short_name?: string;   // 👈 add this
-  type: string;
-  place_id: string | number;
-  boundingbox: number[];
-  geojson: any;
-}
-
 export interface Route {
-  features: any[]; // Replace `any` with a more specific type if available
+  features: any[]; 
   trackName?: string;
   [key: string]: any;
 }
@@ -135,5 +125,23 @@ export interface ParsedPoint {
 export interface ParseResult {
   waypoints: Waypoint[];
   trackPoints: ParsedPoint[];
-  trk: any; // Usamos any para el nodo XML, o null
+  trk: Element | null; // Tipo nativo de DOM
+}
+
+export interface LocationResult {
+  lat: number;
+  lon: number;
+  name: string;
+  display_name: string;
+  short_name?: string;   // 👈 add this
+  type?: string;
+  place_id?: string | number;
+  boundingbox: number[];
+  geojson?: any;
+}
+
+export interface WikiData {
+  title: string;
+  extract: string;
+  thumbnail?: string;
 }

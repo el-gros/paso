@@ -44,7 +44,8 @@
     "DRIVE": "Drive",
     "CLEAN": "Clean",
     "DESCRIPTION": "Route profile",
-    "LISTENING": "Listening..."
+    "LISTENING": "Listening...",
+    "NO_SPEECHRECOGNITION": "Speech recognition not available"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -87,7 +88,8 @@
     "TOAST2": "Export failed",
     "TOAST3": "Selected tracks have been removed",
     "TOAST4": "Error loading collection",
-    "TOAST5": "Error loading track"
+    "LOADING_ERROR": "Error loading track",
+    "EMPTY_TRACKS": "No valid coordinates found in files"
   },
   "CANVAS": {
     "ARCTITLE": "REFERENCE TRACK",

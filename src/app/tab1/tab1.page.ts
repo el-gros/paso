@@ -3,9 +3,8 @@ import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { Storage } from '@ionic/storage-angular';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
-import View from 'ol/View';
 import { useGeographic } from 'ol/proj.js';
-import { TrackDefinition, Waypoint, Location } from '../../globald';
+import { TrackDefinition, Waypoint, WikiData, Location } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { ServerService } from '../services/server.service';
@@ -28,6 +27,11 @@ import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, take, takeUntil } from 'rxjs';
 import { WikiCardComponent } from '../wiki-card.component';
+import { MapBrowserEvent } from 'ol';
+import BaseEvent from 'ol/events/Event';
+import { FeatureLike } from 'ol/Feature';
+import { Feature } from 'ol';
+import { Geometry } from 'ol/geom';
 
 useGeographic();
 register();
@@ -48,7 +52,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
-  public wikiData: any = null;
+  public wikiData: WikiData | null = null;
   private mapWrapperElement: HTMLElement | null = null;
 
   constructor(
@@ -173,72 +177,114 @@ export class Tab1Page implements OnInit, OnDestroy {
 
   // 4. HANDLE CLICKS ///////////////////////////
   async handleClicks() {
-    try {
-      if (!this.geography.map) return;
-      this.geography.map.un('click', this.handleMapClick.bind(this));
-      this.geography.map.on('click', (ev: any) => this.handleMapClick(ev));
-    } catch (error) {
-      console.error('Error attaching map click listener:', error);
-    }
+    const map = this.geography.map;
+    if (!map) return;
+
+    // Quitamos los corchetes y usamos el string directo
+    map.un('singleclick', this.handleMapClick);
+    map.on('singleclick', this.handleMapClick);
+    console.log('✅ Click listener activado en el mapa');
   }
 
   // 5. HANDLE MAP CLICK ////////////////////////
-  async handleMapClick(event: { coordinate: any; pixel: any }) {
-    if (!this.geography.map || !this.geography.archivedLayer) return;
+  private handleMapClick = async (event: any) => {
+    console.log('¡Clic detectado!', event?.coordinate);
+    const browserEvent = event as MapBrowserEvent<PointerEvent>;
+    const map = this.geography.map;
+
+    // 1. Si no hay mapa o la capa no tiene fuente de datos, no hacemos nada
+    if (!map || !this.geography.archivedLayer?.getSource()) return;
+
     let selectedFeature: any = null;
-    this.geography.map.forEachFeatureAtPixel(event.pixel, (feature: any) => {
-      if (!selectedFeature) {
+
+    map.forEachFeatureAtPixel(browserEvent.pixel, (feature: FeatureLike) => {
+      console.log('Feature encontrada:', feature.getProperties());
+      if (feature instanceof Feature) {
         const type = feature.get('type');
-        if (type) {
+        if (!selectedFeature && type) {
           selectedFeature = feature;
-          return true;
+          return true; 
         }
       }
       return false;
     }, { hitTolerance: 5 });
 
-    if (!selectedFeature) return;
+    if (!selectedFeature) {
+      return;
+      console.log('No se seleccionó ninguna feature válida');
+    }  
+    
     const type = selectedFeature.get('type');
+    console.log('Tipo de feature:', type);
+    const geometry = selectedFeature.getGeometry();
+    if (!geometry) return;
 
-    if (type === 'archived_points' && !this.reference.archivedTrack) {
-      const clickedCoordinate = selectedFeature.getGeometry().getClosestPoint(event.coordinate);
-      const coords = selectedFeature.getGeometry().getCoordinates();
-      const index = this.findClosestIndex(coords, clickedCoordinate);
-      if (index !== -1) {
-        const multiKey = selectedFeature.get('multikey');
-        this.fs.key = JSON.stringify(multiKey[index]);
-        this.reference.archivedTrack = await this.fs.storeGet(this.fs.key);
-        if (this.reference.archivedTrack) {
-          this.reference.displayArchivedTrack();
-          await this.geography.setMapView(this.reference.archivedTrack);
-        }
-      }
-    }
-    else if (this.reference.archivedTrack) {
-      const trackElements = ['archived_line', 'archived_start', 'archived_end'];
-      if (trackElements.includes(type)) {
-        const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
-        const index = this.fs.collection.findIndex((item: TrackDefinition) => {
-          if (!item.date || !archivedDate) return false;
-          return new Date(item.date).getTime() === new Date(archivedDate).getTime();
-        });
-        if (index >= 0) await this.reference.editTrack(index);
-      }
-      else if (type === 'archived_waypoints') {
-        const clickedCoordinate = selectedFeature.getGeometry().getClosestPoint(event.coordinate);
-        const coords = selectedFeature.getGeometry().getCoordinates();
+    // --- ESCENARIO 2a: YA HAY UN TRACK ABIERTO ---
+    if (this.reference.archivedTrack) {
+      
+      // Si se pincha en un Waypoint
+      if (type === 'archived_waypoints' && 'getCoordinates' in geometry) {
+        const coords = (geometry as any).getCoordinates();
+        const clickedCoordinate = (geometry as any).getClosestPoint(browserEvent.coordinate);
         const index = this.findClosestIndex(coords, clickedCoordinate);
+
         if (index !== -1) {
           let waypoints: Waypoint[] = selectedFeature.get('waypoints');
           const response = await this.fs.editWaypoint(waypoints[index], true, false);
+          
           if (response.action === 'ok') {
             waypoints[index].name = response.name;
             waypoints[index].comment = response.comment;
             this.reference.archivedTrack.features[0].waypoints = waypoints;
+
             if (this.fs.key) {
               await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
-              this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'));
+              this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'), 'success');
             }
+          }
+        }
+      } 
+      // Si se pincha en cualquier otra parte del track (línea, inicio, fin)
+      else {
+        const trackElements = ['archived_line', 'archived_start', 'archived_end', 'archived_points'];
+        if (trackElements.includes(type)) {
+          const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
+          if (archivedDate) {
+            const archivedTime = new Date(archivedDate).getTime();
+            const index = this.fs.collection.findIndex((item: TrackDefinition) => 
+              item.date && new Date(item.date).getTime() === archivedTime
+            );
+
+            if (index >= 0) {
+              await this.reference.editTrack(index);
+            }
+          }
+        }
+      }
+    } 
+
+    // --- ESCENARIO 2b: NO HAY TRACK ABIERTO (Cargar nuevo) ---
+    else {
+      // Si se pincha en los puntos de un trayecto archivado
+      if (type === 'archived_points') {
+        const clickedCoordinate = (geometry as any).getClosestPoint(event.coordinate);
+        const coords = (geometry as any).getCoordinates();
+        const index = this.findClosestIndex(coords, clickedCoordinate);
+        
+        if (index !== -1) {
+          const multiKey = selectedFeature.get('multikey');
+          this.fs.key = JSON.stringify(multiKey[index]);
+          
+          // Cargamos el track seleccionado
+          const trackData = await this.fs.storeGet(this.fs.key);
+          
+          if (trackData) {
+            // Limpiamos los trayectos actuales de la capa "archived" antes de mostrar el específico
+            this.geography.archivedLayer.getSource()?.clear();
+            
+            this.reference.archivedTrack = trackData;
+            this.reference.displayArchivedTrack();
+            await this.geography.setMapView(this.reference.archivedTrack);
           }
         }
       }
@@ -258,7 +304,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
     this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
     this.fs.alert = await this.fs.check(this.fs.alert,'alert');
-    this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
+    //this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
@@ -354,7 +400,7 @@ export class Tab1Page implements OnInit, OnDestroy {
         this.fs.gotoPage('canvas');
       } else {
         this.fs.buildTrackImage = false;
-        await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'));
+        await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'), 'error');
         this.fs.gotoPage('archive');
       }
     } catch (err) {

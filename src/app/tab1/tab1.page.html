@@ -6,11 +6,11 @@
       <span>{{ 'RECORD.BUTTON' | translate }}</span>
     </div>
     <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">
-      <ion-icon name="help-sharp"></ion-icon>
+      <ion-icon name="search-circle-sharp"></ion-icon>
       <span>{{ 'SEARCH.BUTTON' | translate }}</span>
     </div>
     <div class="record-button" (click)="mapService.cycleZoom()">
-      <ion-icon name="search-sharp"></ion-icon>
+      <ion-icon name="expand-sharp"></ion-icon>
       <span>{{ 'MAP.ZOOM_BUTTON' | translate }}</span>
     </div>
   </ion-row>
@@ -20,7 +20,10 @@
 <ion-content [fullscreen]="true">
   <app-record-popover></app-record-popover>
   
-  <app-search-guide-popover (onWikiResult)="wikiData = $event"></app-search-guide-popover>
+  <app-search-guide-popover 
+    (onWikiResult)="wikiData = $event"
+    (onClearResult)="wikiData = null">
+  </app-search-guide-popover>
   
   <div id="map-wrapper">
     <div id="map"></div>
@@ -40,11 +43,11 @@
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics-sharp"></ion-icon>
+      <ion-icon name="bar-chart-sharp"></ion-icon>
       <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
     </div>
     <div class="record-button" (click)="fs.gotoPage('archive')">
-      <ion-icon name="list-sharp"></ion-icon>
+      <ion-icon name="library-sharp"></ion-icon>
       <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
     </div>
     <div class="record-button" (click)="fs.gotoPage('settings')">

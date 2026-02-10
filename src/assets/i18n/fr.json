@@ -87,7 +87,7 @@
     "TOAST2": "L'exportation a échoué",
     "TOAST3": "Les parcours sélectionnés ont été supprimés",
     "TOAST4": "Erreur lors du chargement de la collection",
-    "TOAST5": "Erreur lors du chargement du parcours"
+    "LOADING_ERROR": "Erreur lors du chargement du parcours"
   },
   "CANVAS": {
     "ARCTITLE": "PARCOURS DE RÉFÉRENCE",

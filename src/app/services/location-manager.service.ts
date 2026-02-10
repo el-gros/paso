@@ -6,6 +6,8 @@ import { Location, Track } from 'src/globald';
 import { firstValueFrom, filter, timeout } from 'rxjs';
 import MyService from 'src/plugins/MyServicePlugin';
 import { FunctionsService } from '../services/functions.service';
+import { TranslateService } from '@ngx-translate/core';
+import { LanguageService } from './language.service';
 
 @Injectable({
   providedIn: 'root'
@@ -36,6 +38,7 @@ export class LocationManagerService {
     private reference: ReferenceService,
     private supabase: SupabaseService,
     private fs: FunctionsService,
+    private translate: TranslateService,
   ) { }
 
  
@@ -79,7 +82,7 @@ export class LocationManagerService {
       );
       return [nextLoc.longitude, nextLoc.latitude];
     } catch (err) {
-      this.fs.displayToast('LOCATION.ERROR_TIMEOUT');
+      this.fs.displayToast(this.translate.instant('LOCATION.ERROR_TIMEOUT'), 'error');
       return null;
     }
   }

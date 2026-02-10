@@ -22,16 +22,9 @@ import { StylerService } from './services/styler.service';
 import { global } from './../environments/environment';
 import { WikiService } from './services/wiki.service';
 import { WeatherService } from './services/weather.service';
+import { LocationResult } from 'src/globald';
 
-interface LocationResult {
-  lat: number;
-  lon: number;
-  name: string;
-  display_name: string;
-  short_name?: string;
-  boundingbox: number[];
-  geojson: any;
-}
+
 
 @Component({
   standalone: true,
@@ -233,6 +226,7 @@ export class SearchGuidePopoverComponent implements OnInit {
 
   constructor(private popoverController: PopoverController) {}
   @Output() onWikiResult = new EventEmitter<any>();
+  @Output() onClearResult = new EventEmitter<void>();
 
   // 2. Añade la función close que pide el HTML
   close() {
@@ -252,7 +246,7 @@ export class SearchGuidePopoverComponent implements OnInit {
 
     const available = await SpeechRecognition.available();
     if (!available.available) {
-      this.fs.displayToast("Speech recognition not available");
+      this.fs.displayToast(this.translate.instant('SEARCH.NO_SPEECHRECOGNITION'), 'warning');
       return;
     }
     
@@ -392,7 +386,12 @@ export class SearchGuidePopoverComponent implements OnInit {
     this.results = []; this.activeRouteField = 'origin';
   }
 
-  clearSearchPlace() { this.geography.searchLayer?.getSource()?.clear(); this.reference.foundPlace = false; }
+  async clearSearchPlace() { 
+    this.geography.searchLayer?.getSource()?.clear(); 
+    this.reference.foundPlace = false; 
+    this.onClearResult.emit();
+  }
+  
   async clearSearchRoute() { 
     this.reference.clearArchivedTrack();
     this.reference.foundRoute = false;
@@ -401,7 +400,7 @@ export class SearchGuidePopoverComponent implements OnInit {
 
   async requestRoute() {
     if (!this.originCoords || !this.destinationCoords) {
-      this.fs.displayToast(this.translate.instant('SEARCH.SELECT_BOTH'));
+      this.fs.displayToast(this.translate.instant('SEARCH.SELECT_BOTH'), 'warning');
       return;
     }
 
@@ -437,11 +436,10 @@ export class SearchGuidePopoverComponent implements OnInit {
       } else {
         const errorMsg = responseData?.error?.message || "No route found";
         console.error("ORS Error:", errorMsg);
-        this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND'));
+        this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND'), 'error');
       }
     } catch (error) {
-      console.error("Routing error:", error);
-      this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'));
+      this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'), 'error');
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -497,7 +495,7 @@ async handleRouteResponse(geoJsonData: any) {
         totalElevationGain: Math.round(ascent),
         totalElevationLoss: Math.round(descent),
         
-        inMotion: true,
+        inMotion: durationInMs,
         totalNumber: route.geometry.coordinates.length,
       },
       bbox: cleanBbox,

@@ -64,9 +64,34 @@
 }
 
 // 2. TOAST //////////////////////////
+/* Base común para todos */
 .toast {
-  text-align: center !important; /* Center the text */
-  font-size: 16px !important; /* Increase the font size */
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  --border-radius: 8px; /* Bordes redondeados */
+  --box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Sombra para dar profundidad */
+}
+
+/* Éxito - Verde */
+.toast-success {
+  @extend .toast;
+  --background: #2dd36f; /* Verde Ionic */
+  --color: #ffffff;
+}
+
+/* Error - Rojo */
+.toast-error {
+  @extend .toast;
+  --background: #eb445a; /* Rojo Ionic */
+  --color: #ffffff;
+}
+
+/* Advertencia - Amarillo/Naranja */
+.toast-warning {
+  @extend .toast;
+  --background: #ffc409; /* Amarillo Ionic */
+  --color: #000000; /* Texto negro para contraste */
 }
 
 // 3. CONTROLS ////////////////////////

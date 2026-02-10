@@ -44,7 +44,8 @@
     "DRIVE": "Coche",
     "CLEAN": "Limpiar",
     "DESCRIPTION": "Perfil de ruta",
-    "LISTENING": "Escuchando..."
+    "LISTENING": "Escuchando...",
+    "NO_SPEECHRECOGNITION": "Reconocimiento de voz no disponible"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -87,7 +88,8 @@
     "TOAST2": "Ha fallado la exportación",
     "TOAST3": "Los trayectos seleccionados han sido eliminados",
     "TOAST4": "Error al cargar la colección",
-    "TOAST5": "Error al cargar el trayecto"
+    "LOADING_ERROR": "Error al cargar el trayecto",
+    "EMPTY_TRACKS": "No se encontraron coordenadas válidas en los archivos"
   },
   "CANVAS": {
     "ARCTITLE": "TRAYECTO DE REFERENCIA",

@@ -87,7 +87,7 @@
     "TOAST2": "导出失败",
     "TOAST3": "所选轨迹已删除",
     "TOAST4": "加载集合时出错",
-    "TOAST5": "加载轨迹时出错"
+    "LOADING_ERROR": "加载轨迹时出错"
   },
   "CANVAS": {
     "ARCTITLE": "参考轨迹",

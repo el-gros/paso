@@ -2,10 +2,9 @@ import DOMPurify from 'dompurify';
 import { Track, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
-import { ToastController } from '@ionic/angular';
+import { ToastController, PopoverController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { ModalController } from '@ionic/angular';
-import { WptModalComponent } from '../wpt-modal/wpt-modal.component';
+import { WptPopoverComponent } from '../wpt-popover.component';
 import { register } from 'swiper/element';
 import { TranslateService } from '@ngx-translate/core'; // Importar
 register();
@@ -22,7 +21,7 @@ export class FunctionsService {
 
   key: string | undefined = undefined;
   buildTrackImage: boolean = false;
-  selectedAltitude: string = 'GPS'; 
+  // selectedAltitude: string = 'GPS'; 
   lag: number = 8;
   geocoding: string = 'maptiler';
   collection: TrackDefinition[] = [];
@@ -42,7 +41,7 @@ export class FunctionsService {
     private storage: Storage,
     private toastController: ToastController,
     @Inject(Router) private router: Router,
-    private modalController: ModalController,
+    private popoverController: PopoverController,
     private translate: TranslateService,
   ) {}
 
@@ -181,15 +180,15 @@ export class FunctionsService {
     return (res !== null && res !== undefined) ? res as T : defaultValue;
   }
 
-  async displayToast(message: string, isKey: boolean = true) {
+  async displayToast(message: string, css: string) {
+    const isKey: boolean = true;
     // Si isKey es true, busca la traducción; si no, muestra el texto tal cual
     const finalMessage = isKey ? this.translate.instant(message) : message;
     const toast = await this.toastController.create({ 
       message: finalMessage, 
       duration: 3000, 
       position: 'bottom', 
-      color: 'dark', 
-      cssClass: 'toast' 
+      cssClass: 'toast toast+' + css
     });
     await toast.present();
   }
@@ -245,21 +244,31 @@ export class FunctionsService {
   }
 
   async editWaypoint(waypoint: Waypoint, showAltitude: boolean, edit: boolean) {
-    const modal = await this.modalController.create({ 
-      component: WptModalComponent, 
-      componentProps: { 
-        wptEdit: { 
-          name: this.sanitize(waypoint.name || ''), 
-          altitude: waypoint.altitude, 
-          comment: this.sanitize(waypoint.comment || '') 
-        }, 
-        edit, 
-        showAltitude 
-      }, 
-      cssClass: ['modal-class','yellow-class'] 
+    const popover = await this.popoverController.create({
+      component: WptPopoverComponent,
+      componentProps: {
+        // Pasamos una copia limpia del waypoint sanitizado
+        wptEdit: {
+          ...waypoint,
+          name: this.sanitize(waypoint.name || ''),
+          comment: this.sanitize(waypoint.comment || '')
+        },
+        edit,
+        showAltitude
+      },
+      // Eliminamos las clases de modal y podemos usar una de popover si fuera necesario
+      cssClass: 'floating-popover', 
+      translucent: true,
+      dismissOnSelect: false,
+      backdropDismiss: true
     });
-    await modal.present();
-    const { data } = await modal.onDidDismiss(); return data;
+
+    await popover.present();
+    
+    const { data } = await popover.onDidDismiss();
+    
+    // Retornamos la data (que contiene { action, name, comment })
+    return data;
   }
 
   async gotoPage(option: string) { this.router.navigate([option]); }

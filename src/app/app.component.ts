@@ -6,7 +6,7 @@ import { IonicModule, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LocationManagerService } from './services/location-manager.service';
-import { App } from '@capacitor/app';
+import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { ReferenceService } from './services/reference.service';
 import { AppStateService } from './services/appState.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -103,7 +103,7 @@ export class AppComponent implements OnDestroy {
 
   // 5. SETUP FILE LISTENER ///////////////////////////
   private async setupFileListener() {
-    this.appUrlListener = await App.addListener('appUrlOpen', (data: any) => {
+    this.appUrlListener = await App.addListener('appUrlOpen', (data: URLOpenListenerEvent) => {
       this.zone.run(async () => {
         const track = await this.processUrl(data);
         if (track) {
@@ -115,9 +115,9 @@ export class AppComponent implements OnDestroy {
   }
 
   // 6. PROCESS URL /////////////////////////////////// 
-  async processUrl(data: any) {
+  async processUrl(data: URLOpenListenerEvent) {
     if (!data?.url) {
-      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'));
+      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'), 'danger');
       return null;
     }
 
@@ -154,7 +154,7 @@ export class AppComponent implements OnDestroy {
       }
 
       if (!trackPoints.length || !trk) {
-        this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'));
+        this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'), 'warning');
         return null;
       }
 
@@ -163,15 +163,16 @@ export class AppComponent implements OnDestroy {
       
       this.reference.archivedTrack = track;   
       await this.location.sendReferenceToPlugin();
-      this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'));
+      this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'), 'success');
       
       return track;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Import failed:', error);
-      const translationKey = error.message === 'UNSUPPORTED_TYPE' 
+      const message = error instanceof Error ? error.message : '';
+      const translationKey = message === 'UNSUPPORTED_TYPE' 
         ? 'MAP.ERROR_UNSUPPORTED' 
         : 'MAP.ERROR_IMPORT';
-      this.fs.displayToast(this.translate.instant(translationKey));
+      this.fs.displayToast(this.translate.instant(translationKey), 'error');
       return null;
     }
   }
@@ -295,6 +296,7 @@ export class AppComponent implements OnDestroy {
   }
 
   // 10. CALCULATE ELEVATION GAIN & LOSS /////////////////////////////
+  /*
   private calculateElevationGains(track: Track) {
     const data = track.features[0].geometry.properties.data;
     if (data.length < 2) return;
@@ -314,10 +316,10 @@ export class AppComponent implements OnDestroy {
     }
     track.features[0].properties.totalElevationGain = gain;
     track.features[0].properties.totalElevationLoss = loss;
-  }
+  } */
 
   // 11. SAVE TRACK //////////////////////////////////////////////////
-  async saveTrack(track: any) {
+  async saveTrack(track: Track) {
     if (!track?.features?.[0]) return;
 
     const props = track.features[0].properties;
@@ -340,7 +342,7 @@ export class AppComponent implements OnDestroy {
 
       this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
-      this.fs.displayToast(this.translate.instant('MAP.SAVED'));
+      this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success')
     } catch (e) {
       console.error("Error saving track to storage", e);
     }

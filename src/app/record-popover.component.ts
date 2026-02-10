@@ -47,7 +47,7 @@ register();
             <button class="nav-item-btn" 
               [disabled]="location.state !== 'tracking'" 
               (click)="waypoint(); present.isRecordPopoverOpen = false">
-              <ion-icon name="pin-sharp" class="primary-icon"></ion-icon>
+              <ion-icon name="location-sharp" class="primary-icon"></ion-icon>
               <p>{{ 'RECORD.WAYPOINT' | translate }}</p>
             </button>
 
@@ -143,7 +143,6 @@ styles: [`
 })
 
 export class RecordPopoverComponent { 
-// ... resto de la lógica permanece igual ...  // Inyección de servicios con inject() para evitar NG0201
   public fs = inject(FunctionsService);
   public geography = inject(GeographyService);
   public location = inject(LocationManagerService);
@@ -188,7 +187,7 @@ export class RecordPopoverComponent {
     this.location.state = 'inactive';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
-    this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'));
+    this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
   }
 
   async stopTracking(): Promise<void> {
@@ -199,7 +198,7 @@ export class RecordPopoverComponent {
 
     let coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length < 1) {
-      this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'));
+      this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'), 'warning');
       return;
     }
 
@@ -226,7 +225,7 @@ export class RecordPopoverComponent {
     }
 
     await this.geography.setMapView(this.present.currentTrack);
-    this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'));
+    this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
     await this.location.sendReferenceToPlugin();
   }
 
@@ -261,7 +260,7 @@ export class RecordPopoverComponent {
       waypoint.name = response.name;
       waypoint.comment = response.comment;
       this.present.currentTrack?.features[0].waypoints?.push(waypoint);
-      this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'));
+      this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'), 'success');
     }
   }
 
@@ -307,8 +306,7 @@ export class RecordPopoverComponent {
         isChecked: false
       });
       await this.fs.storeSet('collection', this.fs.collection);
-
-      this.fs.displayToast(this.translate.instant('MAP.SAVED'));
+      this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
       this.location.state = 'saved';
     } catch (e) {
       console.error("Save failed", e);
@@ -318,6 +316,7 @@ export class RecordPopoverComponent {
     }
   }
 
+  /*
   async getAltitudesFromMap(coordinates: [number, number][] ) {
     try {
       const altitudes = await this.getAltitudes(coordinates)
@@ -358,5 +357,6 @@ export class RecordPopoverComponent {
       return [];
     }
   }
+  */  
 
 }

@@ -351,7 +351,7 @@ export class MapService {
 
       // 5. Verificación final de datos
       if (multiLine.length === 0) {
-        this.fs.displayToast("No se encontraron coordenadas válidas en los archivos.");
+        this.fs.displayToast(this.translate.instant('ARCHIVE.EMPTY_TRACKS'), 'error');
         return;
       }
 
@@ -388,7 +388,7 @@ export class MapService {
 
     } catch (error) {
       console.error("Error masivo en displayAllTracks:", error);
-      this.fs.displayToast("Error al cargar los trayectos del archivo.");
+      this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
     }
   }
 

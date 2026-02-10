@@ -46,7 +46,7 @@ export class SettingsPage implements OnDestroy {
     { name: 'Русский', code: 'ru' },
     { name: '中文', code: 'zh' },
   ];
-  selectedLanguage: any = {name:'English', code:'en'}
+  selectedLanguage: LanguageOption | undefined = {name:'English', code:'en'}
   onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   missingOfflineMaps: string[] = [];
   availableOfflineMaps: string[] = [];
@@ -57,7 +57,7 @@ export class SettingsPage implements OnDestroy {
   // Geocoding service
   geocodingServices: string[] = ['maptiler']
   // Altitudes
-  altitudes: string[] = ['GPS', 'DEM'];
+  // altitudes: string[] = ['GPS', 'DEM'];
   // Subjects for debouncing map upload/remove actions
   private mapUploadSubject = new Subject<string>();
   private mapRemoveSubject = new Subject<string>();
@@ -106,7 +106,7 @@ constructor(
   async ionViewWillEnter() {
     await this.checkMaps();
     const code = this.languageService.getCurrentLangValue();
-    this.selectedLanguage = this.languages.find(lang => lang.code === code);
+    this.selectedLanguage = this.languages.find(lang => lang.code === code) || {name:'English', code:'en'};
   }
 
   // --- MÉTODOS DE CAMBIO ---
@@ -125,7 +125,7 @@ constructor(
     // 2. Trigger the reload
     try {
       await this.mapService.loadMap();
-      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATED'));
+      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATED'), 'success');
     } catch (error) {
       console.error("Error reloading map:", error);
     }
@@ -210,7 +210,7 @@ constructor(
     } catch (err) {
       console.error('Download failed:', err);
       this.cleanupSubscription();
-      this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_UPLOADMAP'));
+      this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_UPLOADMAP'), 'error');
     }
   }
 
@@ -224,7 +224,7 @@ constructor(
     this.downloadProgress = 0;  // Resetea el porcentaje
     
     // Toast de éxito
-    this.fs.displayToast(this.translate.instant('SETTINGS.UPLOADMAP'));
+    this.fs.displayToast(this.translate.instant('SETTINGS.UPLOADMAP'), 'success');
   }
 
   // 16. REMOVE MAP FILE /////////////////////////////////
@@ -237,12 +237,9 @@ constructor(
 
       // Refrescar las listas después de borrar
       await this.checkMaps();
-      
-      const toast_removeMap = this.translate.instant('SETTINGS.REMOVEMAP');
-      this.fs.displayToast(toast_removeMap);
+      this.fs.displayToast(this.translate.instant('SETTINGS.REMOVEMAP'), 'success');
     } catch (error) {
-      const toast_failed_removeMap = this.translate.instant('SETTINGS.FAILED_REMOVEMAP');
-      this.fs.displayToast(toast_failed_removeMap);
+      this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_REMOVEMAP'), 'success');
       console.error(`Error removing file ${filename}:`, error);
     }
   }
@@ -261,10 +258,11 @@ constructor(
   }
 
   // 2. Cambio de método de Altitud (GPS vs DEM)
+  /*
   async onAltitudeChange(method: string) {
     this.fs.selectedAltitude = method;
     await this.fs.storeSet('altitude', this.fs.selectedAltitude);
-  }
+  }*/
 
   // 3. Disparador para subir mapa (usa el Subject con debounce)
   onMapUploadChange(mapName: string) {

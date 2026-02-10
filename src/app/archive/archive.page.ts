@@ -157,7 +157,7 @@ export class ArchivePage {
       const storageKey = item.date.toISOString();
       const trackData = await this.fs.storeGet(storageKey);
       if (!trackData) {
-        await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
+        await this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
         return;
       }
       // 2. PREPARAR ARCHIVOS
@@ -186,7 +186,7 @@ export class ArchivePage {
         files: [savedGpx.uri, savedKmz.uri],
         chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'));
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'),  'success');
       // 6. LIMPIEZA
       setTimeout(async () => {
         try {
@@ -196,7 +196,7 @@ export class ArchivePage {
       }, 5000); // 5 segundos para dar tiempo extra a apps lentas
     } catch (e) {
       console.error('Export error:', e);
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'), 'error');
     }
     // 1. Limpieza de UI
     if (slidingItem) slidingItem.close();
@@ -402,7 +402,7 @@ export class ArchivePage {
         // 4. Ejecutamos la carga con un pequeño delay para asegurar que el mapa de Tab1 despertó
         setTimeout(async () => {
           await this.mapService.displayAllTracks();
-          this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'));
+          this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'), 'success');
         }, 200);
 
       } else {
@@ -410,8 +410,7 @@ export class ArchivePage {
         this.mapService.visibleAll = false;
         const source = this.geography.archivedLayer?.getSource();
         if (source) source.clear();
-        
-        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'));
+        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'), 'success');
         await this.fs.gotoPage('tab1');
       }
     } catch (error) {
@@ -427,7 +426,7 @@ export class ArchivePage {
       const trackData = await this.fs.storeGet(storageKey);
       
       if (!trackData) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST5'));
+        this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
         return;
       }
 
@@ -474,7 +473,7 @@ export class ArchivePage {
 
     } catch (err) {
       console.error("ERROR CRÍTICO:", err);
-      this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'));
+      this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'), 'error');
     }
   }
 
