@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output, inject, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   standalone: true,
   selector: 'app-wiki-card',
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, TranslateModule],
   template: `
     <div class="wiki-floating-card" *ngIf="data">
       <div class="handle-container" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)" (click)="close()">
@@ -31,7 +32,7 @@ import { IonicModule } from '@ionic/angular';
         <img *ngIf="data.wiki?.originalimage" [src]="data.wiki.originalimage.source" class="wiki-img">
         <div class="wiki-body">
           <p *ngIf="data.wiki?.extract">{{ data.wiki.extract }}</p>
-          <p *ngIf="!data.wiki?.extract" class="no-data">No hay descripción detallada disponible.</p>
+          <p *ngIf="!data.wiki?.extract" class="no-data">{{ 'SEARCH.NO_DESCRIPTION' | translate }}</p>
           <a *ngIf="data.wiki?.content_urls?.desktop?.page" [href]="data.wiki.content_urls.desktop.page" target="_blank">VER EN WIKIPEDIA</a>
         </div>
       </div>

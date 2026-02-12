@@ -1,3 +1,11 @@
+import { CapacitorGlobal } from '@capacitor/core';
+
+declare global {
+  interface Window {
+    Capacitor: CapacitorGlobal;
+  }
+}
+/*
 // This ensures TypeScript knows what to do with the global Capacitor object
 // even though it's injected at runtime.
 
@@ -16,4 +24,4 @@ declare global {
       [key: string]: any;
     } | undefined;
   }
-}
+} */

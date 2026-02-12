@@ -45,7 +45,8 @@
     "CLEAN": "Clean",
     "DESCRIPTION": "Route profile",
     "LISTENING": "Listening...",
-    "NO_SPEECHRECOGNITION": "Speech recognition not available"
+    "NO_SPEECHRECOGNITION": "Speech recognition not available",
+    "NO_DESCRIPTION": "No detailed description available"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -101,13 +102,23 @@
     "MOTIONTIME": "Moving time",
     "POINTS": "Recorded points",
     "ALTITUDE": "Current altitude",
-    "SPEED": "Current speed",
+    "CURRENT_SPEED": "Current speed",
     "AVGSPEED": "Average speed",
     "MOTIONAVGSPEED": "Average moving speed",
     "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
     "CANVASSPEED": "SPEED (km/h) vs TIME",
     "FROM_START": "Distance from start",
-    "TO_END": "Distance to end"
+    "TO_END": "Distance to end",
+    "NO_RECORDING": "No active track",
+    "DO_START": "Start a recording to view altitude and speed data in real time",
+    "GOTO_MAP": "Go to map",
+    "NO_REFERENCE": "No reference track",
+    "DO_SELECT": "Go to archive and select a reference track to compare with the current track",
+    "GOTO_ARCHIVE": "Go to archive",
+    "KM": "km",
+    "PACE": "Pace",
+    "SPEED": "Speed",
+    "NO_SPEED_DATA": "No speed data"
   },
   "EDIT": {
     "NAME": "Name",

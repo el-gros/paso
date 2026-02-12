@@ -117,7 +117,7 @@ export class AppComponent implements OnDestroy {
   // 6. PROCESS URL /////////////////////////////////// 
   async processUrl(data: URLOpenListenerEvent) {
     if (!data?.url) {
-      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'), 'danger');
+      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'), 'warning');
       return null;
     }
 

@@ -1,3 +1,4 @@
+/*
 import { Control } from 'ol/control';
 import { TranslateService } from '@ngx-translate/core';
 import { LocationManagerService } from 'src/app/services/location-manager.service';
@@ -154,3 +155,135 @@ export class ShareControl extends Control {
     }
   }
 }
+ */
+import { Control } from 'ol/control';
+import { TranslateService } from '@ngx-translate/core';
+import { LocationManagerService } from 'src/app/services/location-manager.service';
+
+export class ShareControl extends Control {
+  public onShareStart?: () => Promise<boolean | void>;
+  public onShareStop?: () => Promise<void>;
+  
+  private isSharing = false;
+  private button: HTMLButtonElement;
+  private popup!: HTMLDivElement;
+  private backdrop!: HTMLDivElement;
+
+  constructor(
+    private locationService: LocationManagerService,
+    private translate: TranslateService
+  ) {
+    const element = document.createElement('div');
+    element.className = 'ol-control share-control';
+
+    super({ element: element });
+
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.addEventListener('click', this.handleMainButtonClick.bind(this), false);
+
+    element.appendChild(this.button);
+
+    this.initConfirmationUI();
+    
+    // Estado inicial desde el servicio
+    this.isSharing = this.locationService.isSharing;
+    this.updateUI();
+  }
+
+  private initConfirmationUI() {
+    this.backdrop = document.createElement('div');
+    this.backdrop.className = 'share-backdrop';
+    this.backdrop.addEventListener('click', () => this.hideConfirmation());
+    document.body.appendChild(this.backdrop);
+
+    this.popup = document.createElement('div');
+    this.popup.className = 'share-popup confirm-popover';
+    this.renderPopupContent();
+    document.body.appendChild(this.popup);
+  }
+
+  private renderPopupContent() {
+    const txtConfirm = this.translate.instant('MAP.CONFIRM_SHARING') || '¿COMPARTIR UBICACIÓN?';
+    const txtYes = this.translate.instant('RECORD.DELETE_YES') || 'SÍ';
+    const txtNo = this.translate.instant('RECORD.DELETE_NO') || 'NO';
+
+    this.popup.innerHTML = `
+      <div class="popover-island confirm-box">
+        <p class="confirm-title">${txtConfirm}</p>
+        <div class="button-grid horizontal">
+          <button id="btnShareYes" class="nav-item-btn green-pill">
+            <ion-icon name="checkmark-sharp" style="font-size: 32px; pointer-events: none;"></ion-icon>
+            <p style="pointer-events: none;">${txtYes}</p>
+          </button>
+          <button id="btnShareNo" class="nav-item-btn red-pill">
+            <ion-icon name="close-sharp" style="font-size: 32px; pointer-events: none;"></ion-icon>
+            <p style="pointer-events: none;">${txtNo}</p>
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.popup.querySelector('#btnShareYes')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (this.onShareStart) {
+        const success = await this.onShareStart(); 
+        if (success !== false) {
+          this.isSharing = true; 
+          this.updateUI();
+        }
+      }
+      this.hideConfirmation();
+    });
+
+    this.popup.querySelector('#btnShareNo')?.addEventListener('click', () => this.hideConfirmation());
+  }
+
+  private async handleMainButtonClick(event: Event) {
+    event.preventDefault();
+    if (this.isSharing) {
+      if (this.onShareStop) await this.onShareStop();
+      this.isSharing = false;
+      this.updateUI();
+    } else {
+      this.showConfirmation();
+    }
+  }
+
+  private updateUI() {
+    const activeColor = '#3880ff';
+    const inactiveColor = '#999999';
+    
+    const iconName = this.isSharing ? 'share-social-sharp' : 'share-social-outline';
+    const color = this.isSharing ? activeColor : inactiveColor;
+
+    this.button.innerHTML = `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
+        <ion-icon name="${iconName}" style="font-size: 24px; color: ${color}; transition: all 0.3s;"></ion-icon>
+        ${this.isSharing ? '<span class="sharing-dot"></span>' : ''}
+      </div>
+    `;
+    
+    this.button.style.border = `1px solid ${this.isSharing ? activeColor : '#ccc'}`;
+    this.button.style.backgroundColor = this.isSharing ? '#f0f7ff' : '#ffffff';
+  }
+
+  private showConfirmation() {
+    this.backdrop.classList.add('active');
+    this.popup.classList.add('active');
+  }
+
+  private hideConfirmation() {
+    this.backdrop.classList.remove('active');
+    this.popup.classList.remove('active');
+  }
+
+  override setMap(map: any) {
+    super.setMap(map);
+    if (!map) {
+      this.backdrop?.remove();
+      this.popup?.remove();
+    }
+  }
+
+} 

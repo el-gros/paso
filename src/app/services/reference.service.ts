@@ -115,7 +115,7 @@ export class ReferenceService {
     const popover = await this.popoverCtrl.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit, edit: true },
-      backdropDismiss: false
+      backdropDismiss: true
     });
 
     await popover.present();

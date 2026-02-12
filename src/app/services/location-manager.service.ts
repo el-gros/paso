@@ -2,12 +2,14 @@ import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ReferenceService } from '../services/reference.service';
 import { SupabaseService } from './supabase.service';
-import { Location, Track } from 'src/globald';
+//import { Track } from 'src/globald';
 import { firstValueFrom, filter, timeout } from 'rxjs';
-import MyService from 'src/plugins/MyServicePlugin';
+import MyService, { Location } from 'src/plugins/MyServicePlugin';
 import { FunctionsService } from '../services/functions.service';
 import { TranslateService } from '@ngx-translate/core';
 import { LanguageService } from './language.service';
+import { Track } from 'src/globald';
+
 
 @Injectable({
   providedIn: 'root'

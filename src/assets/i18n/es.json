@@ -45,7 +45,8 @@
     "CLEAN": "Limpiar",
     "DESCRIPTION": "Perfil de ruta",
     "LISTENING": "Escuchando...",
-    "NO_SPEECHRECOGNITION": "Reconocimiento de voz no disponible"
+    "NO_SPEECHRECOGNITION": "Reconocimiento de voz no disponible",
+    "NO_DESCRIPTION": "No hay descripción detallada disponible"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -101,13 +102,23 @@
     "MOTIONTIME": "Tiempo en movimiento",
     "POINTS": "Puntos grabados",
     "ALTITUDE": "Altitud actual",
-    "SPEED": "Velocidad actual",
+    "CURRENT_SPEED": "Velocidad actual",
     "AVGSPEED": "Velocidad media",
     "MOTIONAVGSPEED": "Vel. media en movimiento",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTANCIA (km)",
     "CANVASSPEED": "VELOCIDAD (km/h) vs TIEMPO",
     "FROM_START": "Distancia desde el inicio",
-    "TO_END": "Distancia hasta el final"
+    "TO_END": "Distancia hasta el final",
+    "NO_RECORDING": "No hay ningún trayecto activo",
+    "DO_START": "Inicia una grabación para ver los datos de altitud y velocidad en tiempo real",
+    "GOTO_MAP": "Ir al mapa",
+    "NO_REFERENCE": "No hay ningún trayecto de referencia",
+    "DO_SELECT": "Ve al archivo y selecciona un trayecto de referencia para compararlo con el trayecto actual",
+    "GOTO_ARCHIVE": "Ir al archivo",
+    "KM": "km",
+    "PACE": "Ritmo",
+    "SPEED": "Velocidad",
+    "NO_SPEED_DATA": "No hay datos de velocidad"
   },
   "EDIT": {
     "NAME": "Nombre",

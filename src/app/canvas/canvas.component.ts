@@ -37,6 +37,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
   margin: number = 10;
   currentMotionTime: string = '00:00:00';
   canvasSize: number = 400;
+  currAvailable: boolean[] = [true, true]; // [altitud, velocidad]
+  archAvailable: boolean[] = [true, true];
   
   private destroy$ = new Subject<void>();
 
@@ -101,32 +103,44 @@ export class CanvasComponent implements OnInit, OnDestroy {
     await this.drawArchivedTrack();
   }
 
-  async drawCurrentTrack() {
-    const track = this.present.currentTrack;
-    if (!track) return;
+async drawCurrentTrack() {
+  const track = this.present.currentTrack;
+  if (!track) return;
 
-    // Vincular contextos antes de dibujar (soluciona el "no se ven")
-    this.fs.properties.forEach((_, i) => {
-      this.initCanvas(`currCanvas${i}`, this.canvasSize, this.currentCtx, i);
-    });
+  this.fs.properties.forEach((_, i) => {
+    this.initCanvas(`currCanvas${i}`, this.canvasSize, this.currentCtx, i);
+  });
 
-    this.currentUnit = await this.updateAllCanvas(this.currentCtx, track);
-    this.cdr.detectChanges();
+  // AÑADIR: this.currAvailable
+  this.currentUnit = await this.updateAllCanvas(this.currentCtx, track, this.currAvailable);
+  this.cdr.detectChanges();
+}
+
+async drawArchivedTrack() {
+  const track = this.reference.archivedTrack;
+  if (!track) return;
+
+  // 1. Inicializamos contextos de los canvas
+  this.fs.properties.forEach((_, i) => {
+    this.initCanvas(`archCanvas${i}`, this.canvasSize, this.archivedCtx, i);
+  });
+
+  // 2. Dibujamos gráficos y actualizamos disponibilidad (archAvailable)
+  this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, track, this.archAvailable);
+
+  // 3. Calculamos parciales basándonos en la disponibilidad que acaba de marcar updateAllCanvas
+  // archAvailable[1] es el gráfico de velocidad (que depende del tiempo)
+  if (this.archAvailable[1]) {
+    const results = await this.fs.computePartialSpeeds(track);
+    // IMPORTANTE: Clonamos el array para que Angular detecte el cambio de referencia
+    this.partialSpeeds = [...results];
+  } else {
+    this.partialSpeeds = [];
   }
 
-  async drawArchivedTrack() {
-    const track = this.reference.archivedTrack;
-    if (!track) return;
-
-    // Vincular contextos antes de dibujar (soluciona el "desaparecen")
-    this.fs.properties.forEach((_, i) => {
-      this.initCanvas(`archCanvas${i}`, this.canvasSize, this.archivedCtx, i);
-    });
-
-    this.archivedUnit = await this.updateAllCanvas(this.archivedCtx, track);
-    this.partialSpeeds = await this.fs.computePartialSpeeds(track);
-    this.cdr.detectChanges();
-  }
+  // 4. Forzamos la detección de cambios para que el @for del HTML se renderice
+  this.cdr.detectChanges();
+}
 
   private initCanvas(elementId: string, size: number, ctxArray: any[], index: number) {
     const canvas = document.getElementById(elementId) as HTMLCanvasElement;
@@ -138,16 +152,30 @@ export class CanvasComponent implements OnInit, OnDestroy {
     if (ctx) ctxArray[index] = ctx;
   }
 
-  async updateAllCanvas(ctxArray: any[], track: Track): Promise<string> {
-    let lastUnit = '';
-    // Usamos el bucle for normal para asegurar orden
-    for (let i = 0; i < this.fs.properties.length; i++) {
-      const property = this.fs.properties[i] as keyof Data;
-      const mode = property === 'compAltitude' ? 'x' : 't';
-      lastUnit = await this.updateCanvas(ctxArray[i], track, property, mode);
+async updateAllCanvas(ctxArray: any[], track: Track, availabilityArray: boolean[]): Promise<string> {
+  let lastUnit = '';
+  // Comprobamos si el primer punto tiene tiempo (evita errores en KMZ)
+  const hasTime = track.features[0].geometry.properties.data[0]?.time > 0 
+                || track.features[0].geometry.properties.data[1]?.time > 0;
+  
+  for (let i = 0; i < this.fs.properties.length; i++) {
+    const property = this.fs.properties[i] as keyof Data;
+    const mode = property === 'compAltitude' ? 'x' : 't';
+
+    // Si la gráfica requiere tiempo pero no lo hay
+    if (mode === 't' && !hasTime) {
+      availabilityArray[i] = false;
+      if (ctxArray[i]) {
+        this.drawNoDataWarning(ctxArray[i], "Gráfico de velocidad no disponible (KMZ sin tiempos)");
+      }
+      continue; 
     }
-    return lastUnit;
+
+    availabilityArray[i] = true;
+    lastUnit = await this.updateCanvas(ctxArray[i], track, property, mode);
   }
+  return lastUnit;
+}
 
   // --- Lógica de dibujo (Tu lógica original optimizada) ---
   async updateCanvas(
@@ -315,4 +343,14 @@ export class CanvasComponent implements OnInit, OnDestroy {
       return false;
     }
   }
+
+private drawNoDataWarning(ctx: CanvasRenderingContext2D, message: string) {
+  ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
+  ctx.fillStyle = '#888';
+  ctx.font = '500 14px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(message, this.canvasSize / 2, this.canvasSize / 2);
+}
+
 }

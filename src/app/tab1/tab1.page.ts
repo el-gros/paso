@@ -4,7 +4,7 @@ import { Storage } from '@ionic/storage-angular';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
 import { useGeographic } from 'ol/proj.js';
-import { TrackDefinition, Waypoint, WikiData, Location } from '../../globald';
+import { TrackDefinition, Waypoint, WikiData } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { ServerService } from '../services/server.service';

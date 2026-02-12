@@ -102,6 +102,12 @@ class MyServicePlugin : Plugin() {
             put("longitude", loc.longitude)
             put("accuracy", loc.accuracy)
             put("altitude", loc.altitude)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                put("altitudeAccuracy", loc.verticalAccuracyMeters)
+            } else {
+                put("altitudeAccuracy", 0.0)
+            }
+            put("bearing", loc.bearing)
             put("speed", loc.speed)
             put("time", loc.time)
             

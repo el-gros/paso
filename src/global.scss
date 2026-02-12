@@ -63,35 +63,40 @@
   min-width: 60px !important; 
 }
 
-// 2. TOAST //////////////////////////
-/* Base común para todos */
 .toast {
   text-align: center;
   font-size: 16px;
   font-weight: 500;
-  --border-radius: 8px; /* Bordes redondeados */
-  --box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Sombra para dar profundidad */
+  --border-radius: 8px;
+  --box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  
+  // Estilo para el botón de cierre dentro del toast
+  button {
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    font-size: 14px;
+  }
 }
 
-/* Éxito - Verde */
 .toast-success {
   @extend .toast;
-  --background: #2dd36f; /* Verde Ionic */
+  --background: #2dd36f;
   --color: #ffffff;
+  --button-color: #ffffff; // Color del botón en éxito
 }
 
-/* Error - Rojo */
 .toast-error {
   @extend .toast;
-  --background: #eb445a; /* Rojo Ionic */
+  --background: #eb445a;
   --color: #ffffff;
+  --button-color: #ffffff; // Color del botón en error
 }
 
-/* Advertencia - Amarillo/Naranja */
 .toast-warning {
   @extend .toast;
-  --background: #ffc409; /* Amarillo Ionic */
-  --color: #000000; /* Texto negro para contraste */
+  --background: #ffc409;
+  --color: #000000;
+  --button-color: #000000; // Color del botón en advertencia para que sea legible
 }
 
 // 3. CONTROLS ////////////////////////
@@ -108,36 +113,36 @@
   right: 1em;
 }
 
-
-/* 1. Forzar que ambos contenedores midan lo mismo */
+/*
+/* 1. Forzar que ambos contenedores midan lo mismo 
 .location-button-control { 
   position: absolute;
   right: 5px;
-  width: 36px;   /* Ancho fijo */
-  height: 36px;  /* Alto fijo */
+  width: 36px;   
+  height: 36px;  
   background-color: white !important;
   border-radius: 4px;
-  padding: 0 !important; /* Quitamos paddings que ensanchan el cuadrado */
+  padding: 0 !important; 
   margin: 0 !important;
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* Evita que el contenido se salga */
-  pointer-events: auto !important; /* Asegura que el div sea clicable */
+  overflow: hidden; /* Evita que el contenido se salga 
+  pointer-events: auto !important; 
   cursor: pointer;
-  z-index: 1000; /* Asegúrate de que esté por encima de las capas del mapa */
+  z-index: 1000; /* Asegúrate de que esté por encima de las capas del mapa 
 }
 
 .location-button-control {
-  bottom: 74px; /* Encima del anterior */
+  bottom: 74px; /* Encima del anterior 
 }
 
-/* 3. Forzar que los botones internos sean idénticos */
+/* 3. Forzar que los botones internos sean idénticos 
 .location-button-control button {
   background-color: transparent !important;
   border: none !important;
-  width: 100% !important; /* Ocupa todo el contenedor de 36px */
+  width: 100% !important; /* Ocupa todo el contenedor de 36px 
   height: 100% !important;
   display: flex;
   align-items: center;
@@ -146,11 +151,126 @@
   outline: none;
 }
 
-/* 4. Asegurar que los SVGs tengan el mismo tamaño visual */
+/* 4. Asegurar que los SVGs tengan el mismo tamaño visual 
 .location-button-control svg,
 .share-control svg {
   width: 22px;
   height: 22px;
+}
+
+/* --- CONTENEDORES DE CONTROLES PERSONALIZADOS --- */
+
+.ol-control.location-button-control {
+  bottom: 30px !important;
+  right: 15px !important;
+  top: auto !important;
+  left: auto !important;
+  position: absolute !important;
+  z-index: 5000 !important;
+  pointer-events: none !important;
+}
+
+.ol-control.share-control {
+  bottom: 86px !important;
+  right: 15px !important;
+  top: auto !important;
+  left: auto !important;
+  position: absolute !important;
+  z-index: 5000 !important;
+  pointer-events: none !important;
+}
+
+/* --- BOTONES (IDÉNTICOS Y REACTIVOS) --- */
+
+.ol-control.location-button-control button,
+.ol-control.share-control button {
+  /* Forzamos medidas exactas */
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  box-sizing: border-box !important; /* Vital para que el ancho sea exacto */
+  
+  /* Reset total */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  
+  /* Estética */
+  background-color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  
+  /* Centrado */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Interacción */
+  pointer-events: auto !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* --- PUNTO INDICADOR (COMPARTIR Y TRACKING) --- */
+
+/* --- 1. PUNTO DE COMPARTIR (En la esquina del botón del mapa) --- */
+.sharing-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  animation: sharing-pulse 1.5s infinite;
+  pointer-events: none;
+}
+
+/* --- 2. PUNTO DE TRACKING (Arriba y Centrado en el FAB) --- */
+.tracking-dot {
+  position: absolute;
+  top: 4px;            /* Ajusta este valor si lo quieres más cerca del icono */
+  left: 50%;           /* Centro horizontal */
+  transform: translateX(-50%); /* Ajuste de centrado exacto */
+  
+  width: 10px;
+  height: 10px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  
+  /* Usamos una animación propia para que el transform no entre en conflicto */
+  animation: tracking-pulse-centered 1.5s infinite;
+  pointer-events: none;
+}
+
+/* --- ANIMACIONES --- */
+
+/* Animación estándar para puntos en esquinas */
+@keyframes sharing-pulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 1; }
+}
+
+/* Animación específica para el punto centrado (mantiene el translateX) */
+@keyframes tracking-pulse-centered {
+  0% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; }
+  100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+}
+
+/* IMPORTANTE: Asegurar que el contenedor permita ver el punto */
+.record-button.with-indicator {
+  position: relative !important;
+  overflow: visible !important;
 }
 
 /* --- ADN VISUAL: GLASS-MORPHISM CENTRALIZADO --- */
@@ -173,6 +293,8 @@
   transition: all 0.2s ease;
   pointer-events: auto !important;
   cursor: pointer;
+  position: relative !important; 
+  overflow: visible !important;
 
   ion-icon {
     font-size: 26px;
@@ -193,6 +315,11 @@
     transform: scale(0.92);
     background: rgba(255, 255, 255, 0.95) !important;
   }
+}
+
+.record-button:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 1) !important;
 }
 
 // 2. Contenedores Flotantes (Cards, Listas Inset, Islas de Popover)

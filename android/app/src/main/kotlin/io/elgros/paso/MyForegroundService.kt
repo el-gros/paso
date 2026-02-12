@@ -261,7 +261,7 @@ class MyForegroundService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Paso Cerebro Service",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Mantiene la lógica de seguimiento activa"
                 enableLights(true)

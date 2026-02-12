@@ -121,52 +121,64 @@
 /* --- PARCIALES --- */
 .partials-header {
   display: flex;
-  justify-content: space-between;
-  padding: 10px;
+  // Importante: Mismo padding y gap que la fila para que coincidan los ejes
+  padding: 10px 6px; 
+  gap: 10px; 
   font-size: 0.7rem;
   font-weight: 700;
   color: #bbb;
+  text-transform: uppercase;
+
+  // Aplicamos los mismos anchos que a los datos
+  span:nth-child(1) { flex: 0 0 calc(25% - 7px); text-align: center; } // KM
+  span:nth-child(2) { flex: 0 0 calc(40% - 7px); text-align: right; }  // PACE
+  span:nth-child(3) { flex: 0 0 calc(35% - 7px); text-align: right; }  // SPEED
 }
 
 .partial-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 10px;
-  gap: 15px; // Añadimos un pequeño espacio de seguridad entre columnas
+  padding: 12px 6px; 
+  gap: 10px; 
+  width: 100%;
+  box-sizing: border-box;
 
   .km-badge {
+    flex: 0 0 calc(25% - 7px); 
     background: rgba(var(--ion-color-primary-rgb), 0.1);
     color: var(--ion-color-primary);
     font-weight: 800;
-    
-    /* Aumentamos el ancho y permitimos que no se encoja */
-    min-width: 44px; // Antes era 32px, ahora tiene aire suficiente
-    height: 32px;
-    
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    flex-shrink: 0; // Evita que la columna se aplaste si el tiempo es largo
+    border-radius: 6px;
+    font-size: 0.8rem;
   }
 
   .pace-value {
-    flex: 2; // Le damos un poco más de peso al tiempo
-    text-align: left; // Opcional: alinearlo a la izquierda suele verse más ordenado si hay mucho espacio
-    padding-left: 10px;
+    flex: 0 0 calc(40% - 7px); 
+    text-align: right; // Cambiado a right para alinear con el header
     font-family: 'Roboto Mono', monospace;
     font-weight: 500;
     color: #444;
+    font-size: 0.9rem;
+    word-break: break-word; 
   }
 
   .speed-value {
-    flex: 1.5; // Ajuste para la velocidad
+    flex: 0 0 calc(35% - 7px); 
     text-align: right;
     font-weight: 700;
     color: var(--ion-color-secondary);
     font-family: 'Roboto Mono', monospace;
+    font-size: 0.9rem;
+    
+    span {
+      font-size: 0.7rem;
+      font-weight: 400;
+      opacity: 0.8;
+    }
   }
 }
 

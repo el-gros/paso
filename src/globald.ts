@@ -1,3 +1,4 @@
+/*
 export interface Location {
   longitude: number,
   latitude: number,
@@ -8,7 +9,7 @@ export interface Location {
   simulated: boolean,
   speed: number,
   time: number,
-}
+}*/
 
 export interface Data {
   altitude: number,

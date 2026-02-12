@@ -1,8 +1,9 @@
 <!-- FAB button -->
 <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
   <ion-row>
-    <div class="record-button" (click)="present.isRecordPopoverOpen = true;">
+    <div class="record-button with-indicator" (click)="present.isRecordPopoverOpen = true;">
       <ion-icon name="recording-sharp"></ion-icon>
+      <span *ngIf="location.state === 'tracking'" class="tracking-dot"></span>
       <span>{{ 'RECORD.BUTTON' | translate }}</span>
     </div>
     <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">

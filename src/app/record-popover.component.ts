@@ -272,7 +272,8 @@ export class RecordPopoverComponent {
       componentProps: { modalEdit, edit },
       event: ev,
       translucent: true,
-      dismissOnSelect: false
+      dismissOnSelect: false,
+      backdropDismiss: true
     });
     await popover.present();
     const { data } = await popover.onDidDismiss();

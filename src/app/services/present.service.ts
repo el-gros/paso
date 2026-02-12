@@ -4,11 +4,12 @@ import { Feature } from 'ol';
 import { LineString, Point } from 'ol/geom';
 
 // Internal Imports
-import { Track, Location, Waypoint, ParsedPoint } from 'src/globald';
+import { Track, Waypoint, ParsedPoint } from 'src/globald';
 import { StylerService } from './styler.service';
 import { GeographyService } from './geography.service';
 import { FunctionsService } from '../services/functions.service';
 import { LocationManagerService } from '../services/location-manager.service';
+import { Location } from 'src/plugins/MyServicePlugin';
 
 @Injectable({
   providedIn: 'root'

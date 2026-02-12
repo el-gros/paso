@@ -181,16 +181,26 @@ export class FunctionsService {
   }
 
   async displayToast(message: string, css: string) {
-    const isKey: boolean = true;
-    // Si isKey es true, busca la traducción; si no, muestra el texto tal cual
-    const finalMessage = isKey ? this.translate.instant(message) : message;
-    const toast = await this.toastController.create({ 
-      message: finalMessage, 
-      duration: 3000, 
-      position: 'bottom', 
-      cssClass: 'toast toast+' + css
-    });
-    await toast.present();
+      const isKey: boolean = true;
+      const finalMessage = isKey ? this.translate.instant(message) : message;
+
+      const toast = await this.toastController.create({ 
+        message: finalMessage, 
+        duration: 3000, 
+        position: 'bottom', 
+        cssClass: 'toast toast-' + css,
+        buttons: [
+          {
+            // Eliminamos la propiedad 'text' o la dejamos vacía
+            icon: 'close-sharp',
+            role: 'cancel', 
+            handler: () => {
+              console.log('Toast cerrado manualmente');
+            }
+          }
+        ]
+      });
+      await toast.present();
   }
 
    async computeCumulativeDistances(coords: [number, number][]): Promise<number[]> {

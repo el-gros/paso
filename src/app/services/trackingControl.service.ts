@@ -82,4 +82,9 @@ export class TrackingControlService {
       })
     }));
   }
+
+  public getIsRunning(): boolean {
+    return this.isRunning.value;
+  }
+
 }

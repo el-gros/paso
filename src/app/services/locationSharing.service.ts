@@ -82,6 +82,6 @@ export class LocationSharingService {
     this.locationService.isSharing = false;
     this.locationService.shareToken = null;
     await this.fs.storeSet('share_token', null);
-    this.fs.displayToast(this.translate.instant('SHARE.STOPPED'), 'success');
+    this.fs.displayToast(this.translate.instant('SHARE.STOPPED'), 'warning');
   }
 }

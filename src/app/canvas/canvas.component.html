@@ -59,7 +59,7 @@
               <div class="data-row">
                 <div class="label-group">
                   <ion-icon name="speedometer-outline" class="icon-speed"></ion-icon>
-                  <span>{{ 'CANVAS.SPEED' | translate }}</span>
+                  <span>{{ 'CANVAS.CURRENTSPEED' | translate }}</span>
                 </div>
                 <div class="value">{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} <span>km/h</span></div>
               </div>
@@ -90,7 +90,9 @@
           </div>
 
           <div class='canvas-container' id='cc1'>
-            <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})</h1>
+            <h1 class='title' [style.visibility]="currAvailable[1] ? 'visible' : 'hidden'">
+              {{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})
+            </h1>
             <div class="canvas-wrapper">
               <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
             </div>
@@ -101,9 +103,9 @@
             <div class="icon-container current">
               <ion-icon name="stats-chart-outline"></ion-icon>
             </div>
-            <h3>No hay actividad actual</h3>
-            <p>Inicia una grabación para empezar a visualizar los datos de altitud y velocidad en tiempo real.</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('tab1')">Ir al mapa</ion-button>
+            <h3>{{'CANVAS.NO_RECORDING' | translate}}</h3>
+            <p>{{'CANVAS.DO_START' | translate}}</p>
+            <ion-button fill="clear" (click)="fs.gotoPage('tab1')">{{'CANVAS.GOTO_MAP' | translate}}</ion-button>
           </div>
         }
       </div>
@@ -160,7 +162,9 @@
               </div>
 
               <div class='canvas-container' id='ac1'>
-                <h1 class='title'>{{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})</h1>
+                <h1 class='title' [style.visibility]="archAvailable[1] ? 'visible' : 'hidden'">
+                  {{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})
+                </h1>
                 <div class="canvas-wrapper">
                   <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
                 </div>
@@ -170,9 +174,9 @@
             <div class="icon-container archived">
               <ion-icon name="archive-outline"></ion-icon>
             </div>
-            <h3>Archivo vacío</h3>
-            <p>No has seleccionado ningún track del historial. Ve a la lista de archivos para cargar uno y comparar.</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('archive')">Ver historial</ion-button>
+            <h3>{{'CANVAS.NO_REFERENCE' | translate}}</h3>
+            <p>{{'CANVAS.DO_SELECT' | translate}}</p>
+            <ion-button fill="clear" (click)="fs.gotoPage('archive')">{{'CANVAS.GOTO_ARCHIVE' | translate}}</ion-button>
           </div>
         }
         </div>
@@ -183,30 +187,36 @@
       <div class="slide-wrapper">
         @if (reference.archivedTrack) {
           <div class='elementData card'>
-            <div class="table-title">{{'CANVAS.ARCTITLE' | translate}}</div>
-            <div class="subtitle">{{reference.archivedTrack.features[0].properties.name}}</div>
+            <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
+            <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
 
-            <div class="partials-container">
-            <div class="partials-header">
-              <span>{{ 'CANVAS.KM' | translate }}</span>
-              <span>{{ 'CANVAS.PACE' | translate }}</span>
-              <span>{{ 'CANVAS.SPEED' | translate }}</span>
-            </div>
-              @for (ps of partialSpeeds; track i; let i = $index) {
-                <div class="partial-row">
-                  <div class="km-badge">{{ ps[0] }}</div>
-                  <div class="pace-value">{{ ps[1] }}</div>
-                  <div class="speed-value">
-                    {{ ps[2] | number:'1.1-1' }} <span>km/h</span>
-                  </div>
+            @if (partialSpeeds && partialSpeeds.length > 0) {
+              <div class="partials-container">
+                <div class="partials-header">
+                  <span>{{ 'CANVAS.KM' | translate }}</span>
+                  <span>{{ 'CANVAS.PACE' | translate }}</span>
+                  <span>{{ 'CANVAS.SPEED' | translate }}</span>
                 </div>
-              }
-            </div>
+
+                @for (ps of partialSpeeds; track $index) {
+                  <div class="partial-row">
+                    <div class="km-badge">{{ ps[0] }}</div>
+                    <div class="pace-value">{{ ps[1] }}</div>
+                    <div class="speed-value">
+                      {{ ps[2] | number:'1.1-1' }} <span>km/h</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div style="padding: 20px; text-align: center; color: #999;">
+                {{ archAvailable[1] ? 'Calculando parciales...' : 'Información de ritmo no disponible' }}
+              </div>
+            }
           </div>
-        }  
+        }
       </div>
     </swiper-slide>
-
   </swiper-container>
 </ion-content>
 

@@ -45,7 +45,8 @@
     "CLEAN": "Netejar",
     "DESCRIPTION": "Perfil de ruta",
     "LISTENING": "Escoltant...",
-    "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible"
+    "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible",
+    "NO_DESCRIPTION": "No hi ha disponible cap descripció detallada"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -101,13 +102,23 @@
     "MOTIONTIME": "Temps en moviment",
     "POINTS": "Punts gravats",
     "ALTITUDE": "Altitud actual",
-    "SPEED": "Velocitat actual",
+    "CURRENT_SPEED": "Velocitat actual",
     "AVGSPEED": "Velocitat mitjana",
     "MOTIONAVGSPEED": "Vel. mitjana en moviment",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTÀNCIA (km)",
     "CANVASSPEED": "VELOCITAT (km/h) vs TEMPS",
     "FROM_START": "Distància des de l'inici",
-    "TO_END": "Distància fins al final"
+    "TO_END": "Distància fins al final",
+    "NO_RECORDING": "No hi ha cap trajecte en curs",
+    "DO_START": "Inicia una gravació per visualitzar les dades d'altitud i velocitat en temps real",
+    "GOTO_MAP": "Anar al mapa",
+    "NO_REFERENCE": "No hi ha cap trajecte de referència",
+    "DO_SELECT": "Ves a l'arxiu i selecciona un trajecte de referència per comparar-lo amb el trajecte actual",
+    "GOTO_ARCHIVE": "Ves a l'arxiu",
+    "KM": "km",
+    "PACE": "Ritme",
+    "SPEED": "Velocitat",
+    "NO_SPEED_DATA": "No hi ha dades de velocitat"
   },
   "EDIT": {
     "NAME": "Nom",
