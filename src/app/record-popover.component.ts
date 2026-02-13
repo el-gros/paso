@@ -270,9 +270,9 @@ export class RecordPopoverComponent {
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit, edit },
-      event: ev,
+      // event: ev, // <-- Remove this if you want it centered as a "floating island"
+      cssClass: 'glass-island-wrapper',
       translucent: true,
-      dismissOnSelect: false,
       backdropDismiss: true
     });
     await popover.present();

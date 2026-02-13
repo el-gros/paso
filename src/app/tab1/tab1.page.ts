@@ -28,10 +28,9 @@ import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, take, takeUntil } from 'rxjs';
 import { WikiCardComponent } from '../wiki-card.component';
 import { MapBrowserEvent } from 'ol';
-import BaseEvent from 'ol/events/Event';
 import { FeatureLike } from 'ol/Feature';
 import { Feature } from 'ol';
-import { Geometry } from 'ol/geom';
+import { ToastController } from '@ionic/angular';
 
 useGeographic();
 register();
@@ -53,7 +52,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
   public wikiData: WikiData | null = null;
-  private mapWrapperElement: HTMLElement | null = null;
+  public routeStatus: 'green' | 'red' | 'unknown' = 'unknown';
 
   constructor(
     public fs: FunctionsService,
@@ -72,6 +71,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     public present: PresentService, 
     private platform: Platform,
     private popoverController: PopoverController,
+    private toastCtrl: ToastController,
   ) {}
 
   // 1. ON INIT ////////////////////////////////
@@ -84,7 +84,6 @@ export class Tab1Page implements OnInit, OnDestroy {
         await MyService.startService(); 
         await this.mapService.loadMap();
         this.mapService.mapIsReady = true;
-        
         await this.initializeEvents(); 
         
         await this.checkBatteryOptimizations();
@@ -318,22 +317,34 @@ export class Tab1Page implements OnInit, OnDestroy {
   // 9. START PASO /////////////////////////////
   async startPaso() {
     await MyService.startService();
+
+    // 1. Listener de Ubicación (GPS)
     MyService.addListener('location', (location: any) => {
       this.zone.run(async () => {
         if (!location) return;
         const success = this.location.processRawLocation(location);
         if (!success) return;
 
-       // 1. Grabación local (Tracking)
         if (this.location.state === 'tracking') {
           await this.present.updateTrack(location);
         }
         
-        // 2. Envío a tiempo real (Supabase)
         if (this.location.isSharing) {
           await this.location.shareLocationIfActive(location);
         } 
       }); 
+    });
+
+    // 2. Listener de Estado de Ruta (Color)
+    // Usamos (MyService as any) para evitar el error de "routeStatusUpdate"
+    (MyService as any).addListener('routeStatusUpdate', (data: { status: string }) => {
+      this.zone.run(() => {
+        // Usamos el casting "as any" o el desglose de tipos para que no proteste
+        this.routeStatus = data.status as 'green' | 'red' | 'unknown';
+        
+        // Forzamos la detección de cambios para que la UI responda al instante
+        this.cd.detectChanges();
+      });
     });
   }
 
@@ -453,4 +464,30 @@ export class Tab1Page implements OnInit, OnDestroy {
       return false;
     }
   }
+ 
+async showStatusToast() {
+  // Determinamos el mensaje según el estado
+  let msgKey = 'MAP.UNKNOWN_STATUS';
+  if (this.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
+  if (this.routeStatus === 'red') msgKey = 'MAP.OFF_ROUTE';
+
+  // Obtenemos el texto traducido
+  const finalMessage = msgKey ? this.translate.instant(msgKey) : msgKey;
+
+  const toast = await this.toastCtrl.create({
+    message: finalMessage,
+    duration: 3000,
+    position: 'top',
+    cssClass: `custom-toast ${this.routeStatus}-toast`, // Clase dinámica para el color
+    buttons: [
+      {
+        text: 'OK',
+        role: 'cancel'
+      }
+    ]
+  });
+
+  await toast.present();
+}
+
 }

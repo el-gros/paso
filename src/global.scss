@@ -578,3 +578,72 @@ ion-fab {
   }
 }
 
+/* CLASE REUTILIZABLE PARA POPOVERS TIPO ISLA */
+.glass-island-wrapper {
+  --width: 100% !important;
+  --height: 100% !important;
+  --background: transparent !important;
+  --box-shadow: none !important;
+  
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  &::part(content) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 90% !important;
+    max-width: 380px !important;
+    pointer-events: auto !important; 
+  }
+}
+
+/* TOAST DEL BOTON DE SEGUIMIENTO DE RUTA */
+/* --- TOAST PERSONALIZADO PARA ESTADO DE RUTA --- */
+
+.custom-toast {
+  /* Posicionamiento preciso */
+  --top: 100px;         /* Un poco más abajo que el botón (que está a 60px) */
+  --end: 15px;          /* Alineado con el margen derecho del botón */
+  --width: auto;        /* Para que no ocupe toda la pantalla */
+  --max-width: 250px;   /* Ancho controlado para que quede "flotando" */
+  
+  /* Estilos visuales */
+  --border-radius: 12px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  
+  /* Alineación del texto */
+  &::part(message) {
+    font-weight: 600;
+    padding-inline-start: 10px;
+  }
+}
+
+/* Colores dinámicos según el estado */
+.green-toast {
+  --background: var(--ion-color-success);
+  --color: #ffffff;
+}
+
+.red-toast {
+  --background: var(--ion-color-danger);
+  --color: #ffffff;
+}
+
+.unknown-toast, .black-toast {
+  --background: #333333;
+  --color: #ffffff;
+}
+
+/* Ajuste para que el botón "OK" no se vea gigante */
+.custom-toast::part(button) {
+  --color: #ffffff;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.8em;
+}

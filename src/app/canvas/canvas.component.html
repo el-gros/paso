@@ -133,7 +133,7 @@
                       <ion-icon name="time-outline" class="icon-time"></ion-icon>
                       <span>{{ 'CANVAS.TIME' | translate }}</span>
                     </div>
-                    <div class="value">{{ formatMsec(reference.archivedTrack.features[0].properties.totalTime) }}</div>
+                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalTime > 0 ? formatMsec(reference.archivedTrack.features[0].properties.totalTime) : '--' }}</div>
                   </div>
 
                   <div class="data-row">
@@ -209,10 +209,25 @@
                 }
               </div>
             } @else {
-              <div style="padding: 20px; text-align: center; color: #999;">
-                {{ archAvailable[1] ? 'Calculando parciales...' : 'Información de ritmo no disponible' }}
+              <div class="empty-state" style="height: auto; padding: 40px 0;">
+                <div class="icon-container archived" style="width: 60px; height: 60px;">
+                  <ion-icon name="time-outline" style="font-size: 1.8rem;"></ion-icon>
+                </div>
+                <h3>{{ 'CANVAS.NO_TIME_DATA' | translate }}</h3>
+                <p>{{ 'CANVAS.KMZ_NO_PARTIALS' | translate }}</p>
               </div>
             }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <div class="icon-container archived">
+              <ion-icon name="library-outline"></ion-icon>
+            </div>
+            <h3>{{ 'CANVAS.NO_REFERENCE' | translate }}</h3>
+            <p>{{ 'CANVAS.DO_SELECT' | translate }}</p>
+            <ion-button fill="clear" (click)="fs.gotoPage('archive')">
+              {{ 'CANVAS.GOTO_ARCHIVE' | translate }}
+            </ion-button>
           </div>
         }
       </div>

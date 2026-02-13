@@ -25,7 +25,7 @@ class MyForegroundService : Service() {
     private var redCounter = 0
     private val REQUIRED_CONFIRMATIONS = 2
     private var currentPointIdx = 0
-    private var threshDistSq = 0.00000008
+    private var threshDistSq = 0.0000002
 
     private var wakeLock: PowerManager.WakeLock? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -55,6 +55,7 @@ class MyForegroundService : Service() {
       // Si no hay track, salimos antes de hacer NADA (ni siquiera logs o cálculos de cosenos)
       val track = archivedTrack ?: return
       val currentResult = checkOnRouteNative(lon, lat)
+      MyServicePlugin.instance?.notifyStatusToJS(currentResult)
       // Gestión de contadores
       if (currentResult == "green") {
           greenCounter++
@@ -104,8 +105,8 @@ class MyForegroundService : Service() {
             }
         }
         // 2. Búsqueda Global de recuperación (si nos salimos de la ventana)
-        // Usamos step 5 para que sea muy rápido en tracks largos
-        for (i in 0 until numPoints step 5) {
+        // Usamos step 3 para que sea muy rápido en tracks largos
+        for (i in 0 until numPoints step 3) {
             if (getDistSq(i) < threshDistSq) {
                 currentPointIdx = i
                 return "green"

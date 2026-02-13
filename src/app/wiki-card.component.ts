@@ -33,7 +33,7 @@ import { TranslateModule } from '@ngx-translate/core';
         <div class="wiki-body">
           <p *ngIf="data.wiki?.extract">{{ data.wiki.extract }}</p>
           <p *ngIf="!data.wiki?.extract" class="no-data">{{ 'SEARCH.NO_DESCRIPTION' | translate }}</p>
-          <a *ngIf="data.wiki?.content_urls?.desktop?.page" [href]="data.wiki.content_urls.desktop.page" target="_blank">VER EN WIKIPEDIA</a>
+          <a *ngIf="data.wiki?.content_urls?.desktop?.page" [href]="data.wiki.content_urls.desktop.page" target="_blank">{{ 'SEARCH.CHECK_WIKIPEDIA' | translate }}</a>
         </div>
       </div>
     </div>

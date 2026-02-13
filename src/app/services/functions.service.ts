@@ -267,7 +267,7 @@ export class FunctionsService {
         showAltitude
       },
       // Eliminamos las clases de modal y podemos usar una de popover si fuera necesario
-      cssClass: 'floating-popover', 
+      cssClass: 'glass-island-wrapper',
       translucent: true,
       dismissOnSelect: false,
       backdropDismiss: true

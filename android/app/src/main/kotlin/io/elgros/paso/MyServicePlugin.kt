@@ -156,5 +156,15 @@ class MyServicePlugin : Plugin() {
         ret.put("value", isIgnoring)
         call.resolve(ret)
     }
-    // ... (Mantén isXiaomi y openAutostartSettings igual que los tenías)
+    
+    /**
+     * Envía el estado de la ruta (green/red) de forma continua al JS.
+     * Es llamado desde MyForegroundService cada vez que se evalúa una posición.
+     */
+    fun notifyStatusToJS(status: String) {
+        val data = JSObject().apply {
+            put("status", status)
+        }
+        notifyListeners("routeStatusUpdate", data)
+    }
 }

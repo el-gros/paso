@@ -24,3 +24,66 @@ ion-fab {
     gap: 8px; 
   }
 }
+
+/* --- INDICADOR DE ESTADO DE RUTA --- */
+
+.route-indicator-fab {
+  position: fixed !important;
+  top: 70px !important;
+  right: 10px !important;
+  z-index: 9999 !important;      
+  pointer-events: auto !important; 
+  cursor: pointer !important;
+  /* Reset de Ionic */
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  left: auto !important;
+}
+
+.status-indicator-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Evitamos que el div bloquee clics, que los reciba el ion-fab */
+  pointer-events: none; 
+}
+
+.led-button {
+  width: 25px;  /* Aumentado para que el icono de 22px quepa bien */
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+
+  ion-icon {
+    font-size: 18px;
+    color: white;
+  }
+
+  // Estados de color
+  &.green {
+    background-color: var(--ion-color-success);
+    box-shadow: 0 0 12px var(--ion-color-success-tint);
+  }
+
+  &.red {
+    background-color: var(--ion-color-danger);
+    box-shadow: 0 0 12px var(--ion-color-danger-tint);
+    animation: blink 1.5s infinite;
+  }
+
+  &.unknown, &.black {
+    background-color: #333;
+    box-shadow: 0 0 5px #000;
+  }
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
