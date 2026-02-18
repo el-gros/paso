@@ -33,7 +33,7 @@
   <app-record-popover></app-record-popover>
   
   <app-search-guide-popover 
-    (onWikiResult)="wikiData = $event"
+    (onWikiResult)="handleWikiResult($event)"
     (onClearResult)="wikiData = null">
   </app-search-guide-popover>
   
@@ -54,15 +54,15 @@
 <!-- Navigation buttons -->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
-    <div class="record-button" (click)="fs.gotoPage('canvas')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
       <ion-icon name="bar-chart-sharp"></ion-icon>
       <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('archive')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
       <ion-icon name="library-sharp"></ion-icon>
       <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('settings')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
       <ion-icon name="settings-sharp"></ion-icon>
       <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
     </div>

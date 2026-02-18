@@ -114,7 +114,7 @@ export class ReferenceService {
 
     const popover = await this.popoverCtrl.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit, edit: true },
+      componentProps: { modalEdit},
       backdropDismiss: true,
       cssClass: 'glass-island-wrapper',
       translucent: true,

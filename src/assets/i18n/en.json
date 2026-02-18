@@ -18,13 +18,12 @@
     "NO_FILE_SELECTED": "No file selected",
     "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
     "YES": "Yes",
-    "OK": "OK",
     "MAP_BUTTON": "Map",
     "UNSUPPORTED_TYPE": "Unsupported file format",
     "TRACK_EMPTY": "Track has no data",
     "ON_ROUTE": "You are on route!",
     "OFF_ROUTE": "You are off route!",
-    "UNKNOWN": "Route tracking undetermined"
+    "UNKNOWN_STATUS": "Route tracking undetermined"
   },
   "SEARCH": {
     "BUTTON": "Search",
@@ -48,31 +47,52 @@
     "LISTENING": "Listening...",
     "NO_SPEECHRECOGNITION": "Speech recognition not available"
   },
-"ARCHIVE": {
-  "TRACKS": "Tracks",
-  "SHOW": "Show",
-  "HIDE": "Hide",
-  "ALL": "All",
-  "REMOVE_TRACK": "Delete",
-  "EDIT_TRACK": "Edit",
-  "EXPORT_TRACK": "Export",
-  "ALL_DISPLAYED": "All tracks are being displayed",
-  "ALL_HIDDEN": "All tracks have been hidden",
-  "VISIBLE_LABEL": "Visible",
-  "CANCEL": "Cancel",
-  "HEADER": "Confirm deletion",
-  "MESSAGE": "Selected tracks will be permanently deleted",
-  "TITLE": "Share a track",
-  "TEXT": "Here is the requested track",
-  "DIALOG_TITLE": "Share via Gmail only",
-  "TOAST1": "Track shared successfully",
-  "TOAST2": "Export failed",
-  "TOAST3": "Selected tracks have been deleted",
-  "TOAST4": "Error loading collection",
-  "LOADING_ERROR": "Error loading track",
-  "EMPTY_TRACKS": "No valid coordinates found in files",
-  "TRACK_UPDATED": "Track updated successfully"
-},
+  "ARCHIVE": {
+    "TRACKS": "Tracks",
+    "SHOW": "Show",
+    "HIDE": "Hide",
+    "ALL": "All",
+    "REMOVE_TRACK": "Delete",
+    "EDIT_TRACK": "Edit",
+    "EXPORT_TRACK": "Export",
+    "ALL_DISPLAYED": "All tracks are being displayed",
+    "ALL_HIDDEN": "All tracks have been hidden",
+    "VISIBLE_LABEL": "Visible",
+    "CANCEL": "Cancel",
+    "HEADER": "Confirm deletion",
+    "MESSAGE": "Selected tracks will be permanently deleted",
+    "TITLE": "Share a track",
+    "TEXT": "Here is the requested track",
+    "DIALOG_TITLE": "Share via Gmail only",
+    "TOAST1": "Track shared successfully",
+    "TOAST2": "Export failed",
+    "TOAST3": "Selected tracks have been deleted",
+    "TOAST4": "Error loading collection",
+    "LOADING_ERROR": "Error loading track",
+    "EMPTY_TRACKS": "No valid coordinates found in files",
+    "TRACK_UPDATED": "Track updated successfully",
+    "GENERATING_FILES": "Generating files, please wait..."
+  },
+  "SETTINGS": {
+    "GENERAL_GROUP": "General",
+    "SYSTEM_GROUP": "System",
+    "BASE_MAP": "Base Map",
+    "LANGUAGE": "Language",
+    "ALERT": "Alert",
+    "GEOCODING": "Geocoding Service",
+    "CURRENT_TRACK": "Current track color",
+    "REFERENCE_TRACK": "Reference track color",
+    "SAVED_TRACK_ALTITUDE": "Saved track altitude",
+    "UPLOAD_MAPS": "Download maps",
+    "UPLOADMAP": "Map downloaded successfully",
+    "REMOVEMAP": "Map has been deleted",
+    "FAILED_REMOVEMAP": "Error deleting map",
+    "FAILED_UPLOADMAP": "Error downloading map",
+    "REMOVE_MAP": "Delete maps",
+    "MAP_UPDATED": "Map provider updated",
+    "OFFLINE_MAPS": "Offline Maps",
+    "DOWNLOADED": "Downloaded"
+  },
   "CANVAS": {
     "ARCTITLE": "REFERENCE TRACK",
     "CURTITLE": "CURRENT TRACK",
@@ -81,15 +101,12 @@
     "ELOSS": "Elevation loss",
     "TIME": "Time",
     "MOTIONTIME": "Moving time",
-    "POINTS": "Recorded points",
     "ALTITUDE": "Current altitude",
-    "CURRENT_SPEED": "Current speed",
+    "CURRENTSPEED": "Current speed",
     "AVGSPEED": "Average speed",
     "MOTIONAVGSPEED": "Average moving speed",
     "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
     "CANVASSPEED": "SPEED (km/h) vs TIME",
-    "FROM_START": "Distance from start",
-    "TO_END": "Distance to end",
     "NO_RECORDING": "No active track",
     "DO_START": "Start a recording to view altitude and speed data in real time",
     "GOTO_MAP": "Go to map",
@@ -99,18 +116,15 @@
     "KM": "km",
     "PACE": "Pace",
     "SPEED": "Speed",
-    "NO_SPEED_DATA": "No speed data"
+    "NO_SPEED_DATA": "No speed data available",
+    "NO_TIME_DATA": "No time data available",
+    "KMZ_NO_PARTIALS": "This file contains no time data for partial calculations"
   },
   "EDIT": {
+    "HEADER": "Waypoint",
     "NAME": "Name",
     "DESCRIPTION": "Description",
     "CANCEL": "Cancel"
-  },
-  "WPT": {
-    "HEADER": "Edit waypoint",
-    "NAME": "Name",
-    "COMMENT": "Comment",
-    "ALTITUDE": "Altitude"
   },
   "RECORD": {
     "BUTTON": "Record",
@@ -123,24 +137,21 @@
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Real-time tracking"
-  },
-  "ERRORS": {
-    "ELEVATION_FETCH": "Error fetching elevation data from server.",
-    "ELEVATION_GENERIC": "Could not obtain elevation."
+    "SHARE_TEXT": "Real-time tracking",
+    "DEFAULT_NAME": "No name"
   },
   "COLORS": {
-    "crimson": "crimson",
-    "red": "red",
-    "orange": "orange",
-    "gold": "gold",
-    "yellow": "yellow",
-    "magenta": "magenta",
-    "purple": "purple",
-    "lime": "lime",
-    "green": "green",
-    "cyan": "cyan",
-    "blue": "blue"
+    "crimson": "Crimson",
+    "red": "Red",
+    "orange": "Orange",
+    "gold": "Gold",
+    "yellow": "Yellow",
+    "magenta": "Magenta",
+    "purple": "Purple",
+    "lime": "Lime",
+    "green": "Green",
+    "cyan": "Cyan",
+    "blue": "Blue"
   },
   "BATTERY": {
     "GENERIC_MSG": "To ensure GPS tracking does not stop, please adjust your battery settings:",
@@ -167,24 +178,20 @@
       "GENERIC_UNRESTRICTED": "Set battery to 'Don't optimize'"
     }
   },
-  "MAP_CONTROLS": {
-    "CENTER_LOCATION": "Center on my location",
-    "STOP_TRACKING": "Stop tracking"
-  },
   "SHARE": {
     "TITLE_MODAL": "Share position",
-    "DIALOG_TITLE": "Send link to...",
-    "ERROR_GENERATE": "Could not start tracking",
     "STOPPED": "You stopped sharing your location"
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "GPS timeout reached"
   },
   "REPORT": {
-    "TITLE": "Activity Report",
     "ROUTE_NAME": "Route Name",
     "DATE": "Date",
-    "DISTANCE": "Total Distance",
+    "DISTANCE": "Distance",
+    "TIME": "Time",
+    "ELEVATION_GAIN": "Elevation gain",
+    "ELEVATION_LOSS": "Elevation loss",
     "SHARE_SUBJECT": "Tracking Report - Paso App",
     "SHARE_BODY": "Here is the activity report for my route: "
   }

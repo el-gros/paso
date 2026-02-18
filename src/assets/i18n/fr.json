@@ -3,7 +3,7 @@
     "TOIMAGE_FAILED": "Impossible de générer l'image",
     "DATA_BUTTON": "Données",
     "ARCHIVE_BUTTON": "Archives",
-    "SETTINGS_BUTTON": "Config.",
+    "SETTINGS_BUTTON": "Paramètres",
     "ZOOM_BUTTON": "Zoom",
     "WAYPOINT_UPDATED": "Point de passage mis à jour",
     "CURRENT_TRACK_DELETED": "Le parcours actuel a été supprimé",
@@ -20,7 +20,10 @@
     "YES": "Oui",
     "MAP_BUTTON": "Carte",
     "UNSUPPORTED_TYPE": "Format de fichier non admis",
-    "TRACK_EMPTY": "Parcours sans données"
+    "TRACK_EMPTY": "Parcours sans données",
+    "ON_ROUTE": "Vous êtes sur l'itinéraire !",
+    "OFF_ROUTE": "Vous avez quitté l'itinéraire !",
+    "UNKNOWN_STATUS": "Suivi d'itinéraire indéterminé"
   },
   "SEARCH": {
     "BUTTON": "Rechercher",
@@ -36,41 +39,19 @@
     "SELECT_BOTH": "Veuillez sélectionner l'origine et la destination",
     "NO_ROUTE_FOUND": "Aucun itinéraire trouvé",
     "ROUTING_ERROR": "Erreur du service d'itinéraire",
-    "GOT_LOCATION": "Position obtenue",
-    "LOCATION_ERROR": "Impossible d'obtenir votre position",
     "WALK": "Marcher",
     "HIKE": "Randonnée",
     "CYCLE": "Cyclisme",
     "DRIVE": "Voiture",
     "CLEAN": "Effacer",
-    "DESCRIPTION": "Profil de l'itinéraire",
-    "LISTENING": "Écoute en cours..."
-  },
-  "SETTINGS": {
-    "GENERAL_GROUP": "Général",
-    "SYSTEM_GROUP": "Système",
-    "BASE_MAP": "Carte de base",
-    "LANGUAGE": "Langue",
-    "ALERT": "Alerte",
-    "GEOCODING": "Service de géocodage",
-    "CURRENT_TRACK": "Couleur du parcours actuel",
-    "REFERENCE_TRACK": "Couleur du parcours de référence",
-    "SAVED_TRACK_ALTITUDE": "Altitude du parcours enregistré",
-    "UPLOAD_MAPS": "Télécharger des cartes",
-    "UPLOADMAP": "Carte téléchargée avec succès",
-    "REMOVEMAP": "La carte a été supprimée",
-    "FAILED_REMOVEMAP": "Erreur lors de la suppression de la carte",
-    "FAILED_UPLOADMAP": "Erreur lors du téléchargement de la carte",
-    "REMOVE_MAP": "Supprimer des cartes",
-    "MAP_UPDATED": "Fournisseur de carte mis à jour",
-    "OFFLINE_MAPS": "Cartes hors ligne",
-    "DOWNLOADED": "Téléchargé"
+    "LISTENING": "Écoute en cours...",
+    "NO_SPEECHRECOGNITION": "Reconnaissance vocale non disponible"
   },
   "ARCHIVE": {
     "TRACKS": "Parcours",
     "SHOW": "Afficher",
     "HIDE": "Masquer",
-    "ALL": "tous",
+    "ALL": "Tous",
     "REMOVE_TRACK": "Supprimer",
     "EDIT_TRACK": "Modifier",
     "EXPORT_TRACK": "Exporter",
@@ -83,11 +64,34 @@
     "TITLE": "Partager un parcours",
     "TEXT": "Voici le parcours demandé",
     "DIALOG_TITLE": "Partager uniquement par Gmail",
-    "TOAST1": "Le parcours a été partagé avec succès !",
+    "TOAST1": "Le parcours a été partagé avec succès",
     "TOAST2": "L'exportation a échoué",
     "TOAST3": "Les parcours sélectionnés ont été supprimés",
     "TOAST4": "Erreur lors du chargement de la collection",
-    "LOADING_ERROR": "Erreur lors du chargement du parcours"
+    "LOADING_ERROR": "Erreur lors du chargement du parcours",
+    "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
+    "TRACK_UPDATED": "Le parcours a été mis à jour avec succès",
+    "GENERATING_FILES": "Génération des fichiers en cours..."
+  },
+  "SETTINGS": {
+    "GENERAL_GROUP": "Général",
+    "SYSTEM_GROUP": "Système",
+    "BASE_MAP": "Carte de base",
+    "LANGUAGE": "Langue",
+    "ALERT": "Alerte",
+    "GEOCODING": "Service de géocodage",
+    "CURRENT_TRACK": "Couleur parcours actuel",
+    "REFERENCE_TRACK": "Couleur parcours référence",
+    "SAVED_TRACK_ALTITUDE": "Altitude du parcours enregistré",
+    "UPLOAD_MAPS": "Télécharger des cartes",
+    "UPLOADMAP": "Carte téléchargée avec succès",
+    "REMOVEMAP": "La carte a été supprimée",
+    "FAILED_REMOVEMAP": "Erreur lors de la suppression de la carte",
+    "FAILED_UPLOADMAP": "Erreur lors du téléchargement de la carte",
+    "REMOVE_MAP": "Supprimer des cartes",
+    "MAP_UPDATED": "Fournisseur de carte mis à jour",
+    "OFFLINE_MAPS": "Cartes hors ligne",
+    "DOWNLOADED": "Téléchargé"
   },
   "CANVAS": {
     "ARCTITLE": "PARCOURS DE RÉFÉRENCE",
@@ -97,26 +101,30 @@
     "ELOSS": "Dénivelé négatif",
     "TIME": "Temps",
     "MOTIONTIME": "Temps en mouvement",
-    "POINTS": "Points enregistrés",
     "ALTITUDE": "Altitude actuelle",
-    "SPEED": "Vitesse actuelle",
+    "CURRENTSPEED": "Vitesse actuelle",
     "AVGSPEED": "Vitesse moyenne",
     "MOTIONAVGSPEED": "Vit. moyenne en mouvement",
     "CANVASALTITUDE": "ALTITUDE (m) vs DISTANCE (km)",
     "CANVASSPEED": "VITESSE (km/h) vs TEMPS",
-    "FROM_START": "Distance depuis le début",
-    "TO_END": "Distance jusqu'à la fin"
+    "NO_RECORDING": "Aucun parcours actif",
+    "DO_START": "Démarrez un enregistrement pour voir les données d'altitude et de vitesse en temps réel",
+    "GOTO_MAP": "Aller à la carte",
+    "NO_REFERENCE": "Aucun parcours de référence",
+    "DO_SELECT": "Allez dans les archives et sélectionnez un parcours de référence pour comparer",
+    "GOTO_ARCHIVE": "Aller aux archives",
+    "KM": "km",
+    "PACE": "Allure",
+    "SPEED": "Vitesse",
+    "NO_SPEED_DATA": "Pas de données de vitesse disponibles",
+    "NO_TIME_DATA": "Pas de données temporelles disponibles",
+    "KMZ_NO_PARTIALS": "Ce fichier ne contient pas de données temporelles pour les calculs partiels"
   },
   "EDIT": {
+    "HEADER": "Point de passage",
     "NAME": "Nom",
     "DESCRIPTION": "Description",
     "CANCEL": "Annuler"
-  },
-  "WPT": {
-    "HEADER": "Modifier le point de route",
-    "NAME": "Nom",
-    "COMMENT": "Commentaire",
-    "ALTITUDE": "Altitude"
   },
   "RECORD": {
     "BUTTON": "Enregistrer",
@@ -129,24 +137,25 @@
     "CONFIRM_DELETION": "Confirmer la suppression ?",
     "DELETE_YES": "Oui",
     "DELETE_NO": "Non",
-    "SHARE_TEXT": "Suivi en temps réel"
+    "SHARE_TEXT": "Suivi en temps réel",
+    "DEFAULT_NAME": "Sans nom"
   },
   "ERRORS": {
-    "ELEVATION_FETCH": "Erreur dans les données d'altitude du serveur.",
-    "ELEVATION_GENERIC": "Impossible d'obtenir l'élévation."
+    "ELEVATION_FETCH": "Erreur de récupération des données d'altitude.",
+    "ELEVATION_GENERIC": "Impossible d'obtenir l'altitude."
   },
   "COLORS": {
-    "crimson": "cramoisi",
-    "red": "rouge",
-    "orange": "orange",
-    "gold": "or",
-    "yellow": "jaune",
-    "magenta": "magenta",
-    "purple": "violet",
-    "lime": "citron vert",
-    "green": "vert",
-    "cyan": "cyan",
-    "blue": "bleu"
+    "crimson": "Cramoisi",
+    "red": "Rouge",
+    "orange": "Orange",
+    "gold": "Or",
+    "yellow": "Jaune",
+    "magenta": "Magenta",
+    "purple": "Violet",
+    "lime": "Citron vert",
+    "green": "Vert",
+    "cyan": "Cyan",
+    "blue": "Bleu"
   },
   "BATTERY": {
     "GENERIC_MSG": "Pour garantir que le suivi GPS ne s'arrête pas, ajustez les paramètres de la batterie :",
@@ -187,10 +196,12 @@
     "ERROR_TIMEOUT": "Le délai d'attente du GPS est dépassé"
   },
   "REPORT": {
-    "TITLE": "Rapport d'activité",
     "ROUTE_NAME": "Nom de l'itinéraire",
     "DATE": "Date",
-    "DISTANCE": "Distance totale",
+    "DISTANCE": "Distance",
+    "TIME": "Temps",
+    "ELEVATION_GAIN": "Dénivelé positif",
+    "ELEVATION_LOSS": "Dénivelé négatif",
     "SHARE_SUBJECT": "Rapport de suivi - Paso App",
     "SHARE_BODY": "Voici le rapport d'activité de mon itinéraire : "
   }

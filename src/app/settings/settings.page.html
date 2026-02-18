@@ -63,7 +63,7 @@
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
-
+    <!--
     <ion-item lines="full">
       <ion-label>{{ 'SETTINGS.GEOCODING' | translate }}</ion-label>
       <ion-select [value]="fs.geocoding" (ionChange)="onGeocodingServiceChange($event.detail.value)" interface="popover" slot="end">
@@ -72,19 +72,9 @@
         }
       </ion-select>
     </ion-item>
-
-    <!--
-    <ion-item lines="none">
-      <ion-label>{{ 'SETTINGS.SAVED_TRACK_ALTITUDE' | translate }}</ion-label>
-      <ion-select [value]="fs.selectedAltitude" (ionChange)="onAltitudeChange($event.detail.value)" interface="popover" slot="end">
-        @for (altitude of altitudes; track altitude) {
-          <ion-select-option [value]="altitude">{{ altitude }}</ion-select-option>
-        }
-      </ion-select>
-    </ion-item>
-    -->
+  -->  
   </ion-list>
-
+  <!--
   <ion-list-header>
     <ion-label>{{ 'SETTINGS.OFFLINE_MAPS' | translate }}</ion-label>
   </ion-list-header>
@@ -121,7 +111,8 @@
       </ion-item>
     }
   </ion-list>
-
+-->
+  
   <div style="height: 120px;"></div>
 </ion-content>
 
@@ -129,15 +120,15 @@
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row class="button-container">
-    <div class="record-button" (click)="fs.gotoPage('tab1')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
       <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('canvas')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
       <ion-icon name="bar-chart-sharp"></ion-icon>
       <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('archive')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
       <ion-icon name="library-sharp"></ion-icon>
       <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
     </div>

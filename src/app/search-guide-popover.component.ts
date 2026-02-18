@@ -6,25 +6,35 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CapacitorHttp } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Keyboard } from '@capacitor/keyboard';
+
+// --- OPENLAYERS IMPORTS ---
 import { GeoJSON } from 'ol/format';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import { FeatureLike } from 'ol/Feature';
 import { Fill, Stroke, Style } from 'ol/style';
+import { Coordinate } from 'ol/coordinate';
 
-// Servicios
+// --- SERVICES ---
 import { FunctionsService } from './services/functions.service';
 import { GeographyService } from './services/geography.service';
 import { ReferenceService } from './services/reference.service';
 import { LocationManagerService } from './services/location-manager.service';
 import { LanguageService } from './services/language.service';
 import { StylerService } from './services/styler.service';
-import { global } from './../environments/environment';
 import { WikiService } from './services/wiki.service';
 import { WeatherService } from './services/weather.service';
-import { LocationResult } from 'src/globald';
+import { global } from './../environments/environment';
 
+// --- INTERFACES ---
+import { LocationResult, Track, TrackFeature, Data, WikiWeatherResult } from 'src/globald';
 
+// Interfaz local para el resultado combinado Wiki+Weather
+
+// Interfaz para el listener del plugin de voz
+interface SpeechListener {
+  remove: () => Promise<void>;
+}
 
 @Component({
   standalone: true,
@@ -143,7 +153,6 @@ import { LocationResult } from 'src/globald';
       </div>
     </ng-template>
   </ion-popover>
-
   `,
   styles: [`
     .search-input-wrapper, .input-stack {
@@ -185,7 +194,6 @@ import { LocationResult } from 'src/globald';
       display: flex;
       flex-direction: column;
     }
-
   `]
 })
 export class SearchGuidePopoverComponent implements OnInit {
@@ -201,7 +209,9 @@ export class SearchGuidePopoverComponent implements OnInit {
   private zone = inject(NgZone);
   private wikiService = inject(WikiService);
   private weatherService = inject(WeatherService);
-  private speechPluginListener: any = null;
+
+  private speechPluginListener: SpeechListener | null = null;
+  
   activeRouteField: 'origin' | 'destination' = 'origin';
   originCoords: [number, number] | null = null;
   destinationCoords: [number, number] | null = null;
@@ -225,10 +235,10 @@ export class SearchGuidePopoverComponent implements OnInit {
   ];
 
   constructor(private popoverController: PopoverController) {}
-  @Output() onWikiResult = new EventEmitter<any>();
+  
+  @Output() onWikiResult = new EventEmitter<WikiWeatherResult>();
   @Output() onClearResult = new EventEmitter<void>();
 
-  // 2. Añade la función close que pide el HTML
   close() {
     this.popoverController.dismiss();
   }
@@ -255,7 +265,6 @@ export class SearchGuidePopoverComponent implements OnInit {
     this.isListening = true;
     this.cdr.detectChanges();
 
-    // Escuchamos resultados parciales (para feedback visual)
     this.speechPluginListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
       if (data.matches && data.matches.length > 0) {
         this.zone.run(() => {
@@ -272,7 +281,6 @@ export class SearchGuidePopoverComponent implements OnInit {
         popup: false 
       });
 
-      // Auto-stop por seguridad
       setTimeout(() => { 
         if (this.isListening && this.activeTarget === target) this.stopListening(); 
       }, 6000);
@@ -290,7 +298,6 @@ export class SearchGuidePopoverComponent implements OnInit {
   }
 
   private async stopListening() {
-    // Guardamos una referencia temporal antes de limpiar
     const targetAtStop = this.activeTarget;
     
     this.isListening = false;
@@ -306,11 +313,9 @@ export class SearchGuidePopoverComponent implements OnInit {
 
     this.cdr.detectChanges();
 
-    // Ejecutamos la búsqueda automática si había un target
     if (targetAtStop) {
       setTimeout(() => {
         this.executeAutoSearch(targetAtStop);
-        // Limpiamos el target después de iniciar la búsqueda
         this.activeTarget = null;
       }, 400);
     }
@@ -340,13 +345,22 @@ export class SearchGuidePopoverComponent implements OnInit {
         headers: { 'Accept': 'application/json', 'User-Agent': 'MyMappingApp/1.0' }
       });
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      
       this.results = Array.isArray(data) ? data.map((item: any) => {
         const parts = item.display_name.split(',');
+        // Construimos el LocationResult estrictamente
         return {
-          lat: Number(item.lat), lon: Number(item.lon),
-          name: parts[0], short_name: parts.slice(0, 2).join(','),
-          display_name: item.display_name, boundingbox: item.boundingbox.map(Number), geojson: item.geojson
-        };
+          lat: Number(item.lat), 
+          lon: Number(item.lon),
+          name: parts[0], 
+          short_name: parts.slice(0, 2).join(','),
+          display_name: item.display_name, 
+          // Nominatim devuelve bbox strings, los convertimos a número
+          boundingbox: item.boundingbox.map(Number), 
+          geojson: item.geojson,
+          place_id: item.place_id,
+          type: item.type
+        } as LocationResult;
       }) : [];
     } catch (e) { this.results = []; }
     finally { this.loading = false; this.cdr.detectChanges(); }
@@ -406,10 +420,8 @@ export class SearchGuidePopoverComponent implements OnInit {
 
     this.loading = true;
     
-    // 1. URL según el perfil de transporte seleccionado
     const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransport}/geojson`;
     
-    // 2. El cuerpo debe llevar las coordenadas como [lon, lat]
     const body = {
       coordinates: [this.originCoords, this.destinationCoords],
       elevation: true, 
@@ -422,7 +434,7 @@ export class SearchGuidePopoverComponent implements OnInit {
         headers: {
           'Accept': 'application/json, application/geo+json',
           'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': global.ors_key // Tu API Key desde el entorno
+          'Authorization': global.ors_key 
         },
         data: body
       });
@@ -430,7 +442,6 @@ export class SearchGuidePopoverComponent implements OnInit {
       const responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
 
       if (resp.status === 200 && responseData?.features?.length > 0) {
-        // Éxito: Cerramos el popover y procesamos la ruta
         this.reference.isGuidePopoverOpen = false;
         this.handleRouteResponse(responseData);
       } else {
@@ -446,84 +457,85 @@ export class SearchGuidePopoverComponent implements OnInit {
     }
   }
 
-async handleRouteResponse(geoJsonData: any) {
-  const source = this.geography.archivedLayer?.getSource();
-  if (!source) return;
+  async handleRouteResponse(geoJsonData: any) {
+    const source = this.geography.archivedLayer?.getSource();
+    if (!source) return;
 
-  source.clear();
+    source.clear();
 
-  const format = new GeoJSON();
-  const features = format.readFeatures(geoJsonData); 
-  source.addFeatures(features);
+    const format = new GeoJSON();
+    const features = format.readFeatures(geoJsonData); 
+    source.addFeatures(features);
 
-  const route = geoJsonData.features[0];
-  const stats = route.properties.summary;
-  const rawBbox = geoJsonData.bbox || route.bbox;
+    const routeFeature = geoJsonData.features[0];
+    const stats = routeFeature.properties.summary;
+    const rawBbox = geoJsonData.bbox || routeFeature.bbox;
 
-  const cleanBbox = (rawBbox && rawBbox.length === 6) 
-    ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] 
-    : rawBbox;
+    const cleanBbox: [number, number, number, number] | undefined = (rawBbox && rawBbox.length === 6) 
+      ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] 
+      : (rawBbox && rawBbox.length === 4 ? rawBbox : undefined);
 
-  this.reference.foundRoute = true;  
+    this.reference.foundRoute = true;  
 
-  // --- CÁLCULOS ---
-  // 1. Distancia en km (de metros a km)
-  const distanceKm = stats.distance / 1000;
+    const distanceKm = stats.distance / 1000;
+    const durationInMs = Math.round(stats.duration * 1000);
+    const ascent = routeFeature.properties.ascent || 0;
+    const descent = routeFeature.properties.descent || 0;
 
-  // 2. Tiempo (de segundos a minutos)
-  const durationInMs = Math.round(stats.duration * 1000);
+    // Generar datos para los gráficos y estadísticas (rellenar con 0 o datos reales si ORS los da)
+    const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
+    const trackData: Data[] = routeCoordinates.map((coord: any) => ({
+        distance: 0, // Se calcularía con lógica extra, aquí placeholder
+        altitude: coord[2] || 0,
+        time: 0,
+        speed: 0,
+        compAltitude: coord[2] || 0,
+        compSpeed: 0
+    }));
 
-  // 3. Elevación (ORS la devuelve en properties si se solicita)
-  const ascent = route.properties.ascent || 0;
-  const descent = route.properties.descent || 0;
-
-  this.reference.archivedTrack = {
-    type: 'FeatureCollection',
-    features: [{
-      type: 'Feature',
-      properties: {
-        currentSpeed: 0,
-        currentAltitude: 0,
-        name: `${this.query2} ➔ ${this.query3}`,
-        place: this.query3,
-        date: new Date(),
-        description: `ORS Profile: ${this.selectedTransport}`,
-        
-        // RESULTADOS FORMATEADOS
-        totalDistance: distanceKm,
-        totalTime: durationInMs,
-        totalElevationGain: Math.round(ascent),
-        totalElevationLoss: Math.round(descent),
-        
-        inMotion: durationInMs,
-        totalNumber: route.geometry.coordinates.length,
-      },
-      bbox: cleanBbox,
-      geometry: {
-        type: 'LineString',
-        coordinates: route.geometry.coordinates.map((coord: any) => [coord[0], coord[1]]),
+    const newTrack: Track = {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
         properties: {
-          data: route.geometry.coordinates.map((coord: any) => ({
-            distance: 0,
-            altitude: coord[2] || 0, // Altitud si el punto la tiene
-            time: 0,
-            speed: 0
-          }))
+          currentSpeed: 0,
+          currentAltitude: 0,
+          name: `${this.query2} ➔ ${this.query3}`,
+          place: this.query3,
+          date: new Date(),
+          description: `ORS Profile: ${this.selectedTransport}`,
+          
+          totalDistance: distanceKm,
+          totalTime: durationInMs,
+          totalElevationGain: Math.round(ascent),
+          totalElevationLoss: Math.round(descent),
+          
+          inMotion: durationInMs,
+          totalNumber: routeCoordinates.length,
+        },
+        bbox: cleanBbox,
+        geometry: {
+          type: 'LineString',
+          coordinates: routeCoordinates as [number, number][],
+          properties: {
+            data: trackData
+          }
         }
-      }
-    }]
-  };
-  if (this.reference.archivedTrack) {
-    await this.location.sendReferenceToPlugin();
-    await this.reference.displayArchivedTrack();
-    await this.geography.setMapView(this.reference.archivedTrack);
+      }]
+    };
+
+    this.reference.archivedTrack = newTrack;
+    
+    if (this.reference.archivedTrack) {
+      await this.location.sendReferenceToPlugin();
+      await this.reference.displayArchivedTrack();
+      await this.geography.setMapView(this.reference.archivedTrack);
+    }
   }
-}
 
   async handleLocationSelection(location: LocationResult) {
     if (!location?.boundingbox || !location?.geojson) return;
     
-    // Cerramos el popover de búsqueda
     this.reference.isSearchPopoverOpen = false;
     
     const source = this.geography.searchLayer?.getSource();
@@ -532,23 +544,19 @@ async handleRouteResponse(geoJsonData: any) {
     source.clear();
     const geojsonFormat = new GeoJSON();
     
-    // Leemos las geometrías (polígonos, etc)
     const features = geojsonFormat.readFeatures(location.geojson);
     
-    // Si el resultado es un polígono, añadimos también un punto central para el Pin
     if (features.some(f => f.getGeometry()?.getType().includes('Polygon'))) {
       features.push(new Feature(new Point([location.lon, location.lat])));
     }
 
     source.addFeatures(features);
     
-    // Aplicamos el estilo (usando tu styler service)
-    this.geography.searchLayer?.setStyle(f => this.applySearchStyle(f));
+    // Casting seguro para el estilo
+    this.geography.searchLayer?.setStyle((f) => this.applySearchStyle(f));
     
     this.reference.foundPlace = true;
 
-    // Ajustamos la vista del mapa al bounding box del lugar
-    // Nominatim devuelve: [latMin, latMax, lonMin, lonMax]
     const extent = [
       location.boundingbox[2], // lonMin
       location.boundingbox[0], // latMin
@@ -564,9 +572,10 @@ async handleRouteResponse(geoJsonData: any) {
     await this.searchWiki(location)
   }
 
-  // También asegúrate de tener este helper para el estilo
+  // Tipado correcto para el retorno de estilo
   private applySearchStyle(feature: FeatureLike): Style | Style[] {
-    const type = feature.getGeometry()?.getType();
+    const geom = feature.getGeometry();
+    const type = geom?.getType();
 
     if (type === 'Point') {
       return this.styler.createPinStyle('black');
@@ -588,42 +597,33 @@ async handleRouteResponse(geoJsonData: any) {
     const currentLang = this.languageService.getCurrentLangValue() || 'es';
 
     try {
-      // 1. Ejecutamos ambas peticiones en paralelo
       const [wikiData, weatherData] = await Promise.all([
         this.wikiService.getWikiData(location),
         this.weatherService.getWeather(location.lat, location.lon, currentLang)
       ]);
 
-      // DEBUG: Descomenta la siguiente línea para ver en consola si weatherData tiene algo
-      console.log('Datos recibidos -> Wiki:', !!wikiData, 'Weather:', weatherData);
-
-      // 2. Usamos zone.run para que Angular detecte los cambios del plugin nativo
       this.zone.run(() => {
-        const combinedResult = {
+        const combinedResult: WikiWeatherResult = {
           wiki: wikiData,
           weather: weatherData,
           locationName: location.name
         };
 
-        // 3. Emitimos solo si tenemos algo de información
         if (wikiData || weatherData) {
           this.onWikiResult.emit(combinedResult);
           this.reference.isSearchPopoverOpen = false;
         }
         
-        // Forzamos el refresco de la UI
         this.cdr.detectChanges();
       });
 
     } catch (error) {
       console.error("Error fetching location details", error);
     } finally {
-      // Cerramos el estado de carga
       this.zone.run(() => {
         this.loading = false;
         this.cdr.detectChanges();
       });
     }
   }
-
 }

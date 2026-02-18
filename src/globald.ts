@@ -1,16 +1,3 @@
-/*
-export interface Location {
-  longitude: number,
-  latitude: number,
-  accuracy: number,
-  altitude: number,
-  altitudeAccuracy: number,
-  bearing: number,
-  simulated: boolean,
-  speed: number,
-  time: number,
-}*/
-
 export interface Data {
   altitude: number,
   speed: number,
@@ -145,4 +132,15 @@ export interface WikiData {
   title: string;
   extract: string;
   thumbnail?: string;
+}
+
+// Interface for the Route Status event payload
+export interface RouteStatusPayload {
+  status: 'green' | 'red' | 'unknown';
+}
+
+export interface WikiWeatherResult {
+  wiki: any;
+  weather: any;
+  locationName: string;
 }

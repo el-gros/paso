@@ -20,7 +20,7 @@
               <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-sharp' : 'eye-sharp'"></ion-icon>
               {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
             </ion-item-option>
-            <ion-item-option color="secondary" (click)="exportTrackFile(item, slidingItem)">
+            <ion-item-option color="secondary" (click)="exportTrack(item, slidingItem)">
               <ion-icon slot="top" name="share-sharp"></ion-icon>
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
@@ -107,18 +107,20 @@
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
-    <div class="record-button" (click)="fs.gotoPage('tab1')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
       <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('canvas')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
       <ion-icon name="bar-chart-sharp"></ion-icon>
       <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('settings')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
       <ion-icon name="settings-sharp"></ion-icon>
       <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
     </div>
   </ion-row>
 </ion-fab>
 
+<!-- MAP RTO SHARE -->
+<div id="map-export" style="width: 1000px; height: 800px; position: fixed; top: 0; left: 0; opacity: 0.01; pointer-events: none; z-index: -1;"></div>

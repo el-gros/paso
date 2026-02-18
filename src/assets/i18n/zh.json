@@ -20,7 +20,10 @@
     "YES": "是",
     "MAP_BUTTON": "地图",
     "UNSUPPORTED_TYPE": "不支持的文件格式",
-    "TRACK_EMPTY": "轨迹无数据"
+    "TRACK_EMPTY": "轨迹无数据",
+    "ON_ROUTE": "您在路线上！",
+    "OFF_ROUTE": "您已偏离路线！",
+    "UNKNOWN_STATUS": "路线跟踪状态未知"
   },
   "SEARCH": {
     "BUTTON": "搜索",
@@ -36,15 +39,39 @@
     "SELECT_BOTH": "请选择起点和终点",
     "NO_ROUTE_FOUND": "未找到路线",
     "ROUTING_ERROR": "路线服务错误",
-    "GOT_LOCATION": "已获取位置",
-    "LOCATION_ERROR": "无法获取您的位置",
     "WALK": "步行",
     "HIKE": "徒步",
     "CYCLE": "骑行",
     "DRIVE": "驾车",
     "CLEAN": "清除",
-    "DESCRIPTION": "路线详情",
-    "LISTENING": "正在倾听..."
+    "LISTENING": "正在倾听...",
+    "NO_SPEECHRECOGNITION": "语音识别不可用"
+  },
+  "ARCHIVE": {
+    "TRACKS": "轨迹",
+    "SHOW": "显示",
+    "HIDE": "隐藏",
+    "ALL": "全部",
+    "REMOVE_TRACK": "删除",
+    "EDIT_TRACK": "编辑",
+    "EXPORT_TRACK": "导出",
+    "ALL_DISPLAYED": "已显示所有轨迹",
+    "ALL_HIDDEN": "已隐藏所有轨迹",
+    "VISIBLE_LABEL": "可见",
+    "CANCEL": "取消",
+    "HEADER": "确认删除",
+    "MESSAGE": "所选轨迹将被永久删除",
+    "TITLE": "共享轨迹",
+    "TEXT": "这是请求的轨迹",
+    "DIALOG_TITLE": "仅通过 Gmail 共享",
+    "TOAST1": "轨迹共享成功",
+    "TOAST2": "导出失败",
+    "TOAST3": "所选轨迹已删除",
+    "TOAST4": "加载集合时出错",
+    "LOADING_ERROR": "加载轨迹时出错",
+    "EMPTY_TRACKS": "文件中未找到有效坐标",
+    "TRACK_UPDATED": "轨迹更新成功",
+    "GENERATING_FILES": "正在生成文件，请稍候..."
   },
   "SETTINGS": {
     "GENERAL_GROUP": "常规",
@@ -66,29 +93,6 @@
     "OFFLINE_MAPS": "离线地图",
     "DOWNLOADED": "已下载"
   },
-  "ARCHIVE": {
-    "TRACKS": "轨迹",
-    "SHOW": "显示",
-    "HIDE": "隐藏",
-    "ALL": "全部",
-    "REMOVE_TRACK": "删除",
-    "EDIT_TRACK": "编辑",
-    "EXPORT_TRACK": "导出",
-    "ALL_DISPLAYED": "已显示所有轨迹",
-    "ALL_HIDDEN": "已隐藏所有轨迹",
-    "VISIBLE_LABEL": "可见",
-    "CANCEL": "取消",
-    "HEADER": "确认删除",
-    "MESSAGE": "所选轨迹将被永久删除",
-    "TITLE": "共享轨迹",
-    "TEXT": "这是请求的轨迹",
-    "DIALOG_TITLE": "仅通过 Gmail 共享",
-    "TOAST1": "轨迹共享成功！",
-    "TOAST2": "导出失败",
-    "TOAST3": "所选轨迹已删除",
-    "TOAST4": "加载集合时出错",
-    "LOADING_ERROR": "加载轨迹时出错"
-  },
   "CANVAS": {
     "ARCTITLE": "参考轨迹",
     "CURTITLE": "当前轨迹",
@@ -97,26 +101,30 @@
     "ELOSS": "累计下降",
     "TIME": "用时",
     "MOTIONTIME": "运动时间",
-    "POINTS": "记录点数",
     "ALTITUDE": "当前海拔",
-    "SPEED": "当前速度",
+    "CURRENTSPEED": "当前速度",
     "AVGSPEED": "平均速度",
     "MOTIONAVGSPEED": "运动平均速度",
-    "CANVASALTITUDE": "海拔 (m) / 距离 (km)",
-    "CANVASSPEED": "速度 (km/h) / 时间",
-    "FROM_START": "距起点距离",
-    "TO_END": "距终点距离"
+    "CANVASALTITUDE": "海拔 (m) vs 距离 (km)",
+    "CANVASSPEED": "速度 (km/h) vs 时间",
+    "NO_RECORDING": "无活动轨迹",
+    "DO_START": "开始记录以查看实时海拔和速度数据",
+    "GOTO_MAP": "转到地图",
+    "NO_REFERENCE": "无参考轨迹",
+    "DO_SELECT": "转到存档并选择参考轨迹以进行比较",
+    "GOTO_ARCHIVE": "转到存档",
+    "KM": "km",
+    "PACE": "配速",
+    "SPEED": "速度",
+    "NO_SPEED_DATA": "无速度数据",
+    "NO_TIME_DATA": "无时间数据",
+    "KMZ_NO_PARTIALS": "此文件不包含用于计算分段的时间数据"
   },
   "EDIT": {
+    "HEADER": "航点",
     "NAME": "名称",
     "DESCRIPTION": "描述",
     "CANCEL": "取消"
-  },
-  "WPT": {
-    "HEADER": "编辑航点",
-    "NAME": "名称",
-    "COMMENT": "备注",
-    "ALTITUDE": "海拔"
   },
   "RECORD": {
     "BUTTON": "记录",
@@ -129,11 +137,12 @@
     "CONFIRM_DELETION": "确认删除？",
     "DELETE_YES": "是",
     "DELETE_NO": "否",
-    "SHARE_TEXT": "实时位置共享"
+    "SHARE_TEXT": "实时位置共享",
+    "DEFAULT_NAME": "未命名"
   },
   "ERRORS": {
-    "ELEVATION_FETCH": "服务器海拔数据错误",
-    "ELEVATION_GENERIC": "无法获取海拔数据"
+    "ELEVATION_FETCH": "从服务器获取海拔数据时出错。",
+    "ELEVATION_GENERIC": "无法获取海拔。"
   },
   "COLORS": {
     "crimson": "深红色",
@@ -149,7 +158,7 @@
     "blue": "蓝色"
   },
   "BATTERY": {
-    "GENERIC_MSG": "为确保 GPS 跟踪不停止，请调整电池设置：",
+    "GENERIC_MSG": "为确保 GPS 跟踪不中断，请调整电池设置：",
     "CONFIRM": "打开设置",
     "CANCEL": "稍后",
     "BRANDS": {
@@ -174,7 +183,7 @@
     }
   },
   "MAP_CONTROLS": {
-    "CENTER_LOCATION": "中心定位",
+    "CENTER_LOCATION": "定位到我的位置",
     "STOP_TRACKING": "停止跟踪"
   },
   "SHARE": {
@@ -187,10 +196,12 @@
     "ERROR_TIMEOUT": "GPS 定位超时"
   },
   "REPORT": {
-    "TITLE": "活动报告",
     "ROUTE_NAME": "路线名称",
     "DATE": "日期",
-    "DISTANCE": "总距离",
+    "DISTANCE": "距离",
+    "TIME": "时间",
+    "ELEVATION_GAIN": "累计爬升",
+    "ELEVATION_LOSS": "累计下降",
     "SHARE_SUBJECT": "跟踪报告 - Paso App",
     "SHARE_BODY": "这是我的路线活动报告："
   }

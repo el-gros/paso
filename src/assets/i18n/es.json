@@ -24,7 +24,7 @@
     "TRACK_EMPTY": "Trayecto sin datos",
     "ON_ROUTE": "¡Estás en la ruta!",
     "OFF_ROUTE": "¡Estás fuera de la ruta!",
-    "UNKNOWN": "Seguimiento de ruta sin determinar"
+    "UNKNOWN_STATUS": "Seguimiento de ruta sin determinar"
   },
   "SEARCH": {
     "BUTTON": "Buscar",
@@ -49,30 +49,31 @@
     "NO_SPEECHRECOGNITION": "Reconocimiento de voz no disponible"
   },
   "ARCHIVE": {
-  "TRACKS": "Trayectos",
-  "SHOW": "Mostrar",
-  "HIDE": "Ocultar",
-  "ALL": "Todos",
-  "REMOVE_TRACK": "Eliminar",
-  "EDIT_TRACK": "Editar",
-  "EXPORT_TRACK": "Exportar",
-  "ALL_DISPLAYED": "Se muestran todos los trayectos",
-  "ALL_HIDDEN": "Se han ocultado todos los trayectos",
-  "VISIBLE_LABEL": "Visible",
-  "CANCEL": "Cancelar",
-  "HEADER": "Confirmar eliminación",
-  "MESSAGE": "Se eliminarán definitivamente los trayectos marcados",
-  "TITLE": "Compartir un trayecto",
-  "TEXT": "Aquí tienes el trayecto solicitado",
-  "DIALOG_TITLE": "Compartir solo por Gmail",
-  "TOAST1": "Se ha compartido el trayecto correctamente",
-  "TOAST2": "La exportación ha fallado",
-  "TOAST3": "Los trayectos seleccionados se han eliminado",
-  "TOAST4": "Error al cargar la colección",
-  "LOADING_ERROR": "Error al cargar el trayecto",
-  "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
-  "TRACK_UPDATED": "El trayecto se ha actualizado correctamente"
-},
+    "TRACKS": "Trayectos",
+    "SHOW": "Mostrar",
+    "HIDE": "Ocultar",
+    "ALL": "Todos",
+    "REMOVE_TRACK": "Eliminar",
+    "EDIT_TRACK": "Editar",
+    "EXPORT_TRACK": "Exportar",
+    "ALL_DISPLAYED": "Se muestran todos los trayectos",
+    "ALL_HIDDEN": "Se han ocultado todos los trayectos",
+    "VISIBLE_LABEL": "Visible",
+    "CANCEL": "Cancelar",
+    "HEADER": "Confirmar eliminación",
+    "MESSAGE": "Se eliminarán definitivamente los trayectos marcados",
+    "TITLE": "Compartir un trayecto",
+    "TEXT": "Aquí tienes el trayecto solicitado",
+    "DIALOG_TITLE": "Compartir solo por Gmail",
+    "TOAST1": "Se ha compartido el trayecto correctamente",
+    "TOAST2": "La exportación ha fallado",
+    "TOAST3": "Los trayectos seleccionados se han eliminado",
+    "TOAST4": "Error al cargar la colección",
+    "LOADING_ERROR": "Error al cargar el trayecto",
+    "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
+    "TRACK_UPDATED": "El trayecto se ha actualizado correctamente",
+    "GENERATING_FILES": "Se están generando los archivos, espere por favor..."
+  },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
@@ -101,15 +102,12 @@
     "ELOSS": "Desnivel negativo",
     "TIME": "Tiempo",
     "MOTIONTIME": "Tiempo en movimiento",
-    "POINTS": "Puntos grabados",
     "ALTITUDE": "Altitud actual",
-    "CURRENT_SPEED": "Velocidad actual",
+    "CURRENTSPEED": "Velocidad actual",
     "AVGSPEED": "Velocidad media",
     "MOTIONAVGSPEED": "Vel. media en movimiento",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTANCIA (km)",
     "CANVASSPEED": "VELOCIDAD (km/h) vs TIEMPO",
-    "FROM_START": "Distancia desde el inicio",
-    "TO_END": "Distancia hasta el final",
     "NO_RECORDING": "No hay ningún trayecto activo",
     "DO_START": "Inicia una grabación para ver los datos de altitud y velocidad en tiempo real",
     "GOTO_MAP": "Ir al mapa",
@@ -119,18 +117,15 @@
     "KM": "km",
     "PACE": "Ritmo",
     "SPEED": "Velocidad",
-    "NO_SPEED_DATA": "No hay datos de velocidad"
+    "NO_SPEED_DATA": "No hay datos de velocidad",
+    "NO_TIME_DATA": "No hay datos de tiempo",
+    "KMZ_NO_PARTIALS": "Este archivo no contiene datos de tiempo para cálculos parciales"
   },
   "EDIT": {
+    "HEADER": "Punto de paso",
     "NAME": "Nombre",
     "DESCRIPTION": "Descripción",
     "CANCEL": "Cancelar"
-  },
-  "WPT": {
-    "HEADER": "Editar el punto de ruta",
-    "NAME": "Nombre",
-    "COMMENT": "Comentario",
-    "ALTITUDE": "Altitud"
   },
   "RECORD": {
     "BUTTON": "Grabar",
@@ -143,24 +138,25 @@
     "CONFIRM_DELETION": "¿Confirma la eliminación?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Seguimiento en tiempo real"
+    "SHARE_TEXT": "Seguimiento en tiempo real",
+    "DEFAULT_NAME": "Sin nombre"
   },
   "ERRORS": {
     "ELEVATION_FETCH": "Error en los datos de altitud del servidor.",
     "ELEVATION_GENERIC": "No se ha podido obtener la elevación."
   },
   "COLORS": {
-    "crimson": "carmesí",
-    "red": "rojo",
-    "orange": "naranja",
-    "gold": "dorado",
-    "yellow": "amarillo",
-    "magenta": "magenta",
-    "purple": "morado",
-    "lime": "lima",
-    "green": "verde",
-    "cyan": "cian",
-    "blue": "azul"
+    "crimson": "Carmesí",
+    "red": "Rojo",
+    "orange": "Naranja",
+    "gold": "Dorado",
+    "yellow": "Amarillo",
+    "magenta": "Magenta",
+    "purple": "Morado",
+    "lime": "Lima",
+    "green": "Verde",
+    "cyan": "Cian",
+    "blue": "Azul"
   },
   "BATTERY": {
     "GENERIC_MSG": "Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:",
@@ -201,10 +197,12 @@
     "ERROR_TIMEOUT": "Se ha agotado el tiempo de espera del GPS"
   },
   "REPORT": {
-    "TITLE": "Informe de actividad",
     "ROUTE_NAME": "Nombre de la ruta",
     "DATE": "Fecha",
-    "DISTANCE": "Distancia total",
+    "DISTANCE": "Distancia",
+    "TIME": "Tiempo",
+    "ELEVATION_GAIN": "Desnivel positivo",
+    "ELEVATION_LOSS": "Desnivel negativo",
     "SHARE_SUBJECT": "Informe de seguimiento - Paso App",
     "SHARE_BODY": "Aquí está el informe de actividad para mi ruta: "
   }

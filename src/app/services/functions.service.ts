@@ -1,12 +1,14 @@
-import DOMPurify from 'dompurify';
-import { Track, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition } from 'src/globald';
 import { Inject, Injectable } from '@angular/core';
-import { Storage } from '@ionic/storage-angular';
-import { ToastController, PopoverController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { WptPopoverComponent } from '../wpt-popover.component';
-import { register } from 'swiper/element';
-import { TranslateService } from '@ngx-translate/core'; // Importar
+import { ToastController, PopoverController } from '@ionic/angular';
+import { Storage } from '@ionic/storage-angular';
+import { TranslateService } from '@ngx-translate/core';
+import DOMPurify from 'dompurify';
+import { register } from 'swiper/element/bundle';
+
+// Interfaces personalizadas
+import { Track, Data, Waypoint, Bounds, PartialSpeed, TrackDefinition, TrackFeature } from 'src/globald';
+
 register();
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -17,25 +19,33 @@ const EARTH_RADIUS_KM = 6371;
 })
 export class FunctionsService {
   private _storage: Storage | null = null;
+  
+  // Callbacks y Estado
   refreshCollectionUI?: () => void;
-
   key: string | undefined = undefined;
   buildTrackImage: boolean = false;
-  // selectedAltitude: string = 'GPS'; 
+  reDraw: boolean = false;
+  
+  // Configuración
   lag: number = 8;
   geocoding: string = 'maptiler';
-  collection: TrackDefinition[] = [];
-  properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
-  reDraw: boolean = false;
   alert: string = 'on';
   
+  // Datos
+  collection: TrackDefinition[] = [];
+  properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
+  
+  // Estadísticas volátiles
   averageSpeed: number = 0;
   averageMotionSpeed: number = 0;
 
+  // Variables Kalman
   private k_q = 0.1; 
   private k_r = 1.5; 
   private k_p = 1.0; 
   private k_v = 0.0; 
+
+  public isNavigating: boolean = false;
 
   constructor(
     private storage: Storage,
@@ -49,11 +59,32 @@ export class FunctionsService {
     this._storage = await this.storage.create();
   }
 
-  // --- RECUPERAR TRACK ---
-  async retrieveTrack() {
-    if (!this.key) return undefined;
-    return await this.storeGet(this.key);
+  // --- STORAGE ---
+
+  async storeSet(key: string, object: any): Promise<void> { 
+    await this._storage?.set(key, object); 
   }
+
+  async storeGet<T = any>(key: string): Promise<T | null> { 
+    return await this._storage?.get(key); 
+  }
+
+  async storeRem(key: string): Promise<void> { 
+    await this._storage?.remove(key); 
+  }
+
+  async check<T>(defaultValue: T, key: string): Promise<T> {
+    const res = await this.storeGet<T>(key);
+    return (res !== null && res !== undefined) ? res : defaultValue;
+  }
+
+  async retrieveTrack(): Promise<Track | undefined> {
+    if (!this.key) return undefined;
+    const res = await this.storeGet<Track>(this.key);
+    return res || undefined;
+  }
+
+  // --- MATH & KALMAN ---
 
   private applyKalman(measurement: number): number {
     this.k_p = this.k_p + this.k_q;
@@ -63,21 +94,24 @@ export class FunctionsService {
     return this.k_v;
   }
 
-  async filterSpeedAndAltitude(track: any, initial: number): Promise<any> {
-    const data: Data[] = track.features[0].geometry.properties.data;
-    const props = track.features[0].properties;
+  // --- PROCESAMIENTO DE TRACKS ---
+
+  async filterSpeedAndAltitude(track: Track, initial: number): Promise<Track> {
+    // Aseguramos acceso seguro a las estructuras
+    const feature = track.features[0];
+    if (!feature || !feature.geometry || !feature.geometry.properties) return track;
+
+    const data: Data[] = feature.geometry.properties.data;
+    const props = feature.properties;
     const num = data.length;
     
-    // Parámetros de umbral
     const ELEVATION_THRESHOLD = 2.0; 
     const MOVING_THRESHOLD = 0.8; // km/h
     
-    // Referencia para el cálculo de desnivel
     let lastSteadyAlt = (initial > 0 && data[initial - 1]) 
       ? data[initial - 1].compAltitude 
       : data[0].altitude;
 
-    // Inicialización si empezamos de cero
     if (initial === 0) {
       this.k_p = 1.0; 
       this.k_v = 0;
@@ -88,7 +122,6 @@ export class FunctionsService {
     }
 
     for (let i = initial; i < num; i++) {
-      // 1. CÁLCULO DE VELOCIDAD FILTRADA
       const start = Math.max(i - this.lag, 0);
       const distDelta = data[i].distance - data[start].distance;
       const timeDelta = data[i].time - data[start].time;
@@ -96,18 +129,16 @@ export class FunctionsService {
       const rawSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
       data[i].compSpeed = this.applyKalman(rawSpeed);
 
-      // 2. CÁLCULO DE TIEMPOS
       props.totalTime = data[i].time - data[0].time;
 
       if (i > 0) {
         const deltaT = data[i].time - data[i - 1].time;
-        // Solo sumamos el intervalo si la velocidad actual indica movimiento
         if (data[i].compSpeed > MOVING_THRESHOLD) {
           props.inMotion += deltaT;
         }
       }
 
-      // 3. CÁLCULO DE ALTITUD FILTRADA (Media móvil)
+      // Media móvil para altitud
       let sum = 0;
       let count = 0;
       for (let j = start; j <= i; j++) { 
@@ -116,7 +147,6 @@ export class FunctionsService {
       }
       data[i].compAltitude = sum / count;
 
-      // 4. ACUMULACIÓN DE DESNIVEL (Solo si supera el umbral para evitar ruido)
       const diff = data[i].compAltitude - lastSteadyAlt;
       if (Math.abs(diff) >= ELEVATION_THRESHOLD) {
         if (diff > 0) {
@@ -128,10 +158,8 @@ export class FunctionsService {
       }
     }
 
-    // 5. CÁLCULOS FINALES Y MEDIAS
     const totalDist = data[num - 1].distance;
     
-    // Salvaguarda: El tiempo en movimiento no puede ser mayor al total
     if (props.inMotion > props.totalTime) {
       props.inMotion = props.totalTime;
     }
@@ -145,7 +173,6 @@ export class FunctionsService {
     return track;
   }
 
-  // --- CALCULAR DESNIVELES (Usado en record-popover) ---
   async computeElevationGainAndLoss(altitudes: number[]): Promise<{ gain: number; loss: number; }> {
     let gain = 0, loss = 0;
     for (let i = 1; i < altitudes.length; i++) {
@@ -157,41 +184,189 @@ export class FunctionsService {
   }
 
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
-    const dLat = (lat2 - lat1) * DEG_TO_RAD, dLon = (lon2 - lon1) * DEG_TO_RAD;
+    const dLat = (lat2 - lat1) * DEG_TO_RAD;
+    const dLon = (lon2 - lon1) * DEG_TO_RAD;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * DEG_TO_RAD) * Math.cos(lat2 * DEG_TO_RAD) * Math.sin(dLon / 2) ** 2;
     return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  // Alias para mantener compatibilidad
   quickDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     return this.computeDistance(lon1, lat1, lon2, lat2);
   }
 
-  formatMillisecondsToUTC(ms: number): string {
-    const s = Math.floor(ms / 1000);
-    return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(v => v.toString().padStart(2, '0')).join(':');
+  async computeCumulativeDistances(coords: [number, number][]): Promise<number[]> {
+    if (coords.length === 0) return [];
+    const dists = [0];
+    for (let i = 1; i < coords.length; i++) {
+      const d = this.computeDistance(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
+      dists.push(dists[i-1] + d);
+    }
+    return dists;
   }
 
-  async storeSet(key: string, object: any): Promise<void> { return this._storage?.set(key, object); }
-  async storeGet(key: string) { return this._storage?.get(key); }
-  async storeRem(key: string): Promise<void> { return this._storage?.remove(key); }
+  async fillProperties(distances: number[], altitudes: number[], times: number[], speed: number): Promise<Data[]> {
+    return distances.map((d, i) => ({ 
+      altitude: altitudes[i], 
+      speed, 
+      time: times[i], 
+      compSpeed: speed, 
+      compAltitude: altitudes[i], 
+      distance: d 
+    }));
+  }
 
-  async check<T>(defaultValue: T, key: string): Promise<T> {
-    const res = await this.storeGet(key);
-    return (res !== null && res !== undefined) ? res as T : defaultValue;
+  async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
+    let min = Infinity, max = -Infinity;
+    data.forEach(d => {
+      const val = d[propertyName] as number;
+      if (Number.isFinite(val)) { 
+        min = Math.min(min, val); 
+        max = Math.max(max, val); 
+      }
+    });
+    return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
+  }
+
+  // Este método asume una estructura específica de respuesta API (OpenRouteService/GraphHopper)
+  async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
+    // TODO: Tipar 'data' con una interfaz de respuesta de API si es posible
+    const summary = data.response?.features?.[0]?.properties?.summary;
+    if (!summary) return distances.map(() => date.getTime());
+
+    const startTime = date.getTime() - (summary.duration * 1000);
+    const totalDist = summary.distance / 1000;
+    
+    return distances.map(d => Math.round(startTime + (d / totalDist) * (summary.duration * 1000)));
+  }
+
+  async adjustCoordinatesAndProperties(coordinates: [number, number][], properties: Data[], maxDistance: number) {
+    let newCoordinates: [number, number][] = [];
+    let newProperties: Data[] = [];
+
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      newCoordinates.push(coordinates[i]);
+      newProperties.push({ ...properties[i] });
+
+      const dist = properties[i + 1].distance - properties[i].distance;
+      
+      if (dist > maxDistance) {
+        const steps = Math.ceil(dist / maxDistance) - 1;
+        
+        for (let j = 1; j <= steps; j++) {
+          const f = j / (steps + 1);
+          
+          // Interpolación de coordenadas
+          const lng = coordinates[i][0] + f * (coordinates[i + 1][0] - coordinates[i][0]);
+          const lat = coordinates[i][1] + f * (coordinates[i + 1][1] - coordinates[i][1]);
+          newCoordinates.push([lng, lat]);
+
+          // Interpolación de propiedades
+          const interp = (a: number, b: number) => a + f * (b - a);
+          
+          newProperties.push({
+            altitude: interp(properties[i].altitude, properties[i + 1].altitude),
+            speed: interp(properties[i].speed, properties[i + 1].speed),
+            time: interp(properties[i].time, properties[i + 1].time),
+            compSpeed: interp(properties[i].compSpeed, properties[i + 1].compSpeed),
+            compAltitude: interp(properties[i].compAltitude, properties[i + 1].compAltitude),
+            distance: interp(properties[i].distance, properties[i + 1].distance)
+          });
+        }
+      }
+    }
+    
+    // Añadir el último punto
+    newCoordinates.push(coordinates[coordinates.length - 1]);
+    newProperties.push({ ...properties[properties.length - 1] });
+
+    return { newCoordinates, newProperties };
+  }
+
+  async computePartialSpeeds(track: Track): Promise<PartialSpeed[]> {
+    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
+    if (!data.length) return [];
+    
+    const results: PartialSpeed[] = [];
+    let kmIndex = 1;
+    let startTime = data[0].time;
+
+    for (let i = 1; i < data.length; i++) {
+      // Detectar cruce de kilómetro entero
+      if (data[i].distance >= kmIndex && data[i].distance > data[i-1].distance) {
+        // Interpolación lineal para encontrar el tiempo exacto del cruce
+        const ratio = (kmIndex - data[i-1].distance) / (data[i].distance - data[i-1].distance);
+        const crossingTime = data[i-1].time + ratio * (data[i].time - data[i-1].time);
+        
+        const durS = (crossingTime - startTime) / 1000;
+        
+        if (durS > 0) {
+          const kmh = Number((3600 / durS).toFixed(2));
+          results.push([`${kmIndex-1}-${kmIndex} km`, this.formatMillisecondsToUTC(durS * 1000), kmh]);
+        }
+        
+        startTime = crossingTime;
+        kmIndex++;
+      }
+    }
+    return results;
+  }
+
+  // --- UI & UTILS ---
+
+  sanitize(input: string): string {
+    const clean = (input || '').replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").replace(/\n/g, '<br>');
+    return DOMPurify.sanitize(clean, { ALLOWED_TAGS: ['br'] }).trim();
+  }
+
+  formatMillisecondsToUTC(ms: number): string {
+    const s = Math.floor(ms / 1000);
+    const hours = Math.floor(s / 3600);
+    const minutes = Math.floor((s % 3600) / 60);
+    const seconds = s % 60;
+    return [hours, minutes, seconds].map(v => v.toString().padStart(2, '0')).join(':');
+  }
+
+  formatMsec(value: number | undefined): string {
+    return value ? this.formatMillisecondsToUTC(value) : '00:00:00';
+  }
+
+  async editWaypoint(waypoint: Waypoint, showAltitude: boolean, edit: boolean): Promise<{ action: string; name?: string; comment?: string } | undefined> {
+    // Importamos el componente dinámicamente si es necesario, o asumimos que ya está importado arriba
+    const { WptPopoverComponent } = await import('../wpt-popover.component'); 
+
+    const popover = await this.popoverController.create({
+      component: WptPopoverComponent,
+      componentProps: {
+        wptEdit: {
+          ...waypoint,
+          name: this.sanitize(waypoint.name || ''),
+          comment: this.sanitize(waypoint.comment || '')
+        },
+        edit,
+        showAltitude
+      },
+      cssClass: 'glass-island-wrapper',
+      translucent: true,
+      dismissOnSelect: false,
+      backdropDismiss: true
+    });
+
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+    return data;
   }
 
   async displayToast(message: string, css: string) {
-      const isKey: boolean = true;
-      const finalMessage = isKey ? this.translate.instant(message) : message;
+      const finalMessage = this.translate.instant(message);
 
       const toast = await this.toastController.create({ 
         message: finalMessage, 
         duration: 3000, 
         position: 'bottom', 
-        cssClass: 'toast toast-' + css,
+        cssClass: `toast toast-${css}`,
         buttons: [
           {
-            // Eliminamos la propiedad 'text' o la dejamos vacía
             icon: 'close-sharp',
             role: 'cancel', 
             handler: () => {
@@ -203,99 +378,19 @@ export class FunctionsService {
       await toast.present();
   }
 
-   async computeCumulativeDistances(coords: [number, number][]): Promise<number[]> {
-    const dists = [0];
-    for (let i = 1; i < coords.length; i++) dists.push(dists[i-1] + this.computeDistance(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]));
-    return dists;
-  }
+  async gotoPage(path: string) {
+    // If we are already going somewhere, STOP.
+    if (this.isNavigating) return;
 
-  async fillProperties(distances: number[], altitudes: number[], times: number[], speed: number): Promise<Data[]> {
-    return distances.map((d, i) => ({ altitude: altitudes[i], speed, time: times[i], compSpeed: speed, compAltitude: altitudes[i], distance: d }));
-  }
+    // Lock navigation
+    this.isNavigating = true;
 
-  async computeMinMaxProperty(data: Data[], propertyName: keyof Data): Promise<Bounds> {
-    let min = Infinity, max = -Infinity;
-    data.forEach(d => {
-      const val = d[propertyName] as number;
-      if (Number.isFinite(val)) { min = Math.min(min, val); max = Math.max(max, val); }
-    });
-    return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
-  }
+    // Navigate
+    this.router.navigate([path]);
 
-  async createTimes(data: any, date: Date, distances: number[]): Promise<number[]> {
-    const summary = data.response.features[0].properties.summary;
-    const startTime = date.getTime() - (summary.duration * 1000);
-    const totalDist = summary.distance / 1000;
-    return distances.map(d => Math.round(startTime + (d / totalDist) * (summary.duration * 1000)));
-  }
-
-  async adjustCoordinatesAndProperties(coordinates: [number, number][], properties: Data[], maxDistance: number) {
-    let newCoordinates: [number, number][] = [], newProperties: Data[] = [];
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      newCoordinates.push(coordinates[i]); newProperties.push({...properties[i]});
-      const dist = properties[i+1].distance - properties[i].distance;
-      if (dist > maxDistance) {
-        const steps = Math.ceil(dist / maxDistance) - 1;
-        for (let j = 1; j <= steps; j++) {
-          const f = j / (steps + 1);
-          newCoordinates.push([coordinates[i][0] + f*(coordinates[i+1][0]-coordinates[i][0]), coordinates[i][1] + f*(coordinates[i+1][1]-coordinates[i][1])]);
-          const interp = (a: number, b: number) => a + f*(b-a);
-          newProperties.push({ altitude: interp(properties[i].altitude, properties[i+1].altitude), speed: interp(properties[i].speed, properties[i+1].speed), time: interp(properties[i].time, properties[i+1].time), compSpeed: interp(properties[i].compSpeed, properties[i+1].compSpeed), compAltitude: interp(properties[i].compAltitude, properties[i+1].compAltitude), distance: interp(properties[i].distance, properties[i+1].distance) });
-        }
-      }
-    }
-    newCoordinates.push(coordinates[coordinates.length-1]); newProperties.push({...properties[properties.length-1]});
-    return { newCoordinates, newProperties };
-  }
-
-  sanitize(input: string): string {
-    const clean = (input || '').replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").replace(/\n/g, '<br>');
-    return DOMPurify.sanitize(clean, { ALLOWED_TAGS: ['br'] }).trim();
-  }
-
-  async editWaypoint(waypoint: Waypoint, showAltitude: boolean, edit: boolean) {
-    const popover = await this.popoverController.create({
-      component: WptPopoverComponent,
-      componentProps: {
-        // Pasamos una copia limpia del waypoint sanitizado
-        wptEdit: {
-          ...waypoint,
-          name: this.sanitize(waypoint.name || ''),
-          comment: this.sanitize(waypoint.comment || '')
-        },
-        edit,
-        showAltitude
-      },
-      // Eliminamos las clases de modal y podemos usar una de popover si fuera necesario
-      cssClass: 'glass-island-wrapper',
-      translucent: true,
-      dismissOnSelect: false,
-      backdropDismiss: true
-    });
-
-    await popover.present();
-    
-    const { data } = await popover.onDidDismiss();
-    
-    // Retornamos la data (que contiene { action, name, comment })
-    return data;
-  }
-
-  async gotoPage(option: string) { this.router.navigate([option]); }
-
-  async computePartialSpeeds(track: any): Promise<PartialSpeed[]> {
-    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
-    if (!data.length) return [];
-    const results: PartialSpeed[] = [];
-    let kmIndex = 1, startTime = data[0].time;
-    for (let i = 1; i < data.length; i++) {
-      if (data[i].distance >= kmIndex && data[i].distance > data[i-1].distance) {
-        const ratio = (kmIndex - data[i-1].distance) / (data[i].distance - data[i-1].distance);
-        const durS = (data[i-1].time + ratio * (data[i].time - data[i-1].time) - startTime) / 1000;
-        if (durS > 0) results.push([`${kmIndex-1}-${kmIndex} km`, this.formatMillisecondsToUTC(durS * 1000), Number(((3600) / durS).toFixed(2))]);
-        startTime = data[i-1].time + ratio * (data[i].time - data[i-1].time); kmIndex++;
-      }
-    }
-    return results;
+    // Unlock after 1 second (enough time for the page transition to start)
+    setTimeout(() => {
+      this.isNavigating = false;
+    }, 1000);
   }
 }

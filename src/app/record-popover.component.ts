@@ -8,7 +8,6 @@ import { lastValueFrom, Subscription } from 'rxjs';
 // OpenLayers & Plugins
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { useGeographic } from 'ol/proj.js';
 import { register } from 'swiper/element/bundle';
 import { Waypoint } from 'src/globald';
 
@@ -21,7 +20,6 @@ import { StylerService } from './services/styler.service';
 import { SaveTrackPopover } from './save-track-popover.component';
 import { MapService } from './services/map.service';
 
-useGeographic();
 register();
 
 @Component({
@@ -254,9 +252,8 @@ export class RecordPopoverComponent {
       name: address?.short_name ?? address?.name ?? address?.display_name ?? '',
       comment: ''
     };
-    const response: { action: string; name: string; comment: string } =
-      await this.fs.editWaypoint(waypoint, false, true);
-    if (response.action === 'ok') {
+    const response = await this.fs.editWaypoint(waypoint, false, true);
+    if (response && response.action === 'ok' && response.name !== undefined && response.comment !== undefined) {
       waypoint.name = response.name;
       waypoint.comment = response.comment;
       this.present.currentTrack?.features[0].waypoints?.push(waypoint);
@@ -266,10 +263,9 @@ export class RecordPopoverComponent {
 
   async setTrackDetails(ev?: any) {
     const modalEdit = { name: '', description: '' };
-    const edit = true;
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit, edit },
+      componentProps: { modalEdit},
       // event: ev, // <-- Remove this if you want it centered as a "floating island"
       cssClass: 'glass-island-wrapper',
       translucent: true,
@@ -316,48 +312,5 @@ export class RecordPopoverComponent {
       this.cd.detectChanges();
     }
   }
-
-  /*
-  async getAltitudesFromMap(coordinates: [number, number][] ) {
-    try {
-      const altitudes = await this.getAltitudes(coordinates)
-      const slopes = await this.fs.computeElevationGainAndLoss(altitudes)
-      return {altitudes: altitudes, slopes: slopes}
-    }
-    catch {
-      return {altitudes: null, slopes: null}
-    }
-  }
-
-  async getAltitudes(rawCoordinates: [number, number][]): Promise<number[]> {
-    const requestBody = {
-      locations: rawCoordinates.map(([lon, lat]) => ({
-        latitude: lat,
-        longitude: lon
-      }))
-    };
-    try {
-      const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-      //const result = await response.json();
-      console.log(response)
-      // Check status
-      if (response.status < 200 || response.status >= 300) {
-        this.fs.displayToast(this.translate.instant('ERRORS.ELEVATION_FETCH'));
-        return [];
-      }
-      // Parse response as JSON and extract elevations
-      const result = await response.json();
-      return result.results.map((result: any) => result.elevation);
-    } catch (error) {
-      // Handle network or parsing errors gracefully
-      this.fs.displayToast(this.translate.instant('ERRORS.ELEVATION_GENERIC'));
-      return [];
-    }
-  }
-  */  
 
 }

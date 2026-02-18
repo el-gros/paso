@@ -1,51 +1,47 @@
 import { Injectable } from '@angular/core';
-import Map from 'ol/Map';
-import { global } from '../../environments/environment';
-import Feature from 'ol/Feature';
-import { MultiLineString, MultiPoint } from 'ol/geom';
-import VectorLayer from 'ol/layer/Vector';
-import TileLayer from 'ol/layer/Tile';
-import { OSM, XYZ } from 'ol/source';
-import VectorTileLayer from 'ol/layer/VectorTile';
-import { VectorTile, View } from 'ol';
-import { Rotate, ScaleLine, Zoom } from 'ol/control';
-import { LocationButtonControl } from '../utils/openlayers/custom-control';
-import { ShareControl } from '../utils/openlayers/share-control';
-import MVT from 'ol/format/MVT';
-import { createXYZ } from 'ol/tilegrid';
-import RenderFeature from 'ol/render/Feature';
-import TileState from 'ol/TileState';
-import pako from 'pako';
-import VectorTileSource from 'ol/source/VectorTile';
-import { applyStyle } from 'ol-mapbox-style';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
 import { map, catchError, filter, take } from 'rxjs/operators';
+import { TranslateService } from '@ngx-translate/core';
+
+// --- OPENLAYERS IMPORTS ---
+import Map from 'ol/Map';
+import View from 'ol/View';
+import Feature from 'ol/Feature';
+import { MultiLineString, MultiPoint, Geometry, LineString, Point } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
+import TileLayer from 'ol/layer/Tile';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import { OSM, XYZ } from 'ol/source';
+import VectorSource from 'ol/source/Vector';
+import VectorTileSource from 'ol/source/VectorTile';
+import { VectorTile } from 'ol';
+import MVT from 'ol/format/MVT';
+import RenderFeature from 'ol/render/Feature';
+import { createXYZ } from 'ol/tilegrid';
+import TileState from 'ol/TileState';
+import { Rotate, ScaleLine, Zoom, Control } from 'ol/control';
+import BaseLayer from 'ol/layer/Base';
+import { Coordinate } from 'ol/coordinate';
+
+// --- UTILS & EXTERNAL ---
+import { applyStyle } from 'ol-mapbox-style';
+import pako from 'pako';
+import { global } from '../../environments/environment';
+
+// --- SERVICES & INTERFACES ---
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
 import { ServerService } from './server.service';
 import { LocationManagerService } from './location-manager.service';
 import { LocationSharingService } from './locationSharing.service';
-import VectorSource from 'ol/source/Vector';
-import { fromLonLat, useGeographic } from 'ol/proj';
-import { TranslateService } from '@ngx-translate/core';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
-import { Track, PartialSpeed, ParsedPoint,Data, Waypoint } from '../../globald';
-import { get as getProjection } from 'ol/proj';
 import { TrackingControlService } from './trackingControl.service';
-
-useGeographic();
-
-// 1. centerAllTracks
-// 2. loadMap
-// 3. createMapLayer
-// 4. displayAllTracks
-// 5. createSource
-// 6. cycleZoom
-// 7. createLayer
-// 8. UPDATE COLORS ///////////////////////////////
+import { LocationButtonControl } from '../utils/openlayers/custom-control';
+import { ShareControl } from '../utils/openlayers/share-control';
+import { Track, ParsedPoint, Waypoint, LocationResult, TrackDefinition } from '../../globald';
 
 @Injectable({
   providedIn: 'root'
@@ -55,11 +51,14 @@ export class MapService {
   scaleSteps = [1, 1.75, 3.5];
   currentScaleIndex = 0;
   mapWrapperElement: HTMLElement | null = null;
+  
   public customControl!: LocationButtonControl;  
   public shareControl!: ShareControl;
+  
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
   visibleAll: boolean = false;
+  
   public locationActivated$ = new Subject<void>();
   public locationDeactivated$ = new Subject<void>();
   public shareStarted$ = new Subject<void>();
@@ -83,19 +82,17 @@ export class MapService {
 
   // 1. CENTER ALL TRACKS
   async centerAllTracks(): Promise<void> {
-    // 1. Obtener posición con un timeout o manejo de nulos
     const currentPosition = await this.location.getCurrentPosition();
-    if (currentPosition && this.geography.map) {
+    // Validamos que sea una coordenada válida [lon, lat]
+    if (currentPosition && currentPosition.length === 2 && this.geography.map) {
       const view = this.geography.map.getView();
-      // 2. Animación suave en lugar de salto brusco
       view.animate({
         center: currentPosition,
-        zoom: 8,         // Zoom más apropiado para tracking
-        duration: 1000    // 1 segundo de transición
+        zoom: 8,        
+        duration: 1000   
       });
     } else {
       console.warn("No se pudo obtener la ubicación para centrar el mapa.");
-      // Aquí podrías disparar un Toast informativo al usuario
     }
   }
 
@@ -104,7 +101,7 @@ export class MapService {
     const mapElement = document.getElementById('map');
     if (!mapElement) return;
 
-    // A. Inicializar Controles (Ahora pasamos el servicio inyectado)
+    // A. Inicializar Controles
     this.shareControl = new ShareControl(this.location, this.translate);
 
     this.shareControl.onShareStart = async () => {
@@ -117,13 +114,15 @@ export class MapService {
       await this.sharing.stopSharing();
     };
 
-    // B. Inicializar Capas Vectoriales
+    // B. Inicializar Capas Vectoriales (Tipado estricto)
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
     this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
 
-    const { olLayer } = await this.createMapLayer();
+    const result = await this.createMapLayer();
+    const olLayer = result.olLayer;
+    
     if (!olLayer) return;
 
     let minZoom = 0, maxZoom = 19, zoom = 7.5;
@@ -145,16 +144,18 @@ export class MapService {
     } 
     // 🟢 CASO 2 — Inicializar mapa nuevo
     else {
-      // 1. Crear el mapa
+      // Definir array de capas con tipo BaseLayer para evitar conflictos
+      const mapLayers: BaseLayer[] = [
+        olLayer,
+        this.geography.currentLayer,
+        this.geography.archivedLayer,
+        this.geography.searchLayer,
+        this.geography.locationLayer,
+      ].filter((l): l is BaseLayer => !!l);
+
       const map = new Map({
         target: 'map',
-        layers: [
-          olLayer,
-          this.geography.currentLayer,
-          this.geography.archivedLayer,
-          this.geography.searchLayer,
-          this.geography.locationLayer,
-        ].filter(Boolean) as any[],
+        layers: mapLayers,
         view: new View({
           center: defaultCenter,
           zoom: zoom,
@@ -162,23 +163,19 @@ export class MapService {
           maxZoom,
           multiWorld: false
         }),
-        // Solo controles estándar al principio
         controls: [
           new Zoom(),
           new ScaleLine({
             className: 'ol-scale-line vertical-scale',
-            target: 'scale-container', // Forzamos el renderizado aquí
+            target: 'scale-container', 
             units: 'metric'
           }),
           new Rotate()
         ],
       });
 
-      // 2. Guardar referencia
       this.geography.map = map;
 
-      // 3. Crear y añadir los controles personalizados DESPUÉS de crear el mapa
-      // Esto evita el error "Cannot read properties of undefined (reading 'setMap')"
       this.customControl = new LocationButtonControl(this.trackingService, this.translate);
       
       map.addControl(this.customControl);
@@ -194,23 +191,24 @@ export class MapService {
   private initAutoCenter() {
     this.location.latestLocation$.pipe(
       filter(loc => !!loc),
-      take(1) // Only do this for the very first point received
+      take(1)
     ).subscribe(nextLoc => {
       if (this.geography.map && nextLoc) {
         this.geography.map.getView().animate({
           center: [nextLoc.longitude, nextLoc.latitude],
           zoom: 14,
-          duration: 1500, // Smooth transition
-          easing: (t) => t * (2 - t) // Smooth-out effect
+          duration: 1500, 
+          easing: (t) => t * (2 - t)
         });
       }
     });
   }
 
   // 3. CREATE MAP LAYER
-  async createMapLayer() {
-    let olLayer: any = null;
+  async createMapLayer(): Promise<{ olLayer: BaseLayer | null, credits: string }> {
+    let olLayer: BaseLayer | null = null;
     let credits = '';
+    
     switch (this.geography.mapProvider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
@@ -265,21 +263,19 @@ export class MapService {
         });
         break;
       case 'catalonia': {
-        // 1. MUST await the database opening fully
         await this.server.openMbtiles('catalonia.mbtiles');
-        
-        // 2. Only THEN create the source
         const sourceResult = await this.createSource(this.server);
-        
-        olLayer = new VectorTileLayer({
-          source: sourceResult!,
-          style: this.stylerService.styleFunction
-        });
+        if (sourceResult) {
+            olLayer = new VectorTileLayer({
+                source: sourceResult,
+                style: this.stylerService.styleFunction
+            });
+        }
         break;
       }
       case 'MapTiler_v_outdoor':
         credits = '© MapTiler © OpenStreetMap contributors';
-        olLayer = new VectorTileLayer({
+        const vtLayer = new VectorTileLayer({
           source: new VectorTileSource({
             format: new MVT(),
             url: `https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=${global.mapTilerKey}`,
@@ -287,10 +283,10 @@ export class MapService {
           }),
         });
         await applyStyle(
-          olLayer,
+          vtLayer,
           `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`
-          // ,'openmaptiles' // add if needed
         );
+        olLayer = vtLayer;
         break;
       default:
         credits = '© OpenStreetMap contributors';
@@ -300,118 +296,106 @@ export class MapService {
   }
 
   // 4. DISPLAY ALL TRACKS
-  async displayAllTracks() {
-    // 1. Validaciones de seguridad
-    if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) {
-      console.warn("MapService: Faltan elementos críticos para mostrar los trayectos.");
+async displayAllTracks() {
+  if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) {
+    console.warn("MapService: Faltan elementos críticos para mostrar los trayectos.");
+    return;
+  }
+
+  try {
+    const keys = this.fs.collection
+      .filter((item: TrackDefinition) => item && item.date)
+      .map((item: TrackDefinition) => {
+          const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date!);
+          return dateObj.toISOString();
+      });
+
+    const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key) as Promise<Track>));
+    const source = this.geography.archivedLayer.getSource();
+    
+    if (!source) return;
+    source.clear();
+
+    const featuresToAdd: Feature[] = [];
+
+    for (let i = 0; i < rawTracks.length; i++) {
+      const track = rawTracks[i];
+      const item = this.fs.collection[i];
+
+      if (!track) continue;
+
+      let coords: Coordinate[] | null = null;
+      if (track.features?.[0]?.geometry?.coordinates) {
+        coords = track.features[0].geometry.coordinates;
+      } else if ((track as any).geometry?.coordinates) {
+        coords = (track as any).geometry.coordinates;
+      }
+
+      if (coords && coords.length > 0) {
+        // --- 1. LÍNEA DEL TRACK ---
+        const lineFeature = new Feature({
+          geometry: new LineString(coords)
+        });
+        lineFeature.set('type', 'archived_line'); 
+        lineFeature.set('date', item.date); 
+        lineFeature.setStyle(this.stylerService.setStrokeStyle('black'));
+        featuresToAdd.push(lineFeature);
+
+        // --- 2. PUNTO DE INICIO (PIN VERDE) ---
+        const startFeature = new Feature({
+          geometry: new Point(coords[0])
+        });
+        startFeature.set('type', 'archived_start');
+        startFeature.set('date', item.date);
+        startFeature.setStyle(this.stylerService.createPinStyle('green'));
+        featuresToAdd.push(startFeature);
+
+        // --- 3. PUNTO FINAL (PIN ROJO) ---
+        const endFeature = new Feature({
+          geometry: new Point(coords[coords.length - 1]) // Última coordenada
+        });
+        endFeature.set('type', 'archived_end');
+        endFeature.set('date', item.date);
+        // Usamos rojo para el final, que es el estándar visual
+        endFeature.setStyle(this.stylerService.createPinStyle('red')); 
+        featuresToAdd.push(endFeature);
+      }
+    }
+
+    if (featuresToAdd.length === 0) {
+      this.fs.displayToast(this.translate.instant('ARCHIVE.EMPTY_TRACKS'), 'error');
       return;
     }
 
-    try {
-      // 2. Generación de Keys usando toISOString (igual que cuando guardas)
-      const keys = this.fs.collection
-        .filter(item => item && item.date) // Filtramos solo los que tienen fecha
-        .map(item => {
-          const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date!);
-          return dateObj.toISOString();
-  });
-      // 3. Carga paralela desde Storage
-      const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key)));
+    source.addFeatures(featuresToAdd);
+    this.geography.archivedLayer.changed();
+    
+    setTimeout(async () => {
+      await this.centerAllTracks();
+      this.geography.map?.render();
+    }, 150);
 
-      const multiLine: any[] = [];
-      const multiPoint: any[] = [];
-      const multiKey: any[] = [];
-
-      // 4. Procesamiento de los datos recuperados
-      for (let i = 0; i < rawTracks.length; i++) {
-        const track = rawTracks[i];
-        const item = this.fs.collection[i];
-
-        if (!track) {
-          console.warn(`Key no encontrada en Storage: ${keys[i]}`);
-          continue;
-        }
-
-        // Extracción todoterreno de coordenadas (GeoJSON o Feature simple)
-        let coords = null;
-        if (track.features?.[0]?.geometry?.coordinates) {
-          coords = track.features[0].geometry.coordinates;
-        } else if (track.geometry?.coordinates) {
-          coords = track.geometry.coordinates;
-        } else if (Array.isArray(track)) {
-          coords = track;
-        }
-
-        if (coords && coords.length > 0) {
-          multiLine.push(coords);
-          multiPoint.push(coords[0]); // Punto de inicio para el pin verde
-          multiKey.push(item.date);
-        }
-      }
-
-      // 5. Verificación final de datos
-      if (multiLine.length === 0) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.EMPTY_TRACKS'), 'error');
-        return;
-      }
-
-      // 6. Actualización del Source (capa archivedLayer)
-      const source = this.geography.archivedLayer.getSource();
-      if (source) {
-        source.clear();
-
-        // Feature para las líneas (MultiLineString)
-        const allLinesFeature = new Feature({
-          geometry: new MultiLineString(multiLine)
-        });
-        allLinesFeature.set('type', 'all_tracks_lines');
-        allLinesFeature.setStyle(this.stylerService.setStrokeStyle('black'));
-
-        // Feature para los inicios (MultiPoint)
-        const allStartsFeature = new Feature({
-          geometry: new MultiPoint(multiPoint)
-        });
-        allStartsFeature.set('type', 'all_tracks_starts');
-        allStartsFeature.set('multikey', multiKey);
-        allStartsFeature.setStyle(this.stylerService.createPinStyle('green'));
-
-        source.addFeatures([allLinesFeature, allStartsFeature]);
-
-        // 7. Refresco visual y Zoom (Crítico para useGeographic)
-        this.geography.archivedLayer.changed();
-        
-        setTimeout(async () => {
-          await this.centerAllTracks();
-          this.geography.map?.render();
-        }, 150);
-      }
-
-    } catch (error) {
-      console.error("Error masivo en displayAllTracks:", error);
-      this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
-    }
+  } catch (error) {
+    console.error("Error masivo en displayAllTracks:", error);
+    this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
   }
+}
 
   // 5. CREATE SOURCE //////////////////////////////
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
-      // 🔹 1. Explicitly define the Web Mercator extent to avoid TypeScript 'null' errors
-      // and prevent the "Hemisphere Swap" caused by geographic projection defaults.
       const epsg3857Extent = [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244];
 
       return new VectorTileSource({
         format: new MVT(),
-        // 🔹 2. Force the XYZ grid to use the square 3857 extent.
-        // This is crucial because MBTiles are tiled based on a square world,
-        // while useGeographic() works on a 2:1 rectangular world.
         tileGrid: createXYZ({ 
           extent: epsg3857Extent, 
           maxZoom: 22,
-          tileSize: 512 // ⚠️ Common for vector tiles; change to 256 if map looks giant.
+          tileSize: 512
         }),
 
-        tileLoadFunction: (tile) => {
-          const vectorTile = tile as VectorTile<RenderFeature>;
+        tileLoadFunction: (tile, url) => {
+          const vectorTile = tile as VectorTile<RenderFeature>; // Casting con RenderFeature como tipo genérico
           const [z, x, y] = vectorTile.getTileCoord();
 
           vectorTile.setLoader(async (extent, resolution, projection) => {
@@ -424,12 +408,8 @@ export class MapService {
                 return;
               }
 
-              // 🔹 3. Handle Gzip compression (standard for .mbtiles)
               const decompressed = pako.inflate(new Uint8Array(rawData));
 
-              // 🔹 4. Projection Bridge: 
-              // dataProjection is 'EPSG:3857' because tiles are stored in Mercator.
-              // featureProjection is 'projection' (EPSG:4326) because of useGeographic().
               const features = new MVT().readFeatures(decompressed.buffer, {
                 extent: extent,
                 featureProjection: projection, 
@@ -446,7 +426,7 @@ export class MapService {
           });
         },
         tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
-        wrapX: true // 🔹 Set to false if you want to see if the "Blue Band" becomes a single square.
+        wrapX: true
       });
     } catch (e) {
       console.error('Error in createSource:', e);
@@ -466,7 +446,7 @@ export class MapService {
   }
 
   // 7. CREATE LAYER ///////////////////////////////////////
-  async createLayer(layer?: VectorLayer) {
+  async createLayer(layer?: VectorLayer<VectorSource>): Promise<VectorLayer<VectorSource>> {
     if (!layer) layer = new VectorLayer();
     if (!layer.getSource()) layer.setSource(new VectorSource());
     return layer;
@@ -474,10 +454,12 @@ export class MapService {
 
   // 8. UPDATE COLORS /////////////////////////////////////////
   async updateColors() {
-    const updateLayer = (layer: VectorLayer | undefined, color: string) => {
+    const updateLayer = (layer: VectorLayer<VectorSource> | undefined, color: string) => {
       const features = layer?.getSource()?.getFeatures();
       features?.forEach((f: Feature) => {
-        if (f.getGeometry()?.getType() === 'LineString') {
+        // Validación estricta del tipo de geometría
+        const geom = f.getGeometry();
+        if (geom && geom.getType() === 'LineString') {
           f.setStyle(this.stylerService.setStrokeStyle(color));
         }
       });
@@ -490,8 +472,7 @@ export class MapService {
   }
 
   // 9. REVERSE GEOCODE //////////////////////////////////
-  reverseGeocode(lat: number, lon: number): Observable<any | null> {
-    // --- Validación ---
+  reverseGeocode(lat: number, lon: number): Observable<LocationResult | null> {
     if (
       typeof lat !== 'number' || typeof lon !== 'number' ||
       isNaN(lat) || isNaN(lon) ||
@@ -501,25 +482,27 @@ export class MapService {
       return throwError(() => new Error('Invalid coordinates'));
     }
     const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
+    
     return this.http.get<any>(url).pipe(
       map((response: any) => {
         const f = response?.features?.[0];
         if (!f) return null;
+        
         const [featureLon, featureLat] = f.geometry.coordinates;
-        // MapTiler entrega [minLon, minLat, maxLon, maxLat] 
-        // Este formato es el estándar [minX, minY, maxX, maxY] para OpenLayers
         const bbox = f.bbox ? f.bbox : [featureLon, featureLat, featureLon, featureLat];
-        return {
+        
+        const result: LocationResult = {
           lat: featureLat,
           lon: featureLon,
           name: f.text ?? '(no name)',
           display_name: f.place_name ?? f.text ?? '(no name)',
           short_name: this.buildMapTilerShortName(f),
           type: f.place_type?.[0] ?? 'unknown',
-          place_id: f.id ?? null,
-          boundingbox: bbox, // Compatible con view.fit(bbox)
+          place_id: f.id ?? undefined,
+          boundingbox: bbox,
           geojson: f.geometry
         };
+        return result;
       }),
       catchError((error) => {
         console.error('Reverse geocoding error:', error);
@@ -528,56 +511,67 @@ export class MapService {
     );
   }
 
-// Extraído como método de clase para limpieza
-private buildMapTilerShortName(f: any): string {
-  if (!f) return '(no name)';
-  const main = f.text ?? '(no name)';
-  const city = f.context?.find((c: any) =>
-    c.id.startsWith('place') || c.id.startsWith('locality')
-  )?.text;
-  return city ? `${main}, ${city}` : main;
-}
+  private buildMapTilerShortName(f: any): string {
+    if (!f) return '(no name)';
+    const main = f.text ?? '(no name)';
+    const city = f.context?.find((c: any) =>
+      c.id.startsWith('place') || c.id.startsWith('locality')
+    )?.text;
+    return city ? `${main}, ${city}` : main;
+  }
 
   // PARSE CONTENT OF A GPX FILE ////////////////////////
   async parseGpxXml(gpxText: string) {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = [];
     let trk: Element | null = null;
-    // Parse GPX data
+    
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
+    
     if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
       throw new Error('Invalid GPX file format.');
     }
+    
     // Parse waypoints
     const wptNodes = xmlDoc.getElementsByTagName("wpt");
     for (const wpt of Array.from(wptNodes)) {
       const latStr = wpt.getAttribute("lat");
       const lonStr = wpt.getAttribute("lon");
       if (!latStr || !lonStr) continue;
+      
       const latitude = parseFloat(latStr);
       const longitude = parseFloat(lonStr);
       const eleNode = wpt.getElementsByTagName("ele")[0];
       const altitude = eleNode ? parseFloat(eleNode.textContent || "0") : 0;
+      
       const name = this.fs.sanitize(wpt.getElementsByTagName("name")[0]?.textContent || "");
       let comment = this.fs.sanitize(wpt.getElementsByTagName("cmt")[0]?.textContent || "");
+      
       if (name === comment) comment = "";
+      
       waypoints.push({ latitude, longitude, altitude, name, comment });
     }
+    
     // Extract first track
     const tracks = xmlDoc.getElementsByTagName('trk');
     if (!tracks.length) return { waypoints, trackPoints, trk: null };
+    
     trk = tracks[0];
     const trackSegments = trk.getElementsByTagName('trkseg');
     if (!trackSegments.length) return { waypoints, trackPoints, trk: null };
+    
     const trackSegment = trackSegments[0];
     const trkptNodes = trackSegment.getElementsByTagName('trkpt');
+    
     for (const trkpt of Array.from(trkptNodes)) {
       const lat = parseFloat(trkpt.getAttribute('lat') || "");
       const lon = parseFloat(trkpt.getAttribute('lon') || "");
       const ele = parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || "0");
+      
       const timeStr = trkpt.getElementsByTagName('time')[0]?.textContent;
       const time = timeStr ? new Date(timeStr).getTime() : 0;
+      
       if (!isNaN(lat) && !isNaN(lon)) {
         trackPoints.push({ lat, lon, ele, time });
       }
@@ -587,14 +581,16 @@ private buildMapTilerShortName(f: any): string {
 
   async parseKmlXml(xmlDoc: Document) {
     let waypoints: Waypoint[] = [];
-    let trackPoints: { lat: number; lon: number; ele?: number; time?: number }[] = [];
+    let trackPoints: ParsedPoint[] = []; // Usamos ParsedPoint para consistencia
     let trk: Element | null = null;
-    // Extract Placemarks
+    
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
+    
     for (const pm of Array.from(placemarks)) {
       const name = pm.getElementsByTagName("name")[0]?.textContent || "";
       const desc = pm.getElementsByTagName("description")[0]?.textContent || "";
-      // Waypoint → look for <Point>
+      
+      // Waypoint
       const point = pm.getElementsByTagName("Point")[0];
       if (point) {
         const coordText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
@@ -604,26 +600,28 @@ private buildMapTilerShortName(f: any): string {
             latitude: parseFloat(latStr),
             longitude: parseFloat(lonStr),
             altitude: eleStr ? parseFloat(eleStr) : 0,
-            name: this.fs['sanitize']?.(name) ?? name,
-            comment: this.fs['sanitize']?.(desc) ?? desc,
+            name: this.fs.sanitize(name),
+            comment: this.fs.sanitize(desc),
           });
         }
       }
-      // Track → look for <LineString>
+      
+      // Track
       const line = pm.getElementsByTagName("LineString")[0];
       if (line) {
-        trk = pm; // keep Placemark as "track container"
+        trk = pm; 
         const coordText = line.getElementsByTagName("coordinates")[0]?.textContent?.trim();
         if (coordText) {
           const coords = coordText.split(/\s+/);
           for (const c of coords) {
             const [lonStr, latStr, eleStr] = c.split(",");
             if (!lonStr || !latStr) continue;
+            
             trackPoints.push({
               lon: parseFloat(lonStr),
               lat: parseFloat(latStr),
               ele: eleStr ? parseFloat(eleStr) : 0,
-              time: 0, // KML usually doesn’t have per-point time → you can extend if needed
+              time: 0, 
             });
           }
         }
@@ -631,5 +629,4 @@ private buildMapTilerShortName(f: any): string {
     }
     return { waypoints, trackPoints, trk };
   }
-
 }

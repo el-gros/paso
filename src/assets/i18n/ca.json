@@ -70,7 +70,8 @@
   "TOAST4": "Error al carregar la col·lecció",
   "LOADING_ERROR": "Error al carregar el trajecte",
   "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers",
-  "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament"
+  "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
+  "GENERATING_FILES": "S'estan generant els fitxers, espereu..."
 },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -84,7 +85,7 @@
     "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
     "UPLOAD_MAPS": "Descarregar mapes",
     "UPLOADMAP": "Mapa descarregat amb èxit",
-    "REMOVEMAP": "El mapa ha estat eliminat",
+    "REMOVEMAP": "S'ha eliminat el mapa",
     "FAILED_REMOVEMAP": "Error en eliminar el mapa",
     "FAILED_UPLOADMAP": "Error en descarregar el mapa",
     "REMOVE_MAP": "Eliminar mapes",
@@ -100,15 +101,12 @@
     "ELOSS": "Desnivell negatiu",
     "TIME": "Temps",
     "MOTIONTIME": "Temps en moviment",
-    "POINTS": "Punts gravats",
     "ALTITUDE": "Altitud actual",
-    "CURRENT_SPEED": "Velocitat actual",
+    "CURRENTSPEED": "Velocitat actual",
     "AVGSPEED": "Velocitat mitjana",
     "MOTIONAVGSPEED": "Vel. mitjana en moviment",
     "CANVASALTITUDE": "ALTITUD (m) vs DISTÀNCIA (km)",
     "CANVASSPEED": "VELOCITAT (km/h) vs TEMPS",
-    "FROM_START": "Distància des de l'inici",
-    "TO_END": "Distància fins al final",
     "NO_RECORDING": "No hi ha cap trajecte en curs",
     "DO_START": "Inicieu una gravació per visualitzar les dades d'altitud i velocitat en temps real",
     "GOTO_MAP": "Anar al mapa",
@@ -121,15 +119,10 @@
     "NO_SPEED_DATA": "No hi ha dades de velocitat"
   },
   "EDIT": {
+    "HEADER": "Punt de pas",
     "NAME": "Nom",
     "DESCRIPTION": "Descripció",
     "CANCEL": "Cancel·lar"
-  },
-  "WPT": {
-    "HEADER": "Editeu el punt de ruta",
-    "NAME": "Nom",
-    "COMMENT": "Comentari",
-    "ALTITUDE": "Altitud"
   },
   "RECORD": {
     "BUTTON": "Gravar",
@@ -142,11 +135,8 @@
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Seguiment a temps real"
-  },
-  "ERRORS": {
-    "ELEVATION_FETCH": "Error en les dades d'altitud del servidor.",
-    "ELEVATION_GENERIC": "No s'ha pogut obtenir l'elevació."
+    "SHARE_TEXT": "Seguiment a temps real",
+    "DEFAULT_NAME": "Sense nom"
   },
   "COLORS": {
     "crimson": "carmesí",
@@ -186,25 +176,19 @@
       "GENERIC_UNRESTRICTED": "Configurar la bateria com a 'Sense optimitzar'"
     }
   },
-  "MAP_CONTROLS": {
-    "CENTER_LOCATION": "Centrar a la meva ubicació",
-    "STOP_TRACKING": "Aturar seguiment"
-  },
   "SHARE": {
     "TITLE_MODAL": "Compartir posició",
-    "DIALOG_TITLE": "Enviar enllaç a...",
-    "ERROR_GENERATE": "No s'ha pogut iniciar el seguiment",
     "STOPPED": "Heu deixat de compartir la vostra ubicació"
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS"
   },
   "REPORT": {
-    "TITLE": "Informe d'activitat",
     "ROUTE_NAME": "Nom de la ruta",
     "DATE": "Data",
-    "DISTANCE": "Distància total",
-    "SHARE_SUBJECT": "Informe de seguiment - Paso App",
-    "SHARE_BODY": "Us envio l'informe d'activitat de la meva ruta: "
+    "DISTANCE": "Distància",
+    "TIME": "Temps",
+    "ELEVATION_GAIN": "Desnivell positiu",
+    "ELEVATION_LOSS": "Desnivell negatiu"
   }
 }

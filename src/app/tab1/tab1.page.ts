@@ -3,13 +3,12 @@ import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { Storage } from '@ionic/storage-angular';
 import { register } from 'swiper/element/bundle';
 import Map from 'ol/Map';
-import { useGeographic } from 'ol/proj.js';
-import { TrackDefinition, Waypoint, WikiData } from '../../globald';
+import { TrackDefinition, Waypoint, WikiData, WikiWeatherResult } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
 import { ServerService } from '../services/server.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { IonicModule, Platform, PopoverController } from '@ionic/angular';
+import { IonicModule, Platform, PopoverController, ToastController } from '@ionic/angular';
 import { LanguageService } from '../services/language.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
@@ -19,39 +18,48 @@ import { LocationManagerService } from '../services/location-manager.service';
 import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
-import MyService from '../../plugins/MyServicePlugin';
 import { BatteryPopoverComponent } from '../battery-popover.component';
 import { RecordPopoverComponent } from '../record-popover.component';
 import { SearchGuidePopoverComponent } from '../search-guide-popover.component';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
-import { BehaviorSubject, filter, Subject, take, takeUntil } from 'rxjs';
+import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
 import { WikiCardComponent } from '../wiki-card.component';
-import { MapBrowserEvent } from 'ol';
-import { FeatureLike } from 'ol/Feature';
-import { Feature } from 'ol';
-import { ToastController } from '@ionic/angular';
 
-useGeographic();
+// --- OPENLAYERS IMPORTS ---
+import { MapBrowserEvent } from 'ol';
+import Feature, { FeatureLike } from 'ol/Feature'; 
+import { Coordinate } from 'ol/coordinate';
+import { SimpleGeometry } from 'ol/geom'; 
+
+// --- PLUGIN IMPORTS ---
+import MyService, { Location as PluginLocation } from '../../plugins/MyServicePlugin';
+
 register();
 
+interface RouteStatusEvent {
+  status: 'green' | 'red' | 'unknown';
+}
+
 @Component({
-    standalone: true,
-    selector: 'app-tab1',
-    templateUrl: 'tab1.page.html',
-    styleUrls: ['tab1.page.scss'],
-    imports: [
-      IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
-      SearchGuidePopoverComponent, WikiCardComponent
-    ],
-    providers: [DecimalPipe, DatePipe],
+  standalone: true,
+  selector: 'app-tab1',
+  templateUrl: 'tab1.page.html',
+  styleUrls: ['tab1.page.scss'],
+  imports: [
+    IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
+    SearchGuidePopoverComponent, WikiCardComponent
+  ],
+  providers: [DecimalPipe, DatePipe],
 })
 export class Tab1Page implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
+  
   public wikiData: WikiData | null = null;
+  public weatherData: any | null = null;
   public routeStatus: 'green' | 'red' | 'unknown' = 'unknown';
 
   constructor(
@@ -74,11 +82,17 @@ export class Tab1Page implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
   ) {}
 
-  // 1. ON INIT ////////////////////////////////
+  handleWikiResult(event: WikiWeatherResult) {
+    this.wikiData = event.wiki;       
+    this.weatherData = event.weather; 
+    this.cd.detectChanges();
+  }
+
   async ngOnInit() {
     await this.platform.ready();
     await this.initializeVariables();
     const hasPermission = await this.checkGpsPermissions(); 
+    
     if (hasPermission) {
       try {
         await MyService.startService(); 
@@ -97,46 +111,46 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.initStatus$.next(true);
   }
 
-  // 2. ION VIEW DID ENTER //////////////////////
   async ionViewDidEnter() {
     this.initStatus$.pipe(
       filter(ready => ready === true),
-      take(1)
-    ).subscribe(async () => {
-      this.geography.map?.updateSize();
-      await this.initializeEvents();
-      
-      this.mapService.pendingTrack$
-        .pipe(
-          takeUntil(this.destroy$),
-          filter(track => track !== null) 
-        )
-        .subscribe(async (track) => {
-          this.reference.archivedTrack = track;
-          await this.reference.displayArchivedTrack();
-          await this.geography.setMapView(track);
-          this.mapService.pendingTrack$.next(null);
-        });
-
-      if (this.fs.reDraw) {
-        await this.mapService.updateColors();
-        this.fs.reDraw = false;
-      }
-      if (this.fs.buildTrackImage) {
-        await this.buildTrackImage();
-      }
+      take(1),
+      switchMap(async () => {
+        this.geography.map?.updateSize();
+        await this.initializeEvents();
+        return this.mapService.pendingTrack$; 
+      }),
+      switchMap(obs => obs), 
+      takeUntil(this.destroy$),
+      filter(track => track !== null)
+    ).subscribe(async (track) => {
+      this.reference.archivedTrack = track;
+      await this.reference.displayArchivedTrack();
+      await this.geography.setMapView(track);
+      this.mapService.pendingTrack$.next(null);
     });
-    if (this.mapService.visibleAll) {
-      // Solo si el source está vacío, para no recargar mil veces
-      const source = this.geography.archivedLayer?.getSource();
-      if (source && source.getFeatures().length === 0) {
-        this.mapService.displayAllTracks();
-      }
-    }
+
+    this.initStatus$.pipe(
+        filter(ready => ready === true),
+        take(1)
+    ).subscribe(async () => {
+        if (this.fs.reDraw) {
+            await this.mapService.updateColors();
+            this.fs.reDraw = false;
+        }
+        if (this.fs.buildTrackImage) {
+            await this.buildTrackImage();
+        }
+        if (this.mapService.visibleAll) {
+            const source = this.geography.archivedLayer?.getSource();
+            if (source && source.getFeatures().length === 0) {
+              this.mapService.displayAllTracks();
+            }
+        }
+    });
   }
 
-  // 3. CHECK BATTERY OPTIMIZATIONS /////////////
-  async checkBatteryOptimizations(evento?: any) {
+  async checkBatteryOptimizations(evento?: Event) {
     try {
       const { value: isAlreadyIgnored } = await MyService.isIgnoringBatteryOptimizations();
       if (isAlreadyIgnored) return;
@@ -174,77 +188,62 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
-  // 4. HANDLE CLICKS ///////////////////////////
   async handleClicks() {
     const map = this.geography.map;
     if (!map) return;
-
-    // Quitamos los corchetes y usamos el string directo
     map.un('singleclick', this.handleMapClick);
     map.on('singleclick', this.handleMapClick);
-    console.log('✅ Click listener activado en el mapa');
   }
 
-  // 5. HANDLE MAP CLICK ////////////////////////
-  private handleMapClick = async (event: any) => {
-    console.log('¡Clic detectado!', event?.coordinate);
-    const browserEvent = event as MapBrowserEvent<PointerEvent>;
+  private handleMapClick = async (event: MapBrowserEvent<any>) => {
     const map = this.geography.map;
-
-    // 1. Si no hay mapa o la capa no tiene fuente de datos, no hacemos nada
     if (!map || !this.geography.archivedLayer?.getSource()) return;
 
-    let selectedFeature: any = null;
-
-    map.forEachFeatureAtPixel(browserEvent.pixel, (feature: FeatureLike) => {
-      console.log('Feature encontrada:', feature.getProperties());
-      if (feature instanceof Feature) {
-        const type = feature.get('type');
-        if (!selectedFeature && type) {
-          selectedFeature = feature;
-          return true; 
-        }
-      }
-      return false;
+    let hitFeature: FeatureLike | null = null;
+    map.forEachFeatureAtPixel(event.pixel, (feature: FeatureLike) => {
+      hitFeature = feature;
+      return true; 
     }, { hitTolerance: 5 });
 
-    if (!selectedFeature) {
-      return;
-      console.log('No se seleccionó ninguna feature válida');
-    }  
-    
+    if (!hitFeature) return;
+
+    const selectedFeature = hitFeature as Feature;
     const type = selectedFeature.get('type');
-    console.log('Tipo de feature:', type);
-    const geometry = selectedFeature.getGeometry();
+    const geometry = selectedFeature.getGeometry() as SimpleGeometry;
+    
     if (!geometry) return;
 
-    // --- ESCENARIO 2a: YA HAY UN TRACK ABIERTO ---
     if (this.reference.archivedTrack) {
-      
-      // Si se pincha en un Waypoint
-      if (type === 'archived_waypoints' && 'getCoordinates' in geometry) {
-        const coords = (geometry as any).getCoordinates();
-        const clickedCoordinate = (geometry as any).getClosestPoint(browserEvent.coordinate);
-        const index = this.findClosestIndex(coords, clickedCoordinate);
+        await this.handleArchivedTrackClick(type, selectedFeature, geometry, event);
+    } else {
+        await this.handleGeneralMapClick(type, selectedFeature, geometry, event);
+    }
+  }
+
+  private async handleArchivedTrackClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
+    if (type === 'archived_waypoints') {
+        const coords = geometry.getCoordinates();
+        const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
+        const index = this.findClosestIndex(coords as Coordinate[], clickedCoordinate);
 
         if (index !== -1) {
-          let waypoints: Waypoint[] = selectedFeature.get('waypoints');
-          const response = await this.fs.editWaypoint(waypoints[index], true, false);
-          
-          if (response.action === 'ok') {
-            waypoints[index].name = response.name;
-            waypoints[index].comment = response.comment;
-            this.reference.archivedTrack.features[0].waypoints = waypoints;
-
-            if (this.fs.key) {
-              await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
-              this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'), 'success');
+          const waypoints: Waypoint[] = feature.get('waypoints');
+          if (waypoints && waypoints[index]) {
+            const response = await this.fs.editWaypoint(waypoints[index], true, false);
+            if (response && response.action === 'ok') {
+              waypoints[index].name = response.name;
+              waypoints[index].comment = response.comment;
+              if (this.reference.archivedTrack?.features?.[0]) {
+                this.reference.archivedTrack.features[0].waypoints = waypoints;
+              }
+              if (this.fs.key && this.reference.archivedTrack) {
+                await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
+                this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'), 'success');
+              }
             }
           }
         }
-      } 
-      // Si se pincha en cualquier otra parte del track (línea, inicio, fin)
-      else {
+    } else {
         const trackElements = ['archived_line', 'archived_start', 'archived_end', 'archived_points'];
         if (trackElements.includes(type)) {
           const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
@@ -253,73 +252,101 @@ export class Tab1Page implements OnInit, OnDestroy {
             const index = this.fs.collection.findIndex((item: TrackDefinition) => 
               item.date && new Date(item.date).getTime() === archivedTime
             );
-
-            if (index >= 0) {
-              await this.reference.editTrack(index);
-            }
+            if (index >= 0) await this.reference.editTrack(index);
           }
         }
-      }
-    } 
+    }
+  }
 
-    // --- ESCENARIO 2b: NO HAY TRACK ABIERTO (Cargar nuevo) ---
-    else {
-      // Si se pincha en los puntos de un trayecto archivado
-      if (type === 'archived_points') {
-        const clickedCoordinate = (geometry as any).getClosestPoint(event.coordinate);
-        const coords = (geometry as any).getCoordinates();
-        const index = this.findClosestIndex(coords, clickedCoordinate);
-        
-        if (index !== -1) {
-          const multiKey = selectedFeature.get('multikey');
-          this.fs.key = JSON.stringify(multiKey[index]);
-          
-          // Cargamos el track seleccionado
-          const trackData = await this.fs.storeGet(this.fs.key);
-          
-          if (trackData) {
-            // Limpiamos los trayectos actuales de la capa "archived" antes de mostrar el específico
-            this.geography.archivedLayer.getSource()?.clear();
-            
-            this.reference.archivedTrack = trackData;
-            this.reference.displayArchivedTrack();
+private async handleGeneralMapClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
+
+  // --- CASO 1: Click en Puntos (Waypoints o Clusters) ---
+  if (type === 'archived_points') {
+    // ... (mantén tu lógica actual de archived_points, funciona bien para cargar el track)
+    const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
+    const coords = geometry.getCoordinates();
+    if (!coords) return;
+    const coordsArray = (Array.isArray(coords[0]) ? coords : [coords]) as Coordinate[];
+    const index = this.findClosestIndex(coordsArray, clickedCoordinate);
+
+    if (index !== -1) {
+      const multiKey = feature.get('multikey');
+      if (multiKey && multiKey[index]) {
+        this.fs.key = JSON.stringify(multiKey[index]);
+        const trackData = await this.fs.storeGet(this.fs.key);
+        if (trackData) {
+          this.geography.archivedLayer?.getSource()?.clear();
+          this.reference.archivedTrack = trackData;
+          await this.reference.displayArchivedTrack();
+          if (this.reference.archivedTrack) {
             await this.geography.setMapView(this.reference.archivedTrack);
           }
         }
       }
     }
+    return;
   }
 
-  // 6. FIND CLOSEST INDEX //////////////////////
-  private findClosestIndex(coords: any[], target: any): number {
+  // --- CASO 2: Click en Líneas, Inicio o Fin ---
+  const trackElements = ['archived_line', 'archived_start', 'archived_end'];
+
+  if (trackElements.includes(type)) {
+    const featureDate = feature.get('date');
+
+    if (featureDate) {
+      // 1. Convertimos la fecha a la clave del Storage (ISO String)
+      const storageKey = new Date(featureDate).toISOString();
+      
+      // 2. Recuperamos el track completo del Storage
+      const trackData = await this.fs.storeGet(storageKey);
+
+      if (trackData) {
+        // 3. Limpiamos la vista de "todos los tracks"
+        this.geography.archivedLayer?.getSource()?.clear();
+        this.mapService.visibleAll = false; // Marcamos que ya no estamos viendo todos
+
+        // 4. Cargamos y visualizamos el track seleccionado
+        this.reference.archivedTrack = trackData;
+        await this.reference.displayArchivedTrack();
+        
+        // 5. Ajustamos la vista al track específico
+        await this.geography.setMapView(trackData);
+        
+        // 6. Informamos al plugin del cambio de referencia
+        await this.location.sendReferenceToPlugin();
+        
+        this.cd.detectChanges();
+      } else {
+        console.warn('⚠️ No se pudieron cargar los datos del track seleccionado.');
+      }
+    }
+  }
+}
+
+  private findClosestIndex(coords: Coordinate[], target: Coordinate): number {
     const eps = 0.000001;
     return coords.findIndex(c => Math.abs(c[0] - target[0]) < eps && Math.abs(c[1] - target[1]) < eps);
   }
 
-  // 7. INITIALIZE VARIABLES ////////////////////
   async initializeVariables() {
     this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
     this.fs.collection = await this.fs.storeGet('collection') || [];
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
     this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
     this.fs.alert = await this.fs.check(this.fs.alert,'alert');
-    //this.fs.selectedAltitude = await this.fs.check(this.fs.selectedAltitude, 'altitude');
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
-  // 8. ON DESTROY /////////////////////////////
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-    MyService.stopService();
+    // ELIMINADA la línea: MyService.stopService();
   }
 
-  // 9. START PASO /////////////////////////////
   async startPaso() {
     await MyService.startService();
 
-    // 1. Listener de Ubicación (GPS)
-    MyService.addListener('location', (location: any) => {
+    MyService.addListener('location', (location: PluginLocation) => {
       this.zone.run(async () => {
         if (!location) return;
         const success = this.location.processRawLocation(location);
@@ -335,20 +362,14 @@ export class Tab1Page implements OnInit, OnDestroy {
       }); 
     });
 
-    // 2. Listener de Estado de Ruta (Color)
-    // Usamos (MyService as any) para evitar el error de "routeStatusUpdate"
-    (MyService as any).addListener('routeStatusUpdate', (data: { status: string }) => {
+    (MyService as any).addListener('routeStatusUpdate', (data: RouteStatusEvent) => {
       this.zone.run(() => {
-        // Usamos el casting "as any" o el desglose de tipos para que no proteste
-        this.routeStatus = data.status as 'green' | 'red' | 'unknown';
-        
-        // Forzamos la detección de cambios para que la UI responda al instante
+        this.routeStatus = data.status;
         this.cd.detectChanges();
       });
     });
   }
 
-  // 10. CHECK GPS PERMISSIONS //////////////////
   async checkGpsPermissions(): Promise<boolean> {
     try {
       let check = await Geolocation.checkPermissions();
@@ -363,11 +384,9 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
-  // 11. INITIALIZE EVENTS //////////////////////
   async initializeEvents() {
     if (this.eventsInitialized) return; 
 
-    // Location Subscriptions (Usando directamente los servicios)
     this.mapService.locationActivated$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.zone.run(() => this.trackingControlService.start()));
@@ -376,8 +395,6 @@ export class Tab1Page implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.zone.run(() => this.trackingControlService.stop()));
 
-    // Sharing Subscriptions (Simplificado sin funciones puente)
-    
     this.mapService.shareStarted$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.zone.run(() => this.locationSharingService.startSharing()));
@@ -392,7 +409,6 @@ export class Tab1Page implements OnInit, OnDestroy {
     console.log("🚀 All Map & Sharing events initialized");
   }
 
-  // 12. EXPORT MAP IMAGE ///////////////////////
   async buildTrackImage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -465,29 +481,26 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
  
-async showStatusToast() {
-  // Determinamos el mensaje según el estado
-  let msgKey = 'MAP.UNKNOWN_STATUS';
-  if (this.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
-  if (this.routeStatus === 'red') msgKey = 'MAP.OFF_ROUTE';
+  async showStatusToast() {
+    let msgKey = 'MAP.UNKNOWN_STATUS';
+    if (this.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
+    if (this.routeStatus === 'red') msgKey = 'MAP.OFF_ROUTE';
 
-  // Obtenemos el texto traducido
-  const finalMessage = msgKey ? this.translate.instant(msgKey) : msgKey;
+    const finalMessage = msgKey ? this.translate.instant(msgKey) : msgKey;
 
-  const toast = await this.toastCtrl.create({
-    message: finalMessage,
-    duration: 3000,
-    position: 'top',
-    cssClass: `custom-toast ${this.routeStatus}-toast`, // Clase dinámica para el color
-    buttons: [
-      {
-        text: 'OK',
-        role: 'cancel'
-      }
-    ]
-  });
-
-  await toast.present();
-}
+    const toast = await this.toastCtrl.create({
+      message: finalMessage,
+      duration: 3000,
+      position: 'top',
+      cssClass: `custom-toast ${this.routeStatus}-toast`, 
+      buttons: [
+        {
+          text: 'OK',
+          role: 'cancel'
+        }
+      ]
+    });
+    await toast.present();
+  }
 
 }

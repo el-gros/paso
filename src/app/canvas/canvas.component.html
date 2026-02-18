@@ -21,7 +21,7 @@
                   <ion-icon name="time-outline" class="icon-time"></ion-icon>
                   <span>{{ 'CANVAS.TIME' | translate }}</span>
                 </div>
-                <div class="value">{{ formatMsec(present.currentTrack.features[0].properties.totalTime) }}</div>
+                <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.totalTime) }}</div>
               </div>
 
               <div class="data-row">
@@ -29,7 +29,7 @@
                   <ion-icon name="play-circle-outline" class="icon-motion"></ion-icon>
                   <span>{{ 'CANVAS.MOTIONTIME' | translate }}</span>
                 </div>
-                <div class="value">{{ formatMsec(present.currentTrack.features[0].properties.inMotion) }}</div>
+                <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.inMotion) }}</div>
               </div>
 
               <div class="data-row">
@@ -133,7 +133,7 @@
                       <ion-icon name="time-outline" class="icon-time"></ion-icon>
                       <span>{{ 'CANVAS.TIME' | translate }}</span>
                     </div>
-                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalTime > 0 ? formatMsec(reference.archivedTrack.features[0].properties.totalTime) : '--' }}</div>
+                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalTime > 0 ? fs.formatMsec(reference.archivedTrack.features[0].properties.totalTime) : '--' }}</div>
                   </div>
 
                   <div class="data-row">
@@ -213,8 +213,7 @@
                 <div class="icon-container archived" style="width: 60px; height: 60px;">
                   <ion-icon name="time-outline" style="font-size: 1.8rem;"></ion-icon>
                 </div>
-                <h3>{{ 'CANVAS.NO_TIME_DATA' | translate }}</h3>
-                <p>{{ 'CANVAS.KMZ_NO_PARTIALS' | translate }}</p>
+                <h3>{{ 'CANVAS.NO_SPEED_DATA' | translate }}</h3>
               </div>
             }
           </div>
@@ -239,15 +238,15 @@
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
-    <div class="record-button" (click)="fs.gotoPage('tab1')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
       <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('archive')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
       <ion-icon name="library-sharp"></ion-icon>
       <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
     </div>
-    <div class="record-button" (click)="fs.gotoPage('settings')">
+    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
       <ion-icon name="settings-sharp"></ion-icon>
       <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
     </div>

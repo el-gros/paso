@@ -113,51 +113,6 @@
   right: 1em;
 }
 
-/*
-/* 1. Forzar que ambos contenedores midan lo mismo 
-.location-button-control { 
-  position: absolute;
-  right: 5px;
-  width: 36px;   
-  height: 36px;  
-  background-color: white !important;
-  border-radius: 4px;
-  padding: 0 !important; 
-  margin: 0 !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden; /* Evita que el contenido se salga 
-  pointer-events: auto !important; 
-  cursor: pointer;
-  z-index: 1000; /* Asegúrate de que esté por encima de las capas del mapa 
-}
-
-.location-button-control {
-  bottom: 74px; /* Encima del anterior 
-}
-
-/* 3. Forzar que los botones internos sean idénticos 
-.location-button-control button {
-  background-color: transparent !important;
-  border: none !important;
-  width: 100% !important; /* Ocupa todo el contenedor de 36px 
-  height: 100% !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  outline: none;
-}
-
-/* 4. Asegurar que los SVGs tengan el mismo tamaño visual 
-.location-button-control svg,
-.share-control svg {
-  width: 22px;
-  height: 22px;
-}
-
 /* --- CONTENEDORES DE CONTROLES PERSONALIZADOS --- */
 
 .ol-control.location-button-control {
@@ -646,4 +601,11 @@ ion-fab {
   font-weight: bold;
   text-transform: uppercase;
   font-size: 0.8em;
+}
+
+// DESHABILITAR BOTONES 
+.button-disabled {
+  opacity: 0.5;
+  pointer-events: none; /* Prevents clicks at the CSS level too */
+  transition: opacity 0.2s;
 }
