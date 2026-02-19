@@ -97,7 +97,6 @@ export class FunctionsService {
   // --- PROCESAMIENTO DE TRACKS ---
 
   async filterSpeedAndAltitude(track: Track, initial: number): Promise<Track> {
-    // Aseguramos acceso seguro a las estructuras
     const feature = track.features[0];
     if (!feature || !feature.geometry || !feature.geometry.properties) return track;
 
@@ -105,10 +104,12 @@ export class FunctionsService {
     const props = feature.properties;
     const num = data.length;
     
-    const ELEVATION_THRESHOLD = 2.0; 
     const MOVING_THRESHOLD = 0.8; // km/h
-    
-    let lastSteadyAlt = (initial > 0 && data[initial - 1]) 
+    const ALT_SMOOTHING = 0.15;   // Factor EMA
+    const VERTICAL_THRESHOLD = 2.0; // metros mínimos para registrar cambio
+
+    // Variable auxiliar para el umbral de acumulación (Histéresis)
+    let lastStableAlt = (initial > 0 && data[initial - 1]) 
       ? data[initial - 1].compAltitude 
       : data[0].altitude;
 
@@ -119,54 +120,48 @@ export class FunctionsService {
       props.totalElevationGain = 0;
       props.totalElevationLoss = 0;
       props.totalTime = 0;
+      data[0].compAltitude = data[0].altitude;
+      data[0].compSpeed = 0;
     }
 
-    for (let i = initial; i < num; i++) {
-      const start = Math.max(i - this.lag, 0);
-      const distDelta = data[i].distance - data[start].distance;
-      const timeDelta = data[i].time - data[start].time;
-      
+    const startIndex = initial === 0 ? 1 : initial;
+
+    for (let i = startIndex; i < num; i++) {
+      const prev = data[i - 1];
+      const curr = data[i];
+
+      // --- VELOCIDAD (Kalman) ---
+      const distDelta = curr.distance - prev.distance;
+      const timeDelta = curr.time - prev.time;
       const rawSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
-      data[i].compSpeed = this.applyKalman(rawSpeed);
+      curr.compSpeed = this.applyKalman(rawSpeed);
 
-      props.totalTime = data[i].time - data[0].time;
-
-      if (i > 0) {
-        const deltaT = data[i].time - data[i - 1].time;
-        if (data[i].compSpeed > MOVING_THRESHOLD) {
-          props.inMotion += deltaT;
-        }
+      props.totalTime = curr.time - data[0].time;
+      if (curr.compSpeed > MOVING_THRESHOLD) {
+        props.inMotion += timeDelta;
       }
 
-      // Media móvil para altitud
-      let sum = 0;
-      let count = 0;
-      for (let j = start; j <= i; j++) { 
-        sum += data[j].altitude; 
-        count++;
-      }
-      data[i].compAltitude = sum / count;
+      // --- ALTITUD SUAVIZADA (EMA) ---
+      // Esto es lo que se dibujará en el Canvas
+      curr.compAltitude = prev.compAltitude + ALT_SMOOTHING * (curr.altitude - prev.compAltitude);
 
-      const diff = data[i].compAltitude - lastSteadyAlt;
-      if (Math.abs(diff) >= ELEVATION_THRESHOLD) {
-        if (diff > 0) {
-          props.totalElevationGain += diff;
+      // --- CÁLCULO DE DESNIVEL CON UMBRAL (Histéresis) ---
+      // Solo sumamos a las estadísticas si el cambio respecto a la última cota 
+      // estable supera el VERTICAL_THRESHOLD
+      const verticalDiff = curr.compAltitude - lastStableAlt;
+
+      if (Math.abs(verticalDiff) >= VERTICAL_THRESHOLD) {
+        if (verticalDiff > 0) {
+          props.totalElevationGain += verticalDiff;
         } else {
-          props.totalElevationLoss += Math.abs(diff);
+          props.totalElevationLoss += Math.abs(verticalDiff);
         }
-        lastSteadyAlt = data[i].compAltitude;
+        // Actualizamos la marca estable para la siguiente comparación
+        lastStableAlt = curr.compAltitude;
       }
     }
 
-    const totalDist = data[num - 1].distance;
-    
-    if (props.inMotion > props.totalTime) {
-      props.inMotion = props.totalTime;
-    }
-
-    this.averageSpeed = props.totalTime > 0 ? (3600000 * totalDist) / props.totalTime : 0;
-    this.averageMotionSpeed = props.inMotion > 0 ? (3600000 * totalDist) / props.inMotion : 0;
-    
+    // Actualización de propiedades finales
     props.currentSpeed = data[num - 1].compSpeed;
     props.currentAltitude = data[num - 1].compAltitude;
 

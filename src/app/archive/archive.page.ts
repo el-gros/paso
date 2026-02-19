@@ -13,7 +13,7 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { LanguageService } from '../services/language.service';
-import { TrackExportService } from '../services/track-export.service'; // IMPORT NEW SERVICE
+import { TrackExportService } from '../services/track-export.service';
 
 // --- OPENLAYERS IMPORTS ---
 import Map from 'ol/Map';
@@ -35,15 +35,15 @@ import { TrackDefinition, Track } from '../../globald';
   selector: 'app-archive',
   templateUrl: 'archive.page.html',
   styleUrls: ['archive.page.scss'],
-  imports: [
-    IonicModule, CommonModule, FormsModule, TranslateModule
-  ]
+  imports: [IonicModule, CommonModule, FormsModule, TranslateModule]
 })
 export class ArchivePage implements OnInit {
 
-  isConfirmDeletionOpen: boolean = false;
-  index: number = -1; // Initialized to -1 instead of NaN
-  slidingItem: IonItemSliding | undefined = undefined;
+  // #region 1. Variables y Estado
+  public isConfirmDeletionOpen: boolean = false;
+  public index: number = -1;
+  public slidingItem: IonItemSliding | undefined = undefined;
+  // #endregion
 
   constructor(
     public fs: FunctionsService,
@@ -55,19 +55,18 @@ export class ArchivePage implements OnInit {
     public geography: GeographyService,
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
-    private exportService: TrackExportService // INJECT NEW SERVICE
+    private exportService: TrackExportService
   ) { }
+
+  // #region 2. Ciclo de Vida (Lifecycle)
+  ngOnInit() { }
 
   async ionViewDidEnter() {
     if (this.fs.buildTrackImage) await this.shareImages();
   }
+  // #endregion
 
-  ngOnInit() {
-    // Initialization logic if needed
-  }
-
-  // --- DISPLAY & NAVIGATION LOGIC ---
-
+  // #region 3. Visualización y Navegación
   async displayTrack(active: boolean) {
     if (active) {
       this.reference.archivedTrack = await this.fs.retrieveTrack() ?? this.reference.archivedTrack;
@@ -104,15 +103,12 @@ export class ArchivePage implements OnInit {
           this.reference.clearArchivedTrack();
           await this.location.sendReferenceToPlugin();
         }
-
         this.mapService.visibleAll = true;
         await this.fs.gotoPage('tab1');
-
         setTimeout(async () => {
           await this.mapService.displayAllTracks();
           this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'), 'success');
         }, 200);
-
       } else {
         this.mapService.visibleAll = false;
         const source = this.geography.archivedLayer?.getSource();
@@ -124,8 +120,20 @@ export class ArchivePage implements OnInit {
       console.error("Error displaying all tracks:", error);
     }
   }
+  // #endregion
 
-  // --- TRACK MANAGEMENT ---
+  // #region 4. Gestión de Tracks (CRUD)
+  confirmDeletion(index: number, slidingItem: IonItemSliding) {
+    this.isConfirmDeletionOpen = true;
+    this.index = index;
+    this.slidingItem = slidingItem;
+  }
+
+  async deleteTrack() {
+    await this.deleteSpecificTrack(this.index, this.slidingItem);
+    this.isConfirmDeletionOpen = false;
+    this.slidingItem = undefined;
+  }
 
   async deleteSpecificTrack(index: number, slidingItem?: IonItemSliding) {
     if (slidingItem) slidingItem.close();
@@ -135,9 +143,13 @@ export class ArchivePage implements OnInit {
         const key = new Date(trackToRemove.date).toISOString();
         if (key) await this.fs.storeRem(key);
     }
-    
     this.fs.collection.splice(index, 1);
     await this.fs.storeSet('collection', this.fs.collection);
+  }
+
+  async editSpecificTrack(index: number, slidingItem?: IonItemSliding) {
+    if (slidingItem) slidingItem.close();
+    await this.reference.editTrack(index);
   }
 
   async hideSpecificTrack(slidingItem?: IonItemSliding) {
@@ -162,26 +174,9 @@ export class ArchivePage implements OnInit {
       await this.displaySpecificTrack(item, slidingItem);
     }
   }
+  // #endregion
 
-  confirmDeletion(index: number, slidingItem: IonItemSliding) {
-    this.isConfirmDeletionOpen = true;
-    this.index = index;
-    this.slidingItem = slidingItem;
-  }
-
-  async deleteTrack() {
-    await this.deleteSpecificTrack(this.index, this.slidingItem);
-    this.isConfirmDeletionOpen = false;
-    this.slidingItem = undefined;
-  }
-
-  async editSpecificTrack(index: number, slidingItem?: IonItemSliding) {
-    if (slidingItem) slidingItem.close();
-    await this.reference.editTrack(index);
-  }
-
-  // --- EXPORT LOGIC ---
-
+  // #region 5. Exportación de Archivos (GPX, KMZ, PDF)
   async exportTrack(item: TrackDefinition, slidingItem?: IonItemSliding) {
     if (!item || !item.date) return;
     if (slidingItem) slidingItem.close();
@@ -191,7 +186,6 @@ export class ArchivePage implements OnInit {
       backdropDismiss: false,
       spinner: 'crescent'
     });
-    
     await loading.present();
 
     try {
@@ -203,31 +197,34 @@ export class ArchivePage implements OnInit {
         return;
       }
 
-      const featureToExport = trackData.features ? trackData.features[0] : trackData as any;
+      const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
       const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-      // 1. Generate Map Image (Internally)
+      // 1. Snapshot del mapa
       const mapBase64 = await this.generateMapImage(trackData);
 
-      // 2. Generate File Content (Using Service)
+      // 2. NUEVO: Snapshot del perfil de altitud (Canvas oculto)
+      const altitudeBase64 = await this.generateAltitudeImage(trackData);
+
+      // 3. Generar contenidos (Ahora pasamos 4 parámetros al PDF)
       const [gpxText, kmzBase64, pdfBase64] = await Promise.all([
         this.exportService.geoJsonToGpx(featureToExport),
         this.exportService.geoJsonToKmz(featureToExport),
-        this.exportService.createPdfContent(item, trackData, mapBase64)
+        this.exportService.createPdfContent(item, trackData, mapBase64, altitudeBase64)
       ]);
 
       const gpxName = `${safeName}.gpx`;
       const kmzName = `${safeName}.kmz`;
       const pdfName = `${safeName}.pdf`;
 
-      // 3. Write Files
+      // 4. Escribir archivos temporales
       const [savedGpx, savedKmz, savedPdf] = await Promise.all([
           this.writeFile(gpxName, gpxText, Encoding.UTF8),
           this.writeFile(kmzName, kmzBase64),
           this.writeFile(pdfName, pdfBase64)
       ]);
 
-      // 4. Share
+      // 5. Compartir nativo
       const result = await this.socialSharing.shareWithOptions({
         message: `${this.translate.instant('REPORT.ROUTE_NAME')}: ${item.name}`,
         files: [savedGpx.uri, savedKmz.uri, savedPdf.uri],
@@ -238,7 +235,6 @@ export class ArchivePage implements OnInit {
         await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'), 'success');
       }
 
-      // 5. Cleanup
       this.cleanupFiles([gpxName, kmzName, pdfName]);
 
     } catch (e) {
@@ -248,9 +244,9 @@ export class ArchivePage implements OnInit {
       await loading.dismiss();
     }
   }
+  // #endregion
 
-  // --- IMAGE SHARING LOGIC ---
-
+  // #region 6. Exportación de Imágenes (Canvas/Social)
   async prepareImageExport() {
     this.fs.buildTrackImage = true;
     await this.displayTrack(true);
@@ -267,9 +263,9 @@ export class ArchivePage implements OnInit {
       console.error('Failed to share images:', err);
     }
   }
+  // #endregion
 
-  // --- PRIVATE HELPERS ---
-
+  // #region 7. Helpers Privados
   private async writeFile(path: string, data: string, encoding?: Encoding) {
     return Filesystem.writeFile({
       path,
@@ -289,9 +285,6 @@ export class ArchivePage implements OnInit {
     }, 5000);
   }
 
-  /**
-   * Generates a snapshot of the track using an invisible OpenLayers map.
-   */
   private async generateMapImage(trackData: any): Promise<string> {
     return new Promise((resolve) => {
       try {
@@ -300,7 +293,6 @@ export class ArchivePage implements OnInit {
 
         const vectorSource = new VectorSource({ features });
         const extent = vectorSource.getExtent();
-
         if (!extent || !isFinite(extent[0])) { resolve(''); return; }
 
         const centerX = (extent[0] + extent[2]) / 2;
@@ -318,19 +310,13 @@ export class ArchivePage implements OnInit {
             new TileLayer({ source: new OSM({ crossOrigin: 'anonymous' }) }),
             new VectorLayer({
               source: vectorSource,
-              style: new Style({
-                stroke: new Stroke({ color: '#FF0000', width: 6 })
-              }),
+              style: new Style({ stroke: new Stroke({ color: '#FF0000', width: 6 }) }),
               zIndex: 999 
             })
           ],
           controls: [], 
           interactions: [],
-          view: new View({
-            center: [centerX, centerY], 
-            zoom: 14,                  
-            enableRotation: false
-          })
+          view: new View({ center: [centerX, centerY], zoom: 14, enableRotation: false })
         });
 
         mapExport.updateSize();
@@ -351,20 +337,16 @@ export class ArchivePage implements OnInit {
           mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
 
           const layers = document.querySelectorAll<HTMLCanvasElement>('#map-export .ol-layer canvas');
-          
           layers.forEach((canvas) => {
             if (canvas.width > 0) {
               const parent = canvas.parentNode as HTMLElement;
               mapContext.globalAlpha = Number(parent?.style.opacity || '1');
-              
-              // Handle Matrix Transforms from OpenLayers
               const transform = canvas.style.transform;
               let matrix = [1, 0, 0, 1, 0, 0];
               if (transform) {
                 const match = transform.match(/^matrix\(([^\(]*)\)$/);
                 if (match && match[1]) matrix = match[1].split(',').map(Number);
               }
-
               mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
               mapContext.drawImage(canvas, 0, 0);
             }
@@ -372,11 +354,8 @@ export class ArchivePage implements OnInit {
 
           mapContext.setTransform(1, 0, 0, 1, 0, 0);
           const data = mapCanvas.toDataURL('image/jpeg', 0.8);
-          
-          // Clean up map instance to prevent memory leaks
           mapExport.setTarget(undefined);
           mapExport.dispose(); 
-          
           resolve(data);
         });
       } catch (e) {
@@ -385,4 +364,82 @@ export class ArchivePage implements OnInit {
       }
     });
   }
+
+  private async generateAltitudeImage(track: Track): Promise<string> {
+    const data = track.features[0]?.geometry?.properties?.data;
+    if (!data || data.length < 2) return '';
+
+    const width = 1000;
+    const height = 400;
+    const margin = 60;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Fondo blanco para el PDF
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+
+    // 1. Cálculos de escala
+    const alts = data.map(d => d.compAltitude);
+    const minAlt = Math.min(...alts);
+    const maxAlt = Math.max(...alts);
+    const rangeAlt = (maxAlt - minAlt) || 20;
+    
+    const totalDist = data[data.length - 1].distance;
+    const scaleX = (width - 2 * margin) / totalDist;
+    const scaleY = (height - 2 * margin) / rangeAlt;
+
+    // 2. Dibujo del relleno (Gradiente Dorado)
+    ctx.beginPath();
+    ctx.moveTo(margin, height - margin);
+    data.forEach(p => {
+      ctx.lineTo(margin + p.distance * scaleX, height - margin - (p.compAltitude - minAlt) * scaleY);
+    });
+    ctx.lineTo(margin + totalDist * scaleX, height - margin);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, margin, 0, height - margin);
+    grad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+    grad.addColorStop(1, 'rgba(255, 215, 0, 0.05)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 3. Dibujo de la línea principal
+    ctx.beginPath();
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    data.forEach((p, i) => {
+      const x = margin + p.distance * scaleX;
+      const y = height - margin - (p.compAltitude - minAlt) * scaleY;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // 4. Ejes y etiquetas básicas
+    ctx.strokeStyle = '#999';
+    ctx.fillStyle = '#666';
+    ctx.font = 'bold 16px Arial';
+    ctx.lineWidth = 1;
+    
+    // Eje X (Distancia)
+    ctx.beginPath();
+    ctx.moveTo(margin, height - margin);
+    ctx.lineTo(width - margin, height - margin);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(`${totalDist.toFixed(1)} km`, width - margin, height - margin + 25);
+
+    // Eje Y (Altitud)
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(maxAlt)} m`, margin - 10, margin + 5);
+    ctx.fillText(`${Math.round(minAlt)} m`, margin - 10, height - margin + 5);
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  }
+  // #endregion
 }

@@ -15,7 +15,7 @@ import { Waypoint } from 'src/globald';
         
         <div class="popover-header">
           <ion-icon name="location-sharp" class="header-icon"></ion-icon>
-          <h2>{{ 'WPT.HEADER' | translate }}</h2>
+          <h2>{{ 'EDIT.HEADER' | translate }}</h2>
         </div>
         
         <div class="form-container">

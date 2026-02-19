@@ -4,7 +4,7 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding-top: 20px;
+  padding-top: 10px;
   padding-bottom: 140px; 
   background: #f4f4f4;
 }
@@ -106,14 +106,15 @@
     width: 100%;
     display: flex;
     justify-content: center;
-    background: #ffffff; // Fondo blanco para que el trazo del canvas destaque
-    padding: 10px 0;    // Pequeño aire arriba y abajo del trazo
-    border-top: 1px solid rgba(0,0,0,0.03);
-    border-bottom: 1px solid rgba(0,0,0,0.03);
+    background: #ffffff;
+    padding: 0; // Quitamos padding interno para ganar espacio
+    box-sizing: border-box; 
     
     canvas {
-      width: 100% !important; // Fuerza el ancho total
+      width: 100% !important; 
       height: auto !important;
+      aspect-ratio: 1 / 1; // IMPORTANTE: Fuerza a que sea cuadrado
+      display: block;
     }
   }
 }
@@ -201,4 +202,84 @@
     &.current { background: linear-gradient(135deg, #ffd700, #ff8c00); }
     &.archived { background: linear-gradient(135deg, #00bfff, #007ace); }
   }
+}
+
+swiper-slide {
+  width: 85%; /* Deja un 7.5% de hueco a cada lado para que se vean los vecinos */
+  /* Opcional: Para dar profundidad */
+  transform: scale(0.95);
+  transition: transform 0.3s;
+  
+  &.swiper-slide-active {
+    transform: scale(1); /* El del centro se ve un poco más grande */
+  }
+}
+
+.top-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: stretch; /* Importante: para que todos tengan la misma altura si quieres, o center */
+  padding: 10px 15px; // Un poco más de espacio lateral
+  gap: 8px; 
+  background: #f4f4f4;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  .dot {
+    /* Estilo base (inactivo) */
+    background-color: #e0e0e0;
+    border-radius: 8px; /* Un poco menos redondeado para acomodar texto cuadrado */
+    color: #666;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    
+    /* Layout interno */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    
+    /* Dimensiones */
+    height: auto;       /* Dejar que crezca según el texto */
+    min-height: 36px;   /* Altura mínima para que sea pulsable */
+    width: 40px;        /* Ancho cuando está inactivo (cerrado) */
+    padding: 4px;       /* Padding pequeño */
+
+    span {
+      display: none; /* Oculto por defecto si está inactivo */
+      font-size: 0.7rem;
+      font-weight: 600;
+      line-height: 1.1; /* Líneas pegaditas para que quepan 2 */
+      width: 100%;      /* Para que el text-align funcione */
+    }
+
+    /* ESTADO ACTIVO */
+    &.active {
+      background-color: var(--ion-color-primary);
+      color: white;
+      width: auto;         /* El ancho se adapta al texto */
+      min-width: 100px;    /* Ancho mínimo para que no se vea ridículo */
+      max-width: 140px;    /* Ancho máximo antes de cortar */
+      padding: 6px 12px;   /* Más espacio interno */
+      
+      span { 
+        display: -webkit-box;       /* Necesario para limitar líneas */
+        -webkit-line-clamp: 2;      /* Máximo 2 líneas */
+        line-clamp: 2;              /* Standard property for compatibility */
+        -webkit-box-orient: vertical;
+        overflow: hidden;           /* Cortar si hay una 3ra línea */
+        white-space: normal;        /* PERMITIR SALTO DE LÍNEA */
+      }
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+}
+
+// Ajuste para que el primer slide no se pegue demasiado a la paginación
+.slide-wrapper {
+  padding-top: 10px; 
 }

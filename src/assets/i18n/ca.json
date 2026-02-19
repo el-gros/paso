@@ -45,7 +45,9 @@
     "DRIVE": "Cotxe",
     "CLEAN": "Netejar",
     "LISTENING": "Escoltant...",
-    "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible"
+    "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible",
+    "NO_DESCRIPTION": "La descripció no està disponible",
+    "CHECK_WIKIPEDIA": "Consulteu Wikipedia"
   },
 "ARCHIVE": {
   "TRACKS": "Trajectes",
@@ -116,7 +118,12 @@
     "KM": "km",
     "PACE": "Ritme",
     "SPEED": "Velocitat",
-    "NO_SPEED_DATA": "No hi ha dades de velocitat"
+    "NO_SPEED_DATA": "No hi ha dades de velocitat",
+    "NO_TIME_DATA": "No hi ha dades de temps",
+    "KMZ_NO_PARTIALS": "Aquest fitxer no conté dades de temps per calcular velocitats parcials",
+    "PAG1": "Trajecte en curs",
+    "PAG2": "Trajecte de referència",
+    "PAG3": "Trajecte de referència - Parcials"
   },
   "EDIT": {
     "HEADER": "Punt de pas",

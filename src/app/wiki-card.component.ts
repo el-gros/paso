@@ -14,7 +14,7 @@ import { TranslateModule } from '@ngx-translate/core';
       </div>
       
       <div class="wiki-header">
-        <h3>{{ data.wiki?.title || data.locationName }}</h3>
+        <h3>{{ data.wiki?.title || data.title || data.locationName }}</h3>
         
         <div class="weather-pill" *ngIf="data.weather">
           <img [src]="data.weather.icon" class="weather-icon" alt="weather icon">
@@ -29,11 +29,22 @@ import { TranslateModule } from '@ngx-translate/core';
       </div>
       
       <div class="wiki-scroll-area">
-        <img *ngIf="data.wiki?.originalimage" [src]="data.wiki.originalimage.source" class="wiki-img">
+        <ng-container *ngIf="data.wiki?.originalimage || data.originalimage">
+          <img [src]="data.wiki?.originalimage?.source || data.originalimage?.source" class="wiki-img">
+        </ng-container>
+
         <div class="wiki-body">
-          <p *ngIf="data.wiki?.extract">{{ data.wiki.extract }}</p>
-          <p *ngIf="!data.wiki?.extract" class="no-data">{{ 'SEARCH.NO_DESCRIPTION' | translate }}</p>
-          <a *ngIf="data.wiki?.content_urls?.desktop?.page" [href]="data.wiki.content_urls.desktop.page" target="_blank">{{ 'SEARCH.CHECK_WIKIPEDIA' | translate }}</a>
+          <p *ngIf="data.wiki?.extract || data.extract">
+              {{ data.wiki?.extract || data.extract }}
+          </p>
+
+          <p *ngIf="!data.wiki?.extract && !data.extract" class="no-data">
+              {{ 'SEARCH.NO_DESCRIPTION' | translate }}
+          </p>
+
+          <ng-container *ngIf="(data.wiki?.content_urls?.desktop?.page || data.content_urls?.desktop?.page) as link">
+              <a [href]="link" target="_blank">{{ 'SEARCH.CHECK_WIKIPEDIA' | translate }}</a>
+          </ng-container>
         </div>
       </div>
     </div>

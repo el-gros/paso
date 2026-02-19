@@ -45,7 +45,9 @@
     "DRIVE": "Voiture",
     "CLEAN": "Effacer",
     "LISTENING": "Écoute en cours...",
-    "NO_SPEECHRECOGNITION": "Reconnaissance vocale non disponible"
+    "NO_SPEECHRECOGNITION": "Reconnaissance vocale non disponible",
+    "NO_DESCRIPTION": "Aucune description disponible",
+    "CHECK_WIKIPEDIA": "Consulter Wikipedia"
   },
   "ARCHIVE": {
     "TRACKS": "Parcours",
@@ -118,7 +120,10 @@
     "SPEED": "Vitesse",
     "NO_SPEED_DATA": "Pas de données de vitesse disponibles",
     "NO_TIME_DATA": "Pas de données temporelles disponibles",
-    "KMZ_NO_PARTIALS": "Ce fichier ne contient pas de données temporelles pour les calculs partiels"
+    "KMZ_NO_PARTIALS": "Ce fichier ne contient pas de données temporelles pour les calculs partiels",
+    "PAG1": "Trajecte en cours",
+    "PAG2": "Trajecte de référence",
+    "PAG3": "Trajecte de référence - Parciaux"
   },
   "EDIT": {
     "HEADER": "Point de passage",

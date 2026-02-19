@@ -1,237 +1,272 @@
+<div class="fixed-tabs">
+  <ion-segment [value]="activeIndex" (ionChange)="onSegmentChange($event)" mode="ios">
+    <ion-segment-button value="0">
+      <ion-label>Actual</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="1">
+      <ion-label>Referencia</ion-label>
+    </ion-segment-button>
+    </ion-segment>
+</div>
 
 <ion-content class="custom-content">
-  <swiper-container id="data" pagination="true">
-    <swiper-slide>
-      <div class="slide-wrapper">
-        @if (present.currentTrack) {
-          <div class='elementData card'>
-            <div class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</div>
-            
-            <div class="data-grid">
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="location-outline" class="icon-dist"></ion-icon>
-                  <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
-                </div>
-                <div class="value">{{ present.currentTrack.features[0].properties.totalDistance | number: '1.3' }} <span>km</span></div>
-              </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="time-outline" class="icon-time"></ion-icon>
-                  <span>{{ 'CANVAS.TIME' | translate }}</span>
-                </div>
-                <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.totalTime) }}</div>
-              </div>
+  <div class="top-pagination">
+    <div class="dot" 
+         [class.active]="activeIndex === 0" 
+         (click)="moveToSlide(0)">
+         <span>{{ 'CANVAS.PAG1' | translate }}</span> </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="play-circle-outline" class="icon-motion"></ion-icon>
-                  <span>{{ 'CANVAS.MOTIONTIME' | translate }}</span>
-                </div>
-                <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.inMotion) }}</div>
-              </div>
+    <div class="dot" 
+         [class.active]="activeIndex === 1" 
+         (click)="moveToSlide(1)">
+         <span>{{ 'CANVAS.PAG2' | translate }}</span>
+    </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
-                  <span>{{ 'CANVAS.EGAIN' | translate }}</span>
-                </div>
-                <div class="value">{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} <span>m</span></div>
-              </div>
+    <div class="dot" 
+         [class.active]="activeIndex === 2" 
+         (click)="moveToSlide(2)">
+         <span>{{ 'CANVAS.PAG3' | translate }}</span>
+    </div>
+  </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
-                  <span>{{ 'CANVAS.ELOSS' | translate }}</span>
+  @if (canRenderSwiper) {
+<swiper-container 
+    #swiperRef
+    init="false"
+    (swiperslidechange)="onSlideChange($event)">
+      <swiper-slide>
+        <div class="slide-wrapper">
+          @if (present.currentTrack) {
+            <div class='elementData card'>
+              <div class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</div>
+              
+              <div class="data-grid">
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="location-outline" class="icon-dist"></ion-icon>
+                    <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
+                  </div>
+                  <div class="value">{{ present.currentTrack.features[0].properties.totalDistance | number: '1.3' }} <span>km</span></div>
                 </div>
-                <div class="value">{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} <span>m</span></div>
-              </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="mountain-outline" class="icon-alt"></ion-icon>
-                  <span>{{ 'CANVAS.ALTITUDE' | translate }}</span>
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="time-outline" class="icon-time"></ion-icon>
+                    <span>{{ 'CANVAS.TIME' | translate }}</span>
+                  </div>
+                  <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.totalTime) }}</div>
                 </div>
-                <div class="value">{{ present.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} <span>m</span></div>
-              </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="speedometer-outline" class="icon-speed"></ion-icon>
-                  <span>{{ 'CANVAS.CURRENTSPEED' | translate }}</span>
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="play-circle-outline" class="icon-motion"></ion-icon>
+                    <span>{{ 'CANVAS.MOTIONTIME' | translate }}</span>
+                  </div>
+                  <div class="value">{{ fs.formatMsec(present.currentTrack.features[0].properties.inMotion) }}</div>
                 </div>
-                <div class="value">{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} <span>km/h</span></div>
-              </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="analytics-outline" class="icon-avg"></ion-icon>
-                  <span>{{ 'CANVAS.AVGSPEED' | translate }}</span>
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
+                    <span>{{ 'CANVAS.EGAIN' | translate }}</span>
+                  </div>
+                  <div class="value">{{ present.currentTrack.features[0].properties.totalElevationGain | number: '1.0-0' }} <span>m</span></div>
                 </div>
-                <div class="value">{{ fs.averageSpeed | number: '1.1-1' }} <span>km/h</span></div>
-              </div>
 
-              <div class="data-row">
-                <div class="label-group">
-                  <ion-icon name="flash-outline" class="icon-movavg"></ion-icon>
-                  <span>{{ 'CANVAS.MOTIONAVGSPEED' | translate }}</span>
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
+                    <span>{{ 'CANVAS.ELOSS' | translate }}</span>
+                  </div>
+                  <div class="value">{{ present.currentTrack.features[0].properties.totalElevationLoss | number: '1.0-0' }} <span>m</span></div>
                 </div>
-                <div class="value">{{ fs.averageMotionSpeed | number: '1.1-1' }} <span>km/h</span></div>
+
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="mountain-outline" class="icon-alt"></ion-icon>
+                    <span>{{ 'CANVAS.ALTITUDE' | translate }}</span>
+                  </div>
+                  <div class="value">{{ present.currentTrack.features[0].properties.currentAltitude | number: '1.0-0' }} <span>m</span></div>
+                </div>
+
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="speedometer-outline" class="icon-speed"></ion-icon>
+                    <span>{{ 'CANVAS.CURRENTSPEED' | translate }}</span>
+                  </div>
+                  <div class="value">{{ present.currentTrack.features[0].properties.currentSpeed | number: '1.1-1' }} <span>km/h</span></div>
+                </div>
+
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="analytics-outline" class="icon-avg"></ion-icon>
+                    <span>{{ 'CANVAS.AVGSPEED' | translate }}</span>
+                  </div>
+                  <div class="value">{{ fs.averageSpeed | number: '1.1-1' }} <span>km/h</span></div>
+                </div>
+
+                <div class="data-row">
+                  <div class="label-group">
+                    <ion-icon name="flash-outline" class="icon-movavg"></ion-icon>
+                    <span>{{ 'CANVAS.MOTIONAVGSPEED' | translate }}</span>
+                  </div>
+                  <div class="value">{{ fs.averageMotionSpeed | number: '1.1-1' }} <span>km/h</span></div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class='canvas-container' id='cc0'>
-            <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-            <div class="canvas-wrapper">
-              <canvas class='canvas' id="currCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            <div class='canvas-container' id='cc0'>
+              <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+              <div class="canvas-wrapper">
+                <canvas class='canvas' id="currCanvas0" ></canvas>
+              </div>
             </div>
-          </div>
 
-          <div class='canvas-container' id='cc1'>
-            <h1 class='title' [style.visibility]="currAvailable[1] ? 'visible' : 'hidden'">
-              {{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})
-            </h1>
-            <div class="canvas-wrapper">
-              <canvas class='canvas' id="currCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+            <div class='canvas-container' id='cc1'>
+              <h1 class='title' [style.visibility]="currAvailable[1] ? 'visible' : 'hidden'">
+                {{'CANVAS.CANVASSPEED' | translate}} ({{currentUnit}})
+              </h1>
+              <div class="canvas-wrapper">
+                <canvas class='canvas' id="currCanvas1" ></canvas>
+              </div>
             </div>
-          </div>
 
-        } @else {
-          <div class="empty-state">
-            <div class="icon-container current">
-              <ion-icon name="stats-chart-outline"></ion-icon>
+          } @else {
+            <div class="empty-state">
+              <div class="icon-container current">
+                <ion-icon name="stats-chart-outline"></ion-icon>
+              </div>
+              <h3>{{'CANVAS.NO_RECORDING' | translate}}</h3>
+              <p>{{'CANVAS.DO_START' | translate}}</p>
+              <ion-button fill="clear" (click)="fs.gotoPage('tab1')">{{'CANVAS.GOTO_MAP' | translate}}</ion-button>
             </div>
-            <h3>{{'CANVAS.NO_RECORDING' | translate}}</h3>
-            <p>{{'CANVAS.DO_START' | translate}}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('tab1')">{{'CANVAS.GOTO_MAP' | translate}}</ion-button>
-          </div>
-        }
-      </div>
-    </swiper-slide>
+          }
+        </div>
+      </swiper-slide>
 
-    <swiper-slide>
-      <div class="slide-wrapper">
-        <div id="exportArea">
+      <swiper-slide>
+        <div class="slide-wrapper">
+          <div id="exportArea">
+            @if (reference.archivedTrack) {
+              <div class='elementData card'>
+                  <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
+                  <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
+                  
+                  <div class="data-grid">
+                    <div class="data-row">
+                      <div class="label-group">
+                        <ion-icon name="location-outline" class="icon-dist"></ion-icon>
+                        <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
+                      </div>
+                      <div class="value">{{ reference.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} <span>km</span></div>
+                    </div>
+
+                    <div class="data-row">
+                      <div class="label-group">
+                        <ion-icon name="time-outline" class="icon-time"></ion-icon>
+                        <span>{{ 'CANVAS.TIME' | translate }}</span>
+                      </div>
+                      <div class="value">{{ reference.archivedTrack.features[0].properties.totalTime > 0 ? fs.formatMsec(reference.archivedTrack.features[0].properties.totalTime) : '--' }}</div>
+                    </div>
+
+                    <div class="data-row">
+                      <div class="label-group">
+                        <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
+                        <span>{{ 'CANVAS.EGAIN' | translate }}</span>
+                      </div>
+                      <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} <span>m</span></div>
+                    </div>
+
+                    <div class="data-row">
+                      <div class="label-group">
+                        <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
+                        <span>{{ 'CANVAS.ELOSS' | translate }}</span>
+                      </div>
+                      <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} <span>m</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class='canvas-container' id='ac0'>
+                  <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
+                  <div class="canvas-wrapper">
+                    <canvas class='canvas' id="archCanvas0" ></canvas>
+                  </div>
+                </div>
+
+                <div class='canvas-container' id='ac1'>
+                  <h1 class='title' [style.visibility]="archAvailable[1] ? 'visible' : 'hidden'">
+                    {{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})
+                  </h1>
+                  <div class="canvas-wrapper">
+                    <canvas class='canvas' id="archCanvas1" ></canvas>
+                  </div>
+                </div>
+              } @else {
+            <div class="empty-state">
+              <div class="icon-container archived">
+                <ion-icon name="archive-outline"></ion-icon>
+              </div>
+              <h3>{{'CANVAS.NO_REFERENCE' | translate}}</h3>
+              <p>{{'CANVAS.DO_SELECT' | translate}}</p>
+              <ion-button fill="clear" (click)="fs.gotoPage('archive')">{{'CANVAS.GOTO_ARCHIVE' | translate}}</ion-button>
+            </div>
+          }
+          </div>
+        </div>
+      </swiper-slide>
+
+      <swiper-slide>
+        <div class="slide-wrapper">
           @if (reference.archivedTrack) {
             <div class='elementData card'>
-                <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
-                <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
-                
-                <div class="data-grid">
-                  <div class="data-row">
-                    <div class="label-group">
-                      <ion-icon name="location-outline" class="icon-dist"></ion-icon>
-                      <span>{{ 'CANVAS.DISTANCE' | translate }}</span>
-                    </div>
-                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalDistance | number:'1.3' }} <span>km</span></div>
+              <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
+              <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
+
+              @if (partialSpeeds && partialSpeeds.length > 0) {
+                <div class="partials-container">
+                  <div class="partials-header">
+                    <span>{{ 'CANVAS.KM' | translate }}</span>
+                    <span>{{ 'CANVAS.PACE' | translate }}</span>
+                    <span>{{ 'CANVAS.SPEED' | translate }}</span>
                   </div>
 
-                  <div class="data-row">
-                    <div class="label-group">
-                      <ion-icon name="time-outline" class="icon-time"></ion-icon>
-                      <span>{{ 'CANVAS.TIME' | translate }}</span>
+                  @for (ps of partialSpeeds; track $index) {
+                    <div class="partial-row">
+                      <div class="km-badge">{{ ps[0] }}</div>
+                      <div class="pace-value">{{ ps[1] }}</div>
+                      <div class="speed-value">
+                        {{ ps[2] | number:'1.1-1' }} <span>km/h</span>
+                      </div>
                     </div>
-                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalTime > 0 ? fs.formatMsec(reference.archivedTrack.features[0].properties.totalTime) : '--' }}</div>
-                  </div>
-
-                  <div class="data-row">
-                    <div class="label-group">
-                      <ion-icon name="trending-up-outline" class="icon-up"></ion-icon>
-                      <span>{{ 'CANVAS.EGAIN' | translate }}</span>
-                    </div>
-                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationGain | number:'1.0-0' }} <span>m</span></div>
-                  </div>
-
-                  <div class="data-row">
-                    <div class="label-group">
-                      <ion-icon name="trending-down-outline" class="icon-down"></ion-icon>
-                      <span>{{ 'CANVAS.ELOSS' | translate }}</span>
-                    </div>
-                    <div class="value">{{ reference.archivedTrack.features[0].properties.totalElevationLoss | number:'1.0-0' }} <span>m</span></div>
-                  </div>
+                  }
                 </div>
-              </div>
-
-              <div class='canvas-container' id='ac0'>
-                <h1 class='title'>{{'CANVAS.CANVASALTITUDE' | translate}}</h1>
-                <div class="canvas-wrapper">
-                  <canvas class='canvas' id="archCanvas0" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
+              } @else {
+                <div class="empty-state" style="height: auto; padding: 40px 0;">
+                  <div class="icon-container archived" style="width: 60px; height: 60px;">
+                    <ion-icon name="time-outline" style="font-size: 1.8rem;"></ion-icon>
+                  </div>
+                  <h3>{{ 'CANVAS.NO_SPEED_DATA' | translate }}</h3>
                 </div>
-              </div>
-
-              <div class='canvas-container' id='ac1'>
-                <h1 class='title' [style.visibility]="archAvailable[1] ? 'visible' : 'hidden'">
-                  {{'CANVAS.CANVASSPEED' | translate}} ({{archivedUnit}})
-                </h1>
-                <div class="canvas-wrapper">
-                  <canvas class='canvas' id="archCanvas1" [attr.width]="canvasSize" [attr.height]="canvasSize"></canvas>
-                </div>
-              </div>
-            } @else {
-          <div class="empty-state">
-            <div class="icon-container archived">
-              <ion-icon name="archive-outline"></ion-icon>
+              }
             </div>
-            <h3>{{'CANVAS.NO_REFERENCE' | translate}}</h3>
-            <p>{{'CANVAS.DO_SELECT' | translate}}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('archive')">{{'CANVAS.GOTO_ARCHIVE' | translate}}</ion-button>
-          </div>
-        }
+          } @else {
+            <div class="empty-state">
+              <div class="icon-container archived">
+                <ion-icon name="library-outline"></ion-icon>
+              </div>
+              <h3>{{ 'CANVAS.NO_REFERENCE' | translate }}</h3>
+              <p>{{ 'CANVAS.DO_SELECT' | translate }}</p>
+              <ion-button fill="clear" (click)="fs.gotoPage('archive')">
+                {{ 'CANVAS.GOTO_ARCHIVE' | translate }}
+              </ion-button>
+            </div>
+          }
         </div>
-      </div>
-    </swiper-slide>
-
-    <swiper-slide>
-      <div class="slide-wrapper">
-        @if (reference.archivedTrack) {
-          <div class='elementData card'>
-            <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
-            <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
-
-            @if (partialSpeeds && partialSpeeds.length > 0) {
-              <div class="partials-container">
-                <div class="partials-header">
-                  <span>{{ 'CANVAS.KM' | translate }}</span>
-                  <span>{{ 'CANVAS.PACE' | translate }}</span>
-                  <span>{{ 'CANVAS.SPEED' | translate }}</span>
-                </div>
-
-                @for (ps of partialSpeeds; track $index) {
-                  <div class="partial-row">
-                    <div class="km-badge">{{ ps[0] }}</div>
-                    <div class="pace-value">{{ ps[1] }}</div>
-                    <div class="speed-value">
-                      {{ ps[2] | number:'1.1-1' }} <span>km/h</span>
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="empty-state" style="height: auto; padding: 40px 0;">
-                <div class="icon-container archived" style="width: 60px; height: 60px;">
-                  <ion-icon name="time-outline" style="font-size: 1.8rem;"></ion-icon>
-                </div>
-                <h3>{{ 'CANVAS.NO_SPEED_DATA' | translate }}</h3>
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="empty-state">
-            <div class="icon-container archived">
-              <ion-icon name="library-outline"></ion-icon>
-            </div>
-            <h3>{{ 'CANVAS.NO_REFERENCE' | translate }}</h3>
-            <p>{{ 'CANVAS.DO_SELECT' | translate }}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('archive')">
-              {{ 'CANVAS.GOTO_ARCHIVE' | translate }}
-            </ion-button>
-          </div>
-        }
-      </div>
-    </swiper-slide>
-  </swiper-container>
+      </swiper-slide>
+    </swiper-container>
+  }    
 </ion-content>
 
 <div class="bottom-safe-gray"></div>

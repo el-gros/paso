@@ -45,7 +45,9 @@
     "DRIVE": "驾车",
     "CLEAN": "清除",
     "LISTENING": "正在倾听...",
-    "NO_SPEECHRECOGNITION": "语音识别不可用"
+    "NO_SPEECHRECOGNITION": "语音识别不可用",
+    "NO_DESCRIPTION": "无可用描述",
+    "CHECK_WIKIPEDIA": "检查维基百科"
   },
   "ARCHIVE": {
     "TRACKS": "轨迹",
@@ -118,7 +120,10 @@
     "SPEED": "速度",
     "NO_SPEED_DATA": "无速度数据",
     "NO_TIME_DATA": "无时间数据",
-    "KMZ_NO_PARTIALS": "此文件不包含用于计算分段的时间数据"
+    "KMZ_NO_PARTIALS": "此文件不包含用于计算分段的时间数据",
+    "PAG1": "当前轨迹",
+    "PAG2": "参考轨迹",
+    "PAG3": "参考轨迹 - 分段数据"
   },
   "EDIT": {
     "HEADER": "航点",

@@ -45,7 +45,9 @@
     "DRIVE": "Drive",
     "CLEAN": "Clear",
     "LISTENING": "Listening...",
-    "NO_SPEECHRECOGNITION": "Speech recognition not available"
+    "NO_SPEECHRECOGNITION": "Speech recognition not available",
+    "NO_DESCRIPTION": "No description available",
+    "CHECK_WIKIPEDIA": "Check Wikipedia"
   },
   "ARCHIVE": {
     "TRACKS": "Tracks",
@@ -118,7 +120,10 @@
     "SPEED": "Speed",
     "NO_SPEED_DATA": "No speed data available",
     "NO_TIME_DATA": "No time data available",
-    "KMZ_NO_PARTIALS": "This file contains no time data for partial calculations"
+    "KMZ_NO_PARTIALS": "This file contains no time data for partial calculations",
+    "PAG1": "Current track",
+    "PAG2": "Reference track",
+    "PAG3": "Reference track - Partials"
   },
   "EDIT": {
     "HEADER": "Waypoint",

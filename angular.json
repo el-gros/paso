@@ -41,7 +41,17 @@
               "src/global.scss",
               "node_modules/ol/ol.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "canvg",
+              "geotiff",
+              "xml-utils",
+              "jszip",
+              "rgbcolor",
+              "raf",
+              "chart.js", 
+              "localforage" 
+            ]
           },
           "configurations": {
             "production": {
@@ -53,8 +63,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kb",
-                  "maximumError": "6kb"
+                  "maximumWarning": "10kb",
+                  "maximumError": "20kb"
                 }
               ],
               "fileReplacements": [

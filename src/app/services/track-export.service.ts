@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import { FunctionsService } from './functions.service';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import { TrackFeature, TrackDefinition, Track } from '../../globald';
@@ -9,7 +10,10 @@ import { TrackFeature, TrackDefinition, Track } from '../../globald';
 })
 export class TrackExportService {
 
-  constructor(private translate: TranslateService) {}
+  constructor(
+    private translate: TranslateService,
+    private fs: FunctionsService
+  ) {}
 
   // --- 1. GEOJSON TO KMZ ---
   async geoJsonToKmz(feature: TrackFeature): Promise<string> {
@@ -123,62 +127,66 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
   }
 
   // --- 3. CREATE PDF ---
-  async createPdfContent(item: TrackDefinition, trackData: Track, mapImageBase64: string): Promise<string> {
-    return new Promise((resolve) => {
-      try {
-        const doc = new jsPDF();
-        const margin = 20;
-        const firstFeatureProps = trackData.features?.[0]?.properties;
+  async createPdfContent(
+    item: TrackDefinition, 
+    trackData: Track, 
+    mapImg: string, 
+    altImg?: string
+  ): Promise<string> {
+    
+    const pdf = new jsPDF();
+    const props = trackData.features[0].properties;
 
-        // Formats
-        const formatMsec = (ms: number) => {
-             const s = Math.floor(ms / 1000);
-             return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-                .map(v => v.toString().padStart(2, '0')).join(':');
-        };
+    // --- CABECERA ---
+    pdf.setFontSize(18);
+    pdf.text(item.name || 'Track Report', 10, 20);
+    
+    pdf.setFontSize(10);
+    pdf.setTextColor(100);
+    const dateStr = item.date ? new Date(item.date).toLocaleDateString() : '';
+    pdf.text(dateStr, 10, 28);
 
-        // Data Prep
-        let rawDistance = firstFeatureProps?.totalDistance ?? 0;
-        const distStr = rawDistance > 0 ? rawDistance.toFixed(2) : '--';
+    // --- 1. MAPA (Posición fija) ---
+    if (mapImg) {
+      pdf.addImage(mapImg, 'JPEG', 10, 35, 190, 90);
+    }
 
-        let totalTime = firstFeatureProps?.totalTime ?? 0;
-        const timeStr = totalTime > 0 ? formatMsec(totalTime) : '--';
+    // --- 2. PERFIL DE ALTITUD ---
+    let nextY = 135; // Punto de inicio tras el mapa
+    if (altImg) {
+      pdf.setFontSize(14);
+      pdf.setTextColor(0);
+      pdf.addImage(altImg, 'JPEG', 10, nextY, 190, 50);
+      nextY += 70; // Espacio que ocupa el gráfico + margen
+    }
 
-        const elevationGain = Math.round(firstFeatureProps?.totalElevationGain ?? 0);
-        const elevationLoss = Math.round(firstFeatureProps?.totalElevationLoss ?? 0);
+    // --- 3. ESTADÍSTICAS (Recuperadas) ---
+    pdf.setFontSize(12);
+    pdf.setTextColor(0);
+    
+    // Columna 1
+    pdf.text(`${this.translate.instant('REPORT.DISTANCE')}: ${props.totalDistance.toFixed(2)} km`, 10, nextY);
+    
+    // Usamos el formateador de tiempo del servicio de funciones
+    const timeStr = this.fs.formatMillisecondsToUTC(props.totalTime);
+    pdf.text(`${this.translate.instant('REPORT.TIME')}: ${timeStr}`, 10, nextY + 10);
 
-        // Header
-        doc.setFontSize(18);
-        const name = item.name || firstFeatureProps?.name || 'Track';
-        const label = this.translate.instant('REPORT.ROUTE_NAME') || 'Route Name';
-        
-        // Wrap text
-        const maxWidth = 150;
-        const textLines = doc.splitTextToSize(`${label}: ${name}`, maxWidth);
-        doc.text(textLines, margin, 30);
+    // Columna 2 (Desniveles)
+    const gainStr = `+${Math.round(props.totalElevationGain)} m`;
+    const lossStr = `-${Math.round(props.totalElevationLoss)} m`;
+    
+    pdf.text(`${this.translate.instant('REPORT.ELEVATION_GAIN')}: ${gainStr}`, 110, nextY);
+    pdf.text(`${this.translate.instant('REPORT.ELEVATION_LOSS')}: ${lossStr}`, 110, nextY + 10);
 
-        // Body
-        const startY = 30 + (textLines.length * 10);
-        const dateStr = item.date ? new Date(item.date).toLocaleDateString() : '--';
+    // --- 4. DESCRIPCIÓN (Si existe) ---
+    if (item.description) {
+      pdf.setFontSize(10);
+      pdf.setTextColor(100);
+      const splitDesc = pdf.splitTextToSize(item.description, 180);
+      pdf.text(splitDesc, 10, nextY + 25);
+    }
 
-        doc.setFontSize(12);
-        doc.text(`${this.translate.instant('REPORT.DATE') || 'Date'}: ${dateStr}`, margin, startY);
-        doc.text(`${this.translate.instant('REPORT.DISTANCE') || 'Distance'}: ${distStr} km`, margin, startY + 6);
-        doc.text(`${this.translate.instant('REPORT.TIME') || 'Time'}: ${timeStr}`, margin, startY + 12);
-        doc.text(`${this.translate.instant('REPORT.ELEVATION_GAIN') || 'Gain'}: ${elevationGain} m`, margin, startY + 18);
-        doc.text(`${this.translate.instant('REPORT.ELEVATION_LOSS') || 'Loss'}: ${elevationLoss} m`, margin, startY + 24);
-
-        // Map Image
-        if (mapImageBase64 && mapImageBase64.length > 100) {
-          doc.addImage(mapImageBase64, 'JPEG', margin, startY + 30, 170, 120);
-        }
-
-        const output = doc.output('datauristring');
-        resolve(output.split(',')[1]);
-      } catch (error) {
-        console.error("PDF Generation Error", error);
-        resolve('');
-      }
-    });
+    return pdf.output('datauristring').split(',')[1];
   }
+
 }

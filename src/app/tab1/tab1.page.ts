@@ -20,7 +20,7 @@ import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { BatteryPopoverComponent } from '../battery-popover.component';
 import { RecordPopoverComponent } from '../record-popover.component';
-import { SearchGuidePopoverComponent } from '../search-guide-popover.component';
+import { SearchGuidePopoverComponent } from '../search-guide-popover/search-guide-popover.component';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
@@ -54,14 +54,20 @@ interface RouteStatusEvent {
 })
 export class Tab1Page implements OnInit, OnDestroy {
 
+  // ==========================================================================
+  // 1. VARIABLES Y ESTADO GLOBALES
+  // ==========================================================================
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
   
-  public wikiData: WikiData | null = null;
+  public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
   public routeStatus: 'green' | 'red' | 'unknown' = 'unknown';
 
+  // ==========================================================================
+  // 2. CONSTRUCTOR
+  // ==========================================================================
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
@@ -82,12 +88,9 @@ export class Tab1Page implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
   ) {}
 
-  handleWikiResult(event: WikiWeatherResult) {
-    this.wikiData = event.wiki;       
-    this.weatherData = event.weather; 
-    this.cd.detectChanges();
-  }
-
+  // ==========================================================================
+  // 3. CICLO DE VIDA (LIFECYCLE)
+  // ==========================================================================
   async ngOnInit() {
     await this.platform.ready();
     await this.initializeVariables();
@@ -150,6 +153,37 @@ export class Tab1Page implements OnInit, OnDestroy {
     });
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // ==========================================================================
+  // 4. INICIALIZACIÓN Y CONFIGURACIÓN BASE
+  // ==========================================================================
+  async initializeVariables() {
+    this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
+    this.fs.collection = await this.fs.storeGet('collection') || [];
+    this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
+    this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
+    this.fs.alert = await this.fs.check(this.fs.alert,'alert');
+    this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
+  }
+
+  async checkGpsPermissions(): Promise<boolean> {
+    try {
+      let check = await Geolocation.checkPermissions();
+      if (check.location !== 'granted') {
+        const request = await Geolocation.requestPermissions();
+        if (request.location !== 'granted') return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Error chequeando permisos:", error);
+      return false;
+    }
+  }
+
   async checkBatteryOptimizations(evento?: Event) {
     try {
       const { value: isAlreadyIgnored } = await MyService.isIgnoringBatteryOptimizations();
@@ -188,6 +222,64 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
+  // ==========================================================================
+  // 5. GESTIÓN DE TRACKING Y EVENTOS (BACKGROUND)
+  // ==========================================================================
+  async initializeEvents() {
+    if (this.eventsInitialized) return; 
+
+    this.mapService.locationActivated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.zone.run(() => this.trackingControlService.start()));
+
+    this.mapService.locationDeactivated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.zone.run(() => this.trackingControlService.stop()));
+
+    this.mapService.shareStarted$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.zone.run(() => this.locationSharingService.startSharing()));
+
+    this.mapService.shareStopped$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.zone.run(() => this.locationSharingService.stopSharing()));
+
+    this.handleClicks();
+    this.trackingControlService.start();
+    this.eventsInitialized = true;
+    console.log("🚀 All Map & Sharing events initialized");
+  }
+
+  async startPaso() {
+    await MyService.startService();
+
+    MyService.addListener('location', (location: PluginLocation) => {
+      this.zone.run(async () => {
+        if (!location) return;
+        const success = this.location.processRawLocation(location);
+        if (!success) return;
+
+        if (this.location.state === 'tracking') {
+          await this.present.updateTrack(location);
+        }
+        
+        if (this.location.isSharing) {
+          await this.location.shareLocationIfActive(location);
+        } 
+      }); 
+    });
+
+    (MyService as any).addListener('routeStatusUpdate', (data: RouteStatusEvent) => {
+      this.zone.run(() => {
+        this.routeStatus = data.status;
+        this.cd.detectChanges();
+      });
+    });
+  }
+
+  // ==========================================================================
+  // 6. INTERACCIÓN CON EL MAPA (CLICKS)
+  // ==========================================================================
   async handleClicks() {
     const map = this.geography.map;
     if (!map) return;
@@ -258,157 +350,68 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
-private async handleGeneralMapClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
+  private async handleGeneralMapClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
+    // --- CASO 1: Click en Puntos (Waypoints o Clusters) ---
+    if (type === 'archived_points') {
+      const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
+      const coords = geometry.getCoordinates();
+      if (!coords) return;
+      const coordsArray = (Array.isArray(coords[0]) ? coords : [coords]) as Coordinate[];
+      const index = this.findClosestIndex(coordsArray, clickedCoordinate);
 
-  // --- CASO 1: Click en Puntos (Waypoints o Clusters) ---
-  if (type === 'archived_points') {
-    // ... (mantén tu lógica actual de archived_points, funciona bien para cargar el track)
-    const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
-    const coords = geometry.getCoordinates();
-    if (!coords) return;
-    const coordsArray = (Array.isArray(coords[0]) ? coords : [coords]) as Coordinate[];
-    const index = this.findClosestIndex(coordsArray, clickedCoordinate);
-
-    if (index !== -1) {
-      const multiKey = feature.get('multikey');
-      if (multiKey && multiKey[index]) {
-        this.fs.key = JSON.stringify(multiKey[index]);
-        const trackData = await this.fs.storeGet(this.fs.key);
-        if (trackData) {
-          this.geography.archivedLayer?.getSource()?.clear();
-          this.reference.archivedTrack = trackData;
-          await this.reference.displayArchivedTrack();
-          if (this.reference.archivedTrack) {
-            await this.geography.setMapView(this.reference.archivedTrack);
+      if (index !== -1) {
+        const multiKey = feature.get('multikey');
+        if (multiKey && multiKey[index]) {
+          this.fs.key = JSON.stringify(multiKey[index]);
+          const trackData = await this.fs.storeGet(this.fs.key);
+          if (trackData) {
+            this.geography.archivedLayer?.getSource()?.clear();
+            this.reference.archivedTrack = trackData;
+            await this.reference.displayArchivedTrack();
+            if (this.reference.archivedTrack) {
+              await this.geography.setMapView(this.reference.archivedTrack);
+            }
           }
         }
       }
+      return;
     }
-    return;
-  }
 
-  // --- CASO 2: Click en Líneas, Inicio o Fin ---
-  const trackElements = ['archived_line', 'archived_start', 'archived_end'];
+    // --- CASO 2: Click en Líneas, Inicio o Fin ---
+    const trackElements = ['archived_line', 'archived_start', 'archived_end'];
 
-  if (trackElements.includes(type)) {
-    const featureDate = feature.get('date');
+    if (trackElements.includes(type)) {
+      const featureDate = feature.get('date');
 
-    if (featureDate) {
-      // 1. Convertimos la fecha a la clave del Storage (ISO String)
-      const storageKey = new Date(featureDate).toISOString();
-      
-      // 2. Recuperamos el track completo del Storage
-      const trackData = await this.fs.storeGet(storageKey);
+      if (featureDate) {
+        const storageKey = new Date(featureDate).toISOString();
+        const trackData = await this.fs.storeGet(storageKey);
 
-      if (trackData) {
-        // 3. Limpiamos la vista de "todos los tracks"
-        this.geography.archivedLayer?.getSource()?.clear();
-        this.mapService.visibleAll = false; // Marcamos que ya no estamos viendo todos
+        if (trackData) {
+          this.geography.archivedLayer?.getSource()?.clear();
+          this.mapService.visibleAll = false; 
 
-        // 4. Cargamos y visualizamos el track seleccionado
-        this.reference.archivedTrack = trackData;
-        await this.reference.displayArchivedTrack();
-        
-        // 5. Ajustamos la vista al track específico
-        await this.geography.setMapView(trackData);
-        
-        // 6. Informamos al plugin del cambio de referencia
-        await this.location.sendReferenceToPlugin();
-        
-        this.cd.detectChanges();
-      } else {
-        console.warn('⚠️ No se pudieron cargar los datos del track seleccionado.');
+          this.reference.archivedTrack = trackData;
+          await this.reference.displayArchivedTrack();
+          await this.geography.setMapView(trackData);
+          await this.location.sendReferenceToPlugin();
+          
+          this.cd.detectChanges();
+        } else {
+          console.warn('⚠️ No se pudieron cargar los datos del track seleccionado.');
+        }
       }
     }
   }
-}
 
   private findClosestIndex(coords: Coordinate[], target: Coordinate): number {
     const eps = 0.000001;
     return coords.findIndex(c => Math.abs(c[0] - target[0]) < eps && Math.abs(c[1] - target[1]) < eps);
   }
 
-  async initializeVariables() {
-    this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
-    this.fs.collection = await this.fs.storeGet('collection') || [];
-    this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
-    this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
-    this.fs.alert = await this.fs.check(this.fs.alert,'alert');
-    this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-    // ELIMINADA la línea: MyService.stopService();
-  }
-
-  async startPaso() {
-    await MyService.startService();
-
-    MyService.addListener('location', (location: PluginLocation) => {
-      this.zone.run(async () => {
-        if (!location) return;
-        const success = this.location.processRawLocation(location);
-        if (!success) return;
-
-        if (this.location.state === 'tracking') {
-          await this.present.updateTrack(location);
-        }
-        
-        if (this.location.isSharing) {
-          await this.location.shareLocationIfActive(location);
-        } 
-      }); 
-    });
-
-    (MyService as any).addListener('routeStatusUpdate', (data: RouteStatusEvent) => {
-      this.zone.run(() => {
-        this.routeStatus = data.status;
-        this.cd.detectChanges();
-      });
-    });
-  }
-
-  async checkGpsPermissions(): Promise<boolean> {
-    try {
-      let check = await Geolocation.checkPermissions();
-      if (check.location !== 'granted') {
-        const request = await Geolocation.requestPermissions();
-        if (request.location !== 'granted') return false;
-      }
-      return true;
-    } catch (error) {
-      console.error("Error chequeando permisos:", error);
-      return false;
-    }
-  }
-
-  async initializeEvents() {
-    if (this.eventsInitialized) return; 
-
-    this.mapService.locationActivated$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.zone.run(() => this.trackingControlService.start()));
-
-    this.mapService.locationDeactivated$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.zone.run(() => this.trackingControlService.stop()));
-
-    this.mapService.shareStarted$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.zone.run(() => this.locationSharingService.startSharing()));
-
-    this.mapService.shareStopped$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.zone.run(() => this.locationSharingService.stopSharing()));
-
-    this.handleClicks();
-    this.trackingControlService.start();
-    this.eventsInitialized = true;
-    console.log("🚀 All Map & Sharing events initialized");
-  }
-
+  // ==========================================================================
+  // 7. EXPORTACIÓN A IMAGEN
+  // ==========================================================================
   async buildTrackImage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -480,7 +483,15 @@ private async handleGeneralMapClick(type: string, feature: Feature, geometry: Si
       return false;
     }
   }
- 
+
+  // ==========================================================================
+  // 8. INTERFAZ DE USUARIO (UI / TOASTS)
+  // ==========================================================================
+  handleWikiResult(event: WikiWeatherResult) {
+    this.wikiData = event;       
+    this.cd.detectChanges();
+  }
+
   async showStatusToast() {
     let msgKey = 'MAP.UNKNOWN_STATUS';
     if (this.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
@@ -502,5 +513,4 @@ private async handleGeneralMapClick(type: string, feature: Feature, geometry: Si
     });
     await toast.present();
   }
-
 }

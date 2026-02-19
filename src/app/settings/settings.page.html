@@ -7,7 +7,7 @@
     <ion-item lines="full">
       <ion-icon name="language-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
-      <ion-select [value]="selectedLanguage?.code" (ionChange)="onLanguageChange($event.detail.value)" interface="popover" slot="end">
+      <ion-select [value]="selectedLanguage.code" (ionChange)="onLanguageChange($event.detail.value)" interface="popover" slot="end">
         @for (lang of languages; track lang.code) {
           <ion-select-option [value]="lang.code">{{ lang.name }}</ion-select-option>
         }

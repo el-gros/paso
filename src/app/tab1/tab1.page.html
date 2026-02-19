@@ -32,10 +32,10 @@
 <ion-content [fullscreen]="true">
   <app-record-popover></app-record-popover>
   
-  <app-search-guide-popover 
-    (onWikiResult)="handleWikiResult($event)"
-    (onClearResult)="wikiData = null">
-  </app-search-guide-popover>
+    <app-search-guide-popover 
+      (onWikiResult)="handleWikiResult($event)"
+      (onClearResult)="wikiData = null">
+    </app-search-guide-popover>
   
   <div id="map-wrapper">
     <div id="map"></div>
