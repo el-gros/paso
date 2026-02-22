@@ -124,7 +124,7 @@ export class FunctionsService {
       data[0].compSpeed = 0;
     }
 
-    const startIndex = initial === 0 ? 1 : initial;
+    const startIndex = initial === 0 ? 1 : initial + 1;
 
     for (let i = startIndex; i < num; i++) {
       const prev = data[i - 1];
@@ -164,6 +164,15 @@ export class FunctionsService {
     // Actualización de propiedades finales
     props.currentSpeed = data[num - 1].compSpeed;
     props.currentAltitude = data[num - 1].compAltitude;
+
+    // --- NEW: AVERAGE SPEED CALCULATIONS ---
+    // Convert ms to hours (1 hour = 3,600,000 ms)
+    const hoursTotal = props.totalTime / 3600000;
+    const hoursInMotion = props.inMotion / 3600000;
+
+    // Calculate speeds, guarding against division by zero
+    this.averageSpeed = hoursTotal > 0 ? (props.totalDistance / hoursTotal) : 0;
+    this.averageMotionSpeed = hoursInMotion > 0 ? (props.totalDistance / hoursInMotion) : 0;
 
     return track;
   }

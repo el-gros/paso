@@ -33,6 +33,7 @@
     "FROM": "Origin",
     "TO": "Destination",
     "FIND_PLACES": "Find places",
+    "SELECT_PLACE": "Select place",
     "GET_ROUTE": "Get route",
     "START_GUIDE": "Starting guide...",
     "MY_LOCATION": "My location",
@@ -188,7 +189,8 @@
     "STOPPED": "You stopped sharing your location"
   },
   "LOCATION": {
-    "ERROR_TIMEOUT": "GPS timeout reached"
+    "ERROR_TIMEOUT": "GPS timeout reached",
+    "CHECK": "The GPS signal is weak" 
   },
   "REPORT": {
     "ROUTE_NAME": "Route Name",

@@ -609,3 +609,28 @@ ion-fab {
   pointer-events: none; /* Prevents clicks at the CSS level too */
   transition: opacity 0.2s;
 }
+
+/* ==========================================================================
+   POPOVERS SUPERIORES (BÚSQUEDA Y RUTAS)
+   Evita que el teclado del dispositivo tape los inputs
+   ========================================================================== */
+ion-popover.top-search-popover {
+  &::part(content) {
+    position: absolute !important;
+    top: 5vh !important;           /* Separación del 5% desde arriba */
+    bottom: auto !important;       /* Anula el centrado vertical de Ionic */
+    transform: none !important;    /* Evita cálculos dinámicos de posición */
+    
+    width: 94vw !important;        /* Ancho casi completo */
+    left: 3vw !important;          /* Centrado horizontal (3 + 94 + 3 = 100) */
+    max-width: 420px !important;   /* Límite para tablets */
+    
+    /* En tablets/escritorio, si el ancho es 420px, lo centramos con calc */
+    @media (min-width: 450px) {
+      left: calc(50% - 210px) !important;
+    }
+
+    max-height: 45vh !important;   /* Deja la mitad inferior libre para el teclado */
+    border-radius: var(--glass-radius, 28px) !important;
+  }
+}

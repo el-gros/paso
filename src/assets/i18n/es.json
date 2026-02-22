@@ -34,6 +34,7 @@
     "FROM": "Origen",
     "TO": "Destino",
     "FIND_PLACES": "Buscar lugares",
+    "SELECT_PLACE": "Seleccionar lugar",
     "GET_ROUTE": "Obtener ruta",
     "START_GUIDE": "Iniciando guía...",
     "MY_LOCATION": "Mi ubicación",
@@ -199,7 +200,8 @@
     "STOPPED": "Has dejado de compartir tu ubicación"
   },
   "LOCATION": {
-    "ERROR_TIMEOUT": "Se ha agotado el tiempo de espera del GPS"
+    "ERROR_TIMEOUT": "Se ha agotado el tiempo de espera del GPS",
+    "CHECK": "La señal GPS es deficiente" 
   },
   "REPORT": {
     "ROUTE_NAME": "Nombre de la ruta",

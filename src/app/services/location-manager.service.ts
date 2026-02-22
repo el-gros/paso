@@ -9,6 +9,7 @@ import { FunctionsService } from '../services/functions.service';
 import { TranslateService } from '@ngx-translate/core';
 import { LanguageService } from './language.service';
 import { Track } from 'src/globald';
+import { AlertController } from '@ionic/angular';
 
 
 @Injectable({
@@ -27,6 +28,9 @@ export class LocationManagerService {
   shareToken: string | null = null;
   deviceId: string | null = null;
   foreground: boolean = true;
+  private invalidLocationCount: number = 0;
+  private lastAlertTime: number = 0;
+  private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; // 10 minutos
 
   // ----------------------------------------------------------------------------
   // 1) PUBLIC API → components/services subscribe here
@@ -41,6 +45,7 @@ export class LocationManagerService {
     private supabase: SupabaseService,
     private fs: FunctionsService,
     private translate: TranslateService,
+    private alertController: AlertController
   ) { }
 
  
@@ -52,18 +57,50 @@ export class LocationManagerService {
     if (raw.accuracy > this.threshold ||
         !raw.altitude || raw.altitude == 0 ||
         raw.altitudeAccuracy > this.altitudeThreshold ||
-        !raw.time) return false;
+        !raw.time) {
+        
+        // --- NUEVA LÓGICA DE FALLOS ---
+        this.invalidLocationCount++;
+        if (this.invalidLocationCount >= 5) {
+          this.checkAndShowGpsWarning();
+        }
+        return false;
+    }
+
+    // --- REINICIAR CONTADOR SI LA LECTURA ES BUENA ---
+    this.invalidLocationCount = 0;
 
     // 2. Notificar a la App (Mapa, etc)
     this.latestLocationSubject.next(raw);
     console.log('[LocationManager] new accepted location:', raw);
 
-    // 3. Envío asíncrono a Supabase (sin await para no frenar el proceso del GPS)
-/*    if (this.isSharing) {
-      this.shareLocationIfActive(raw).catch(err => console.error("Async share fail", err));
-    } */
-
     return true;
+  }
+
+  // ----------------------------------------------------------------------------
+  // 3) GESTIÓN DE AVISOS GPS
+  // ----------------------------------------------------------------------------
+  private async checkAndShowGpsWarning() {
+    const now = Date.now();
+
+    // Comprobar si han pasado 10 minutos desde la última alerta
+    if (now - this.lastAlertTime > this.ALERT_COOLDOWN_MS) {
+      this.lastAlertTime = now;
+      this.invalidLocationCount = 0; // Reiniciamos para no saturar la lógica
+
+      // Solo mostramos la alerta si la app está en primer plano
+      if (this.foreground) {
+        const alert = await this.alertController.create({
+          header: 'GPS', // Opcional, puedes quitarlo o usar this.translate.instant('LOCATION.GPS_HEADER')
+          message: this.translate.instant('LOCATION.CHECK'),
+          backdropDismiss: true, // Permite cerrar tocando el fondo oscurecido
+          buttons: ['OK'],
+          cssClass: 'gps-warning-alert' // Opcional: por si quieres darle estilos en global.scss
+        });
+
+        await alert.present();
+      }
+    }
   }
 
   async getCurrentPosition(): Promise<[number, number] | null> {

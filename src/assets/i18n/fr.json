@@ -33,6 +33,7 @@
     "FROM": "Origine",
     "TO": "Destination",
     "FIND_PLACES": "Trouver des lieux",
+    "SELECT_PLACE": "Sélectionner un lieu",
     "GET_ROUTE": "Obtenir l'itinéraire",
     "START_GUIDE": "Démarrage du guide...",
     "MY_LOCATION": "Ma position",
@@ -198,7 +199,8 @@
     "STOPPED": "Vous avez arrêté de partager votre position"
   },
   "LOCATION": {
-    "ERROR_TIMEOUT": "Le délai d'attente du GPS est dépassé"
+    "ERROR_TIMEOUT": "Le délai d'attente du GPS est dépassé",
+    "CHECK": "Le signal GPS est faible" 
   },
   "REPORT": {
     "ROUTE_NAME": "Nom de l'itinéraire",

@@ -33,6 +33,7 @@
     "FROM": "起点",
     "TO": "终点",
     "FIND_PLACES": "查找地点",
+    "SELECT_PLACE": "选择地点",
     "GET_ROUTE": "获取路线",
     "START_GUIDE": "开始导航...",
     "MY_LOCATION": "我的位置",
@@ -198,7 +199,8 @@
     "STOPPED": "您已停止共享位置"
   },
   "LOCATION": {
-    "ERROR_TIMEOUT": "GPS 定位超时"
+    "ERROR_TIMEOUT": "GPS 定位超时",
+    "CHECK": "GPS 信号较弱" 
   },
   "REPORT": {
     "ROUTE_NAME": "路线名称",

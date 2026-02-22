@@ -27,13 +27,24 @@
     }
     .footer-buttons { display: flex; gap: 10px; align-items: center; }
     .primary-icon { color: var(--ion-color-primary) !important; }
-    .results-container { max-height: 180px; overflow-y: auto; margin-top: 8px; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
+/* 1. Permitimos que el contenedor de resultados sea más alto */
+    .results-container { 
+      max-height: 60vh; /* Antes estaba en 180px. Ahora usa casi la mitad de la pantalla */
+      overflow-y: auto; 
+      margin-top: 8px; 
+      
+      /* Opcional: una sombra interna para indicar que hay scroll si la lista es enorme */
+      box-shadow: inset 0px -10px 10px -10px rgba(0,0,0,0.1);
+    }
+
+    /* 2. Expandimos el límite de altura de la "isla" principal */
     .popover-island {
       padding: 16px 10px; 
-      max-height: 450px;
+      max-height: 85vh !important; /* Aumentado drásticamente desde 450px */
       display: flex;
       flex-direction: column;
+      transition: max-height 0.3s ease; /* Transición suave al expandirse */
     }

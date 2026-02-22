@@ -33,6 +33,7 @@
     "FROM": "Origen",
     "TO": "Destinació",
     "FIND_PLACES": "Cercar llocs",
+    "SELECT_PLACE": "Seleccionar lloc",
     "GET_ROUTE": "Obtenir ruta",
     "START_GUIDE": "Iniciant guia...",
     "MY_LOCATION": "La meva ubicació",
@@ -188,7 +189,8 @@
     "STOPPED": "Heu deixat de compartir la vostra ubicació"
   },
   "LOCATION": {
-    "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS"
+    "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS",
+    "CHECK": "El senyal GPS és deficient" 
   },
   "REPORT": {
     "ROUTE_NAME": "Nom de la ruta",

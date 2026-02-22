@@ -73,6 +73,7 @@ export class SearchGuidePopoverComponent implements OnInit {
   public originCoords: [number, number] | null = null;
   public destinationCoords: [number, number] | null = null;
   public selectedTransport: string = 'foot-walking';
+  private readonly MAX_SEARCH_RESULTS = 12;
   
   // Estado de Dictado
   public isListening: boolean = false;
@@ -184,7 +185,7 @@ export class SearchGuidePopoverComponent implements OnInit {
     this.loading = true;
     this.results = [];
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&polygon_geojson=1&addressdetails=1&limit=5`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&polygon_geojson=1&addressdetails=1&limit=${this.MAX_SEARCH_RESULTS}`;
       const response = await CapacitorHttp.get({
         url,
         headers: { 'Accept': 'application/json', 'User-Agent': 'MyMappingApp/1.0' }
@@ -292,76 +293,128 @@ export class SearchGuidePopoverComponent implements OnInit {
       this.fs.displayToast('SEARCH.SELECT_BOTH', 'warning');
       return;
     }
+
     this.loading = true;
+    
     const url = `https://api.openrouteservice.org/v2/directions/${this.selectedTransport}/geojson`;
-    const body = { coordinates: [this.originCoords, this.destinationCoords], elevation: true, units: 'm' };
+    
+    // IMPORTANTE: ORS exige [Longitud, Latitud]. Asegúrate de que originCoords esté en ese orden.
+    const body = { 
+      coordinates: [this.originCoords, this.destinationCoords], 
+      elevation: true, 
+      units: 'm',
+      geometry: true
+    };
 
     try {
       const resp = await CapacitorHttp.post({
         url,
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': global.ors_key },
+        headers: { 
+          // FIX DEL ERROR 406: Headers exactos que exige ORS para el endpoint /geojson
+          'Accept': 'application/json, application/geo+json; charset=utf-8', 
+          'Content-Type': 'application/json; charset=utf-8', 
+          'Authorization': global.ors_key 
+        },
         data: body
       });
+
+      // Si el status no es 200, ORS nos dice exactamente por qué falló dentro de resp.data.error
+      if (resp.status !== 200) {
+        const errorMessage = resp.data?.error?.message || `Error del servidor: ${resp.status}`;
+        console.error("❌ ORS ha rechazado la petición:", resp.data);
+        this.fs.displayToast(errorMessage, 'error');
+        this.loading = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Si todo va bien (Status 200)
       const responseData = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
-      if (resp.status === 200 && responseData?.features?.length > 0) {
+
+      if (responseData?.features?.length > 0) {
+        console.log("✅ Ruta calculada con éxito");
         this.reference.isGuidePopoverOpen = false;
         await this.handleRouteResponse(responseData);
       } else {
         this.fs.displayToast('SEARCH.NO_ROUTE_FOUND', 'error');
       }
+
     } catch (error) {
+      console.error("❌ Error de red interno:", error);
       this.fs.displayToast('SEARCH.ROUTING_ERROR', 'error');
-    } finally { this.loading = false; this.cdr.detectChanges(); }
+    } finally { 
+      this.loading = false; 
+      this.cdr.detectChanges(); 
+    }
   }
 
   async handleRouteResponse(geoJsonData: any) {
-    const source = this.geography.archivedLayer?.getSource();
-    if (!source) return;
-    source.clear();
+    try {
+      const routeFeature = geoJsonData.features[0];
+      const stats = routeFeature.properties.summary;
+      const rawBbox = geoJsonData.bbox || routeFeature.bbox;
 
-    const format = new GeoJSON();
-    source.addFeatures(format.readFeatures(geoJsonData));
+      const cleanBbox: [number, number, number, number] | undefined = (rawBbox && rawBbox.length === 6) 
+        ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] 
+        : (rawBbox && rawBbox.length === 4 ? rawBbox as [number, number, number, number] : undefined);
 
-    const routeFeature = geoJsonData.features[0];
-    const stats = routeFeature.properties.summary;
-    const rawBbox = geoJsonData.bbox || routeFeature.bbox;
+      this.reference.foundRoute = true;  
+      const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
 
-    const cleanBbox: [number, number, number, number] | undefined = (rawBbox && rawBbox.length === 6) 
-      ? [rawBbox[0], rawBbox[1], rawBbox[3], rawBbox[4]] : (rawBbox && rawBbox.length === 4 ? rawBbox : undefined);
+      // Construimos nuestro objeto Track estandarizado
+      const newTrack: Track = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {
+            name: `${this.query2} ➔ ${this.query3}`,
+            place: this.query3,
+            date: new Date(),
+            description: `ORS Profile: ${this.selectedTransport}`,
+            totalDistance: stats.distance / 1000,
+            totalTime: Math.round(stats.duration * 1000),
+            totalElevationGain: Math.round(routeFeature.properties.ascent || 0),
+            totalElevationLoss: Math.round(routeFeature.properties.descent || 0),
+            inMotion: Math.round(stats.duration * 1000),
+            totalNumber: routeCoordinates.length,
+            currentSpeed: 0, 
+            currentAltitude: 0
+          },
+          bbox: cleanBbox,
+          geometry: {
+            type: 'LineString',
+            coordinates: routeCoordinates as [number, number][],
+            properties: { 
+              // Protegemos c[2] por si ORS no devuelve elevación en alguna zona
+              data: routeCoordinates.map(c => ({ 
+                altitude: c[2] || 0, 
+                speed: 0, 
+                time: 0, 
+                compAltitude: c[2] || 0, 
+                compSpeed: 0, 
+                distance: 0 
+              })) 
+            }
+          }
+        }]
+      };
 
-    this.reference.foundRoute = true;  
-    const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
+      // 1. Guardamos el track
+      this.reference.archivedTrack = newTrack;
+      
+      // 2. Sincronizamos con el plugin
+      await this.location.sendReferenceToPlugin();
+      
+      // 3. Dejamos que ReferenceService haga el dibujado correcto
+      await this.reference.displayArchivedTrack();
+      
+      // 4. Centramos el mapa
+      await this.geography.setMapView(this.reference.archivedTrack);
 
-    const newTrack: Track = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: {
-          name: `${this.query2} ➔ ${this.query3}`,
-          place: this.query3,
-          date: new Date(),
-          description: `ORS Profile: ${this.selectedTransport}`,
-          totalDistance: stats.distance / 1000,
-          totalTime: Math.round(stats.duration * 1000),
-          totalElevationGain: Math.round(routeFeature.properties.ascent || 0),
-          totalElevationLoss: Math.round(routeFeature.properties.descent || 0),
-          inMotion: Math.round(stats.duration * 1000),
-          totalNumber: routeCoordinates.length,
-          currentSpeed: 0, currentAltitude: 0
-        },
-        bbox: cleanBbox,
-        geometry: {
-          type: 'LineString',
-          coordinates: routeCoordinates as [number, number][],
-          properties: { data: routeCoordinates.map(c => ({ altitude: c[2] || 0, speed: 0, time: 0, compAltitude: c[2] || 0, compSpeed: 0, distance: 0 })) }
-        }
-      }]
-    };
-
-    this.reference.archivedTrack = newTrack;
-    await this.location.sendReferenceToPlugin();
-    await this.reference.displayArchivedTrack();
-    await this.geography.setMapView(this.reference.archivedTrack);
+    } catch (error) {
+      console.error("Error procesando GeoJSON de la ruta:", error);
+      this.fs.displayToast('SEARCH.ROUTING_ERROR', 'error');
+    }
   }
 
   // ==========================================================================
@@ -414,4 +467,26 @@ export class SearchGuidePopoverComponent implements OnInit {
     this.reference.foundRoute = false;
     await this.location.sendReferenceToPlugin();
   }
+
+  // ==========================================================================
+  // 9. GESTIÓN DE APERTURA DE FORMULARIOS
+  // ==========================================================================
+  
+  clearPlaceForm() {
+    this.query = '';
+    this.results = [];
+  }
+
+  openPlaceSearch() {
+    this.clearPlaceForm();
+    this.reference.isSearchPopoverOpen = true;
+    this.reference.isSearchGuidePopoverOpen = false;
+  }
+
+  openRouteSearch() {
+    this.clearRouteForm();
+    this.reference.isGuidePopoverOpen = true;
+    this.reference.isSearchGuidePopoverOpen = false;
+  }
+
 }

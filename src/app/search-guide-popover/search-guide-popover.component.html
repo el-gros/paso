@@ -7,14 +7,14 @@
         <div class="button-grid">
           <button class="nav-item-btn" 
             [class.red-pill]="reference.foundPlace"
-            (click)="reference.foundPlace ? clearSearchPlace() : (reference.isSearchPopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
+            (click)="reference.foundPlace ? clearSearchPlace() : openPlaceSearch()">
             <ion-icon [name]="reference.foundPlace ? 'trash-sharp' : 'location-sharp'" [class.primary-icon]="!reference.foundPlace"></ion-icon>
             <p>{{ 'SEARCH.LOCATION' | translate }}</p>
           </button>
 
           <button class="nav-item-btn" 
             [class.red-pill]="reference.foundRoute"
-            (click)="reference.foundRoute ? clearSearchRoute() : (reference.isGuidePopoverOpen = true); reference.isSearchGuidePopoverOpen = false">
+            (click)="reference.foundRoute ? clearSearchRoute() : openRouteSearch()">
             <ion-icon [name]="reference.foundRoute ? 'trash-sharp' : 'walk-sharp'" [class.primary-icon]="!reference.foundRoute"></ion-icon>
             <p>{{ 'SEARCH.ROUTE' | translate }}</p>
           </button>
@@ -26,9 +26,9 @@
   <ion-popover
     [isOpen]="reference.isSearchPopoverOpen"
     (didDismiss)="reference.isSearchPopoverOpen = false"
-    class="floating-popover">
+    class="floating-popover top-search-popover">
     <ng-template>
-      <div class="popover-island glass-form">
+      <div class="popover-island glass-form ">
         <div class="search-input-wrapper">
           <ion-icon name="search-sharp" class="inner-icon"></ion-icon>
           <ion-input [(ngModel)]="query" (keyup.enter)="openList()" [placeholder]="'SEARCH.SEARCH' | translate"></ion-input>
@@ -42,7 +42,8 @@
 
         <button class="main-action-btn" (click)="openList()" [disabled]="loading">
           <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-          <span *ngIf="!loading">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
+          <span *ngIf="!loading && results.length === 0">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
+          <span *ngIf="!loading && results.length > 0">{{ 'SEARCH.SELECT_PLACE' | translate }}</span>
         </button>
 
         <div class="results-container" *ngIf="results.length > 0">
@@ -59,11 +60,9 @@
   <ion-popover
     [isOpen]="reference.isGuidePopoverOpen"
     (didDismiss)="reference.isGuidePopoverOpen = false"
-    class="floating-popover">
+    class="floating-popover top-search-popover">
     <ng-template>
       <div class="popover-island glass-form">
-        <p class="header-title">{{ 'SEARCH.ROUTE' | translate }}</p>
-
         <div class="input-stack" [class.confirmed]="originCoords">
           <ion-input [(ngModel)]="query2" [placeholder]="'SEARCH.FROM' | translate" (ionFocus)="activeRouteField = 'origin'"></ion-input>
           <div class="input-actions-row">
@@ -90,15 +89,14 @@
           </div>
         </div>
 
-        <div class="footer-buttons">
-          <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
+        <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
             <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-            <span *ngIf="!loading">{{ (originCoords && destinationCoords) ? ('SEARCH.GET_ROUTE' | translate) : ('SEARCH.FIND_PLACES' | translate) }}</span>
-          </button>
-          <button class="nav-item-btn red-pill circular" (click)="clearRouteForm()">
-            <ion-icon name="trash-sharp"></ion-icon>
-          </button>
-        </div>
+            <ng-container *ngIf="!loading">
+              <span *ngIf="originCoords && destinationCoords">{{ 'SEARCH.GET_ROUTE' | translate }}</span>
+              <span *ngIf="!(originCoords && destinationCoords) && results.length === 0">{{ 'SEARCH.FIND_PLACES' | translate }}</span>
+              <span *ngIf="!(originCoords && destinationCoords) && results.length > 0">{{ 'SEARCH.SELECT_PLACE' | translate }}</span>
+            </ng-container>
+        </button>
 
         <div class="results-container" *ngIf="results.length > 0">
            <ion-list lines="none">

@@ -25,6 +25,7 @@ import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
 import { WikiCardComponent } from '../wiki-card.component';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 // --- OPENLAYERS IMPORTS ---
 import { MapBrowserEvent } from 'ol';
@@ -64,6 +65,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
   public routeStatus: 'green' | 'red' | 'unknown' = 'unknown';
+  private firstPointReceived = false;
 
   // ==========================================================================
   // 2. CONSTRUCTOR
@@ -93,23 +95,38 @@ export class Tab1Page implements OnInit, OnDestroy {
   // ==========================================================================
   async ngOnInit() {
     await this.platform.ready();
-    await this.initializeVariables();
+
+    // 1. Pedir permiso de NOTIFICACIONES (Crítico para que se vea el servicio)
+    const permNotif = await LocalNotifications.checkPermissions();
+    if (permNotif.display !== 'granted') {
+      await LocalNotifications.requestPermissions();
+    }
+
+    // 2. Pedir permisos de GPS
     const hasPermission = await this.checkGpsPermissions(); 
     
     if (hasPermission) {
       try {
-        await MyService.startService(); 
+        // 3. Cargar variables y Mapa
+        await this.initializeVariables();
         await this.mapService.loadMap();
         this.mapService.mapIsReady = true;
+
+        // 4. Configurar eventos de la interfaz y clicks
         await this.initializeEvents(); 
-        
-        await this.checkBatteryOptimizations();
         await this.handleClicks();
+
+        // 5. Configurar Listeners y ARRANKAR el servicio (Todo dentro de startPaso)
         await this.startPaso();
+
+        // 6. Optimización de batería (Xiaomi)
+        await this.checkBatteryOptimizations();
+
       } catch (error) {
-        console.error("❌ Error en inicio:", error);
+        console.error("❌ Error en secuencia de inicio:", error);
       }
     }
+
     this.cd.detectChanges();
     this.initStatus$.next(true);
   }
@@ -251,30 +268,85 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   async startPaso() {
-    await MyService.startService();
+    // 1. Limpiamos cualquier rastro previo para evitar duplicados
+    await MyService.removeAllListeners();
 
-    MyService.addListener('location', (location: PluginLocation) => {
+    // 2. Registramos el listener de UBICACIÓN
+    await MyService.addListener('location', (location: PluginLocation) => {
       this.zone.run(async () => {
         if (!location) return;
-        const success = this.location.processRawLocation(location);
-        if (!success) return;
 
-        if (this.location.state === 'tracking') {
-          await this.present.updateTrack(location);
+        // --- CRUCIAL: Mapeo completo a la interfaz Location ---
+        // Forzamos que todo sea numérico y proporcionamos valores por defecto
+        const cleanLocation: PluginLocation = {
+          latitude: Number(location.latitude),
+          longitude: Number(location.longitude),
+          accuracy: Number(location.accuracy) || 0,
+          altitude: Number(location.altitude) || 0,
+          altitudeAccuracy: Number(location.altitudeAccuracy) || 0,
+          bearing: Number(location.bearing) || 0,
+          speed: Number(location.speed) || 0,
+          time: Number(location.time) || Date.now(),
+          simulated: !!location.simulated
+        };
+
+        // Si las coordenadas principales fallan, no seguimos
+        if (isNaN(cleanLocation.longitude) || isNaN(cleanLocation.latitude)) {
+          console.warn("⚠️ Coordenadas inválidas recibidas:", location);
+          return;
         }
+
+        console.log(`📍 GPS Procesado: [${cleanLocation.longitude}, ${cleanLocation.latitude}] - Acc: ${cleanLocation.accuracy}`);
+
+        // 3. Procesamos la ubicación en los servicios (Lógica de distancias/estados)
+        const success = this.location.processRawLocation(cleanLocation);
         
-        if (this.location.isSharing) {
-          await this.location.shareLocationIfActive(location);
-        } 
+        if (success) {
+          // --- AUTO-CENTRADO: Solo para el primer punto ---
+          if (!this.firstPointReceived) {
+            console.log("🎯 Primer punto detectado. Centrando mapa...");
+            this.geography.map?.getView().animate({
+              center: [cleanLocation.longitude, cleanLocation.latitude],
+              zoom: 17,
+              duration: 1000
+            });
+            this.firstPointReceived = true;
+          }
+
+          // 4. Dibujamos en el mapa si el usuario le dio a "Grabar"
+          if (this.location.state === 'tracking') {
+            console.log("✏️ Dibujando punto en el track...");
+            await this.present.updateTrack(cleanLocation);
+          }
+          
+          // 5. Compartir posición en tiempo real (si está activo)
+          if (this.location.isSharing) {
+            await this.location.shareLocationIfActive(cleanLocation);
+          }
+
+          // --- FORZAR RENDER: Vital para ver los cambios al instante ---
+          this.geography.map?.render();
+          this.cd.detectChanges(); // Refuerzo para la detección de cambios de Angular
+        }
       }); 
     });
 
-    (MyService as any).addListener('routeStatusUpdate', (data: RouteStatusEvent) => {
+    // 3. Listener de ESTADO DE RUTA (Fuera/Dentro de camino)
+    await MyService.addListener('routeStatusUpdate' as any, (data: any) => {
       this.zone.run(() => {
+        console.log("🛣️ Estado ruta nativo:", data.status);
         this.routeStatus = data.status;
         this.cd.detectChanges();
       });
     });
+
+    // 4. ARRANQUE DEL SERVICIO NATIVO
+    console.log("🚀 Lanzando PasoServicePlugin...");
+    try {
+      await MyService.startService();
+    } catch (err) {
+      console.error("❌ Error al iniciar el servicio nativo:", err);
+    }
   }
 
   // ==========================================================================
