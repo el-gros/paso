@@ -31,6 +31,12 @@ export class FunctionsService {
   geocoding: string = 'maptiler';
   alert: string = 'on';
   
+  // Navegación y Ruta
+  public routeStatus: 'green' | 'red' | 'black' = 'black';
+  public matchIndex: number = NaN;
+  public kmRecorridos: number = 0;
+  public kmRestantes: number = 0;
+  
   // Datos
   collection: TrackDefinition[] = [];
   properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
@@ -38,6 +44,7 @@ export class FunctionsService {
   // Estadísticas volátiles
   averageSpeed: number = 0;
   averageMotionSpeed: number = 0;
+  public lastStableAlt: number = 0;
 
   // Variables Kalman
   private k_q = 0.1; 
@@ -100,19 +107,15 @@ export class FunctionsService {
     const feature = track.features[0];
     if (!feature || !feature.geometry || !feature.geometry.properties) return track;
 
-    const data: Data[] = feature.geometry.properties.data;
+    const data = feature.geometry.properties.data;
     const props = feature.properties;
     const num = data.length;
     
-    const MOVING_THRESHOLD = 0.8; // km/h
-    const ALT_SMOOTHING = 0.15;   // Factor EMA
-    const VERTICAL_THRESHOLD = 2.0; // metros mínimos para registrar cambio
+    const MOVING_THRESHOLD = 0.8; 
+    const ALT_SMOOTHING = 0.15;   
+    const VERTICAL_THRESHOLD = 3.0; 
 
-    // Variable auxiliar para el umbral de acumulación (Histéresis)
-    let lastStableAlt = (initial > 0 && data[initial - 1]) 
-      ? data[initial - 1].compAltitude 
-      : data[0].altitude;
-
+    // --- RESET FOR A NEW TRACK ---
     if (initial === 0) {
       this.k_p = 1.0; 
       this.k_v = 0;
@@ -122,6 +125,9 @@ export class FunctionsService {
       props.totalTime = 0;
       data[0].compAltitude = data[0].altitude;
       data[0].compSpeed = 0;
+      
+      // Initialize the global stable altitude to the very first point
+      this.lastStableAlt = data[0].altitude; 
     }
 
     const startIndex = initial === 0 ? 1 : initial + 1;
@@ -130,7 +136,7 @@ export class FunctionsService {
       const prev = data[i - 1];
       const curr = data[i];
 
-      // --- VELOCIDAD (Kalman) ---
+      // --- VELOCITY (Kalman) ---
       const distDelta = curr.distance - prev.distance;
       const timeDelta = curr.time - prev.time;
       const rawSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
@@ -141,14 +147,21 @@ export class FunctionsService {
         props.inMotion += timeDelta;
       }
 
-      // --- ALTITUD SUAVIZADA (EMA) ---
-      // Esto es lo que se dibujará en el Canvas
+// --- COLD START FIX ---
+      // For the first 5 points, continuously reset the baseline to the smoothed 
+      // altitude to ignore the initial GPS spike.
+      if (num < 5) {
+         this.lastStableAlt = curr.compAltitude;
+         props.totalElevationGain = 0;
+         props.totalElevationLoss = 0;
+      }
+
+      // --- SMOOTHED ALTITUDE (EMA) ---
       curr.compAltitude = prev.compAltitude + ALT_SMOOTHING * (curr.altitude - prev.compAltitude);
 
-      // --- CÁLCULO DE DESNIVEL CON UMBRAL (Histéresis) ---
-      // Solo sumamos a las estadísticas si el cambio respecto a la última cota 
-      // estable supera el VERTICAL_THRESHOLD
-      const verticalDiff = curr.compAltitude - lastStableAlt;
+      // --- HYSTERESIS ELEVATION CALCULATION ---
+      // Compare current smoothed altitude against the globally stored stable altitude
+      const verticalDiff = curr.compAltitude - this.lastStableAlt;
 
       if (Math.abs(verticalDiff) >= VERTICAL_THRESHOLD) {
         if (verticalDiff > 0) {
@@ -156,35 +169,23 @@ export class FunctionsService {
         } else {
           props.totalElevationLoss += Math.abs(verticalDiff);
         }
-        // Actualizamos la marca estable para la siguiente comparación
-        lastStableAlt = curr.compAltitude;
+        
+        // Update the global stable altitude for the next iteration/function call
+        this.lastStableAlt = curr.compAltitude;
       }
     }
 
-    // Actualización de propiedades finales
+    // Final property updates
     props.currentSpeed = data[num - 1].compSpeed;
     props.currentAltitude = data[num - 1].compAltitude;
 
-    // --- NEW: AVERAGE SPEED CALCULATIONS ---
-    // Convert ms to hours (1 hour = 3,600,000 ms)
+    // Averages
     const hoursTotal = props.totalTime / 3600000;
     const hoursInMotion = props.inMotion / 3600000;
-
-    // Calculate speeds, guarding against division by zero
     this.averageSpeed = hoursTotal > 0 ? (props.totalDistance / hoursTotal) : 0;
     this.averageMotionSpeed = hoursInMotion > 0 ? (props.totalDistance / hoursInMotion) : 0;
 
     return track;
-  }
-
-  async computeElevationGainAndLoss(altitudes: number[]): Promise<{ gain: number; loss: number; }> {
-    let gain = 0, loss = 0;
-    for (let i = 1; i < altitudes.length; i++) {
-      const diff = altitudes[i] - altitudes[i - 1];
-      if (diff > 0) gain += diff;
-      else if (diff < 0) loss -= diff;
-    }
-    return { gain, loss };
   }
 
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {

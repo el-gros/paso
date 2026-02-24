@@ -48,29 +48,33 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-
-  &:last-child { border-bottom: none; }
+  padding: 4px 0; /* Antes 10px. Reduce drásticamente la altura de la fila */
+  /* border-bottom: 1px solid rgba(0, 0, 0, 0.03); <- ELIMINADO */
 
   .label-group {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 0.9rem;
+    gap: 10px; /* Un pelín más juntos (antes 12px) */
+    font-size: 0.85rem; /* Ligeramente más pequeño (antes 0.9rem) */
     color: #666;
 
     ion-icon {
-      font-size: 1.2rem;
-      padding: 6px;
-      border-radius: 10px;
+      font-size: 1.1rem; /* Icono un poco más sutil (antes 1.2rem) */
+      padding: 5px;      /* Menos relleno interior (antes 6px) */
+      border-radius: 8px;
     }
   }
 
   .value {
     font-weight: 700;
+    font-size: 0.9rem; /* Ajustado para que encaje con la nueva altura */
     font-family: 'Roboto Mono', monospace;
-    span { font-size: 0.7rem; color: #999; font-weight: 400; }
+    
+    span { 
+      font-size: 0.65rem; 
+      color: #999; 
+      font-weight: 400; 
+    }
   }
 }
 
@@ -85,61 +89,25 @@
 .icon-avg { color: #92949c; background: rgba(146, 148, 156, 0.1); }
 .icon-movavg { color: #ff4961; background: rgba(255, 73, 97, 0.1); }
 
-/* --- CONTENEDOR DE CANVAS --- */
-.canvas-container {
-  background: transparent; // O #ffffff si prefieres que el área del gráfico sea blanca
-  margin-bottom: 30px;
-  padding: 0; 
-  
-  .title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #666;
-    margin: 0 0 12px 20px; // Margen izquierdo para alinear con el texto de las cards
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-left: 3px solid var(--ion-color-primary);
-    padding-left: 10px;
-  }
-
-  .canvas-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    background: #ffffff;
-    padding: 0; // Quitamos padding interno para ganar espacio
-    box-sizing: border-box; 
-    
-    canvas {
-      width: 100% !important; 
-      height: auto !important;
-      aspect-ratio: 1 / 1; // IMPORTANTE: Fuerza a que sea cuadrado
-      display: block;
-    }
-  }
-}
-
 /* --- PARCIALES --- */
 .partials-header {
   display: flex;
-  // Importante: Mismo padding y gap que la fila para que coincidan los ejes
-  padding: 10px 6px; 
+  padding: 4px 6px; /* Reducido de 10px a 4px para alinear con data-row */
   gap: 10px; 
   font-size: 0.7rem;
   font-weight: 700;
   color: #bbb;
   text-transform: uppercase;
 
-  // Aplicamos los mismos anchos que a los datos
-  span:nth-child(1) { flex: 0 0 calc(25% - 7px); text-align: center; } // KM
-  span:nth-child(2) { flex: 0 0 calc(40% - 7px); text-align: right; }  // PACE
-  span:nth-child(3) { flex: 0 0 calc(35% - 7px); text-align: right; }  // SPEED
+  span:nth-child(1) { flex: 0 0 calc(25% - 7px); text-align: center; } 
+  span:nth-child(2) { flex: 0 0 calc(40% - 7px); text-align: right; }  
+  span:nth-child(3) { flex: 0 0 calc(35% - 7px); text-align: right; }  
 }
 
 .partial-row {
   display: flex;
   align-items: center;
-  padding: 12px 6px; 
+  padding: 4px 6px; /* Reducido drásticamente de 12px a 4px, igual que .data-row */
   gap: 10px; 
   width: 100%;
   box-sizing: border-box;
@@ -149,7 +117,7 @@
     background: rgba(var(--ion-color-primary-rgb), 0.1);
     color: var(--ion-color-primary);
     font-weight: 800;
-    height: 30px;
+    height: 24px; /* Reducido de 30px a 24px para que no empuje la fila hacia abajo */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -159,7 +127,7 @@
 
   .pace-value {
     flex: 0 0 calc(40% - 7px); 
-    text-align: right; // Cambiado a right para alinear con el header
+    text-align: right; 
     font-family: 'Roboto Mono', monospace;
     font-weight: 500;
     color: #444;

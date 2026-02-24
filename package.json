@@ -99,5 +99,5 @@
     "karma-jasmine-html-reporter": "^2.1.0",
     "typescript": "^5.8.3"
   },
-  "description": "An Ionic project"
+  "description": "Tracking app for Android"
 }

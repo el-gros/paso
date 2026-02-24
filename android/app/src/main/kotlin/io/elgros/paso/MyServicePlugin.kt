@@ -101,8 +101,11 @@ class MyServicePlugin : Plugin() {
         notifyListeners("location", data)
     }
 
-    fun notifyStatusToJS(status: String) {
-        val data = JSObject().apply { put("status", status) }
+    fun notifyStatusToJS(status: String, matchIndex: Int) {
+        val data = JSObject().apply { 
+            put("status", status)
+            put("matchIndex", matchIndex) // Agregamos el índice al JSON
+        }
         notifyListeners("routeStatusUpdate", data)
     }
 

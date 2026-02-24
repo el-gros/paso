@@ -104,7 +104,12 @@ class PasoService : Service() {
     private fun evaluateLocation(lon: Double, lat: Double) {
         val track = archivedTrack ?: return
         val currentResult = checkOnRouteNative(lon, lat)
-        MyServicePlugin.instance?.notifyStatusToJS(currentResult)
+        
+        // Determinar qué índice enviar
+        val indexToSend = if (currentResult == "green") currentPointIdx else -1
+        
+        // Enviamos el estado y el índice a Angular
+        MyServicePlugin.instance?.notifyStatusToJS(currentResult, indexToSend)
         
         if (currentResult == "green") { greenCounter++; redCounter = 0 } 
         else { redCounter++; greenCounter = 0 }

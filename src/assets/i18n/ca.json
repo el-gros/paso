@@ -124,7 +124,9 @@
     "KMZ_NO_PARTIALS": "Aquest fitxer no conté dades de temps per calcular velocitats parcials",
     "PAG1": "Trajecte en curs",
     "PAG2": "Trajecte de referència",
-    "PAG3": "Trajecte de referència - Parcials"
+    "PAG3": "Trajecte de referència - Parcials",
+    "FROM_START": "Distància des del començament",
+    "TO_END": "Distància fins al final"
   },
   "EDIT": {
     "HEADER": "Punt de pas",

@@ -136,7 +136,7 @@ export interface WikiData {
 
 // Interface for the Route Status event payload
 export interface RouteStatusPayload {
-  status: 'green' | 'red' | 'unknown';
+  status: 'green' | 'red' | 'black';
 }
 
 export interface WikiWeatherResult {

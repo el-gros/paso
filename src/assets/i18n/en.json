@@ -124,7 +124,9 @@
     "KMZ_NO_PARTIALS": "This file contains no time data for partial calculations",
     "PAG1": "Current track",
     "PAG2": "Reference track",
-    "PAG3": "Reference track - Partials"
+    "PAG3": "Reference track - Partials",
+    "FROM_START": "Distance from start",
+    "TO_END": "Distance to end"
   },
   "EDIT": {
     "HEADER": "Waypoint",

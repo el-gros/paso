@@ -124,7 +124,9 @@
     "KMZ_NO_PARTIALS": "Ce fichier ne contient pas de données temporelles pour les calculs partiels",
     "PAG1": "Trajecte en cours",
     "PAG2": "Trajecte de référence",
-    "PAG3": "Trajecte de référence - Parciaux"
+    "PAG3": "Trajecte de référence - Parciaux",
+    "FROM_START": "Distance depuis le début",
+    "TO_END": "Distance jusqu'à la fin"
   },
   "EDIT": {
     "HEADER": "Point de passage",

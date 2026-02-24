@@ -38,10 +38,6 @@ import MyService, { Location as PluginLocation } from '../../plugins/MyServicePl
 
 register();
 
-interface RouteStatusEvent {
-  status: 'green' | 'red' | 'unknown';
-}
-
 @Component({
   standalone: true,
   selector: 'app-tab1',
@@ -64,8 +60,10 @@ export class Tab1Page implements OnInit, OnDestroy {
   
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
-  public routeStatus: 'green' | 'red' | 'unknown' = 'unknown';
   private firstPointReceived = false;
+
+  private locListener: any;
+  private routeListener: any;
 
   // ==========================================================================
   // 2. CONSTRUCTOR
@@ -173,6 +171,8 @@ export class Tab1Page implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.locListener) this.locListener.remove();
+    if (this.routeListener) this.routeListener.remove();
   }
 
   // ==========================================================================
@@ -272,7 +272,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     await MyService.removeAllListeners();
 
     // 2. Registramos el listener de UBICACIÓN
-    await MyService.addListener('location', (location: PluginLocation) => {
+    this.locListener = await MyService.addListener('location', (location: PluginLocation) => {
       this.zone.run(async () => {
         if (!location) return;
 
@@ -331,12 +331,29 @@ export class Tab1Page implements OnInit, OnDestroy {
       }); 
     });
 
-    // 3. Listener de ESTADO DE RUTA (Fuera/Dentro de camino)
-    await MyService.addListener('routeStatusUpdate' as any, (data: any) => {
-      this.zone.run(() => {
-        console.log("🛣️ Estado ruta nativo:", data.status);
-        this.routeStatus = data.status;
-        this.cd.detectChanges();
+    // 3. Listener de ESTADO DE RUTA (Fuera/Dentro de camino) y de la distancia al inicio y final
+    this.routeListener = await MyService.addListener('routeStatusUpdate', (data) => {
+      this.zone.run(() => { // <-- Añadir NgZone aquí
+        if (data.status === 'green') {
+          console.log(`Vamos bien por el punto ${data.matchIndex} de la ruta`);
+        } else {
+          console.log('¡Te has desviado!');
+        }
+        this.fs.routeStatus = data.status;
+        this.fs.matchIndex = data.matchIndex;
+
+        const track = this.reference.archivedTrack;
+        
+        if (data.status === 'green' && data.matchIndex >= 0 && track) {
+          const trackData = track.features[0].geometry.properties.data;
+          const total = track.features[0].properties.totalDistance;
+
+          this.fs.kmRecorridos = trackData[data.matchIndex].distance;
+          this.fs.kmRestantes = total - this.fs.kmRecorridos;
+          
+          // Opcional: Forzar detección de cambios si es necesario
+          // this.cd.detectChanges(); 
+        }
       });
     });
 
@@ -566,8 +583,8 @@ export class Tab1Page implements OnInit, OnDestroy {
 
   async showStatusToast() {
     let msgKey = 'MAP.UNKNOWN_STATUS';
-    if (this.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
-    if (this.routeStatus === 'red') msgKey = 'MAP.OFF_ROUTE';
+    if (this.fs.routeStatus === 'green') msgKey = 'MAP.ON_ROUTE';
+    if (this.fs.routeStatus === 'red') msgKey = 'MAP.OFF_ROUTE';
 
     const finalMessage = msgKey ? this.translate.instant(msgKey) : msgKey;
 
@@ -575,7 +592,7 @@ export class Tab1Page implements OnInit, OnDestroy {
       message: finalMessage,
       duration: 3000,
       position: 'top',
-      cssClass: `custom-toast ${this.routeStatus}-toast`, 
+      cssClass: `custom-toast ${this.fs.routeStatus}-toast`, 
       buttons: [
         {
           text: 'OK',

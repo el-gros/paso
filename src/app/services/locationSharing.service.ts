@@ -31,17 +31,35 @@ export class LocationSharingService {
   async startSharing(): Promise<boolean> {
     try {
       if (!this.locationService.deviceId) await this.init();
-      
+
+      // 👇 EL FIX: Guardia de seguridad contra dobles ejecuciones
+      // Si ya estamos compartiendo, NO generamos un token nuevo.
+      // Solo volvemos a abrir el diálogo con el token actual.
+      if (this.locationService.isSharing && this.locationService.shareToken) {
+        console.log("Ya hay un token activo. Re-abriendo menú de compartir...");
+        try {
+          await Share.share({
+            title: this.translate.instant('SHARE.TITLE_MODAL') || 'Seguimiento',
+            text: this.translate.instant('RECORD.SHARE_TEXT') || 'Mi ruta:',
+            url: `https://el-gros.github.io/visor/visor.html?t=${this.locationService.shareToken}`,
+          });
+        } catch (e) {
+          console.warn("Menú nativo ya abierto o cancelado", e);
+        }
+        return true; 
+      }
+      // 👆 FIN DEL FIX
+
+      // A partir de aquí, la lógica normal para crear un token desde cero
       const newToken = crypto.randomUUID();
       const location = await firstValueFrom(this.locationService.latestLocation$).catch(() => null);
 
       // 1. CONFIGURAR TOKEN Y ACTIVAR YA EL SERVICIO
-      // Lo hacemos antes del Share.share para que si este falla, el tracking siga vivo
       this.locationService.shareToken = newToken;
       this.locationService.isSharing = true; 
       await this.fs.storeSet('share_token', newToken);
 
-      // 2. INSERTAR PRIMER PUNTO (Opcional pero recomendado aquí)
+      // 2. INSERTAR PRIMER PUNTO
       if (location) {
         await this.supabaseService.supabase
           .from('public_locations')
@@ -54,7 +72,7 @@ export class LocationSharingService {
           }]);
       }
 
-      // 3. INTENTAR MOSTRAR EL DIÁLOGO (Si falla, no importa, el tracking ya está activo)
+      // 3. INTENTAR MOSTRAR EL DIÁLOGO
       try {
         const url = `https://el-gros.github.io/visor/visor.html?t=${newToken}`;
         const canShare = await Share.canShare();
@@ -69,10 +87,10 @@ export class LocationSharingService {
         console.warn("El diálogo de compartir no se pudo mostrar, pero el tracking está activo", shareError);
       }
 
-      return true; // Devolvemos true porque el proceso de compartir en DB ya arrancó
+      return true; 
     } catch (err) {
       console.error("Fallo crítico en base de datos:", err);
-      this.locationService.isSharing = false; // Revertimos si hay error de DB
+      this.locationService.isSharing = false; 
       return false;
     }
   }

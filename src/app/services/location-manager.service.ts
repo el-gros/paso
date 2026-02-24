@@ -4,7 +4,7 @@ import { ReferenceService } from '../services/reference.service';
 import { SupabaseService } from './supabase.service';
 //import { Track } from 'src/globald';
 import { firstValueFrom, filter, timeout } from 'rxjs';
-import MyService, { Location } from 'src/plugins/MyServicePlugin';
+import MyService, { Location, RouteStatus } from 'src/plugins/MyServicePlugin';
 import { FunctionsService } from '../services/functions.service';
 import { TranslateService } from '@ngx-translate/core';
 import { LanguageService } from './language.service';

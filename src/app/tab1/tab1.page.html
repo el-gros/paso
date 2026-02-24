@@ -21,9 +21,7 @@
 @if (present.currentTrack && reference.archivedTrack) { 
   <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
     <div class="status-indicator-container">
-      <div class="led-button" [ngClass]="routeStatus">
-        <ion-icon [name]="routeStatus === 'green' ? 'checkmark-circle' : (routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon>
-      </div>
+      <div class="led-button" [ngClass]="fs.routeStatus"> <ion-icon [name]="fs.routeStatus === 'green' ? 'checkmark-circle' : (fs.routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon> </div>
     </div>
   </ion-fab>
 }

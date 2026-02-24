@@ -1,6 +1,5 @@
 import { PluginListenerHandle, registerPlugin } from '@capacitor/core';
 
-// Tu interfaz de localización (puedes exportarla desde un archivo de modelos)
 export interface Location {
   longitude: number;
   latitude: number;
@@ -13,6 +12,12 @@ export interface Location {
   time: number;
 }
 
+// Nueva interfaz para el estado de la ruta
+export interface RouteStatus {
+  status: 'green' | 'red' | 'black';
+  matchIndex: number;
+}
+
 export interface MyServicePlugin {
   startService(): Promise<void>;
   stopService(): Promise<void>;
@@ -22,9 +27,16 @@ export interface MyServicePlugin {
   openBatteryOptimization(): Promise<void>;
   isIgnoringBatteryOptimizations(): Promise<{ value: boolean }>;
 
+  // Evento original de ubicación
   addListener(
     eventName: 'location',
     listenerFunc: (data: Location) => void 
+  ): Promise<PluginListenerHandle> & PluginListenerHandle;
+
+  // 👇 NUEVO EVENTO: Estado de la ruta e índice de coincidencia
+  addListener(
+    eventName: 'routeStatusUpdate',
+    listenerFunc: (data: RouteStatus) => void 
   ): Promise<PluginListenerHandle> & PluginListenerHandle;
 
   removeAllListeners(): Promise<void>;
