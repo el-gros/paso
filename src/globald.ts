@@ -13,6 +13,7 @@ export interface Waypoint {
   altitude?: number;
   name?: string;
   comment?: string;
+  photos?: string[];
 }
 
 export interface Bounds {
@@ -57,7 +58,9 @@ export interface TrackDefinition {
   date: Date | undefined,
   place: string | number[],
   description: string,
-  isChecked: boolean
+  isChecked?: boolean,
+  coverPhoto?: string;
+  photos?: string[];
 }
 export interface StyleJSON {
   layers: Array<{

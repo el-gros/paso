@@ -7,10 +7,9 @@ import { firstValueFrom, filter, timeout } from 'rxjs';
 import MyService, { Location, RouteStatus } from 'src/plugins/MyServicePlugin';
 import { FunctionsService } from '../services/functions.service';
 import { TranslateService } from '@ngx-translate/core';
-import { LanguageService } from './language.service';
 import { Track } from 'src/globald';
-import { AlertController } from '@ionic/angular';
-
+import { GpsPopoverComponent } from '..//gps-popover.component';
+import { PopoverController } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
@@ -45,7 +44,7 @@ export class LocationManagerService {
     private supabase: SupabaseService,
     private fs: FunctionsService,
     private translate: TranslateService,
-    private alertController: AlertController
+    private popoverController: PopoverController
   ) { }
 
  
@@ -90,15 +89,17 @@ export class LocationManagerService {
 
       // Solo mostramos la alerta si la app está en primer plano
       if (this.foreground) {
-        const alert = await this.alertController.create({
-          header: 'GPS', // Opcional, puedes quitarlo o usar this.translate.instant('LOCATION.GPS_HEADER')
-          message: this.translate.instant('LOCATION.CHECK'),
-          backdropDismiss: true, // Permite cerrar tocando el fondo oscurecido
-          buttons: ['OK'],
-          cssClass: 'gps-warning-alert' // Opcional: por si quieres darle estilos en global.scss
+        // Importamos el nuevo componente (ajusta la ruta según dónde lo hayas guardado)
+
+
+        const popover = await this.popoverController.create({
+          component: GpsPopoverComponent,
+          cssClass: 'glass-island-wrapper', // Aplica tu ADN visual global
+          backdropDismiss: true, // Permite cerrar tocando el fondo oscurecido, como tenías antes
+          translucent: true
         });
 
-        await alert.present();
+        await popover.present();
       }
     }
   }

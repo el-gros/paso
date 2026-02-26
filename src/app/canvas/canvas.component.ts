@@ -12,6 +12,9 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SwiperOptions } from 'swiper/types';
+import { Capacitor } from '@capacitor/core';
+import { ModalController } from '@ionic/angular';
+import { PhotoViewerComponent } from '../photo-viewer.component'; // <-- ¡Ajusta esta ruta a donde lo hayas guardado!
 
 // IMPORTAMOS EL NUEVO COMPONENTE HIJO
 import { TrackChartComponent } from '../track-chart.component'; 
@@ -23,11 +26,24 @@ register();
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  // AÑADIMOS EL HIJO AQUÍ
   imports: [IonicModule, CommonModule, FormsModule, TranslateModule, TrackChartComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class CanvasComponent implements OnInit, OnDestroy {
+
+  // 1. Un "getter" para extraer todas las fotos del track archivado en un solo array
+  get trackPhotos(): string[] {
+    if (!this.reference?.archivedTrack?.features[0]?.waypoints) return [];
+    
+    let allPhotos: string[] = [];
+    for (const wp of this.reference.archivedTrack.features[0].waypoints) {
+      if (wp.photos && wp.photos.length > 0) {
+        // Juntamos todas las fotos de todos los waypoints
+        allPhotos = [...allPhotos, ...wp.photos];
+      }
+    }
+    return allPhotos;
+  }
 
   activeIndex = 0;
   partialSpeeds: PartialSpeed[] = [];
@@ -47,6 +63,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     public reference: ReferenceService,
     public present: PresentService,
     private cdr: ChangeDetectorRef,
+    private modalCtrl: ModalController
   ) {}
 
   async ngOnInit() {
@@ -124,4 +141,27 @@ export class CanvasComponent implements OnInit, OnDestroy {
       return false;
     }
   }
+
+  // 2. Función vital para que Ionic/Navegador pueda renderizar la imagen local
+  getCoverPhotoUrl(photoUri: string): string {
+    if (!photoUri) return '';
+    // Convierte 'file:///data/...' en 'http://localhost/_capacitor_file_/...'
+    return Capacitor.convertFileSrc(photoUri);
+  }
+
+  // 3. La acción del botón - Lanza el Modal a pantalla completa
+  async openPhotoGallery() {
+    const photos = this.trackPhotos;
+    if (photos.length === 0) return;
+
+    const modal = await this.modalCtrl.create({
+      component: PhotoViewerComponent,
+      componentProps: {
+        photos: photos // Le pasamos el array de fotos al Input() del visor
+      }
+    });
+
+    await modal.present();
+  }
+
 }

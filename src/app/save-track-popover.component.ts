@@ -14,7 +14,12 @@ import { PresentService } from './services/present.service';
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island">
-        
+      
+        <div class="popover-header">
+          <ion-icon name="location-sharp" class="header-icon"></ion-icon>
+          <h2>{{ 'CANVAS.ARCTITLE' | translate }}</h2>
+        </div>
+
         <div class="form-container">
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
@@ -64,7 +69,12 @@ import { PresentService } from './services/present.service';
       display: flex;
       flex-direction: column;
     }
-
+    .popover-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
+      padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
+      .header-icon { font-size: 20px; color: var(--ion-color-primary); }
+      h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
+    }
     .form-container { display: flex; flex-direction: column; gap: 14px; }
     
     .custom-label { 

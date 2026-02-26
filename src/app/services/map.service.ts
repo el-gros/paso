@@ -164,7 +164,6 @@ export class MapService {
           multiWorld: false
         }),
         controls: [
-          new Zoom(),
           new ScaleLine({
             className: 'ol-scale-line vertical-scale',
             target: 'scale-container', 

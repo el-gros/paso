@@ -1,30 +1,28 @@
 {
   "MAP": {
-    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
+    "MAP_BUTTON": "Mapa",
     "DATA_BUTTON": "Datos",
     "ARCHIVE_BUTTON": "Archivo",
     "SETTINGS_BUTTON": "Ajustes",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Punto de paso actualizado",
-    "CURRENT_TRACK_DELETED": "El trayecto actual ha sido eliminado",
-    "TRACK_FINISHED": "El trayecto actual ha finalizado",
-    "WPT_ADDED": "Se ha añadido el punto de paso",
-    "SAVED": "El archivo se ha guardado correctamente",
-    "NO_TRACK_FOUND": "No se ha encontrado ningún trayecto en el archivo",
-    "IMPORTED_TRACK": "Trayecto importado",
-    "IMPORT_SUCCESS": "Trayecto importado correctamente",
-    "ERROR_UNSUPPORTED": "Tipo de archivo no soportado",
-    "ERROR_IMPORT": "Error al importar el archivo",
-    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
-    "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
-    "YES": "Sí",
-    "OK": "Aceptar",
-    "MAP_BUTTON": "Mapa",
-    "UNSUPPORTED_TYPE": "Formato de archivo no admitido",
-    "TRACK_EMPTY": "Trayecto sin datos",
     "ON_ROUTE": "¡Estás en la ruta!",
     "OFF_ROUTE": "¡Estás fuera de la ruta!",
-    "UNKNOWN_STATUS": "Seguimiento de ruta sin determinar"
+    "UNKNOWN_STATUS": "Estado del seguimiento sin determinar",
+    "WPT_ADDED": "Punto de paso añadido",
+    "WAYPOINT_UPDATED": "Punto de paso actualizado",
+    "PHOTO_WAYPOINT_NAME": "Foto",
+    "SAVED": "El archivo se ha guardado correctamente",
+    "TRACK_FINISHED": "El trayecto actual ha finalizado",
+    "CURRENT_TRACK_DELETED": "El trayecto actual se ha eliminado",
+    "TRACK_EMPTY": "Trayecto sin datos",
+    "IMPORTED_TRACK": "Trayecto importado",
+    "NO_TRACK_FOUND": "No se ha encontrado ningún trayecto en el archivo",
+    "NO_FILE_SELECTED": "No se ha seleccionado ningún archivo",
+    "ERROR_UNSUPPORTED": "Tipo de archivo no soportado",
+    "ERROR_IMPORT": "Error al importar el archivo",
+    "TOIMAGE_FAILED": "No se ha podido generar la imagen",
+    "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
+    "YES": "Sí"
   },
   "SEARCH": {
     "BUTTON": "Buscar",
@@ -36,7 +34,6 @@
     "FIND_PLACES": "Buscar lugares",
     "SELECT_PLACE": "Seleccionar lugar",
     "GET_ROUTE": "Obtener ruta",
-    "START_GUIDE": "Iniciando guía...",
     "MY_LOCATION": "Mi ubicación",
     "SELECT_BOTH": "Por favor, selecciona origen y destino",
     "NO_ROUTE_FOUND": "No se ha encontrado ninguna ruta",
@@ -45,8 +42,6 @@
     "HIKE": "Senderismo",
     "CYCLE": "Ciclismo",
     "DRIVE": "Coche",
-    "CLEAN": "Limpiar",
-    "LISTENING": "Escuchando...",
     "NO_SPEECHRECOGNITION": "Reconocimiento de voz no disponible",
     "NO_DESCRIPTION": "No hay descripción disponible",
     "CHECK_WIKIPEDIA": "Consultar Wikipedia"
@@ -62,16 +57,10 @@
     "ALL_DISPLAYED": "Se muestran todos los trayectos",
     "ALL_HIDDEN": "Se han ocultado todos los trayectos",
     "VISIBLE_LABEL": "Visible",
-    "CANCEL": "Cancelar",
-    "HEADER": "Confirmar eliminación",
-    "MESSAGE": "Se eliminarán definitivamente los trayectos marcados",
-    "TITLE": "Compartir un trayecto",
     "TEXT": "Aquí tienes el trayecto solicitado",
     "DIALOG_TITLE": "Compartir solo por Gmail",
     "TOAST1": "Se ha compartido el trayecto correctamente",
     "TOAST2": "La exportación ha fallado",
-    "TOAST3": "Los trayectos seleccionados se han eliminado",
-    "TOAST4": "Error al cargar la colección",
     "LOADING_ERROR": "Error al cargar el trayecto",
     "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
     "TRACK_UPDATED": "El trayecto se ha actualizado correctamente",
@@ -86,7 +75,6 @@
     "GEOCODING": "Servicio de geocodificación",
     "CURRENT_TRACK": "Color trayecto actual",
     "REFERENCE_TRACK": "Color trayecto referencia",
-    "SAVED_TRACK_ALTITUDE": "Altitud del trayecto guardado",
     "UPLOAD_MAPS": "Descargar mapas",
     "UPLOADMAP": "Mapa descargado con éxito",
     "REMOVEMAP": "El mapa ha sido eliminado",
@@ -95,7 +83,8 @@
     "REMOVE_MAP": "Eliminar mapas",
     "MAP_UPDATED": "Proveedor de mapa actualizado",
     "OFFLINE_MAPS": "Mapas Offline",
-    "DOWNLOADED": "Descargado"
+    "DOWNLOADED": "Descargado",
+    "STYLE": "Estilo"
   },
   "CANVAS": {
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
@@ -122,7 +111,6 @@
     "SPEED": "Velocidad",
     "NO_SPEED_DATA": "No hay datos de velocidad",
     "NO_TIME_DATA": "No hay datos de tiempo",
-    "KMZ_NO_PARTIALS": "Este archivo no contiene datos de tiempo para cálculos parciales",
     "PAG1": "Trayecto en curso",
     "PAG2": "Trayecto de referencia",
     "PAG3": "Trayecto de referencia - Parciales",
@@ -136,7 +124,6 @@
     "CANCEL": "Cancelar"
   },
   "RECORD": {
-    "BUTTON": "Grabar",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Detener",
     "WAYPOINT": "Wpt.",
@@ -146,12 +133,7 @@
     "CONFIRM_DELETION": "¿Confirma la eliminación?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Seguimiento en tiempo real",
     "DEFAULT_NAME": "Sin nombre"
-  },
-  "ERRORS": {
-    "ELEVATION_FETCH": "Error en los datos de altitud del servidor.",
-    "ELEVATION_GENERIC": "No se ha podido obtener la elevación."
   },
   "COLORS": {
     "crimson": "Carmesí",
@@ -214,5 +196,11 @@
     "ELEVATION_LOSS": "Desnivel negativo",
     "SHARE_SUBJECT": "Informe de seguimiento - Paso App",
     "SHARE_BODY": "Aquí está el informe de actividad para mi ruta: "
+  },
+  "CAMERA_PERMISSION": {
+    "HEADER": "Cámara necesaria",
+    "MESSAGE": "Para poder hacer fotografías y enlazarlas a tus rutas o puntos geográficos, necesitamos que nos des acceso a la cámara. ¿Quieres concederlo ahora?",
+    "OK": "De acuerdo",
+    "CANCEL": "Ahora no"
   }
 }

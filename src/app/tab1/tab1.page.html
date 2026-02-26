@@ -47,7 +47,14 @@
   (onClose)="wikiData = null">
 </app-wiki-card>
 
-
+<!-- Camera -->
+@if (location.state === 'tracking') {
+  <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
+    <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
+      <ion-icon name="camera-sharp"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+}
 
 <!-- Navigation buttons -->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">

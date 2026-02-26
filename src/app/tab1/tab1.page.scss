@@ -87,3 +87,13 @@ ion-fab {
   50% { opacity: 0.7; }
   100% { opacity: 1; }
 }
+
+/* --- BOTÓN DE CÁMARA --- */
+.camera-fab {
+  margin-bottom: 85px; /* Ajusta este valor según la altura de tu barra inferior */
+  margin-top: 32px;
+  
+  ion-fab-button {
+    --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+}

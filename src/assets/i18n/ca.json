@@ -1,29 +1,28 @@
 {
   "MAP": {
-    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
+    "MAP_BUTTON": "Mapa",
     "DATA_BUTTON": "Dades",
     "ARCHIVE_BUTTON": "Arxiu",
     "SETTINGS_BUTTON": "Config.",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Punt de pas actualitzat",
-    "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
-    "TRACK_FINISHED": "El trajecte actual ha finalitzat",
-    "WPT_ADDED": "S'ha afegit el punt de pas",
-    "SAVED": "El fitxer s'ha desat correctament",
-    "NO_TRACK_FOUND": "No s'ha trobat cap trajecte al fitxer",
-    "IMPORTED_TRACK": "Trajecte importat",
-    "IMPORT_SUCCESS": "Trajecte importat correctament",
-    "ERROR_UNSUPPORTED": "Tipus de fitxer no suportat",
-    "ERROR_IMPORT": "Error en importar el fitxer",
-    "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
-    "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
-    "YES": "Sí",
-    "MAP_BUTTON": "Mapa",
-    "UNSUPPORTED_TYPE": "Format de fitxer no admès",
-    "TRACK_EMPTY": "Trajecte sense dades",
     "ON_ROUTE": "Ets a la ruta!",
     "OFF_ROUTE": "Ets fora de la ruta!",
-    "UNKNOWN_STATUS": "Seguiment de la ruta sense determinar"
+    "UNKNOWN_STATUS": "Estat del seguiment sense determinar",
+    "WPT_ADDED": "S'ha afegit el punt de pas",
+    "WAYPOINT_UPDATED": "Punt de pas actualitzat",
+    "PHOTO_WAYPOINT_NAME": "Foto",
+    "SAVED": "El fitxer s'ha desat correctament",
+    "TRACK_FINISHED": "El trajecte actual ha finalitzat",
+    "CURRENT_TRACK_DELETED": "El trajecte actual s'ha eliminat",
+    "TRACK_EMPTY": "Trajecte sense dades",
+    "IMPORTED_TRACK": "Trajecte importat",
+    "NO_TRACK_FOUND": "No s'ha trobat cap trajecte al fitxer",
+    "NO_FILE_SELECTED": "No s'ha seleccionat cap fitxer",
+    "ERROR_UNSUPPORTED": "Tipus de fitxer no suportat",
+    "ERROR_IMPORT": "Error en importar el fitxer",
+    "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
+    "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
+    "YES": "Sí"
   },
   "SEARCH": {
     "BUTTON": "Cercar",
@@ -35,7 +34,6 @@
     "FIND_PLACES": "Cercar llocs",
     "SELECT_PLACE": "Seleccionar lloc",
     "GET_ROUTE": "Obtenir ruta",
-    "START_GUIDE": "Iniciant guia...",
     "MY_LOCATION": "La meva ubicació",
     "SELECT_BOTH": "Si us plau, selecciona origen i destinació",
     "NO_ROUTE_FOUND": "No s'ha trobat cap ruta",
@@ -44,8 +42,6 @@
     "HIKE": "Senderisme",
     "CYCLE": "Ciclisme",
     "DRIVE": "Cotxe",
-    "CLEAN": "Netejar",
-    "LISTENING": "Escoltant...",
     "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible",
     "NO_DESCRIPTION": "La descripció no està disponible",
     "CHECK_WIKIPEDIA": "Consulteu Wikipedia"
@@ -61,16 +57,10 @@
   "ALL_DISPLAYED": "Es mostren tots els trajectes",
   "ALL_HIDDEN": "S'han amagat tots els trajectes",
   "VISIBLE_LABEL": "Visible",
-  "CANCEL": "Cancel·lar",
-  "HEADER": "Confirma l'esborrat",
-  "MESSAGE": "S'esborraran definitivament els trajectes marcats",
-  "TITLE": "Compartir un trajecte",
   "TEXT": "Aquí teniu el trajecte sol·licitat",
   "DIALOG_TITLE": "Compartiu només per Gmail",
   "TOAST1": "S'ha compartit correctament el trajecte",
   "TOAST2": "L'exportació ha fallat",
-  "TOAST3": "Els trajectes seleccionats s'han eliminat",
-  "TOAST4": "Error al carregar la col·lecció",
   "LOADING_ERROR": "Error al carregar el trajecte",
   "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers",
   "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
@@ -85,7 +75,6 @@
     "GEOCODING": "Servei de geocodificació",
     "CURRENT_TRACK": "Color trajecte actual",
     "REFERENCE_TRACK": "Color trajecte referència",
-    "SAVED_TRACK_ALTITUDE": "Altitud del trajecte guardat",
     "UPLOAD_MAPS": "Descarregar mapes",
     "UPLOADMAP": "Mapa descarregat amb èxit",
     "REMOVEMAP": "S'ha eliminat el mapa",
@@ -94,7 +83,8 @@
     "REMOVE_MAP": "Eliminar mapes",
     "MAP_UPDATED": "Proveïdor de mapa actualitzat",
     "OFFLINE_MAPS": "Mapes Offline",
-    "DOWNLOADED": "Descarregat"
+    "DOWNLOADED": "Descarregat",
+    "STYLE": "Estil"
   },
   "CANVAS": {
     "ARCTITLE": "TRAJECTE DE REFERÈNCIA",
@@ -121,7 +111,6 @@
     "SPEED": "Velocitat",
     "NO_SPEED_DATA": "No hi ha dades de velocitat",
     "NO_TIME_DATA": "No hi ha dades de temps",
-    "KMZ_NO_PARTIALS": "Aquest fitxer no conté dades de temps per calcular velocitats parcials",
     "PAG1": "Trajecte en curs",
     "PAG2": "Trajecte de referència",
     "PAG3": "Trajecte de referència - Parcials",
@@ -135,7 +124,6 @@
     "CANCEL": "Cancel·lar"
   },
   "RECORD": {
-    "BUTTON": "Gravar",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
@@ -145,7 +133,6 @@
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Seguiment a temps real",
     "DEFAULT_NAME": "Sense nom"
   },
   "COLORS": {
@@ -201,5 +188,11 @@
     "TIME": "Temps",
     "ELEVATION_GAIN": "Desnivell positiu",
     "ELEVATION_LOSS": "Desnivell negatiu"
+  },
+  "CAMERA_PERMISSION": {
+    "HEADER": "Càmera necessària",
+    "MESSAGE": "Per poder fer fotografies i enllaçar-les a les teves rutes o punts geogràfics, necessitem que ens donis accés a la càmera. Vols concedir-lo ara?",
+    "OK": "D'acord",
+    "CANCEL": "Ara no"
   }
 }

@@ -1,29 +1,28 @@
 {
   "MAP": {
-    "TOIMAGE_FAILED": "Could not generate image",
+    "MAP_BUTTON": "Map",
     "DATA_BUTTON": "Data",
     "ARCHIVE_BUTTON": "Archive",
     "SETTINGS_BUTTON": "Settings",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Waypoint updated",
-    "CURRENT_TRACK_DELETED": "Current track has been deleted",
-    "TRACK_FINISHED": "Current track has finished",
+    "ON_ROUTE": "You are on the route!",
+    "OFF_ROUTE": "You are off the route!",
+    "UNKNOWN_STATUS": "Tracking status undetermined",
     "WPT_ADDED": "Waypoint added",
+    "WAYPOINT_UPDATED": "Waypoint updated",
+    "PHOTO_WAYPOINT_NAME": "Photo",
     "SAVED": "File saved successfully",
-    "NO_TRACK_FOUND": "No track found in file",
+    "TRACK_FINISHED": "Current track finished",
+    "CURRENT_TRACK_DELETED": "Current track deleted",
+    "TRACK_EMPTY": "Track contains no data",
     "IMPORTED_TRACK": "Track imported",
-    "IMPORT_SUCCESS": "Track imported successfully",
+    "NO_TRACK_FOUND": "No track found in the file",
+    "NO_FILE_SELECTED": "No file selected",
     "ERROR_UNSUPPORTED": "Unsupported file type",
     "ERROR_IMPORT": "Error importing file",
-    "NO_FILE_SELECTED": "No file selected",
+    "TOIMAGE_FAILED": "Could not generate image",
     "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
-    "YES": "Yes",
-    "MAP_BUTTON": "Map",
-    "UNSUPPORTED_TYPE": "Unsupported file format",
-    "TRACK_EMPTY": "Track has no data",
-    "ON_ROUTE": "You are on route!",
-    "OFF_ROUTE": "You are off route!",
-    "UNKNOWN_STATUS": "Route tracking undetermined"
+    "YES": "Yes"
   },
   "SEARCH": {
     "BUTTON": "Search",
@@ -35,7 +34,6 @@
     "FIND_PLACES": "Find places",
     "SELECT_PLACE": "Select place",
     "GET_ROUTE": "Get route",
-    "START_GUIDE": "Starting guide...",
     "MY_LOCATION": "My location",
     "SELECT_BOTH": "Please select both origin and destination",
     "NO_ROUTE_FOUND": "No route found",
@@ -44,8 +42,6 @@
     "HIKE": "Hike",
     "CYCLE": "Cycle",
     "DRIVE": "Drive",
-    "CLEAN": "Clear",
-    "LISTENING": "Listening...",
     "NO_SPEECHRECOGNITION": "Speech recognition not available",
     "NO_DESCRIPTION": "No description available",
     "CHECK_WIKIPEDIA": "Check Wikipedia"
@@ -61,16 +57,10 @@
     "ALL_DISPLAYED": "All tracks are being displayed",
     "ALL_HIDDEN": "All tracks have been hidden",
     "VISIBLE_LABEL": "Visible",
-    "CANCEL": "Cancel",
-    "HEADER": "Confirm deletion",
-    "MESSAGE": "Selected tracks will be permanently deleted",
-    "TITLE": "Share a track",
     "TEXT": "Here is the requested track",
     "DIALOG_TITLE": "Share via Gmail only",
     "TOAST1": "Track shared successfully",
     "TOAST2": "Export failed",
-    "TOAST3": "Selected tracks have been deleted",
-    "TOAST4": "Error loading collection",
     "LOADING_ERROR": "Error loading track",
     "EMPTY_TRACKS": "No valid coordinates found in files",
     "TRACK_UPDATED": "Track updated successfully",
@@ -85,7 +75,6 @@
     "GEOCODING": "Geocoding Service",
     "CURRENT_TRACK": "Current track color",
     "REFERENCE_TRACK": "Reference track color",
-    "SAVED_TRACK_ALTITUDE": "Saved track altitude",
     "UPLOAD_MAPS": "Download maps",
     "UPLOADMAP": "Map downloaded successfully",
     "REMOVEMAP": "Map has been deleted",
@@ -94,7 +83,8 @@
     "REMOVE_MAP": "Delete maps",
     "MAP_UPDATED": "Map provider updated",
     "OFFLINE_MAPS": "Offline Maps",
-    "DOWNLOADED": "Downloaded"
+    "DOWNLOADED": "Downloaded",
+    "STYLE": "Style"
   },
   "CANVAS": {
     "ARCTITLE": "REFERENCE TRACK",
@@ -121,7 +111,6 @@
     "SPEED": "Speed",
     "NO_SPEED_DATA": "No speed data available",
     "NO_TIME_DATA": "No time data available",
-    "KMZ_NO_PARTIALS": "This file contains no time data for partial calculations",
     "PAG1": "Current track",
     "PAG2": "Reference track",
     "PAG3": "Reference track - Partials",
@@ -135,7 +124,6 @@
     "CANCEL": "Cancel"
   },
   "RECORD": {
-    "BUTTON": "Record",
     "START_TRACKING": "Start",
     "STOP_TRACKING": "Stop",
     "WAYPOINT": "Wpt.",
@@ -145,7 +133,6 @@
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
-    "SHARE_TEXT": "Real-time tracking",
     "DEFAULT_NAME": "No name"
   },
   "COLORS": {
@@ -203,5 +190,11 @@
     "ELEVATION_LOSS": "Elevation loss",
     "SHARE_SUBJECT": "Tracking Report - Paso App",
     "SHARE_BODY": "Here is the activity report for my route: "
+  },
+  "CAMERA_PERMISSION": {
+    "HEADER": "Camera required",
+    "MESSAGE": "In order to take photos and link them to your routes or geographical points, we need you to grant us camera access. Do you want to grant it now?",
+    "OK": "Allow",
+    "CANCEL": "Not now"
   }
 }

@@ -26,6 +26,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
 import { WikiCardComponent } from '../wiki-card.component';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PhotoService } from '../services/photo.service';
 
 // --- OPENLAYERS IMPORTS ---
 import { MapBrowserEvent } from 'ol';
@@ -86,6 +87,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     private platform: Platform,
     private popoverController: PopoverController,
     private toastCtrl: ToastController,
+    private photo: PhotoService
   ) {}
 
   // ==========================================================================
@@ -127,6 +129,7 @@ export class Tab1Page implements OnInit, OnDestroy {
 
     this.cd.detectChanges();
     this.initStatus$.next(true);
+    await this.photo.cleanOrphanedPhotosOnStartup();
   }
 
   async ionViewDidEnter() {
@@ -401,41 +404,68 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
-  private async handleArchivedTrackClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
+  private async handleArchivedTrackClick(type: string, feature: any, geometry: any, event: any) {
+    // --- CASO 1: CLICK EN UN WAYPOINT (Editar nombre/comentario/foto) ---
     if (type === 'archived_waypoints') {
-        const coords = geometry.getCoordinates();
-        const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
-        const index = this.findClosestIndex(coords as Coordinate[], clickedCoordinate);
+      const coords = geometry.getCoordinates();
+      const clickedCoordinate = geometry.getClosestPoint(event.coordinate);
+      const index = this.findClosestIndex(coords, clickedCoordinate);
 
-        if (index !== -1) {
-          const waypoints: Waypoint[] = feature.get('waypoints');
-          if (waypoints && waypoints[index]) {
-            const response = await this.fs.editWaypoint(waypoints[index], true, false);
-            if (response && response.action === 'ok') {
-              waypoints[index].name = response.name;
-              waypoints[index].comment = response.comment;
-              if (this.reference.archivedTrack?.features?.[0]) {
-                this.reference.archivedTrack.features[0].waypoints = waypoints;
-              }
-              if (this.fs.key && this.reference.archivedTrack) {
-                await this.fs.storeSet(this.fs.key, this.reference.archivedTrack);
+      if (index !== -1) {
+        const waypoints: Waypoint[] = feature.get('waypoints');
+        
+        if (waypoints && waypoints[index]) {
+          // Lanzamos el popover (solo interfaz, no guarda nada aún)
+          const response = await this.fs.editWaypoint(waypoints[index], true, false);
+          
+          // SOLO si el usuario pulsó OK en el popover
+          if (response && response.action === 'ok') {
+            
+            // 1. Actualizamos solo los textos. 
+            // Al no tocar la propiedad .photos, la imagen se mantiene.
+            waypoints[index].name = response.name || '';
+            waypoints[index].comment = response.comment || '';
+
+            // 2. Sincronizamos con el objeto global de referencia
+            if (this.reference.archivedTrack?.features?.[0]) {
+              this.reference.archivedTrack.features[0].waypoints = waypoints;
+
+              // 3. PERSISTENCIA REAL: Guardamos en SQLite
+              const dateValue = this.reference.archivedTrack.features[0].properties.date;
+              
+              if (dateValue) {
+                // Convertimos a texto sí o sí para que TypeScript no se queje
+                const trackKey = dateValue instanceof Date ? dateValue.toISOString() : dateValue as string;
+                
+                await this.fs.storeSet(trackKey, this.reference.archivedTrack);
                 this.fs.displayToast(this.translate.instant('MAP.WAYPOINT_UPDATED'), 'success');
               }
             }
           }
+          // Si response es undefined o action !== 'ok' (Cancel), no pasa nada.
         }
-    } else {
-        const trackElements = ['archived_line', 'archived_start', 'archived_end', 'archived_points'];
-        if (trackElements.includes(type)) {
-          const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
-          if (archivedDate) {
-            const archivedTime = new Date(archivedDate).getTime();
-            const index = this.fs.collection.findIndex((item: TrackDefinition) => 
-              item.date && new Date(item.date).getTime() === archivedTime
-            );
-            if (index >= 0) await this.reference.editTrack(index);
+      }
+    } 
+    
+    // --- CASO 2: CLICK EN LA LÍNEA O PUNTOS DEL TRACK (Editar Track completo) ---
+    else {
+      const trackElements = ['archived_line', 'archived_start', 'archived_end', 'archived_points'];
+      
+      if (trackElements.includes(type)) {
+        const archivedDate = this.reference.archivedTrack?.features?.[0]?.properties?.date;
+        
+        if (archivedDate) {
+          const archivedTime = new Date(archivedDate).getTime();
+          const index = this.fs.collection.findIndex((item: any) => 
+            item.date && new Date(item.date).getTime() === archivedTime
+          );
+
+          if (index >= 0) {
+            // Esto abre el otro editor (el de la ruta completa)
+            await this.reference.editTrack(index);
           }
         }
+      }
     }
   }
 
@@ -602,4 +632,54 @@ export class Tab1Page implements OnInit, OnDestroy {
     });
     await toast.present();
   }
+
+  // ADD PHOTO WAYPOINT
+  async addPhotoWaypoint() {
+    console.log("👉 Botó de foto premut. Estat actual:", this.location.state);
+
+    // 1. Validem si estem gravant una ruta
+    if (!this.present.currentTrack || this.location.state !== 'tracking') {
+      console.warn("🚫 Càmera bloquejada: No hi ha cap ruta activa o l'estat no és 'tracking'.");
+      
+      // Opcional: Avisar l'usuari perquè sàpiga per què no fa res el botó
+      this.fs.displayToast('Inicia el seguiment de la ruta per fer fotos', 'warning');
+      return;
+    }
+
+    console.log("📸 Iniciant procés de captura de foto...");
+    
+    // 2. Tomamos la foto (el PhotoService ya se encarga de registrarla temporalmente)
+    const photoUri = await this.photo.takeAndSavePhoto();
+
+    if (photoUri) {
+      try {
+        console.log("📍 Obtenint coordenades per al waypoint...");
+        // 3. Coordenadas de este instante
+        const currentLoc = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+        const coords: [number, number] = [currentLoc.coords.longitude, currentLoc.coords.latitude];
+
+        // 4. Creamos el Waypoint
+        const newWaypoint: Waypoint = {
+          name: this.translate.instant('MAP.PHOTO_WAYPOINT_NAME') || 'Foto',
+          longitude: coords[0],
+          latitude: coords[1],
+          photos: [photoUri]
+        };
+
+        // 5. Lo añadimos SOLO A LA MEMORIA (sin this.fs.storeSet)
+        if (!this.present.currentTrack.features[0].waypoints) {
+          this.present.currentTrack.features[0].waypoints = [];
+        }
+        this.present.currentTrack.features[0].waypoints.push(newWaypoint);
+
+        this.fs.displayToast('Foto añadida a la ruta en curso', 'success');
+        console.log("✅ Waypoint fotogràfic desat amb èxit:", newWaypoint);
+
+      } catch (error) {
+        console.error("❌ Error con la ubicación fotográfica:", error);
+        this.fs.displayToast('Error al obtenir la ubicació per a la foto', 'error');
+      }
+    }
+  }
+
 }

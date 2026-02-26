@@ -251,3 +251,63 @@ swiper-slide {
 .slide-wrapper {
   padding-top: 10px; 
 }
+
+/* PHOTO ALBUM */
+
+.photo-album-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24px;
+  padding-bottom: 16px;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.96); // Pequeño efecto al pulsar
+  }
+
+  .album-cover {
+    position: relative;
+    width: 45%; /* Tu sugerencia de ancho reducido */
+    min-width: 140px; /* Para que no se vea enano en móviles estrechos */
+    max-width: 250px;
+    border-radius: 16px; /* Borde suave para seguir tu ADN visual */
+    overflow: hidden;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Sombra para que flote */
+    
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 3; /* Forzamos proporciones constantes */
+      object-fit: cover; /* Para que la imagen rellene el cuadrado sin deformarse */
+    }
+
+    .photo-count-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+  
+  .album-label {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ion-color-dark, #333);
+  }
+}

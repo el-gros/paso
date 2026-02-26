@@ -30,6 +30,10 @@ import { Geometry } from 'ol/geom';
 // --- INTERFACES ---
 import { TrackDefinition, Track } from '../../globald';
 
+import { ModalController } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
+import { PhotoViewerComponent } from '../photo-viewer.component';
+
 @Component({
   standalone: true,
   selector: 'app-archive',
@@ -55,7 +59,8 @@ export class ArchivePage implements OnInit {
     public geography: GeographyService,
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
-    private exportService: TrackExportService
+    private exportService: TrackExportService,
+    private modalCtrl: ModalController
   ) { }
 
   // #region 2. Ciclo de Vida (Lifecycle)
@@ -442,4 +447,40 @@ export class ArchivePage implements OnInit {
     return canvas.toDataURL('image/jpeg', 0.8);
   }
   // #endregion
+
+  getFirstPhoto(track: any): string | null {
+    const waypoints = track?.features?.[0]?.waypoints;
+    
+    // AFEGIM AQUEST CONSOLE.LOG
+    if (waypoints && waypoints.length > 0) {
+      console.log(`🔍 Ruta "${track.name}" té ${waypoints.length} waypoints. Primera foto:`, waypoints[0]?.photos);
+    }
+
+    if (!waypoints) return null;
+
+    for (const wp of waypoints) {
+      if (wp.photos && wp.photos.length > 0) {
+        return wp.photos[0];
+      }
+    }
+    return null;
+  }
+
+  getCoverPhotoUrl(photoUri: string | null): string {
+    if (!photoUri) return '';
+    return Capacitor.convertFileSrc(photoUri);
+  }
+
+  async openPhotoGallery(photos: string[], event: Event) {
+    event.stopPropagation(); // Evita que es cliqui la ruta sencera
+
+    if (!photos || photos.length === 0) return;
+
+    const modal = await this.modalCtrl.create({
+      component: PhotoViewerComponent,
+      componentProps: { photos: photos }
+    });
+    await modal.present();
+  }
+
 }

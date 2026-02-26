@@ -26,19 +26,30 @@
             </ion-item-option>
           </ion-item-options>
           <ion-item>
-            <ion-icon name="chevron-forward-sharp" slot="start" color="medium" style="font-size: 12px;"></ion-icon> 
+            <ion-icon name="chevron-forward-sharp" slot="start" color="medium" class="compact-chevron start"></ion-icon> 
+            
+            @if (item.photos && item.photos.length > 0) {
+              <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
+                <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
+                <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
+              </ion-thumbnail>
+            }
+
             <ion-label>
               <div class="item-content">
                 <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
-                <p class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</p>
+                
+                <div class="date-and-status">
+                  <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+                  
+                  @if (isTrackVisible(item)) {
+                    <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
+                  }
+                </div>
               </div>
             </ion-label>
-              @if (isTrackVisible(item)) {
-                <ion-badge slot="end" color="success">
-                  {{ 'ARCHIVE.VISIBLE_LABEL' | translate }}
-                </ion-badge>
-              }
-            <ion-icon name="chevron-back-sharp" slot="end" color="medium" style="font-size: 12px;"></ion-icon>
+              
+            <ion-icon name="chevron-back-sharp" slot="end" color="medium" class="compact-chevron end"></ion-icon>
           </ion-item>
           <ion-item-options side="end">
             <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">

@@ -19,6 +19,7 @@ import { PresentService } from './services/present.service';
 import { StylerService } from './services/styler.service';
 import { SaveTrackPopover } from './save-track-popover.component';
 import { MapService } from './services/map.service';
+import { PhotoService } from './services/photo.service';
 
 register();
 
@@ -150,6 +151,7 @@ export class RecordPopoverComponent {
   private popoverController = inject(PopoverController);
   private cd = inject(ChangeDetectorRef);
   private mapService = inject(MapService);
+  private photo = inject(PhotoService);
 
   // Estados de UI
 
@@ -185,6 +187,7 @@ export class RecordPopoverComponent {
     this.location.state = 'inactive';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
+    await this.photo.discardSessionPhotos();
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
   }
 
@@ -281,6 +284,10 @@ export class RecordPopoverComponent {
 
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
+    
+    // LOG 1: ¿Viene el track con waypoints desde la memoria?
+    console.log("💾 Intentando guardar track. Waypoints en memoria:", track?.features[0]?.waypoints);
+
     if (!track?.features?.[0]) return;
     this.loading = true;
     try {
@@ -294,15 +301,37 @@ export class RecordPopoverComponent {
       feature.properties.description = description;
       feature.properties.date = saveDate;
 
+      let routePhotos: string[] = [];
+      if (feature.waypoints) {
+        for (const wp of feature.waypoints) {
+          if (wp.photos && wp.photos.length > 0) {
+            routePhotos = [...routePhotos, ...wp.photos];
+          }
+        }
+      }
+
+      // LOG 2: ¿Hemos extraído fotos correctamente?
+      console.log("📸 Fotos extraídas para el resumen:", routePhotos);
+
       await this.fs.storeSet(dateKey, trackToSave);
-      this.fs.collection.unshift({
+      
+      const newItem = {
         name,
         date: saveDate,
         place: feature.properties.place,
         description,
-        isChecked: false
-      });
+        isChecked: false,
+        photos: routePhotos
+      };
+
+      // LOG 3: ¿Cómo queda el objeto que va a la lista?
+      console.log("📝 Nuevo item de colección:", newItem);
+
+      this.fs.collection.unshift(newItem);
+      
       await this.fs.storeSet('collection', this.fs.collection);
+      this.fs.collection = [...this.fs.collection];
+      await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
       this.location.state = 'saved';
     } catch (e) {

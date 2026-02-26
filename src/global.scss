@@ -27,7 +27,7 @@
   
   /* Ajuste de posición: 60px desde abajo */
   bottom: 25px !important; 
-  left: 40px !important; /* Ajusta este valor si queda muy pegado al borde */
+  left: 60px !important; 
   
   background: transparent !important;
   pointer-events: none;
@@ -316,7 +316,7 @@ ion-fab {
   pointer-events: none;
   z-index: 1000;
   
-  ion-row, .record-button {
+  ion-row, .record-button, ion-fab-button {
     pointer-events: auto;
   }
 }
@@ -382,7 +382,7 @@ ion-fab {
 
 .share-control {
   position: absolute;
-  right: 5px;
+  right: 15px !important;
   bottom: 32px !important;
   width: 36px;
   height: 36px;

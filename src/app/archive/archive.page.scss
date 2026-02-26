@@ -1,65 +1,143 @@
-/* --- 1. INTERACTIVIDAD Y POSICIÓN --- */
+/* ==========================================================================
+   1. INTERACTIVITAT I POSICIONAMENT (FABs)
+   ========================================================================== */
 ion-fab {
   pointer-events: none;
   z-index: 1000;
   
-  // Si tienes filas de botones dentro del FAB
-  ion-row { pointer-events: auto; }
-}
-
-/* Ajuste para que el FAB no colisione con el Header */
-.top-safe {
-  margin-top: 55px; 
-  margin-right: 10px;
-}
-
-/* --- 3. LISTA DE TRAYECTOS --- */
-ion-item {
-  --padding-start: 16px;
-  --background: transparent;
-  --min-height: 70px; // Un poco más alto para que respiren los textos
-  
-  strong {
-    font-size: 15px;
-    font-weight: 700;
-    color: #222;
-    display: block;
-  }
-  
-  .item-date-subtitle {
-    font-size: 11px;
-    color: #777;
-    margin-top: 4px;
-    font-weight: 500;
+  ion-row, .record-button, ion-fab-button { 
+    pointer-events: auto; 
   }
 }
 
-/* Texto destacado para la ruta que está cargada actualmente */
-.active-text {
-  color: var(--ion-color-primary) !important;
-  font-weight: 800 !important;
-}
-
-/* --- 4. ESPACIADO --- */
-.list-spacer {
-  height: 100px; // Espacio para que el último elemento no quede bajo el FAB
-}
-
-/* -- PARA EL FAB DE DISPLAY / HIDE ALL
-/* En archive.scss */
-
+/* FAB superior dreta a l'Arxiu */
 .top-safe-archive {
-  /* Forzamos la posición arriba a la derecha */
   top: 15px !important; 
   right: 15px !important;
-  margin: 0 !important; /* Quitamos cualquier margen que venga de .top-safe global */
-  
-  /* Quitamos el flex centralizado que pueda venir del global */
+  margin: 0 !important; 
   display: block !important; 
   width: auto !important; 
   
   .record-button {
-    /* Mantenemos el estilo ADN pero aseguramos que sea interactivo */
     pointer-events: auto;
+  }
+}
+
+/* ==========================================================================
+   2. LLISTAT DE TRAYECTES (ESTRUCTURA I FONTS)
+   ========================================================================== */
+ion-item {
+  --padding-start: 16px;
+  --background: transparent;
+  --min-height: 60px; /* Més compacte */
+  
+  strong {
+    font-size: 14px; /* Títol de la ruta */
+    font-weight: 700;
+    color: #222;
+    display: block;
+    line-height: 1.2;
+  }
+
+  &.active-text strong {
+    color: var(--ion-color-primary) !important;
+    font-weight: 800 !important;
+  }
+}
+
+/* Contenidor de Data + Badge */
+.date-and-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.item-date-subtitle {
+  font-size: 11px; /* Data */
+  color: #777;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Cartell "Visible" */
+.custom-badge-inline {
+  background: var(--ion-color-success, #2dd36f);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Espai inferior per no quedar tapat pel FAB */
+.list-spacer {
+  height: 100px;
+}
+
+/* ==========================================================================
+   3. MINIATURA DE FOTO I MULTIMÈDIA
+   ========================================================================== */
+ion-thumbnail.photo-thumbnail {
+  --size: 42px; /* Mida compacta i elegant */
+  --border-radius: 6px;
+  margin-inline-end: 12px;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  overflow: visible;
+
+  img {
+    display: block;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    background: #f0f0f0;
+  }
+
+  /* Indicador de galeria (Icona fotos) */
+  .mini-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    border: 1px solid white;
+
+    ion-icon {
+      font-size: 10px;
+      --color: white;
+    }
+  }
+
+  &:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+/* ==========================================================================
+   4. ELEMENTS DE NAVEGACIÓ (CHEVRONS)
+   ========================================================================== */
+.compact-chevron {
+  font-size: 11px !important; /* Més discret */
+  color: #bbb;
+  
+  &.start {
+    margin-inline-end: 8px !important;
+    margin-inline-start: 0 !important;
+  }
+  &.end {
+    margin-inline-start: 8px !important;
+    margin-inline-end: 0 !important;
   }
 }

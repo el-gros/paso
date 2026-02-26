@@ -1,29 +1,28 @@
 {
   "MAP": {
-    "TOIMAGE_FAILED": "无法生成图像",
+    "MAP_BUTTON": "地图",
     "DATA_BUTTON": "数据",
     "ARCHIVE_BUTTON": "存档",
     "SETTINGS_BUTTON": "设置",
     "ZOOM_BUTTON": "缩放",
-    "WAYPOINT_UPDATED": "航点已更新",
-    "CURRENT_TRACK_DELETED": "当前轨迹已删除",
-    "TRACK_FINISHED": "当前轨迹已结束",
-    "WPT_ADDED": "已添加航点",
-    "SAVED": "文件已成功保存",
-    "NO_TRACK_FOUND": "文件中未找到轨迹",
-    "IMPORTED_TRACK": "导入的轨迹",
-    "IMPORT_SUCCESS": "轨迹导入成功",
-    "ERROR_UNSUPPORTED": "不支持的文件类型",
-    "ERROR_IMPORT": "导入文件时出错",
-    "NO_FILE_SELECTED": "未选择文件",
-    "CONFIRM_SHARING": "您确定要与他人共享您的位置吗？",
-    "YES": "是",
-    "MAP_BUTTON": "地图",
-    "UNSUPPORTED_TYPE": "不支持的文件格式",
-    "TRACK_EMPTY": "轨迹无数据",
     "ON_ROUTE": "您在路线上！",
     "OFF_ROUTE": "您已偏离路线！",
-    "UNKNOWN_STATUS": "路线跟踪状态未知"
+    "UNKNOWN_STATUS": "追踪状态未确定",
+    "WPT_ADDED": "已添加途经点",
+    "WAYPOINT_UPDATED": "途经点已更新",
+    "PHOTO_WAYPOINT_NAME": "照片",
+    "SAVED": "文件保存成功",
+    "TRACK_FINISHED": "当前轨迹已结束",
+    "CURRENT_TRACK_DELETED": "当前轨迹已删除",
+    "TRACK_EMPTY": "轨迹无数据",
+    "IMPORTED_TRACK": "轨迹已导入",
+    "NO_TRACK_FOUND": "文件中未找到轨迹",
+    "NO_FILE_SELECTED": "未选择文件",
+    "ERROR_UNSUPPORTED": "不支持的文件类型",
+    "ERROR_IMPORT": "导入文件出错",
+    "TOIMAGE_FAILED": "无法生成图像",
+    "CONFIRM_SHARING": "您确定要与他人分享您的位置吗？",
+    "YES": "是"
   },
   "SEARCH": {
     "BUTTON": "搜索",
@@ -35,7 +34,6 @@
     "FIND_PLACES": "查找地点",
     "SELECT_PLACE": "选择地点",
     "GET_ROUTE": "获取路线",
-    "START_GUIDE": "开始导航...",
     "MY_LOCATION": "我的位置",
     "SELECT_BOTH": "请选择起点和终点",
     "NO_ROUTE_FOUND": "未找到路线",
@@ -44,8 +42,6 @@
     "HIKE": "徒步",
     "CYCLE": "骑行",
     "DRIVE": "驾车",
-    "CLEAN": "清除",
-    "LISTENING": "正在倾听...",
     "NO_SPEECHRECOGNITION": "语音识别不可用",
     "NO_DESCRIPTION": "无可用描述",
     "CHECK_WIKIPEDIA": "检查维基百科"
@@ -61,16 +57,10 @@
     "ALL_DISPLAYED": "已显示所有轨迹",
     "ALL_HIDDEN": "已隐藏所有轨迹",
     "VISIBLE_LABEL": "可见",
-    "CANCEL": "取消",
-    "HEADER": "确认删除",
-    "MESSAGE": "所选轨迹将被永久删除",
-    "TITLE": "共享轨迹",
     "TEXT": "这是请求的轨迹",
     "DIALOG_TITLE": "仅通过 Gmail 共享",
     "TOAST1": "轨迹共享成功",
     "TOAST2": "导出失败",
-    "TOAST3": "所选轨迹已删除",
-    "TOAST4": "加载集合时出错",
     "LOADING_ERROR": "加载轨迹时出错",
     "EMPTY_TRACKS": "文件中未找到有效坐标",
     "TRACK_UPDATED": "轨迹更新成功",
@@ -85,7 +75,6 @@
     "GEOCODING": "地理编码服务",
     "CURRENT_TRACK": "当前轨迹颜色",
     "REFERENCE_TRACK": "参考轨迹颜色",
-    "SAVED_TRACK_ALTITUDE": "保存轨迹的海拔",
     "UPLOAD_MAPS": "下载地图",
     "UPLOADMAP": "地图下载成功",
     "REMOVEMAP": "地图已删除",
@@ -94,7 +83,8 @@
     "REMOVE_MAP": "移除地图",
     "MAP_UPDATED": "地图提供商已更新",
     "OFFLINE_MAPS": "离线地图",
-    "DOWNLOADED": "已下载"
+    "DOWNLOADED": "已下载",
+    "STYLE": "样式"
   },
   "CANVAS": {
     "ARCTITLE": "参考轨迹",
@@ -121,7 +111,6 @@
     "SPEED": "速度",
     "NO_SPEED_DATA": "无速度数据",
     "NO_TIME_DATA": "无时间数据",
-    "KMZ_NO_PARTIALS": "此文件不包含用于计算分段的时间数据",
     "PAG1": "当前轨迹",
     "PAG2": "参考轨迹",
     "PAG3": "参考轨迹 - 分段数据",
@@ -135,7 +124,6 @@
     "CANCEL": "取消"
   },
   "RECORD": {
-    "BUTTON": "记录",
     "START_TRACKING": "开始",
     "STOP_TRACKING": "停止",
     "WAYPOINT": "航点",
@@ -145,12 +133,7 @@
     "CONFIRM_DELETION": "确认删除？",
     "DELETE_YES": "是",
     "DELETE_NO": "否",
-    "SHARE_TEXT": "实时位置共享",
     "DEFAULT_NAME": "未命名"
-  },
-  "ERRORS": {
-    "ELEVATION_FETCH": "从服务器获取海拔数据时出错。",
-    "ELEVATION_GENERIC": "无法获取海拔。"
   },
   "COLORS": {
     "crimson": "深红色",
@@ -213,5 +196,11 @@
     "ELEVATION_LOSS": "累计下降",
     "SHARE_SUBJECT": "跟踪报告 - Paso App",
     "SHARE_BODY": "这是我的路线活动报告："
+  },
+  "CAMERA_PERMISSION": {
+    "HEADER": "需要相机权限",
+    "MESSAGE": "为了拍摄照片并将其链接到您的路线或地理点，我们需要您授予相机访问权限。您现在要授予吗？",
+    "OK": "允许",
+    "CANCEL": "暂不"
   }
 }

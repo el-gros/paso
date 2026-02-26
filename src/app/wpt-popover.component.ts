@@ -1,9 +1,11 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
-import { PopoverController, IonicModule } from '@ionic/angular';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { PopoverController, ModalController, IonicModule } from '@ionic/angular'; // Añadido ModalController
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
 import { Waypoint } from 'src/globald';
+import { Capacitor } from '@capacitor/core';
+import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta la ruta
 
 @Component({
   selector: 'app-waypoint-popover',
@@ -17,6 +19,14 @@ import { Waypoint } from 'src/globald';
           <ion-icon name="location-sharp" class="header-icon"></ion-icon>
           <h2>{{ 'EDIT.HEADER' | translate }}</h2>
         </div>
+
+        @if (editableWpt.photos && editableWpt.photos.length > 0) {
+          <div class="photo-preview-container" (click)="openPhotoViewer()">
+            <img [src]="getWebUrl(editableWpt.photos[0])" class="waypoint-photo" />
+            <div class="photo-badge">
+              <ion-icon name="expand-outline"></ion-icon> </div>
+          </div>
+        }
         
         <div class="form-container">
           <div class="input-group">
@@ -45,7 +55,6 @@ import { Waypoint } from 'src/globald';
     </ion-content>
   `,
   styles: [`
-    /* ... (tus estilos se mantienen iguales) ... */
     ion-content { --background: transparent; }
     .local-glass-island {
       background: rgba(255, 255, 255, 0.96) !important;
@@ -56,8 +65,42 @@ import { Waypoint } from 'src/globald';
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
       padding: 24px;
     }
+
+    .photo-preview-container {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      margin-bottom: 18px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      cursor: pointer; /* Indicar que es clicable */
+      transition: transform 0.2s;
+      
+      &:active { transform: scale(0.98); }
+
+      .waypoint-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .photo-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 5px;
+        border-radius: 50%;
+        display: flex;
+        ion-icon { font-size: 14px; }
+      }
+    }
+
+    /* ... Resto de tus estilos se mantienen igual ... */
     .popover-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
       padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
       .header-icon { font-size: 20px; color: var(--ion-color-primary); }
       h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
@@ -67,9 +110,10 @@ import { Waypoint } from 'src/globald';
     .custom-textarea { background: rgba(0, 0, 0, 0.05); border-radius: 14px; --padding-start: 12px; }
     .button-grid { display: flex; justify-content: center; gap: 16px; margin-top: 25px; }
     .nav-item-btn {
-      flex: 1; min-width: 110px; height: 75px; 
+      flex: 1; min-width: 100px; height: 70px; 
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       border: none; border-radius: 20px; background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       ion-icon { font-size: 28px; margin-bottom: 4px; }
       p { margin: 0; font-size: 11px; font-weight: 800; }
       &:active { transform: scale(0.94); }
@@ -83,13 +127,33 @@ export class WptPopoverComponent implements OnInit {
   @Input() edit: boolean = false;
   @Input() showAltitude: boolean = false;
 
-  editableWpt: any; // Esta es la variable que el template debe usar
+  editableWpt: any;
 
   private popoverCtrl = inject(PopoverController);
+  private modalCtrl = inject(ModalController); // Inyectamos el ModalController
 
   ngOnInit() {
-    // Clonamos wptEdit en editableWpt
     this.editableWpt = { ...this.wptEdit };
+  }
+
+  getWebUrl(path: string): string {
+    return Capacitor.convertFileSrc(path);
+  }
+
+  // Nueva función para abrir el visor
+  async openPhotoViewer() {
+    if (!this.editableWpt.photos || this.editableWpt.photos.length === 0) return;
+
+    const modal = await this.modalCtrl.create({
+      component: PhotoViewerComponent,
+      componentProps: {
+        // Le pasamos solo la foto de este waypoint como un array
+        photos: [this.editableWpt.photos[0]]
+      },
+      cssClass: 'fullscreen-modal' // Opcional, si quieres aplicar estilos específicos al modal
+    });
+
+    await modal.present();
   }
 
   cancel() {
@@ -99,7 +163,7 @@ export class WptPopoverComponent implements OnInit {
   confirm() {
     this.popoverCtrl.dismiss({
       action: 'ok',
-      ...this.editableWpt // Enviamos de vuelta todo el objeto modificado
+      ...this.editableWpt 
     });
   }
 }

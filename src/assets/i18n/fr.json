@@ -1,29 +1,28 @@
 {
   "MAP": {
-    "TOIMAGE_FAILED": "Impossible de générer l'image",
+    "MAP_BUTTON": "Carte",
     "DATA_BUTTON": "Données",
     "ARCHIVE_BUTTON": "Archives",
-    "SETTINGS_BUTTON": "Paramètres",
+    "SETTINGS_BUTTON": "Réglages",
     "ZOOM_BUTTON": "Zoom",
-    "WAYPOINT_UPDATED": "Point de passage mis à jour",
-    "CURRENT_TRACK_DELETED": "Le parcours actuel a été supprimé",
-    "TRACK_FINISHED": "Le parcours actuel est terminé",
-    "WPT_ADDED": "Point de passage ajouté",
-    "SAVED": "Le fichier a été enregistré avec succès",
-    "NO_TRACK_FOUND": "Aucun parcours trouvé dans le fichier",
-    "IMPORTED_TRACK": "Parcours importé",
-    "IMPORT_SUCCESS": "Parcours importé avec succès",
-    "ERROR_UNSUPPORTED": "Type de fichier non supporté",
-    "ERROR_IMPORT": "Erreur lors de l'importation du fichier",
-    "NO_FILE_SELECTED": "Aucun fichier sélectionné",
-    "CONFIRM_SHARING": "Êtes-vous sûr de vouloir partager votre position avec quelqu'un d'autre ?",
-    "YES": "Oui",
-    "MAP_BUTTON": "Carte",
-    "UNSUPPORTED_TYPE": "Format de fichier non admis",
-    "TRACK_EMPTY": "Parcours sans données",
     "ON_ROUTE": "Vous êtes sur l'itinéraire !",
-    "OFF_ROUTE": "Vous avez quitté l'itinéraire !",
-    "UNKNOWN_STATUS": "Suivi d'itinéraire indéterminé"
+    "OFF_ROUTE": "Vous êtes hors de l'itinéraire !",
+    "UNKNOWN_STATUS": "État du suivi indéterminé",
+    "WPT_ADDED": "Point de passage ajouté",
+    "WAYPOINT_UPDATED": "Point de passage mis à jour",
+    "PHOTO_WAYPOINT_NAME": "Photo",
+    "SAVED": "Fichier enregistré avec succès",
+    "TRACK_FINISHED": "Le trajet actuel est terminé",
+    "CURRENT_TRACK_DELETED": "Le trajet actuel a été supprimé",
+    "TRACK_EMPTY": "Trajet sans données",
+    "IMPORTED_TRACK": "Trajet importé",
+    "NO_TRACK_FOUND": "Aucun trajet trouvé dans le fichier",
+    "NO_FILE_SELECTED": "Aucun fichier sélectionné",
+    "ERROR_UNSUPPORTED": "Type de fichier non pris en charge",
+    "ERROR_IMPORT": "Erreur lors de l'importation du fichier",
+    "TOIMAGE_FAILED": "Impossible de générer l'image",
+    "CONFIRM_SHARING": "Voulez-vous vraiment partager votre position avec une autre personne ?",
+    "YES": "Oui"
   },
   "SEARCH": {
     "BUTTON": "Rechercher",
@@ -35,7 +34,6 @@
     "FIND_PLACES": "Trouver des lieux",
     "SELECT_PLACE": "Sélectionner un lieu",
     "GET_ROUTE": "Obtenir l'itinéraire",
-    "START_GUIDE": "Démarrage du guide...",
     "MY_LOCATION": "Ma position",
     "SELECT_BOTH": "Veuillez sélectionner l'origine et la destination",
     "NO_ROUTE_FOUND": "Aucun itinéraire trouvé",
@@ -44,8 +42,6 @@
     "HIKE": "Randonnée",
     "CYCLE": "Cyclisme",
     "DRIVE": "Voiture",
-    "CLEAN": "Effacer",
-    "LISTENING": "Écoute en cours...",
     "NO_SPEECHRECOGNITION": "Reconnaissance vocale non disponible",
     "NO_DESCRIPTION": "Aucune description disponible",
     "CHECK_WIKIPEDIA": "Consulter Wikipedia"
@@ -61,16 +57,10 @@
     "ALL_DISPLAYED": "Tous les parcours sont affichés",
     "ALL_HIDDEN": "Tous les parcours sont masqués",
     "VISIBLE_LABEL": "Visible",
-    "CANCEL": "Annuler",
-    "HEADER": "Confirmer la suppression",
-    "MESSAGE": "Les parcours sélectionnés seront définitivement supprimés",
-    "TITLE": "Partager un parcours",
     "TEXT": "Voici le parcours demandé",
     "DIALOG_TITLE": "Partager uniquement par Gmail",
     "TOAST1": "Le parcours a été partagé avec succès",
     "TOAST2": "L'exportation a échoué",
-    "TOAST3": "Les parcours sélectionnés ont été supprimés",
-    "TOAST4": "Erreur lors du chargement de la collection",
     "LOADING_ERROR": "Erreur lors du chargement du parcours",
     "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
     "TRACK_UPDATED": "Le parcours a été mis à jour avec succès",
@@ -85,7 +75,6 @@
     "GEOCODING": "Service de géocodage",
     "CURRENT_TRACK": "Couleur parcours actuel",
     "REFERENCE_TRACK": "Couleur parcours référence",
-    "SAVED_TRACK_ALTITUDE": "Altitude du parcours enregistré",
     "UPLOAD_MAPS": "Télécharger des cartes",
     "UPLOADMAP": "Carte téléchargée avec succès",
     "REMOVEMAP": "La carte a été supprimée",
@@ -94,7 +83,8 @@
     "REMOVE_MAP": "Supprimer des cartes",
     "MAP_UPDATED": "Fournisseur de carte mis à jour",
     "OFFLINE_MAPS": "Cartes hors ligne",
-    "DOWNLOADED": "Téléchargé"
+    "DOWNLOADED": "Téléchargé",
+    "STYLE": "Style"
   },
   "CANVAS": {
     "ARCTITLE": "PARCOURS DE RÉFÉRENCE",
@@ -121,7 +111,6 @@
     "SPEED": "Vitesse",
     "NO_SPEED_DATA": "Pas de données de vitesse disponibles",
     "NO_TIME_DATA": "Pas de données temporelles disponibles",
-    "KMZ_NO_PARTIALS": "Ce fichier ne contient pas de données temporelles pour les calculs partiels",
     "PAG1": "Trajecte en cours",
     "PAG2": "Trajecte de référence",
     "PAG3": "Trajecte de référence - Parciaux",
@@ -135,7 +124,6 @@
     "CANCEL": "Annuler"
   },
   "RECORD": {
-    "BUTTON": "Enregistrer",
     "START_TRACKING": "Démarrer",
     "STOP_TRACKING": "Arrêter",
     "WAYPOINT": "Wpt.",
@@ -145,12 +133,7 @@
     "CONFIRM_DELETION": "Confirmer la suppression ?",
     "DELETE_YES": "Oui",
     "DELETE_NO": "Non",
-    "SHARE_TEXT": "Suivi en temps réel",
     "DEFAULT_NAME": "Sans nom"
-  },
-  "ERRORS": {
-    "ELEVATION_FETCH": "Erreur de récupération des données d'altitude.",
-    "ELEVATION_GENERIC": "Impossible d'obtenir l'altitude."
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -213,5 +196,11 @@
     "ELEVATION_LOSS": "Dénivelé négatif",
     "SHARE_SUBJECT": "Rapport de suivi - Paso App",
     "SHARE_BODY": "Voici le rapport d'activité de mon itinéraire : "
+  },
+  "CAMERA_PERMISSION": {
+    "HEADER": "Appareil photo requis",
+    "MESSAGE": "Afin de prendre des photos et de les lier à vos itinéraires ou points géographiques, nous avons besoin que vous nous accordiez l'accès à l'appareil photo. Voulez-vous l'accorder maintenant ?",
+    "OK": "Autoriser",
+    "CANCEL": "Pas maintenant"
   }
 }
