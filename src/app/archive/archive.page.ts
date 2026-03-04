@@ -99,6 +99,7 @@ export class ArchivePage implements OnInit {
     this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack!);
     await this.location.sendReferenceToPlugin();
+    this.reference.foundRoute = false;
   }
 
   async displayAllTracks(show: boolean) {
@@ -113,6 +114,7 @@ export class ArchivePage implements OnInit {
         setTimeout(async () => {
           await this.mapService.displayAllTracks();
           this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'), 'success');
+          this.reference.foundRoute = false;
         }, 200);
       } else {
         this.mapService.visibleAll = false;
@@ -189,7 +191,8 @@ export class ArchivePage implements OnInit {
     const loading = await this.loadingCtrl.create({
       message: this.translate.instant('ARCHIVE.GENERATING_FILES'),
       backdropDismiss: false,
-      spinner: 'crescent'
+      spinner: 'crescent',
+      cssClass: 'glass-loading-overlay' // <-- NUEVO: Estilo adaptado al ADN de tu app
     });
     await loading.present();
 
@@ -208,10 +211,10 @@ export class ArchivePage implements OnInit {
       // 1. Snapshot del mapa
       const mapBase64 = await this.generateMapImage(trackData);
 
-      // 2. NUEVO: Snapshot del perfil de altitud (Canvas oculto)
+      // 2. Snapshot del perfil de altitud
       const altitudeBase64 = await this.generateAltitudeImage(trackData);
 
-      // 3. Generar contenidos (Ahora pasamos 4 parámetros al PDF)
+      // 3. Generar contenidos
       const [gpxText, kmzBase64, pdfBase64] = await Promise.all([
         this.exportService.geoJsonToGpx(featureToExport),
         this.exportService.geoJsonToKmz(featureToExport),
@@ -237,14 +240,16 @@ export class ArchivePage implements OnInit {
       });
 
       if (result && result.completed) {
-        await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST1'), 'success');
+        // <-- NUEVO: Clave de traducción semántica
+        await this.fs.displayToast(this.translate.instant('ARCHIVE."EXPORT_SUCCESS"'), 'success'); 
       }
 
       this.cleanupFiles([gpxName, kmzName, pdfName]);
 
     } catch (e) {
       console.error('Export error:', e);
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.TOAST2'), 'error');
+      // <-- NUEVO: Clave de traducción semántica
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
     } finally {
       await loading.dismiss();
     }

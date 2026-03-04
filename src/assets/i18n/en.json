@@ -59,8 +59,8 @@
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Here is the requested track",
     "DIALOG_TITLE": "Share via Gmail only",
-    "TOAST1": "Track shared successfully",
-    "TOAST2": "Export failed",
+    "EXPORT_SUCCESS": "Track shared successfully",
+    "EXPORT_ERROR": "Export failed",
     "LOADING_ERROR": "Error loading track",
     "EMPTY_TRACKS": "No valid coordinates found in files",
     "TRACK_UPDATED": "Track updated successfully",
@@ -87,6 +87,7 @@
     "STYLE": "Style"
   },
   "CANVAS": {
+    "TRACK": "Track",
     "ARCTITLE": "REFERENCE TRACK",
     "CURTITLE": "CURRENT TRACK",
     "DISTANCE": "Distance",
@@ -124,6 +125,7 @@
     "CANCEL": "Cancel"
   },
   "RECORD": {
+    "BUTTON": "RECORD",
     "START_TRACKING": "Start",
     "STOP_TRACKING": "Stop",
     "WAYPOINT": "Wpt.",
@@ -133,7 +135,8 @@
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
-    "DEFAULT_NAME": "No name"
+    "DEFAULT_NAME": "No name",
+    "SHARE_TEXT": "You can view my route at: "
   },
   "COLORS": {
     "crimson": "Crimson",
@@ -179,7 +182,9 @@
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "GPS timeout reached",
-    "CHECK": "The GPS signal is weak" 
+    "CHECK": "Check that the device's GPS signal is enabled and working.",
+    "GPS_TITLE": "No GPS Signal",
+    "OK_BUTTON": "Got it" 
   },
   "REPORT": {
     "ROUTE_NAME": "Route Name",
@@ -196,5 +201,14 @@
     "MESSAGE": "In order to take photos and link them to your routes or geographical points, we need you to grant us camera access. Do you want to grant it now?",
     "OK": "Allow",
     "CANCEL": "Not now"
+  },
+  "TRANSPORT": {
+    "DRIVING_CAR": "Car",
+    "CYCLING_REGULAR": "Bicycle",
+    "CYCLING_MOUNTAIN": "Mountain bike",
+    "FOOT_WALKING": "Walking",
+    "FOOT_HIKING": "Hiking",
+    "WHEELCHAIR": "Wheelchair",
+    "UNKNOWN": "Unknown"
   }
 }

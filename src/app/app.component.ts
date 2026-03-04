@@ -178,6 +178,7 @@ export class AppComponent implements OnDestroy {
       
       this.reference.archivedTrack = track;   
       await this.location.sendReferenceToPlugin();
+      this.reference.foundRoute = false;
       this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'), 'success');
       
       return track;

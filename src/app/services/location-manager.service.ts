@@ -2,7 +2,6 @@ import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ReferenceService } from '../services/reference.service';
 import { SupabaseService } from './supabase.service';
-//import { Track } from 'src/globald';
 import { firstValueFrom, filter, timeout } from 'rxjs';
 import MyService, { Location, RouteStatus } from 'src/plugins/MyServicePlugin';
 import { FunctionsService } from '../services/functions.service';
@@ -30,7 +29,10 @@ export class LocationManagerService {
   private invalidLocationCount: number = 0;
   private lastAlertTime: number = 0;
   private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; // 10 minutos
-
+  // Control de subida a Supabase (1 de cada 6 lecturas = ~48 segundos)
+  private shareTickCounter: number = 0;
+  private readonly SHARE_TICKS_TARGET: number = 6;
+  
   // ----------------------------------------------------------------------------
   // 1) PUBLIC API → components/services subscribe here
   // ----------------------------------------------------------------------------
@@ -153,6 +155,18 @@ export class LocationManagerService {
   
   async shareLocationIfActive(location: Location ) {
     if (!this.isSharing || !this.shareToken) return;
+
+    // 1. Incrementamos el contador por cada punto válido que llega
+    this.shareTickCounter++;
+
+    // 2. Si aún no hemos llegado a 6, salimos sin hacer nada (ahorro de batería/red)
+    if (this.shareTickCounter < this.SHARE_TICKS_TARGET) {
+      return;
+    }
+
+    // 3. Hemos llegado a 6. Reseteamos el contador para la próxima ronda
+    this.shareTickCounter = 0;
+
     try {
       await this.supabase.supabase
         .from('public_locations')
@@ -163,9 +177,13 @@ export class LocationManagerService {
           lon: location.longitude,
           updated_at: new Date().toISOString()
         }]);
-        console.log('location updated at supabase: ', location)
+      console.log(`📍 [Tick 6/6] Posición subida a Supabase: lat ${location.latitude.toFixed(4)}, lon ${location.longitude.toFixed(4)}`);
     } catch (err) {
-      console.error('Share failed', err);
+      console.error('❌ Error al subir posición a Supabase', err);
+      // RED DE SEGURIDAD: Si falló la subida (ej. sin cobertura temporal),
+      // ponemos el contador a 5. Así lo volverá a intentar en el próximo punto (en 8 segs)
+      // en lugar de esperar otros 48 segundos enteros.
+      this.shareTickCounter = this.SHARE_TICKS_TARGET - 1;
     }
   }
 

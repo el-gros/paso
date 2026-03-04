@@ -59,8 +59,8 @@
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Aquí tienes el trayecto solicitado",
     "DIALOG_TITLE": "Compartir solo por Gmail",
-    "TOAST1": "Se ha compartido el trayecto correctamente",
-    "TOAST2": "La exportación ha fallado",
+    "EXPORT_SUCCESS": "Se ha compartido el trayecto correctamente",
+    "EXPORT_ERROR": "La exportación ha fallado",
     "LOADING_ERROR": "Error al cargar el trayecto",
     "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
     "TRACK_UPDATED": "El trayecto se ha actualizado correctamente",
@@ -87,6 +87,7 @@
     "STYLE": "Estilo"
   },
   "CANVAS": {
+    "TRACK": "Trayecto",
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
     "CURTITLE": "TRAYECTO ACTUAL",
     "DISTANCE": "Distancia",
@@ -124,6 +125,7 @@
     "CANCEL": "Cancelar"
   },
   "RECORD": {
+    "BUTTON": "GRABAR",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Detener",
     "WAYPOINT": "Wpt.",
@@ -133,7 +135,8 @@
     "CONFIRM_DELETION": "¿Confirma la eliminación?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "DEFAULT_NAME": "Sin nombre"
+    "DEFAULT_NAME": "Sin nombre",
+    "SHARE_TEXT": "Puedes ver mi ruta en: "
   },
   "COLORS": {
     "crimson": "Carmesí",
@@ -185,7 +188,9 @@
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "Se ha agotado el tiempo de espera del GPS",
-    "CHECK": "La señal GPS es deficiente" 
+    "CHECK": "Comprueba que la señal GPS del dispositivo está activada y funciona.",
+    "GPS_TITLE": "Sin señal GPS",
+    "OK_BUTTON": "Entendido"  
   },
   "REPORT": {
     "ROUTE_NAME": "Nombre de la ruta",
@@ -202,5 +207,14 @@
     "MESSAGE": "Para poder hacer fotografías y enlazarlas a tus rutas o puntos geográficos, necesitamos que nos des acceso a la cámara. ¿Quieres concederlo ahora?",
     "OK": "De acuerdo",
     "CANCEL": "Ahora no"
+  },
+  "TRANSPORT": {
+    "DRIVING_CAR": "Coche",
+    "CYCLING_REGULAR": "Bicicleta",
+    "CYCLING_MOUNTAIN": "Bicicleta de montaña",
+    "FOOT_WALKING": "A pie",
+    "FOOT_HIKING": "Senderismo",
+    "WHEELCHAIR": "Silla de ruedas",
+    "UNKNOWN": "Desconocido"
   }
 }

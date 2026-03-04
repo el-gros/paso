@@ -59,8 +59,8 @@
     "VISIBLE_LABEL": "可见",
     "TEXT": "这是请求的轨迹",
     "DIALOG_TITLE": "仅通过 Gmail 共享",
-    "TOAST1": "轨迹共享成功",
-    "TOAST2": "导出失败",
+    "EXPORT_SUCCESS": "轨迹共享成功",
+    "EXPORT_ERROR": "导出失败",
     "LOADING_ERROR": "加载轨迹时出错",
     "EMPTY_TRACKS": "文件中未找到有效坐标",
     "TRACK_UPDATED": "轨迹更新成功",
@@ -87,6 +87,7 @@
     "STYLE": "样式"
   },
   "CANVAS": {
+    "TRACK": "轨迹",
     "ARCTITLE": "参考轨迹",
     "CURTITLE": "当前轨迹",
     "DISTANCE": "距离",
@@ -124,6 +125,7 @@
     "CANCEL": "取消"
   },
   "RECORD": {
+    "BUTTON": "记录",
     "START_TRACKING": "开始",
     "STOP_TRACKING": "停止",
     "WAYPOINT": "航点",
@@ -133,7 +135,8 @@
     "CONFIRM_DELETION": "确认删除？",
     "DELETE_YES": "是",
     "DELETE_NO": "否",
-    "DEFAULT_NAME": "未命名"
+    "DEFAULT_NAME": "未命名",
+    "SHARE_TEXT": "您可以通过以下链接查看我的路线： "
   },
   "COLORS": {
     "crimson": "深红色",
@@ -185,7 +188,9 @@
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "GPS 定位超时",
-    "CHECK": "GPS 信号较弱" 
+    "CHECK": "请检查设备的GPS信号是否已开启并正常工作。",
+    "GPS_TITLE": "无GPS信号",
+    "OK_BUTTON": "明白"
   },
   "REPORT": {
     "ROUTE_NAME": "路线名称",
@@ -202,5 +207,14 @@
     "MESSAGE": "为了拍摄照片并将其链接到您的路线或地理点，我们需要您授予相机访问权限。您现在要授予吗？",
     "OK": "允许",
     "CANCEL": "暂不"
+  },
+  "TRANSPORT": {
+    "DRIVING_CAR": "汽车",
+    "CYCLING_REGULAR": "自行车",
+    "CYCLING_MOUNTAIN": "山地自行车",
+    "FOOT_WALKING": "步行",
+    "FOOT_HIKING": "徒步",
+    "WHEELCHAIR": "轮椅",
+    "UNKNOWN": "未知"
   }
 }

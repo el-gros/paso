@@ -104,17 +104,30 @@ export class ReferenceService {
   }
 
   async editTrack(index: number) {
-    const trackToEdit = this.fs.collection[index];
-    if (!trackToEdit) return;
+    const isDraft = index === -1;
+    
+    // Obtenemos las propiedades a editar (del borrador o de la colección)
+    let properties: any;
+    let draftCoords: any = null;
+
+    if (isDraft) {
+      if (!this.archivedTrack?.features?.[0]) return;
+      properties = this.archivedTrack.features[0].properties;
+      draftCoords = this.archivedTrack.features[0].geometry?.coordinates;
+    } else {
+      if (!this.fs.collection[index]) return;
+      properties = this.fs.collection[index];
+    }
 
     const modalEdit = { 
-      name: trackToEdit.name, 
-      description: trackToEdit.description || '' 
+      name: properties.name || '', 
+      description: properties.description || '',
+      coords: draftCoords // <-- Pasamos las coordenadas directamente al popover
     };
 
     const popover = await this.popoverCtrl.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit},
+      componentProps: { modalEdit },
       backdropDismiss: true,
       cssClass: 'glass-island-wrapper',
       translucent: true,
@@ -124,30 +137,68 @@ export class ReferenceService {
     const { data } = await popover.onDidDismiss();
 
     if (data?.action === 'ok') {
-      // Update Collection
-      this.fs.collection[index].name = data.name;
-      this.fs.collection[index].description = data.description;
-      await this.fs.storeSet('collection', this.fs.collection);
-
-      // Update specific Storage entry
-      if (trackToEdit.date) {
-        const storageKey = trackToEdit.date.toISOString();
-        const fullTrack = await this.fs.storeGet(storageKey);
+      if (isDraft) {
+        // --- CASO 1: GUARDAR TRACK NUEVO (-1) ---
         
-        if (fullTrack?.features?.[0]) {
-          fullTrack.features[0].properties.name = data.name;
-          fullTrack.features[0].properties.description = data.description;
-          await this.fs.storeSet(storageKey, fullTrack);
+        // SOLUCIÓN ERROR 1: Volvemos a asegurar a TypeScript que esto existe
+        if (!this.archivedTrack?.features?.[0]) return;
+        
+        const props = this.archivedTrack.features[0].properties;
+        props.name = data.name;
+        props.description = data.description;
+        
+        // Aseguramos que tenga una fecha que servirá como ID único
+        if (!props.date) {
+          props.date = new Date().toISOString();
+        }
+        const storageKey = props.date instanceof Date ? props.date.toISOString() : props.date;
 
-          // Sync current view if this is the track being displayed
-          if (this.archivedTrack?.features?.[0]) {
-            const props = this.archivedTrack.features[0].properties;
-            props.name = data.name;
-            props.description = data.description;
+        // 2. Guardamos el track completo (GeoJSON) en SQLite
+        await this.fs.storeSet(storageKey, this.archivedTrack);
+
+        // 3. Creamos el objeto resumen para la colección
+        const newCollectionItem = {
+          date: new Date(storageKey), // <-- ¡Convertimos el string a objeto Date!
+          name: data.name,
+          description: data.description,
+          place: (props.place as string) || '' // <-- Aseguramos que sea string
+          // distance: props.distance || 0,
+          // time: props.time || 0
+        };
+
+        // 4. Lo añadimos al principio de la colección y guardamos
+        this.fs.collection.unshift(newCollectionItem);
+        await this.fs.storeSet('collection', this.fs.collection);
+
+        this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_SAVED') || 'Ruta guardada correctamente', 'success');
+
+      } else {
+        // --- CASO 2: ACTUALIZAR TRACK EXISTENTE ---
+        // (El resto del código de este bloque se mantiene igual)
+        
+        this.fs.collection[index].name = data.name;
+        this.fs.collection[index].description = data.description;
+        await this.fs.storeSet('collection', this.fs.collection);
+
+        const trackDate = this.fs.collection[index].date;
+        if (trackDate) {
+          const storageKey = trackDate instanceof Date ? trackDate.toISOString() : trackDate;
+          const fullTrack = await this.fs.storeGet(storageKey);
+          
+          if (fullTrack?.features?.[0]) {
+            fullTrack.features[0].properties.name = data.name;
+            fullTrack.features[0].properties.description = data.description;
+            await this.fs.storeSet(storageKey, fullTrack);
+
+            if (this.archivedTrack?.features?.[0]) {
+              const currentProps = this.archivedTrack.features[0].properties;
+              currentProps.name = data.name;
+              currentProps.description = data.description;
+            }
           }
         }
+        this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'), 'success');
       }
-      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_UPDATED'), 'success');
     }
   }
-}
+}  

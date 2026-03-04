@@ -1,3 +1,7 @@
+/* ==========================================================================
+   ======================= GLOBAL STYLES & IONIC CORE =======================
+   ========================================================================== */
+
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
 
@@ -7,7 +11,7 @@
 @import "@ionic/angular/css/typography.css";
 @import '@ionic/angular/css/display.css';
 
-/* Optional CSS utils that can be commented out */
+/* Optional CSS utils */
 @import "@ionic/angular/css/padding.css";
 @import "@ionic/angular/css/float-elements.css";
 @import "@ionic/angular/css/text-alignment.css";
@@ -17,40 +21,56 @@
 /* Open layer styles */
 @import "~ol/ol.css";
 
-// 1. SCALE LINE ////////////////////////////////////
+/* ==========================================================================
+   ================= 1. VARIABLES & ADN VISUAL (THEMING) ====================
+   ========================================================================== */
 
-/* 1. Contenedor principal */
+:root {
+  // Centralizamos los valores para poder cambiarlos en toda la app de un golpe
+  --glass-bg: rgba(255, 255, 255, 0.92); 
+  --glass-blur: 12px;
+  --glass-radius: 28px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Regla Maestra (Diseño visual común Glass-morphism) */
+.glass-panel, .popover-island {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
+  backdrop-filter: blur(var(--glass-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
+  border-radius: var(--glass-radius, 28px);
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.15));
+  overflow: hidden; 
+}
+
+
+/* ==========================================================================
+   ================== 2. OPENLAYERS (MAPA Y CONTROLES) ======================
+   ========================================================================== */
+
+/* --- Scale Line (Regla vertical) --- */
 .ol-scale-line.vertical-scale {
   display: block !important;
   z-index: 10000 !important;
   position: absolute !important;
-  
-  /* Ajuste de posición: 60px desde abajo */
   bottom: 25px !important; 
   left: 60px !important; 
-  
   background: transparent !important;
   pointer-events: none;
-
-  /* Rotación */
   transform: rotate(-90deg) !important;
   transform-origin: left bottom !important;
 }
 
-/* 2. El cuadro interno (La Regla) */
 .ol-scale-line.vertical-scale div,
 .ol-scale-line.vertical-scale .vertical-scale-inner,
 .ol-scale-line.vertical-scale .ol-scale-line-inner {
   color: #000 !important;
   background: rgba(255, 255, 255, 0.9) !important;
-  
-  /* 📏 LA LÍNEA VERTICAL:
-     Al estar rotado -90deg, el 'border-bottom' original se convierte 
-     en la línea vertical que queda pegada al mapa. */
   border: 1px solid #ccc !important;
-  border-bottom: 4px solid #3880ff !important; /* Esta será tu línea vertical azul */
-  
-  border-radius: 4px 4px 0 0 !important; /* Redondeamos las esquinas opuestas a la línea */
+  border-bottom: 4px solid #3880ff !important; 
+  border-radius: 4px 4px 0 0 !important; 
   padding: 4px 10px !important;
   font-size: 11px !important;
   font-weight: bold;
@@ -58,63 +78,21 @@
   display: flex !important;
   align-items: center;
   justify-content: center;
-  
-  /* Esto define el largo de la "regla" vertical */
   min-width: 60px !important; 
 }
 
-.toast {
-  text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  --border-radius: 8px;
-  --box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  
-  // Estilo para el botón de cierre dentro del toast
-  button {
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    font-size: 14px;
-  }
-}
-
-.toast-success {
-  @extend .toast;
-  --background: #2dd36f;
-  --color: #ffffff;
-  --button-color: #ffffff; // Color del botón en éxito
-}
-
-.toast-error {
-  @extend .toast;
-  --background: #eb445a;
-  --color: #ffffff;
-  --button-color: #ffffff; // Color del botón en error
-}
-
-.toast-warning {
-  @extend .toast;
-  --background: #ffc409;
-  --color: #000000;
-  --button-color: #000000; // Color del botón en advertencia para que sea legible
-}
-
-// 3. CONTROLS ////////////////////////
-
-/* Zoom buttons (top-left by default) */
+/* --- Controles Nativos (Zoom & Rotate) --- */
 .ol-zoom {
   top: 25px !important;
   left: 1em;
 }
 
-/* Rotate button (top-left by default, below zoom) */
 .ol-rotate {
-  top: 25px !important; /* push it down so it doesn't overlap */
+  top: 25px !important; 
   right: 1em;
 }
 
-/* --- CONTENEDORES DE CONTROLES PERSONALIZADOS --- */
-
+/* --- Contenedores de Controles Personalizados (Posicionamiento) --- */
 .ol-control.location-button-control {
   bottom: 30px !important;
   right: 15px !important;
@@ -135,34 +113,24 @@
   pointer-events: none !important;
 }
 
-/* --- BOTONES (IDÉNTICOS Y REACTIVOS) --- */
-
+/* --- Estética de los botones flotantes del mapa (Idénticos y Reactivos) --- */
 .ol-control.location-button-control button,
 .ol-control.share-control button {
-  /* Forzamos medidas exactas */
   width: 46px !important;
   height: 46px !important;
   min-width: 46px !important;
   max-width: 46px !important;
-  box-sizing: border-box !important; /* Vital para que el ancho sea exacto */
-  
-  /* Reset total */
+  box-sizing: border-box !important; 
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
-  
-  /* Estética */
   background-color: white !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-  
-  /* Centrado */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  
-  /* Interacción */
   pointer-events: auto !important;
   touch-action: none !important;
   user-select: none !important;
@@ -170,67 +138,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* --- PUNTO INDICADOR (COMPARTIR Y TRACKING) --- */
 
-/* --- 1. PUNTO DE COMPARTIR (En la esquina del botón del mapa) --- */
-.sharing-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 9px;
-  height: 9px;
-  background-color: #2dd36f !important;
-  border-radius: 50%;
-  border: 2px solid white;
-  z-index: 10;
-  animation: sharing-pulse 1.5s infinite;
-  pointer-events: none;
-}
+/* ==========================================================================
+   ================== 3. UI BASE: BOTONES E INDICADORES =====================
+   ========================================================================== */
 
-/* --- 2. PUNTO DE TRACKING (Arriba y Centrado en el FAB) --- */
-.tracking-dot {
-  position: absolute;
-  top: 4px;            /* Ajusta este valor si lo quieres más cerca del icono */
-  left: 50%;           /* Centro horizontal */
-  transform: translateX(-50%); /* Ajuste de centrado exacto */
-  
-  width: 10px;
-  height: 10px;
-  background-color: #2dd36f !important;
-  border-radius: 50%;
-  border: 2px solid white;
-  z-index: 10;
-  
-  /* Usamos una animación propia para que el transform no entre en conflicto */
-  animation: tracking-pulse-centered 1.5s infinite;
-  pointer-events: none;
-}
-
-/* --- ANIMACIONES --- */
-
-/* Animación estándar para puntos en esquinas */
-@keyframes sharing-pulse {
-  0% { transform: scale(0.9); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
-  100% { transform: scale(0.9); opacity: 1; }
-}
-
-/* Animación específica para el punto centrado (mantiene el translateX) */
-@keyframes tracking-pulse-centered {
-  0% { transform: translateX(-50%) scale(0.9); opacity: 1; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; }
-  100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
-}
-
-/* IMPORTANTE: Asegurar que el contenedor permita ver el punto */
-.record-button.with-indicator {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-/* --- ADN VISUAL: GLASS-MORPHISM CENTRALIZADO --- */
-
-// 1. Botón Universal de Acción (Utilizado en todas las pantallas)
+/* --- Botón Universal de Acción --- */
 .record-button {
   background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(12px);
@@ -267,72 +180,41 @@
   }
 
   &:active {
-    transform: scale(0.92);
-    background: rgba(255, 255, 255, 0.95) !important;
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 1) !important;
   }
 }
 
-.record-button:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 1) !important;
-}
-
-// 2. Contenedores Flotantes (Cards, Listas Inset, Islas de Popover)
-:root {
-  // Centralizamos los valores para poder cambiarlos en toda la app de un golpe
-  --glass-bg: rgba(255, 255, 255, 0.92); 
-  --glass-blur: 12px;
-  --glass-radius: 28px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* ==========================================================================
-   1. REGLA MAESTRA (DISEÑO VISUAL COMÚN)
-   ========================================================================== */
-.glass-panel, .popover-island {
-  background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
-  backdrop-filter: blur(var(--glass-blur, 12px));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
-  border-radius: var(--glass-radius, 28px);
-  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
-  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.15));
-  overflow: hidden; 
-}
-
-.floating-popover, .confirm-popover {
-  --background: transparent;
-  --box-shadow: none;
-  --width: var(--popover-width, 95%);
-  --max-width: var(--popover-max-width, 420px);
-}
-
-/* ==========================================================================
-   2. REGLAS ESPECÍFICAS (CONFIGURACIÓN DE CADA PIEZA)
-   ========================================================================== */
-
-// 3. Ajustes de Interactividad para FABs
-ion-fab {
-  pointer-events: none;
-  z-index: 1000;
+/* --- Nav Items (Para Popovers y Grids) --- */
+.nav-item-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
   
-  ion-row, .record-button, ion-fab-button {
-    pointer-events: auto;
+  ion-icon { font-size: 32px; margin-bottom: 4px; }
+  p { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  
+  &:active { transform: scale(0.9); }
+  
+  &:disabled {
+    opacity: 0.25 !important;    
+    filter: grayscale(1);       
+    cursor: not-allowed;
+    pointer-events: none;       
+    ion-icon, p { color: #888 !important; }
   }
 }
 
-.blue-icon { color: var(--ion-color-primary) !important; }
-
-
-/* --- 4. COLORES Y ESTADOS GLOBALES --- */
-
-// Estado ACTIVO (Fondo blanco Glass, Texto de color)
+/* --- Estados Globales (Pills & Colors) --- */
 .red-pill {
   background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid rgba(235, 68, 90, 0.4) !important;
-  ion-icon, span, p { 
-    color: var(--ion-color-danger, #eb445a) !important; 
-  }
+  ion-icon, span, p { color: var(--ion-color-danger, #eb445a) !important; }
 }
 
 .green-pill {
@@ -340,148 +222,169 @@ ion-fab {
   ion-icon, span, p { color: var(--ion-color-success, #2dd36f) !important; }
 }
 
-/* --- ÁREAS SEGURAS (Zonas del Mapa) --- */
+.blue-icon { 
+  color: var(--ion-color-primary) !important; 
+}
+
+/* --- Utilidades --- */
+.button-disabled {
+  opacity: 0.5;
+  pointer-events: none; 
+  transition: opacity 0.2s;
+}
+
+/* ==========================================================================
+   ================= 4. ANIMACIONES E INDICADORES (DOTS) ====================
+   ========================================================================== */
+
+/* Contenedor que necesite mostrar puntos */
+.record-button.with-indicator {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Punto de Compartir (Esquina derecha) */
+.sharing-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  animation: sharing-pulse 1.5s infinite;
+  pointer-events: none;
+}
+
+/* Punto de Tracking (Centro arriba) */
+.tracking-dot {
+  position: absolute;
+  top: 4px;            
+  left: 50%;           
+  transform: translateX(-50%); 
+  width: 10px;
+  height: 10px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  animation: tracking-pulse-centered 1.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes sharing-pulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 1; }
+}
+
+@keyframes tracking-pulse-centered {
+  0% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; }
+  100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+}
+
+
+/* ==========================================================================
+   ================== 5. LAYOUTS FLOTANTES & ÁREAS SEGURAS ==================
+   ========================================================================== */
+
+/* Ajustes de Interactividad para FABs */
+ion-fab {
+  pointer-events: none;
+  z-index: 1000;
+  ion-row, .record-button, ion-fab-button { pointer-events: auto; }
+}
+
+/* Zonas Seguras Superior e Inferior */
 .top-safe, .bottom-safe {
-  position: fixed; // Asegura que floten sobre el mapa
+  position: fixed; 
   z-index: 999;
-  pointer-events: none; // No bloquea el mapa en las zonas vacías
+  pointer-events: none; 
   width: 100%;
   display: flex;
   justify-content: center;
 
   ion-row {
-    @extend .glass-panel; // <--- AQUÍ está la clave: usa el nuevo ADN visual
-    padding: 8px 16px;    // Ajuste específico de tamaño
-    pointer-events: auto; // Permite hacer clic en los botones dentro
+    @extend .glass-panel; 
+    padding: 8px 16px;    
+    pointer-events: auto; 
     gap: 12px;
   }
 }
 
-/* Posicionamiento */
 .top-safe { margin-top: 30px; }
 .bottom-safe { bottom: 50px; }
+
 .bottom-safe-gray {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   width: 100%;
   height: 50px;
-  background-color: #f4f4f4; // Sugerencia: usa el mismo fondo que el slide-wrapper
+  background-color: #f4f4f4; 
   z-index: 10;
-  border-top: 1px solid rgba(0,0,0,0.05); // Una línea muy fina para separar
+  border-top: 1px solid rgba(0,0,0,0.05); 
 }
 
-/* ==========================================================================
-   SHARE LOCATION - CORRECCIONES
-   ========================================================================== */
 
 /* ==========================================================================
-   SHARE LOCATION - VERSIÓN CORREGIDA SIN ERRORES
+   ================= 6. COMPONENTES: POPOVERS & MODALES =====================
    ========================================================================== */
 
-.share-control {
-  position: absolute;
-  right: 15px !important;
-  bottom: 32px !important;
-  width: 36px;
-  height: 36px;
-  background-color: white !important;
-  border-radius: 4px;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  pointer-events: auto !important;
+/* --- Estructura Popovers Base --- */
+.floating-popover, .confirm-popover {
+  --background: transparent;
+  --box-shadow: none;
+  --width: var(--popover-width, 95%);
+  --max-width: var(--popover-max-width, 420px);
+}
 
-  button {
-    width: 100% !important;
-    height: 100% !important;
+/* --- Clase Reutilizable Tipo "Isla" Centrada --- */
+.glass-island-wrapper {
+  --width: 100% !important;
+  --height: 100% !important;
+  --background: transparent !important;
+  --box-shadow: none !important;
+  
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  &::part(content) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
     background: transparent !important;
+    box-shadow: none !important;
     border: none !important;
-    cursor: pointer !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    outline: none;
+    width: 90% !important;
+    max-width: 380px !important;
+    pointer-events: auto !important; 
   }
 }
 
-.share-control img { 
-  width: 22px;
-  height: 22px;
-  pointer-events: none;
-}
-
-/* 2. Backdrop (Fondo oscuro) */
-.share-backdrop {
-  position: fixed;
-  top: 0; 
-  left: 0;
-  width: 100vw; 
-  height: 100vh;
-  background: rgba(0,0,0,0.35);
-  z-index: 9998;
-  display: none; /* Oculto por defecto */
-  
-  &.active { 
-    display: block; /* Se muestra al añadir la clase .active */
+/* --- Popovers Superiores (Búsqueda/Teclado Seguro) --- */
+ion-popover.top-search-popover {
+  &::part(content) {
+    position: absolute !important;
+    top: 5vh !important;           
+    bottom: auto !important;       
+    transform: none !important;    
+    width: 94vw !important;        
+    left: 3vw !important;          
+    max-width: 420px !important;   
+    
+    @media (min-width: 450px) { left: calc(50% - 210px) !important; }
+    
+    max-height: 45vh !important;   
+    border-radius: var(--glass-radius, 28px) !important;
   }
 }
 
-/* 3. Popup (Ajuste para que sea compatible con confirm-popover) */
-.share-popup {
-  position: fixed;
-  top: 50%; 
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  display: none; /* Oculto por defecto */
-  pointer-events: auto;
-
-  &.active { 
-    display: block; /* Se muestra al añadir la clase .active */
-  }
-
-  /* Forzamos el estilo de "isla" que ya tienes definido arriba */
-  .popover-island {
-    min-width: 260px;
-    padding: 24px 16px;
-  }
-}
-
-/* 5. Action Buttons (Yes/No) */
-.share-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 75px;
-  height: 75px;
-  border: none;
-  border-radius: 15px;
-  font-weight: 600;
-  color: white;
-  transition: transform 0.1s;
-
-  img { 
-    width: 26px; 
-    height: 26px; 
-    margin-bottom: 6px; 
-  }
-
-  &:active { transform: scale(0.92); }
-  
-  &.btn-yes { background: #2dd36f; }
-  &.btn-no { background: #eb445a; }
-}
-
-/* CONFIRM POPOVER */
-
-/* Estilos unificados para Popovers de Acción */
+/* --- Popover de Confirmación Específico --- */
 .confirm-popover {
   --width: 260px;
   --border-radius: 16px;
@@ -507,130 +410,87 @@ ion-fab {
     justify-content: center;
     gap: 30px;
   }
- 
 }
 
-.nav-item-btn {
-  background: transparent;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
+/* --- Plugin Share Location (Antiguo CSS mantenido) --- */
+.share-backdrop {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.35); z-index: 9998; display: none; 
+  &.active { display: block; }
+}
+
+.share-popup {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 9999; display: none; pointer-events: auto;
+  &.active { display: block; }
+  .popover-island { min-width: 260px; padding: 24px 16px; }
+}
+
+.share-action-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 75px; height: 75px; border: none; border-radius: 15px; font-weight: 600; color: white; transition: transform 0.1s;
+  img { width: 26px; height: 26px; margin-bottom: 6px; }
+  &:active { transform: scale(0.92); }
+  &.btn-yes { background: #2dd36f; }
+  &.btn-no { background: #eb445a; }
+}
+
+
+/* ==========================================================================
+   ================= 7. COMPONENTES: TOASTS & LOADING =======================
+   ========================================================================== */
+
+/* --- Toasts Nativos (Standard) --- */
+.toast {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   
-  ion-icon { font-size: 32px; margin-bottom: 4px; }
-  p { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  &:active { transform: scale(0.9); }
-  &:disabled {
-    opacity: 0.25 !important;    
-    filter: grayscale(1);       
-    cursor: not-allowed;
-    pointer-events: none;       
-    
-    ion-icon, p {
-      color: #888 !important;   
-    }
+  button {
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    font-size: 14px;
   }
 }
 
-/* CLASE REUTILIZABLE PARA POPOVERS TIPO ISLA */
-.glass-island-wrapper {
-  --width: 100% !important;
-  --height: 100% !important;
-  --background: transparent !important;
-  --box-shadow: none !important;
-  
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.toast-success { @extend .toast; --background: #2dd36f; --color: #ffffff; --button-color: #ffffff; }
+.toast-error   { @extend .toast; --background: #eb445a; --color: #ffffff; --button-color: #ffffff; }
+.toast-warning { @extend .toast; --background: #ffc409; --color: #000000; --button-color: #000000; }
 
-  &::part(content) {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-    width: 90% !important;
-    max-width: 380px !important;
-    pointer-events: auto !important; 
-  }
-}
-
-/* TOAST DEL BOTON DE SEGUIMIENTO DE RUTA */
-/* --- TOAST PERSONALIZADO PARA ESTADO DE RUTA --- */
-
+/* --- Toast Flotante Personalizado (Estado de Ruta) --- */
 .custom-toast {
-  /* Posicionamiento preciso */
-  --top: 100px;         /* Un poco más abajo que el botón (que está a 60px) */
-  --end: 15px;          /* Alineado con el margen derecho del botón */
-  --width: auto;        /* Para que no ocupe toda la pantalla */
-  --max-width: 250px;   /* Ancho controlado para que quede "flotando" */
-  
-  /* Estilos visuales */
+  --top: 100px;         
+  --end: 15px;          
+  --width: auto;        
+  --max-width: 250px;   
   --border-radius: 12px;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   
-  /* Alineación del texto */
-  &::part(message) {
-    font-weight: 600;
-    padding-inline-start: 10px;
-  }
+  &::part(message) { font-weight: 600; padding-inline-start: 10px; }
+  &::part(button) { --color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
 }
 
-/* Colores dinámicos según el estado */
-.green-toast {
-  --background: var(--ion-color-success);
-  --color: #ffffff;
-}
+.green-toast { --background: var(--ion-color-success); --color: #ffffff; }
+.red-toast { --background: var(--ion-color-danger); --color: #ffffff; }
+.unknown-toast, .black-toast { --background: #333333; --color: #ffffff; }
 
-.red-toast {
-  --background: var(--ion-color-danger);
-  --color: #ffffff;
-}
-
-.unknown-toast, .black-toast {
-  --background: #333333;
-  --color: #ffffff;
-}
-
-/* Ajuste para que el botón "OK" no se vea gigante */
-.custom-toast::part(button) {
-  --color: #ffffff;
-  font-weight: bold;
-  text-transform: uppercase;
-  font-size: 0.8em;
-}
-
-// DESHABILITAR BOTONES 
-.button-disabled {
-  opacity: 0.5;
-  pointer-events: none; /* Prevents clicks at the CSS level too */
-  transition: opacity 0.2s;
-}
-
-/* ==========================================================================
-   POPOVERS SUPERIORES (BÚSQUEDA Y RUTAS)
-   Evita que el teclado del dispositivo tape los inputs
-   ========================================================================== */
-ion-popover.top-search-popover {
-  &::part(content) {
-    position: absolute !important;
-    top: 5vh !important;           /* Separación del 5% desde arriba */
-    bottom: auto !important;       /* Anula el centrado vertical de Ionic */
-    transform: none !important;    /* Evita cálculos dinámicos de posición */
-    
-    width: 94vw !important;        /* Ancho casi completo */
-    left: 3vw !important;          /* Centrado horizontal (3 + 94 + 3 = 100) */
-    max-width: 420px !important;   /* Límite para tablets */
-    
-    /* En tablets/escritorio, si el ancho es 420px, lo centramos con calc */
-    @media (min-width: 450px) {
-      left: calc(50% - 210px) !important;
-    }
-
-    max-height: 45vh !important;   /* Deja la mitad inferior libre para el teclado */
-    border-radius: var(--glass-radius, 28px) !important;
+/* --- Loading Controller --- */
+.glass-loading-overlay {
+  --background: rgba(255, 255, 255, 0.95);
+  --spinner-color: var(--ion-color-primary, #3880ff);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  .loading-wrapper {
+    border-radius: 20px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #333 !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 13px;
   }
 }

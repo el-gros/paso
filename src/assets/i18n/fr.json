@@ -59,8 +59,8 @@
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Voici le parcours demandé",
     "DIALOG_TITLE": "Partager uniquement par Gmail",
-    "TOAST1": "Le parcours a été partagé avec succès",
-    "TOAST2": "L'exportation a échoué",
+    "EXPORT_SUCCESS": "Le parcours a été partagé avec succès",
+    "EXPORT_ERROR": "L'exportation a échoué",
     "LOADING_ERROR": "Erreur lors du chargement du parcours",
     "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
     "TRACK_UPDATED": "Le parcours a été mis à jour avec succès",
@@ -87,6 +87,7 @@
     "STYLE": "Style"
   },
   "CANVAS": {
+    "TRACK": "Trajet",
     "ARCTITLE": "PARCOURS DE RÉFÉRENCE",
     "CURTITLE": "PARCOURS ACTUEL",
     "DISTANCE": "Distance",
@@ -124,6 +125,7 @@
     "CANCEL": "Annuler"
   },
   "RECORD": {
+    "BUTTON": "ENREGISTRER",
     "START_TRACKING": "Démarrer",
     "STOP_TRACKING": "Arrêter",
     "WAYPOINT": "Wpt.",
@@ -133,7 +135,8 @@
     "CONFIRM_DELETION": "Confirmer la suppression ?",
     "DELETE_YES": "Oui",
     "DELETE_NO": "Non",
-    "DEFAULT_NAME": "Sans nom"
+    "DEFAULT_NAME": "Sans nom",
+    "SHARE_TEXT": "Vous pouvez voir mon itinéraire à : "
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -185,7 +188,9 @@
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "Le délai d'attente du GPS est dépassé",
-    "CHECK": "Le signal GPS est faible" 
+    "CHECK": "Vérifiez que le signal GPS de l'appareil est activé et fonctionne.",
+    "GPS_TITLE": "Aucun signal GPS",
+    "OK_BUTTON": "Compris"
   },
   "REPORT": {
     "ROUTE_NAME": "Nom de l'itinéraire",
@@ -202,5 +207,14 @@
     "MESSAGE": "Afin de prendre des photos et de les lier à vos itinéraires ou points géographiques, nous avons besoin que vous nous accordiez l'accès à l'appareil photo. Voulez-vous l'accorder maintenant ?",
     "OK": "Autoriser",
     "CANCEL": "Pas maintenant"
+  },
+  "TRANSPORT": {
+    "DRIVING_CAR": "Voiture",
+    "CYCLING_REGULAR": "Vélo",
+    "CYCLING_MOUNTAIN": "VTT",
+    "FOOT_WALKING": "À pied",
+    "FOOT_HIKING": "Randonnée",
+    "WHEELCHAIR": "Fauteuil roulant",
+    "UNKNOWN": "Inconnu"
   }
 }

@@ -27,7 +27,14 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
               <ion-icon name="expand-outline"></ion-icon> </div>
           </div>
         }
-        
+        <div class="meta-tags-row">
+          @if (editableWpt.altitude !== undefined && editableWpt.altitude !== null) {
+            <span class="meta-tag">
+              <ion-icon name="trending-up-outline"></ion-icon>
+              {{ editableWpt.altitude | number:'1.0-0' }} m
+            </span>
+          }
+        </div>
         <div class="form-container">
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
@@ -97,7 +104,23 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
         ion-icon { font-size: 14px; }
       }
     }
-
+    /* Meta tags row */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .meta-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.05);
+      color: #666;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
     /* ... Resto de tus estilos se mantienen igual ... */
     .popover-header {
       display: flex; align-items: center; gap: 10px; margin-bottom: 15px;

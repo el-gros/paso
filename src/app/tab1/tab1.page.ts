@@ -27,6 +27,7 @@ import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rx
 import { WikiCardComponent } from '../wiki-card.component';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PhotoService } from '../services/photo.service';
+import { lastValueFrom } from 'rxjs';
 
 // --- OPENLAYERS IMPORTS ---
 import { MapBrowserEvent } from 'ol';
@@ -61,7 +62,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
-  private firstPointReceived = false;
+  public firstPointReceived = false;
 
   private locListener: any;
   private routeListener: any;
@@ -463,6 +464,10 @@ export class Tab1Page implements OnInit, OnDestroy {
           if (index >= 0) {
             // Esto abre el otro editor (el de la ruta completa)
             await this.reference.editTrack(index);
+          } else {
+            // Ruta temporal (no está en la colección).
+            // Pasamos -1 para indicarle al editor que es un borrador.
+            await this.reference.editTrack(-1); 
           }
         }
       }
@@ -514,6 +519,7 @@ export class Tab1Page implements OnInit, OnDestroy {
           await this.reference.displayArchivedTrack();
           await this.geography.setMapView(trackData);
           await this.location.sendReferenceToPlugin();
+          this.reference.foundRoute = false;
           
           this.cd.detectChanges();
         } else {
@@ -633,53 +639,87 @@ export class Tab1Page implements OnInit, OnDestroy {
     await toast.present();
   }
 
-  // ADD PHOTO WAYPOINT
   async addPhotoWaypoint() {
     console.log("👉 Botó de foto premut. Estat actual:", this.location.state);
 
-    // 1. Validem si estem gravant una ruta
-    if (!this.present.currentTrack || this.location.state !== 'tracking') {
-      console.warn("🚫 Càmera bloquejada: No hi ha cap ruta activa o l'estat no és 'tracking'.");
-      
-      // Opcional: Avisar l'usuari perquè sàpiga per què no fa res el botó
-      this.fs.displayToast('Inicia el seguiment de la ruta per fer fotos', 'warning');
+    const coordsArray = this.present.currentTrack?.features?.[0]?.geometry?.coordinates;
+
+    if (!this.present.currentTrack || this.location.state !== 'tracking' || !coordsArray || coordsArray.length === 0) {
+      console.warn("🚫 Càmera bloquejada: No hi ha cap ruta activa o encara no tenim el primer punt GPS.");
+      this.fs.displayToast('Esperant el primer punt GPS per fer fotos...', 'warning');
       return;
     }
 
     console.log("📸 Iniciant procés de captura de foto...");
     
-    // 2. Tomamos la foto (el PhotoService ya se encarga de registrarla temporalmente)
     const photoUri = await this.photo.takeAndSavePhoto();
 
     if (photoUri) {
       try {
-        console.log("📍 Obtenint coordenades per al waypoint...");
-        // 3. Coordenadas de este instante
-        const currentLoc = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
-        const coords: [number, number] = [currentLoc.coords.longitude, currentLoc.coords.latitude];
+        const index = coordsArray.length - 1;
+        const currentPoint = coordsArray[index];
+        
+        // --- NUEVO: Extraer compAltitude de los datos del track ---
+        const trackDataArray = this.present.currentTrack.features[0].geometry.properties?.data;
+        // Buscamos el compAltitude en el mismo índice, con un fallback a la coordenada Z (si existe) o 0
+        const realAltitude = trackDataArray && trackDataArray[index] 
+          ? trackDataArray[index].compAltitude 
+          : undefined;
 
-        // 4. Creamos el Waypoint
+        // --- 1. BUSCAR NOMBRE DEL LUGAR (REVERSE GEOCODING) ---
+        let placeName = this.translate.instant('MAP.PHOTO_WAYPOINT_NAME') || 'Foto'; 
+
+        try {
+          const addressObservable = this.mapService.reverseGeocode(currentPoint[1], currentPoint[0]);
+          const addressPromise = lastValueFrom(addressObservable);
+          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 800)); 
+          
+          const address: any = await Promise.race([addressPromise, timeoutPromise]);
+          
+          if (address) {
+            const foundName = address.short_name || address.name || address.display_name;
+            if (foundName) {
+              placeName = `📷 ${foundName}`; 
+            }
+          }
+        } catch (geoError) {
+          console.warn("⚠️ No s'ha pogut obtenir el nom del lloc per a la foto.", geoError);
+        }
+
+        // --- 2. CREAR EL WAYPOINT ---
         const newWaypoint: Waypoint = {
-          name: this.translate.instant('MAP.PHOTO_WAYPOINT_NAME') || 'Foto',
-          longitude: coords[0],
-          latitude: coords[1],
+          name: placeName,             
+          longitude: currentPoint[0], 
+          latitude: currentPoint[1],  
+          altitude: realAltitude,      // <-- Guardamos la altitud real
           photos: [photoUri]
         };
 
-        // 5. Lo añadimos SOLO A LA MEMORIA (sin this.fs.storeSet)
+        // --- 3. GUARDAR EN MEMORIA ---
         if (!this.present.currentTrack.features[0].waypoints) {
           this.present.currentTrack.features[0].waypoints = [];
         }
         this.present.currentTrack.features[0].waypoints.push(newWaypoint);
 
-        this.fs.displayToast('Foto añadida a la ruta en curso', 'success');
-        console.log("✅ Waypoint fotogràfic desat amb èxit:", newWaypoint);
+        this.fs.displayToast('Foto afegida a la ruta', 'success');
+        console.log(`✅ Waypoint fotogràfic desat amb èxit: ${placeName} a ${realAltitude}m`);
 
       } catch (error) {
-        console.error("❌ Error con la ubicación fotográfica:", error);
-        this.fs.displayToast('Error al obtenir la ubicació per a la foto', 'error');
+        console.error("❌ Error al guardar el waypoint de la foto:", error);
+        this.fs.displayToast('Error en desar la foto', 'error');
       }
     }
+  }
+
+  async startTracking() {
+    this.present.currentTrack = undefined;
+    this.location.currentPoint = 0;
+    this.present.filtered = 0;
+    this.location.averagedSpeed = 0;
+    this.present.computedDistances = 0;
+    if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
+    this.location.state = 'tracking';
+    await this.location.sendReferenceToPlugin();
   }
 
 }

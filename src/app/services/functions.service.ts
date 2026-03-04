@@ -150,7 +150,7 @@ export class FunctionsService {
 // --- COLD START FIX ---
       // For the first 5 points, continuously reset the baseline to the smoothed 
       // altitude to ignore the initial GPS spike.
-      if (num < 5) {
+      if (i < 5) {
          this.lastStableAlt = curr.compAltitude;
          props.totalElevationGain = 0;
          props.totalElevationLoss = 0;

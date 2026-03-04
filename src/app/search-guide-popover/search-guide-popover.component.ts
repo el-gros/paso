@@ -361,6 +361,10 @@ export class SearchGuidePopoverComponent implements OnInit {
       this.reference.foundRoute = true;  
       const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
 
+      // Transformamos 'driving-car' a 'DRIVING_CAR' para que coincida con tus claves de traducción
+      const transportKey = this.selectedTransport ? this.selectedTransport.toUpperCase().replace('-', '_') : 'UNKNOWN';
+      const translatedTransport = this.translate.instant(`TRANSPORT.${transportKey}`);
+
       // Construimos nuestro objeto Track estandarizado
       const newTrack: Track = {
         type: 'FeatureCollection',
@@ -370,7 +374,8 @@ export class SearchGuidePopoverComponent implements OnInit {
             name: `${this.query2} ➔ ${this.query3}`,
             place: this.query3,
             date: new Date(),
-            description: `ORS Profile: ${this.selectedTransport}`,
+            // Usamos la variable ya traducida
+            description: translatedTransport,
             totalDistance: stats.distance / 1000,
             totalTime: Math.round(stats.duration * 1000),
             totalElevationGain: Math.round(routeFeature.properties.ascent || 0),

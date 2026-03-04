@@ -3,61 +3,55 @@ import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PresentService } from './services/present.service';
+import { LocationManagerService } from './services/location-manager.service';
 
 @Component({
   selector: 'app-save-track-popover',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, TranslateModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, IonicModule, TranslateModule],
   template: `
-    <ion-content scrollY="false" class="ion-no-padding">
-      <div class="local-glass-island">
-      
-        <div class="popover-header">
-          <ion-icon name="location-sharp" class="header-icon"></ion-icon>
-          <h2>{{ 'CANVAS.ARCTITLE' | translate }}</h2>
-        </div>
-
-        <div class="form-container">
-          <div class="input-group">
-            <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
-            <ion-textarea 
-              [(ngModel)]="modalEdit.name" 
-              rows="1" 
-              autoGrow="true" 
-              class="custom-textarea"
-              [placeholder]="isNaming ? 'Cercant lloc...' : ''">
-            </ion-textarea>
-          </div>
-          
-          <div class="input-group">
-            <ion-label class="custom-label">{{ 'EDIT.DESCRIPTION' | translate }}</ion-label>
-            <ion-textarea [(ngModel)]="modalEdit.description" rows="3" autoGrow="true" class="custom-textarea"></ion-textarea>
-          </div>
-        </div>
-
-        <div class="button-grid">
-          <button class="nav-item-btn green-pill" (click)="confirm()" [disabled]="isNaming">
-            <ion-icon name="checkmark-sharp"></ion-icon>
-            <p>OK</p>
-          </button>
-          <button class="nav-item-btn red-pill" (click)="cancel()">
-            <ion-icon name="close-sharp"></ion-icon>
-            <p>{{ 'EDIT.CANCEL' | translate }}</p>
-          </button>
-        </div>
-
+    <div class="local-glass-island">
+    
+      <div class="popover-header">
+        <ion-icon name="location-sharp" class="header-icon"></ion-icon>
+        <h2>{{ 'CANVAS.TRACK' | translate | uppercase }}</h2>
       </div>
-    </ion-content>
+
+      <div class="form-container">
+        <div class="input-group">
+          <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
+          <ion-textarea 
+            [(ngModel)]="modalEdit.name" 
+            rows="1" 
+            autoGrow="true" 
+            class="custom-textarea"
+            [placeholder]="isNaming ? 'Cercant lloc...' : ''">
+          </ion-textarea>
+        </div>
+        
+        <div class="input-group">
+          <ion-label class="custom-label">{{ 'EDIT.DESCRIPTION' | translate }}</ion-label>
+          <ion-textarea [(ngModel)]="modalEdit.description" rows="3" autoGrow="true" class="custom-textarea"></ion-textarea>
+        </div>
+      </div>
+
+      <div class="button-grid">
+        <button class="nav-item-btn green-pill" (click)="confirm()" [disabled]="isNaming">
+          <ion-icon name="checkmark-sharp"></ion-icon>
+          <p>OK</p>
+        </button>
+        <button class="nav-item-btn red-pill" (click)="cancel()">
+          <ion-icon name="close-sharp"></ion-icon>
+          <p>{{ 'EDIT.CANCEL' | translate }}</p>
+        </button>
+      </div>
+
+    </div>
   `,
   styles: [`
-    ion-content { 
-      --background: transparent; 
-      --overflow: hidden;
-    }
-
     .local-glass-island {
       background: rgba(255, 255, 255, 0.96) !important;
       backdrop-filter: blur(16px);
@@ -120,6 +114,7 @@ import { PresentService } from './services/present.service';
   `]
 })
 export class SaveTrackPopover implements OnInit { 
+  public location = inject(LocationManagerService);
   @Input() modalEdit: any;
 
   // Inyectamos los servicios
@@ -132,8 +127,8 @@ export class SaveTrackPopover implements OnInit {
   async ngOnInit() {
     this.modalEdit = { ...this.modalEdit };
 
-    // Obtenemos las coordenadas AQUÍ, es más seguro que en las propiedades de la clase
-    const coords = this.present.currentTrack?.features?.[0]?.geometry?.coordinates;
+    // Usamos las coordenadas que nos llegan desde editTrack()
+    const coords = this.modalEdit.coords;
 
     // Si el nombre viene vacío, intentamos sugerir uno
     if (!this.modalEdit.name && coords && coords.length > 0) {
@@ -182,5 +177,7 @@ export class SaveTrackPopover implements OnInit {
   }
 
   cancel() { this.popoverCtrl.dismiss(); }
-  confirm() { this.popoverCtrl.dismiss({ action: 'ok', ...this.modalEdit }); }
+  confirm() { 
+    this.popoverCtrl.dismiss({ action: 'ok', ...this.modalEdit }); 
+  }
 }

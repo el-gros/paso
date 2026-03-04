@@ -121,21 +121,6 @@ export class PresentService {
     bbox[3] = Math.max(bbox[3], coord[1]); // Max Lat
   }
 
-  async setWaypointAltitude() {
-    const track = this.currentTrack;
-    if (!track) return;
-
-    const waypoints: Waypoint[] = track.features[0].waypoints || [];
-    const data = track.features[0].geometry.properties.data;
-
-    for (const wp of waypoints) {
-      // Logic assumes wp.altitude stores the index of the point in 'data'
-      if (typeof wp.altitude === 'number' && data[wp.altitude]) {
-        wp.altitude = data[wp.altitude].compAltitude;
-      }
-    }
-  }
-
   // --- 3. TRACK LIFECYCLE ---
   async foregroundTask(track: Track) {
     if (!track) return undefined;

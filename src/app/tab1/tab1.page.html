@@ -1,15 +1,24 @@
 <!-- FAB button -->
 <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
   <ion-row>
-    <div class="record-button with-indicator" (click)="present.isRecordPopoverOpen = true;">
-      <ion-icon name="recording-sharp"></ion-icon>
-      <span *ngIf="location.state === 'tracking'" class="tracking-dot"></span>
-      <span>{{ 'RECORD.BUTTON' | translate }}</span>
-    </div>
+    @if (location.state === 'tracking') {
+      <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
+        <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
+        <span class="tracking-dot"></span>
+        <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
+      </div>
+    } @else {
+      <div class="record-button" (click)="startTracking()">
+        <ion-icon name="caret-forward-circle-sharp" class="primary-icon"></ion-icon>
+        <p>{{ 'RECORD.BUTTON' | translate }}</p>
+      </div>
+    }
+
     <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">
       <ion-icon name="search-circle-sharp"></ion-icon>
       <span>{{ 'SEARCH.BUTTON' | translate }}</span>
     </div>
+
     <div class="record-button" (click)="mapService.cycleZoom()">
       <ion-icon name="expand-sharp"></ion-icon>
       <span>{{ 'MAP.ZOOM_BUTTON' | translate }}</span>
@@ -17,23 +26,23 @@
   </ion-row>
 </ion-fab>
 
-<!-- On route? -->
 @if (present.currentTrack && reference.archivedTrack) { 
   <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
     <div class="status-indicator-container">
-      <div class="led-button" [ngClass]="fs.routeStatus"> <ion-icon [name]="fs.routeStatus === 'green' ? 'checkmark-circle' : (fs.routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon> </div>
+      <div class="led-button" [ngClass]="fs.routeStatus"> 
+        <ion-icon [name]="fs.routeStatus === 'green' ? 'checkmark-circle' : (fs.routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon> 
+      </div>
     </div>
   </ion-fab>
 }
 
-<!-- Regular content -->
 <ion-content [fullscreen]="true">
   <app-record-popover></app-record-popover>
   
-    <app-search-guide-popover 
-      (onWikiResult)="handleWikiResult($event)"
-      (onClearResult)="wikiData = null">
-    </app-search-guide-popover>
+  <app-search-guide-popover 
+    (onWikiResult)="handleWikiResult($event)"
+    (onClearResult)="wikiData = null">
+  </app-search-guide-popover>
   
   <div id="map-wrapper">
     <div id="map"></div>
@@ -41,14 +50,14 @@
   <div class="safe-area"></div>
 </ion-content>
 
-<app-wiki-card 
-  *ngIf="wikiData"
-  [data]="wikiData" 
-  (onClose)="wikiData = null">
-</app-wiki-card>
+@if (wikiData) {
+  <app-wiki-card 
+    [data]="wikiData" 
+    (onClose)="wikiData = null">
+  </app-wiki-card>
+}
 
-<!-- Camera -->
-@if (location.state === 'tracking') {
+@if (location.state === 'tracking' && firstPointReceived) {
   <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
     <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
       <ion-icon name="camera-sharp"></ion-icon>
@@ -56,7 +65,6 @@
   </ion-fab>
 }
 
-<!-- Navigation buttons -->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
@@ -73,4 +81,3 @@
     </div>
   </ion-row>
 </ion-fab>
-

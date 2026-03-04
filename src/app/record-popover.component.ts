@@ -11,7 +11,7 @@ import LineString from 'ol/geom/LineString';
 import { register } from 'swiper/element/bundle';
 import { Waypoint } from 'src/globald';
 
-// Tus Servicios (Asegúrate de que las rutas sean correctas)
+// Tus Servicios
 import { FunctionsService } from './services/functions.service';
 import { GeographyService } from './services/geography.service';
 import { LocationManagerService } from './services/location-manager.service';
@@ -32,44 +32,40 @@ register();
     <ion-popover 
       [isOpen]="present.isRecordPopoverOpen" 
       (didDismiss)="present.isRecordPopoverOpen = false"
+      backdropDismiss="false"
       class="floating-popover">
       <ng-template>
         <div class="popover-island">
           <div class="button-grid">
-            <button class="nav-item-btn" 
-              [disabled]="location.state !== 'inactive'" 
-              (click)="startTracking(); present.isRecordPopoverOpen = false">
-              <ion-icon name="caret-forward-circle-sharp" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.START_TRACKING' | translate }}</p>
-            </button>
+              <button class="nav-item-btn enabled" (click)="setTrackDetails(); present.isRecordPopoverOpen = false">
+                <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
+                <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
+              </button>
 
-            <button class="nav-item-btn" 
-              [disabled]="location.state !== 'tracking'" 
-              (click)="waypoint(); present.isRecordPopoverOpen = false">
-              <ion-icon name="location-sharp" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.WAYPOINT' | translate }}</p>
-            </button>
+              <button class="nav-item-btn" (click)="present.isConfirmDeletionOpen = true; present.isRecordPopoverOpen = false">
+                <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
+                <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
+              </button>
+          </div>
+        </div>
+      </ng-template>
+    </ion-popover>
 
-            <button class="nav-item-btn" 
-              [disabled]="location.state !== 'tracking'" 
-              (click)="present.isConfirmStopOpen = true; present.isRecordPopoverOpen = false">
-              <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
+    <ion-popover 
+      [isOpen]="present.isConfirmStopOpen" 
+      (didDismiss)="cancelStop()" 
+      class="confirm-popover">
+      <ng-template>
+        <div class="popover-island confirm-box">
+          <p class="confirm-title">{{ 'RECORD.CONFIRM_STOP' | translate }}</p>
+          <div class="button-grid horizontal">
+            <button class="nav-item-btn green-pill" (click)="confirmStop()">
+              <ion-icon name="checkmark-sharp"></ion-icon>
+              <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
-
-            <button class="nav-item-btn" 
-              [disabled]="location.state !== 'stopped'" 
-              [class.enabled]="location.state === 'stopped'"
-              (click)="setTrackDetails(); present.isRecordPopoverOpen = false">
-              <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
-            </button>
-
-            <button class="nav-item-btn" 
-              [disabled]="location.state !== 'stopped' && location.state !== 'saved'" 
-              (click)="present.isConfirmDeletionOpen = true; present.isRecordPopoverOpen = false">
-              <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
+            <button class="nav-item-btn red-pill" (click)="cancelStop()">
+              <ion-icon name="close-sharp"></ion-icon>
+              <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>
         </div>
@@ -77,22 +73,18 @@ register();
     </ion-popover>
 
     <ion-popover 
-      [isOpen]="present.isConfirmStopOpen || present.isConfirmDeletionOpen" 
-      (didDismiss)="closeAllPopovers()"
+      [isOpen]="present.isConfirmDeletionOpen" 
+      (didDismiss)="cancelDelete()" 
       class="confirm-popover">
       <ng-template>
         <div class="popover-island confirm-box">
-          <p class="confirm-title">
-            {{ (present.isConfirmStopOpen ? 'RECORD.CONFIRM_STOP' : 'RECORD.CONFIRM_DELETION') | translate }}
-          </p>
+          <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
           <div class="button-grid horizontal">
-            <button class="nav-item-btn green-pill" 
-              (click)="present.isConfirmStopOpen ? stopTracking() : deleteTrack(); closeAllPopovers()">
+            <button class="nav-item-btn green-pill" (click)="confirmDelete()">
               <ion-icon name="checkmark-sharp"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
-            
-            <button class="nav-item-btn red-pill" (click)="closeAllPopovers()">
+            <button class="nav-item-btn red-pill" (click)="cancelDelete()">
               <ion-icon name="close-sharp"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
@@ -101,47 +93,31 @@ register();
       </ng-template>
     </ion-popover>
   `,
-styles: [`
+  styles: [`
     /* --- ESTRUCTURA BASE FLOTANTE --- */
-    .popover-island {
-      padding: 16px 10px;
-    }
+    .popover-island { padding: 16px 10px; }
 
     /* --- GRID Y CONTENEDORES --- */
     .button-grid {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      gap: 5px;
+      display: flex; justify-content: space-around; align-items: center; gap: 5px;
     }
-
     .button-grid.horizontal {
-      justify-content: center;
-      gap: 40px; /* Espacio mayor para botones de SÍ/NO */
+      justify-content: center; gap: 40px; 
     }
 
     /* --- COLORES Y ESTADOS --- */
-    .primary-icon { 
-      color: var(--ion-color-primary, #3880ff) !important; 
-    }
+    .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
 
-    /* Clase especial para resaltar el botón de Guardar cuando está listo */
-    .enabled ion-icon {
-      animation: pulse 2s infinite;
-    }
-
+    .enabled ion-icon { animation: pulse 2s infinite; }
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.1); }
       100% { transform: scale(1); }
     }
-
-    /* --- CAJA DE CONFIRMACIÓN --- */
-
   `]
 })
 
-export class RecordPopoverComponent { 
+export class RecordPopoverComponent implements OnInit, OnDestroy { 
   public fs = inject(FunctionsService);
   public geography = inject(GeographyService);
   public location = inject(LocationManagerService);
@@ -153,18 +129,15 @@ export class RecordPopoverComponent {
   private mapService = inject(MapService);
   private photo = inject(PhotoService);
 
-  // Estados de UI
-
   loading = false;
   subscription?: Subscription;
+  
+  // Variables para evitar cruces al dispararse didDismiss automáticamente al pulsar SÍ
+  private isProcessingStop = false;
+  private isProcessingDelete = false;
 
-  ngOnInit() {
-    // Inicialización si es necesaria
-  }
-
-  ngOnDestroy() {
-    this.subscription?.unsubscribe();
-  }
+  ngOnInit() {}
+  ngOnDestroy() { this.subscription?.unsubscribe(); }
 
   closeAllPopovers() {
     this.present.isRecordPopoverOpen = false;
@@ -172,17 +145,50 @@ export class RecordPopoverComponent {
     this.present.isConfirmDeletionOpen = false;
   }
 
-  async startTracking() {
-    this.present.currentTrack = undefined;
-    this.location.currentPoint = 0;
-    this.present.filtered = 0;
-    this.location.averagedSpeed = 0;
-    this.present.computedDistances = 0;
-    if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
-    this.location.state = 'tracking';
-    await this.location.sendReferenceToPlugin();
+  // ==========================================
+  // FLUJO DE PARADA (STOP)
+  // ==========================================
+  async confirmStop() {
+    this.isProcessingStop = true; // Bloqueamos
+    this.present.isConfirmStopOpen = false; // Inicia la animación de cierre
+    await this.stopTracking(); 
+    // NO restablecemos la variable aquí
   }
 
+  cancelStop() {
+    // Si se está cerrando porque pulsamos "SÍ", restablecemos el candado y abortamos
+    if (this.isProcessingStop) {
+      this.isProcessingStop = false; 
+      return; 
+    }
+    // Si pulsamos "NO" o tocamos fuera, simplemente se cierra
+    this.present.isConfirmStopOpen = false; 
+  }
+
+  // ==========================================
+  // FLUJO DE BORRADO (DELETE)
+  // ==========================================
+  async confirmDelete() {
+    this.isProcessingDelete = true; // Bloqueamos
+    this.present.isConfirmDeletionOpen = false; // Inicia la animación de cierre
+    await this.deleteTrack();
+    // NO restablecemos la variable aquí
+  }
+
+  cancelDelete() {
+    // Si se está cerrando porque pulsamos "SÍ", restablecemos el candado y abortamos
+    if (this.isProcessingDelete) {
+      this.isProcessingDelete = false; 
+      return; 
+    }
+    // Si pulsamos "NO" o tocamos fuera, reabrimos el menú principal
+    this.present.isConfirmDeletionOpen = false; 
+    this.present.isRecordPopoverOpen = true; 
+  }
+
+  // ==========================================
+  // ACCIONES DEL TRACK
+  // ==========================================
   async deleteTrack() {
     this.location.state = 'inactive';
     this.present.currentTrack = undefined;
@@ -203,7 +209,6 @@ export class RecordPopoverComponent {
       return;
     }
 
-    await this.present.setWaypointAltitude();
     coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length < 1) return;
 
@@ -228,40 +233,9 @@ export class RecordPopoverComponent {
     await this.geography.setMapView(this.present.currentTrack);
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
     await this.location.sendReferenceToPlugin();
-  }
 
-  // 37. ADD WAYPOINT ////////////////////////////////////
-  async waypoint() {
-    if (!this.present.currentTrack) return;
-    const num: number = this.present.currentTrack.features[0].geometry.coordinates.length;
-    const point = this.present.currentTrack.features[0].geometry.coordinates[num - 1];
-    // Wrap the reverse geocode in a timeout
-    const addressObservable = this.mapService.reverseGeocode(point[1], point[0]);
-    const addressPromise = lastValueFrom(addressObservable);
-    // Timeout promise (rejects or resolves after 500 ms)
-    const timeoutPromise = new Promise(resolve =>
-      setTimeout(() => resolve(null), 500)
-    );
-    // Race both
-    const address: any = (await Promise.race([addressPromise, timeoutPromise])) || {
-      name: '',
-      display_name: '',
-      short_name: ''
-    };
-    const waypoint: Waypoint = {
-      longitude: point[0],
-      latitude: point[1],
-      altitude: num - 1,
-      name: address?.short_name ?? address?.name ?? address?.display_name ?? '',
-      comment: ''
-    };
-    const response = await this.fs.editWaypoint(waypoint, false, true);
-    if (response && response.action === 'ok' && response.name !== undefined && response.comment !== undefined) {
-      waypoint.name = response.name;
-      waypoint.comment = response.comment;
-      this.present.currentTrack?.features[0].waypoints?.push(waypoint);
-      this.fs.displayToast(this.translate.instant('MAP.WPT_ADDED'), 'success');
-    }
+    // Abrir ventana para guardar
+    await this.setTrackDetails();
   }
 
   async setTrackDetails(ev?: any) {
@@ -269,25 +243,27 @@ export class RecordPopoverComponent {
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit},
-      // event: ev, // <-- Remove this if you want it centered as a "floating island"
       cssClass: 'glass-island-wrapper',
       translucent: true,
       backdropDismiss: true
     });
     await popover.present();
     const { data } = await popover.onDidDismiss();
+    
     if (data?.action === 'ok') {
       const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
       await this.saveFile(name, data.description);
+    } else {
+      // Si la acción fue 'cancel' O el rol fue 'backdrop' (pulsar fuera)
+      if (this.location.state === 'stopped') {
+        this.present.isRecordPopoverOpen = true;
+      }
     }
   }
 
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     
-    // LOG 1: ¿Viene el track con waypoints desde la memoria?
-    console.log("💾 Intentando guardar track. Waypoints en memoria:", track?.features[0]?.waypoints);
-
     if (!track?.features?.[0]) return;
     this.loading = true;
     try {
@@ -310,9 +286,6 @@ export class RecordPopoverComponent {
         }
       }
 
-      // LOG 2: ¿Hemos extraído fotos correctamente?
-      console.log("📸 Fotos extraídas para el resumen:", routePhotos);
-
       await this.fs.storeSet(dateKey, trackToSave);
       
       const newItem = {
@@ -324,16 +297,16 @@ export class RecordPopoverComponent {
         photos: routePhotos
       };
 
-      // LOG 3: ¿Cómo queda el objeto que va a la lista?
-      console.log("📝 Nuevo item de colección:", newItem);
-
       this.fs.collection.unshift(newItem);
       
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.collection = [...this.fs.collection];
       await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
-      this.location.state = 'saved';
+      this.location.state = 'inactive';
+      this.present.currentTrack = undefined;
+      this.geography.currentLayer?.getSource()?.clear();
+      this.closeAllPopovers()
     } catch (e) {
       console.error("Save failed", e);
     } finally {
@@ -341,5 +314,4 @@ export class RecordPopoverComponent {
       this.cd.detectChanges();
     }
   }
-
 }

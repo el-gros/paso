@@ -59,8 +59,8 @@
   "VISIBLE_LABEL": "Visible",
   "TEXT": "Aquí teniu el trajecte sol·licitat",
   "DIALOG_TITLE": "Compartiu només per Gmail",
-  "TOAST1": "S'ha compartit correctament el trajecte",
-  "TOAST2": "L'exportació ha fallat",
+  "EXPORT_SUCCESS": "S'ha compartit correctament el trajecte",
+  "EXPORT_ERROR": "L'exportació ha fallat",
   "LOADING_ERROR": "Error al carregar el trajecte",
   "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers",
   "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
@@ -87,6 +87,7 @@
     "STYLE": "Estil"
   },
   "CANVAS": {
+    "TRACK": "Trajecte",
     "ARCTITLE": "TRAJECTE DE REFERÈNCIA",
     "CURTITLE": "TRAJECTE ACTUAL",
     "DISTANCE": "Distància",
@@ -124,6 +125,7 @@
     "CANCEL": "Cancel·lar"
   },
   "RECORD": {
+    "BUTTON": "Gravar",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
@@ -133,7 +135,8 @@
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
-    "DEFAULT_NAME": "Sense nom"
+    "DEFAULT_NAME": "Sense nom",
+    "SHARE_TEXT": "Podeu veure la meva ruta a: "
   },
   "COLORS": {
     "crimson": "carmesí",
@@ -179,7 +182,9 @@
   },
   "LOCATION": {
     "ERROR_TIMEOUT": "S'ha esgotat el temps d'espera del GPS",
-    "CHECK": "El senyal GPS és deficient" 
+    "CHECK": "Comprova que el senyal GPS del dispositiu està activat i funciona.",
+    "GPS_TITLE": "Sense senyal GPS",
+    "OK_BUTTON": "Entès" 
   },
   "REPORT": {
     "ROUTE_NAME": "Nom de la ruta",
@@ -194,5 +199,14 @@
     "MESSAGE": "Per poder fer fotografies i enllaçar-les a les teves rutes o punts geogràfics, necessitem que ens donis accés a la càmera. Vols concedir-lo ara?",
     "OK": "D'acord",
     "CANCEL": "Ara no"
+  },
+  "TRANSPORT": {
+    "DRIVING_CAR": "Cotxe",
+    "CYCLING_REGULAR": "Bicicleta",
+    "CYCLING_MOUNTAIN": "Bicicleta de muntanya",
+    "FOOT_WALKING": "A peu",
+    "FOOT_HIKING": "Senderisme",
+    "WHEELCHAIR": "Cadira de rodes",
+    "UNKNOWN": "Desconegut"
   }
 }
