@@ -8,10 +8,10 @@ import io.elgros.paso.MyServicePlugin
 
 class MainActivity : BridgeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        
         registerPlugin(CapacitorSQLitePlugin::class.java)
         registerPlugin(MyServicePlugin::class.java)
-        super.onCreate(savedInstanceState) // Llamamos al super primero
-               
+        super.onCreate(savedInstanceState)       
         Log.e("PasoApp", ">>> MainActivity onCreate HAS RUN. <<<")
     }
 }

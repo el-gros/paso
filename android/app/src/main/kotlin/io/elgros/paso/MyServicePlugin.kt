@@ -2,20 +2,18 @@ package io.elgros.paso
 
 import android.content.Intent
 import android.location.Location
-import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
-import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
-import com.getcapacitor.PluginMethod
+import com.getcapacitor.PluginMethod // 👈 ESTE ES EL ÚNICO QUE VALE
 import com.getcapacitor.annotation.CapacitorPlugin
 import android.content.Context
 
-@CapacitorPlugin(name = "PasoServicePlugin")
+@CapacitorPlugin(name = "MyService")
 class MyServicePlugin : Plugin() {
 
     companion object {
@@ -68,7 +66,6 @@ class MyServicePlugin : Plugin() {
     }
 
     fun sendLocationToJS(loc: Location) {
-        // 1. Calculamos isSimulated FUERA del bloque JSON para que sea accesible
         val isSimulatedValue = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             loc.isMock
         } else {
@@ -76,14 +73,12 @@ class MyServicePlugin : Plugin() {
             loc.isFromMockProvider
         }
 
-        // 2. Construimos el objeto JSObject
         val data = JSObject().apply {
             put("latitude", loc.latitude)
             put("longitude", loc.longitude)
             put("accuracy", loc.accuracy)
             put("altitude", loc.altitude)
             
-            // altitudeAccuracy (Disponible desde Android 8.0)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 put("altitudeAccuracy", loc.verticalAccuracyMeters)
             } else {
@@ -92,11 +87,10 @@ class MyServicePlugin : Plugin() {
             
             put("bearing", loc.bearing)
             put("speed", loc.speed)
-            put("time", loc.time.toDouble()) // Capacitor espera numérico
+            put("time", loc.time.toDouble()) 
             put("simulated", isSimulatedValue)
         }
         
-        // 3. Log y envío a JavaScript (ahora no dará error)
         Log.d("Paso", "Enviando a JS -> Lat: ${loc.latitude}, Spd: ${loc.speed}, Sim: $isSimulatedValue")
         notifyListeners("location", data)
     }
@@ -104,7 +98,7 @@ class MyServicePlugin : Plugin() {
     fun notifyStatusToJS(status: String, matchIndex: Int) {
         val data = JSObject().apply { 
             put("status", status)
-            put("matchIndex", matchIndex) // Agregamos el índice al JSON
+            put("matchIndex", matchIndex) 
         }
         notifyListeners("routeStatusUpdate", data)
     }
@@ -114,5 +108,26 @@ class MyServicePlugin : Plugin() {
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
         call.resolve(JSObject().put("value", isIgnoring))
+    }
+
+    // 🚀 AQUÍ ESTABA EL ERROR. AHORA ES @PluginMethod
+    @PluginMethod
+    fun updateSharingConfig(call: PluginCall) {
+        val isSharing = call.getBoolean("isSharing") ?: false
+        
+        val intent = Intent(context, PasoService::class.java).apply {
+            action = "ACTION_UPDATE_SHARING"
+            putExtra("isSharing", isSharing)
+            
+            if (isSharing) {
+                putExtra("shareToken", call.getString("shareToken"))
+                putExtra("deviceId", call.getString("deviceId"))
+                putExtra("supabaseUrl", call.getString("supabaseUrl"))
+                putExtra("supabaseKey", call.getString("supabaseKey"))
+            }
+        }
+        
+        context.startService(intent)
+        call.resolve()
     }
 }

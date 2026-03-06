@@ -2,18 +2,16 @@ import { Control } from 'ol/control';
 import { Map } from 'ol';
 import { TranslateService } from '@ngx-translate/core';
 import { LocationManagerService } from 'src/app/services/location-manager.service';
+import { LocationSharingService } from 'src/app/services/locationSharing.service';
 
 export class ShareControl extends Control {
-  public onShareStart?: () => Promise<boolean | void>;
-  public onShareStop?: () => Promise<void>;
-  
-  private isSharing = false;
   private button: HTMLButtonElement;
   private popup!: HTMLDivElement;
   private backdrop!: HTMLDivElement;
 
   constructor(
     private locationService: LocationManagerService,
+    private locationSharing: LocationSharingService, // 👈 Añadimos el nuevo servicio
     private translate: TranslateService
   ) {
     const element = document.createElement('div');
@@ -28,9 +26,6 @@ export class ShareControl extends Control {
     element.appendChild(this.button);
 
     this.initConfirmationUI();
-    
-    // Estado inicial desde el servicio
-    this.isSharing = this.locationService.isSharing;
     this.updateUI();
   }
 
@@ -69,12 +64,11 @@ export class ShareControl extends Control {
 
     this.popup.querySelector('#btnShareYes')?.addEventListener('click', async (e) => {
       e.preventDefault();
-      if (this.onShareStart) {
-        const success = await this.onShareStart(); 
-        if (success !== false) {
-          this.isSharing = true; 
-          this.updateUI();
-        }
+      
+      // 🚀 Llamada DIRECTA al servicio
+      const success = await this.locationSharing.startSharing(); 
+      if (success) {
+        this.updateUI();
       }
       this.hideConfirmation();
     });
@@ -84,9 +78,10 @@ export class ShareControl extends Control {
 
   private async handleMainButtonClick(event: Event) {
     event.preventDefault();
-    if (this.isSharing) {
-      if (this.onShareStop) await this.onShareStop();
-      this.isSharing = false;
+    
+    // 🚀 Leemos el estado real del servicio
+    if (this.locationService.isSharing) {
+      await this.locationSharing.stopSharing();
       this.updateUI();
     } else {
       this.showConfirmation();
@@ -97,18 +92,21 @@ export class ShareControl extends Control {
     const activeColor = '#3880ff';
     const inactiveColor = '#999999';
     
-    const iconName = this.isSharing ? 'share-social-sharp' : 'share-social-outline';
-    const color = this.isSharing ? activeColor : inactiveColor;
+    // Leemos siempre la verdad del servicio
+    const isSharing = this.locationService.isSharing; 
+    
+    const iconName = isSharing ? 'share-social-sharp' : 'share-social-outline';
+    const color = isSharing ? activeColor : inactiveColor;
 
     this.button.innerHTML = `
       <div style="position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
         <ion-icon name="${iconName}" style="font-size: 24px; color: ${color}; transition: all 0.3s;"></ion-icon>
-        ${this.isSharing ? '<span class="sharing-dot"></span>' : ''}
+        ${isSharing ? '<span class="sharing-dot"></span>' : ''}
       </div>
     `;
     
-    this.button.style.border = `1px solid ${this.isSharing ? activeColor : '#ccc'}`;
-    this.button.style.backgroundColor = this.isSharing ? '#f0f7ff' : '#ffffff';
+    this.button.style.border = `1px solid ${isSharing ? activeColor : '#ccc'}`;
+    this.button.style.backgroundColor = isSharing ? '#f0f7ff' : '#ffffff';
   }
 
   private showConfirmation() {
@@ -128,5 +126,4 @@ export class ShareControl extends Control {
       this.popup?.remove();
     }
   }
-
-} 
+}

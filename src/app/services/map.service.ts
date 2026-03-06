@@ -76,7 +76,9 @@ export class MapService {
     private reference: ReferenceService,
     private present: PresentService,
     private trackingService: TrackingControlService,
-    private sharing: LocationSharingService
+    private sharing: LocationSharingService,
+    private locationManager: LocationManagerService,
+    private locationSharingService: LocationSharingService
   ) { 
   }
 
@@ -96,23 +98,21 @@ export class MapService {
     }
   }
 
-  // 2. LOAD MAP //////////////////////////////////////
+// 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
     const mapElement = document.getElementById('map');
     if (!mapElement) return;
 
-    // A. Inicializar Controles
-    this.shareControl = new ShareControl(this.location, this.translate);
-
-    this.shareControl.onShareStart = async () => {
-      console.log('🚀 Iniciando compartido desde el mapa...');
-      return await this.sharing.startSharing();
-    };
-
-    this.shareControl.onShareStop = async () => {
-      console.log('🛑 Deteniendo compartido desde el mapa...');
-      await this.sharing.stopSharing();
-    };
+    // A. Inicializar Controles 
+    // 👇 Asignamos directamente a la propiedad de la clase y pasamos los 3 argumentos
+    this.shareControl = new ShareControl(
+      this.locationManager, 
+      this.locationSharingService, 
+      this.translate
+    );
+    
+    // ❌ BORRAMOS las asignaciones de onShareStart y onShareStop 
+    // porque ahora ShareControl hace ese trabajo internamente.
 
     // B. Inicializar Capas Vectoriales (Tipado estricto)
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
@@ -178,29 +178,11 @@ export class MapService {
       this.customControl = new LocationButtonControl(this.trackingService, this.translate);
       
       map.addControl(this.customControl);
-      map.addControl(this.shareControl);
+      map.addControl(this.shareControl); // 👈 Añade el control que hemos creado al principio
     }
 
     this.mapIsReady = true;
     this.mapWrapperElement = document.getElementById('map-wrapper');
-    this.initAutoCenter();
-  }
-
-  // 2. BIS. INIT AUTO CENTER //////////////////////////////////
-  private initAutoCenter() {
-    this.location.latestLocation$.pipe(
-      filter(loc => !!loc),
-      take(1)
-    ).subscribe(nextLoc => {
-      if (this.geography.map && nextLoc) {
-        this.geography.map.getView().animate({
-          center: [nextLoc.longitude, nextLoc.latitude],
-          zoom: 14,
-          duration: 1500, 
-          easing: (t) => t * (2 - t)
-        });
-      }
-    });
   }
 
   // 3. CREATE MAP LAYER

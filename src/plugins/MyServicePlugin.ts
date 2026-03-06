@@ -26,6 +26,13 @@ export interface MyServicePlugin {
   openAutostartSettings(): Promise<void>;
   openBatteryOptimization(): Promise<void>;
   isIgnoringBatteryOptimizations(): Promise<{ value: boolean }>;
+  updateSharingConfig(options: {
+    isSharing: boolean;
+    shareToken?: string;
+    deviceId?: string;
+    supabaseUrl?: string;
+    supabaseKey?: string;
+  }): Promise<void>;
 
   // Evento original de ubicación
   addListener(
@@ -42,6 +49,6 @@ export interface MyServicePlugin {
   removeAllListeners(): Promise<void>;
 }
 
-const MyService = registerPlugin<MyServicePlugin>('PasoServicePlugin');
+const MyService = registerPlugin<MyServicePlugin>('MyService');
 
 export default MyService;

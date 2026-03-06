@@ -323,11 +323,6 @@ export class Tab1Page implements OnInit, OnDestroy {
             await this.present.updateTrack(cleanLocation);
           }
           
-          // 5. Compartir posición en tiempo real (si está activo)
-          if (this.location.isSharing) {
-            await this.location.shareLocationIfActive(cleanLocation);
-          }
-
           // --- FORZAR RENDER: Vital para ver los cambios al instante ---
           this.geography.map?.render();
           this.cd.detectChanges(); // Refuerzo para la detección de cambios de Angular

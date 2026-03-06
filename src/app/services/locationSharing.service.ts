@@ -2,6 +2,8 @@ import { Injectable } from "@angular/core";
 import { Device } from "@capacitor/device";
 import { FunctionsService } from './functions.service';
 import { TranslateService } from '@ngx-translate/core';
+import MyService from 'src/plugins/MyServicePlugin'; 
+import { global } from '../../environments/environment';
 import { SupabaseService } from './supabase.service';
 import { Subscription, take } from 'rxjs'; // Añadimos take
 import { LocationManagerService } from './location-manager.service'
@@ -28,78 +30,88 @@ export class LocationSharingService {
       this.locationService.deviceId = info.identifier;
     }
 
-  async startSharing(): Promise<boolean> {
+  // En LocationSharingService
+async startSharing(): Promise<boolean> {
     try {
       if (!this.locationService.deviceId) await this.init();
 
-      // 👇 EL FIX: Guardia de seguridad contra dobles ejecuciones
-      // Si ya estamos compartiendo, NO generamos un token nuevo.
-      // Solo volvemos a abrir el diálogo con el token actual.
-      if (this.locationService.isSharing && this.locationService.shareToken) {
-        console.log("Ya hay un token activo. Re-abriendo menú de compartir...");
-        try {
-          await Share.share({
-            title: this.translate.instant('SHARE.TITLE_MODAL') || 'Seguimiento',
-            text: this.translate.instant('RECORD.SHARE_TEXT') || 'Mi ruta:',
-            url: `https://el-gros.github.io/visor/visor.html?t=${this.locationService.shareToken}`,
-          });
-        } catch (e) {
-          console.warn("Menú nativo ya abierto o cancelado", e);
+      // 🛡️ PARACAÍDAS 1: Generador de Token a prueba de fallos
+      const generateSafeToken = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
         }
-        return true; 
-      }
-      // 👆 FIN DEL FIX
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+      };
 
-      // A partir de aquí, la lógica normal para crear un token desde cero
-      const newToken = crypto.randomUUID();
-      const location = await firstValueFrom(this.locationService.latestLocation$).catch(() => null);
-
-      // 1. CONFIGURAR TOKEN Y ACTIVAR YA EL SERVICIO
+      const newToken = this.locationService.shareToken || generateSafeToken();
       this.locationService.shareToken = newToken;
-      this.locationService.isSharing = true; 
-      await this.fs.storeSet('share_token', newToken);
+      this.locationService.isSharing = true;
 
-      // 2. INSERTAR PRIMER PUNTO
-      if (location) {
-        await this.supabaseService.supabase
-          .from('public_locations')
-          .insert([{
+      // 🚀 EL DISPARO INICIAL: Subida inmediata del primer punto desde TS
+      // ⚠️ IMPORTANTE: Cambia 'currentLocation' por la variable exacta donde guardas la lat/lon actual en LocationManagerService
+      const loc = await this.locationService.getCurrentPosition(); 
+      
+      if (loc) {
+        try {
+          // 2. Extraemos los datos del array. 
+          // OJO: Asumo el estándar [longitud, latitud]. Si en tu base de datos salen al revés, intercámbialos.
+          const longitud = loc[0]; 
+          const latitud = loc[1];
+
+          await this.supabaseService.getClient().from('public_locations').insert([{
             share_token: newToken,
-            owner_user_id: this.locationService.deviceId,
-            lat: location.latitude,
-            lon: location.longitude,
+            owner_user_id: this.locationService.deviceId ?? 'unknown',
+            lat: latitud, 
+            lon: longitud,
             updated_at: new Date().toISOString()
           }]);
-      }
-
-      // 3. INTENTAR MOSTRAR EL DIÁLOGO
-      try {
-        const url = `https://el-gros.github.io/visor/visor.html?t=${newToken}`;
-        const canShare = await Share.canShare();
-        if (canShare.value) {
-          await Share.share({
-            title: this.translate.instant('SHARE.TITLE_MODAL') || 'Seguimiento',
-            text: this.translate.instant('RECORD.SHARE_TEXT') || 'Mi ruta:',
-            url: url,
-          });
+          console.log("📍 Primer punto inyectado en Supabase al instante");
+        } catch (e) {
+          console.warn("Fallo subiendo el punto inicial rápido:", e);
         }
-      } catch (shareError) {
-        console.warn("El diálogo de compartir no se pudo mostrar, pero el tracking está activo", shareError);
+      } else {
+        console.warn("⏳ No hay ubicación GPS disponible todavía para el disparo inicial.");
       }
+      
+      // 🚀 ENVIAR CONFIGURACIÓN AL PLUGIN NATIVO
+      await MyService.updateSharingConfig({
+        isSharing: true,
+        shareToken: newToken,
+        deviceId: this.locationService.deviceId ?? undefined,
+        supabaseUrl: global.supabaseUrl,
+        supabaseKey: global.supabaseKey
+      });
 
-      return true; 
+      // 🛡️ PARACAÍDAS 2: Fallbacks para la traducción (evita que Share.share falle en silencio si la clave está vacía)
+      const shareTitle = this.translate.instant('SHARE.TITLE_MODAL') || 'Seguimiento en vivo';
+      const shareText = this.translate.instant('RECORD.SHARE_TEXT') || 'Sigue mi ruta en directo:';
+
+      // Abrir menú nativo de compartir
+      const url = `https://el-gros.github.io/visor/visor.html?t=${newToken}`;
+      await Share.share({
+        title: shareTitle,
+        text: shareText,
+        url: url,
+        dialogTitle: shareTitle // A Android le gusta tener este campo también
+      });
+
+      return true;
     } catch (err) {
-      console.error("Fallo crítico en base de datos:", err);
-      this.locationService.isSharing = false; 
+      console.error("❌ Error activando sharing nativo:", err);
+      // Revertimos el estado por si falla a medias
+      this.locationService.isSharing = false;
       return false;
     }
   }
 
   async stopSharing() {
-    // 1. Limpiar estados. Al poner isSharing en false, LocationManager dejará de enviar puntos.
     this.locationService.isSharing = false;
     this.locationService.shareToken = null;
-    await this.fs.storeSet('share_token', null);
+    
+    // 🚀 AVISAR AL PLUGIN QUE SE DETENGA
+    await MyService.updateSharingConfig({ isSharing: false });
+    
     this.fs.displayToast(this.translate.instant('SHARE.STOPPED'), 'warning');
   }
+
 }

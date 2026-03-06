@@ -1,5 +1,10 @@
 package io.elgros.paso
 
+import java.net.HttpURLConnection
+import java.net.URL
+import org.json.JSONObject
+import java.io.OutputStreamWriter
+
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -32,10 +37,20 @@ class PasoService : Service() {
     private var currentPointIdx = 0
     private var threshDistSq = 0.0000002
 
+    // Configuración Supabase
+    private var isSharing = false
+    private var shareToken: String? = null
+    private var deviceId: String? = null
+    private var supabaseUrl: String? = null
+    private var supabaseKey: String? = null
+    private var shareTickCounter = 0
+    private val SHARE_TICKS_TARGET = 6
+
     companion object {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_UPDATE_TRACK = "ACTION_UPDATE_TRACK"
+        const val ACTION_UPDATE_SHARING = "ACTION_UPDATE_SHARING"
     }
 
     override fun onCreate() {
@@ -51,17 +66,27 @@ class PasoService : Service() {
                 result.locations.forEach { loc ->
                     MyServicePlugin.instance?.sendLocationToJS(loc)
                     evaluateLocation(loc.longitude, loc.latitude)
+                    handleNativeSharing(loc)
                 }
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        if (intent == null) return START_STICKY
+        when (intent.action) {
             ACTION_START -> {
                 acquireWakeLock()
                 startForegroundServiceSafe("Grabando y analizando ruta...")
                 startLocationUpdates()
+            }
+            ACTION_UPDATE_SHARING -> {
+                isSharing = intent.getBooleanExtra("isSharing", false)
+                shareToken = intent.getStringExtra("shareToken")
+                deviceId = intent.getStringExtra("deviceId")
+                supabaseUrl = intent.getStringExtra("supabaseUrl")
+                supabaseKey = intent.getStringExtra("supabaseKey")
+                shareTickCounter = 0 // Reset al cambiar config
             }
             ACTION_UPDATE_TRACK -> {
                 val coords = intent.getDoubleArrayExtra("coords")
@@ -72,6 +97,55 @@ class PasoService : Service() {
             ACTION_STOP -> stopSelf()
         }
         return START_STICKY
+    }
+
+    private fun handleNativeSharing(loc: Location) {
+        if (!isSharing || shareToken == null || supabaseUrl == null) return
+
+        // 🛡️ FILTRO DE INCERTIDUMBRE (Accuracy en metros)
+        if (loc.hasAccuracy() && loc.accuracy > 40.0f) {
+            Log.d("PasoNative", "📍 Punto descartado para Supabase por baja precisión: ${loc.accuracy}m")
+            return // Salimos sin sumar al contador ni subir a la nube
+        }
+
+        shareTickCounter++
+        if (shareTickCounter >= SHARE_TICKS_TARGET) {
+            shareTickCounter = 0
+            uploadToSupabase(loc)
+        }
+    }
+
+    private fun uploadToSupabase(loc: Location) {
+        // Ejecutamos en un hilo secundario para no bloquear el GPS
+        Thread {
+            try {
+                val url = URL("$supabaseUrl/rest/v1/public_locations")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("apikey", supabaseKey)
+                conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
+                conn.doOutput = true
+
+                val jsonBody = JSONObject().apply {
+                    put("share_token", shareToken)
+                    put("owner_user_id", deviceId)
+                    put("lat", loc.latitude)
+                    put("lon", loc.longitude)
+                    put("updated_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).format(java.util.Date()))
+                }
+
+                OutputStreamWriter(conn.outputStream).use { it.write(jsonBody.toString()) }
+                
+                val responseCode = conn.responseCode
+                Log.d("PasoNative", "Supabase Upload Sync: $responseCode")
+                conn.disconnect()
+            } catch (e: Exception) {
+                Log.e("PasoNative", "Error uploading to Supabase", e)
+                // Si falla, intentamos de nuevo en el próximo punto
+                shareTickCounter = SHARE_TICKS_TARGET - 1
+            }
+        }.start()
     }
 
     private fun startForegroundServiceSafe(text: String) {
