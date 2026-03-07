@@ -3,14 +3,17 @@ package io.elgros.paso
 import java.net.HttpURLConnection
 import java.net.URL
 import org.json.JSONObject
+import org.json.JSONArray
 import java.io.OutputStreamWriter
+import java.util.concurrent.CopyOnWriteArrayList
 
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.Color
 import android.location.Location
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -45,6 +48,10 @@ class PasoService : Service() {
     private var supabaseKey: String? = null
     private var shareTickCounter = 0
     private val SHARE_TICKS_TARGET = 6
+
+    // 🎒 NUEVO: La Cola Local (CopyOnWriteArrayList evita crashes si se lee y escribe a la vez)
+    private val pendingUploads = CopyOnWriteArrayList<JSONObject>()
+    private val MAX_QUEUE_SIZE = 1000 // Límite de seguridad para no ahogar la RAM
 
     companion object {
         const val ACTION_START = "ACTION_START"
@@ -99,26 +106,64 @@ class PasoService : Service() {
         return START_STICKY
     }
 
+    // 📡 NUEVO: Función para comprobar si hay internet real
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            else -> false
+        }
+    }
+
     private fun handleNativeSharing(loc: Location) {
         if (!isSharing || shareToken == null || supabaseUrl == null) return
 
         // 🛡️ FILTRO DE INCERTIDUMBRE (Accuracy en metros)
         if (loc.hasAccuracy() && loc.accuracy > 40.0f) {
             Log.d("PasoNative", "📍 Punto descartado para Supabase por baja precisión: ${loc.accuracy}m")
-            return // Salimos sin sumar al contador ni subir a la nube
+            return 
+        }
+
+        // 1. Convertimos la coordenada a JSON usando el tiempo real del GPS (loc.time)
+        val jsonPoint = JSONObject().apply {
+            put("share_token", shareToken)
+            put("owner_user_id", deviceId)
+            put("lat", loc.latitude)
+            put("lon", loc.longitude)
+            put("updated_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).format(java.util.Date(loc.time)))
+        }
+
+        // 2. Lo metemos en la mochila (si no está llena)
+        if (pendingUploads.size < MAX_QUEUE_SIZE) {
+            pendingUploads.add(jsonPoint)
         }
 
         shareTickCounter++
         if (shareTickCounter >= SHARE_TICKS_TARGET) {
             shareTickCounter = 0
-            uploadToSupabase(loc)
+            
+            // 3. Comprobamos la red ANTES de gastar batería abriendo un hilo
+            if (isNetworkAvailable()) {
+                uploadBatchToSupabase()
+            } else {
+                Log.d("PasoNative", "🚫 Sin red. Puntos guardados en mochila local: ${pendingUploads.size}")
+            }
         }
     }
 
-    private fun uploadToSupabase(loc: Location) {
-        // Ejecutamos en un hilo secundario para no bloquear el GPS
+    private fun uploadBatchToSupabase() {
+        if (pendingUploads.isEmpty()) return
+
+        // Extraemos una copia de los puntos actuales para no bloquear el GPS si llegan nuevos
+        val batch = pendingUploads.toList()
+        val jsonArray = JSONArray(batch)
+
         Thread {
             try {
+                Log.d("PasoNative", "☁️ Intentando subir bloque de ${batch.size} puntos...")
                 val url = URL("$supabaseUrl/rest/v1/public_locations")
                 val conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
@@ -127,23 +172,22 @@ class PasoService : Service() {
                 conn.setRequestProperty("Authorization", "Bearer $supabaseKey")
                 conn.doOutput = true
 
-                val jsonBody = JSONObject().apply {
-                    put("share_token", shareToken)
-                    put("owner_user_id", deviceId)
-                    put("lat", loc.latitude)
-                    put("lon", loc.longitude)
-                    put("updated_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).format(java.util.Date()))
-                }
-
-                OutputStreamWriter(conn.outputStream).use { it.write(jsonBody.toString()) }
+                // Subimos el ARRAY entero de golpe
+                OutputStreamWriter(conn.outputStream).use { it.write(jsonArray.toString()) }
                 
                 val responseCode = conn.responseCode
-                Log.d("PasoNative", "Supabase Upload Sync: $responseCode")
+                if (responseCode in 200..299) {
+                    Log.d("PasoNative", "✅ Sync Supabase OK: $responseCode")
+                    // Si ha ido bien, borramos ESTOS puntos de la mochila principal
+                    pendingUploads.removeAll(batch)
+                } else {
+                    Log.e("PasoNative", "❌ Error Supabase HTTP: $responseCode")
+                }
+                
                 conn.disconnect()
             } catch (e: Exception) {
-                Log.e("PasoNative", "Error uploading to Supabase", e)
-                // Si falla, intentamos de nuevo en el próximo punto
-                shareTickCounter = SHARE_TICKS_TARGET - 1
+                Log.e("PasoNative", "❌ Fallo de conexión subiendo a Supabase", e)
+                // Si falla por microcorte, no hacemos removeAll(). Los puntos seguirán ahí.
             }
         }.start()
     }
@@ -179,10 +223,7 @@ class PasoService : Service() {
         val track = archivedTrack ?: return
         val currentResult = checkOnRouteNative(lon, lat)
         
-        // Determinar qué índice enviar
         val indexToSend = if (currentResult == "green") currentPointIdx else -1
-        
-        // Enviamos el estado y el índice a Angular
         MyServicePlugin.instance?.notifyStatusToJS(currentResult, indexToSend)
         
         if (currentResult == "green") { greenCounter++; redCounter = 0 } 
@@ -278,6 +319,12 @@ class PasoService : Service() {
     override fun onDestroy() {
         if (wakeLock?.isHeld == true) wakeLock?.release()
         try { fusedClient.removeLocationUpdates(callback) } catch (e: Exception) {}
+        
+        // Intentar último envío antes de morir
+        if (pendingUploads.isNotEmpty() && isNetworkAvailable()) {
+            uploadBatchToSupabase()
+        }
+        
         super.onDestroy()
     }
 

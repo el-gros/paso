@@ -1,28 +1,59 @@
-import { inject, Injectable } from '@angular/core';
-import { CapacitorHttp } from '@capacitor/core';
+import { Injectable } from '@angular/core';
+import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 import { global } from '../../environments/environment';
+
+// 🚀 Definimos qué devuelve exactamente el servicio
+export interface WeatherData {
+  temp: number;
+  description: string;
+  icon: string;
+  humidity: number;
+  wind: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
-  
-  async getWeather(lat: number, lon: number, lang: string = 'es') {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${global.weather_key}&units=metric&lang=${lang}`;
+
+  // --- CONSTANTES ---
+  private readonly BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+  private readonly ICON_BASE_URL = 'https://openweathermap.org/img/wn';
+
+  constructor() {}
+
+  // ==========================================
+  // OBTENCIÓN DE DATOS METEOROLÓGICOS
+  // ==========================================
+
+  /**
+   * Obtiene el clima actual para unas coordenadas dadas usando OpenWeatherMap.
+   * @param lat Latitud
+   * @param lon Longitud
+   * @param lang Idioma para la descripción (por defecto 'es')
+   */
+  async getWeather(lat: number, lon: number, lang: string = 'es'): Promise<WeatherData | null> {
+    const url = `${this.BASE_URL}?lat=${lat}&lon=${lon}&appid=${global.weather_key}&units=metric&lang=${lang}`;
     
     try {
-      const response = await CapacitorHttp.get({ url });
-      if (response.status === 200) {
+      const response: HttpResponse = await CapacitorHttp.get({ url });
+      
+      if (response.status === 200 && response.data) {
         const data = response.data;
+        
         return {
           temp: Math.round(data.main.temp),
           description: data.weather[0].description,
-          icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+          icon: `${this.ICON_BASE_URL}/${data.weather[0].icon}@2x.png`,
           humidity: data.main.humidity,
           wind: data.wind.speed
         };
       }
+      
+      // Si la API responde con un 404 o 401, lo registramos para facilitar el debug
+      console.warn(`[WeatherService] API respondió con estado: ${response.status}`);
       return null;
+
     } catch (e) {
-      console.error("Weather Error", e);
+      console.error("[WeatherService] Error conectando con OpenWeatherMap:", e);
       return null;
     }
   }

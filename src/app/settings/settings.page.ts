@@ -127,7 +127,7 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
 
   async ionViewWillEnter() {
     await this.checkMaps();
-    const code = this.languageService.getCurrentLangValue();
+    const code = this.languageService.currentLangValue; 
     this.selectedLanguage = this.languages.find(lang => lang.code === code) || { name: 'English', code: 'en' };
   }
 

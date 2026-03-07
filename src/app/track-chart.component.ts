@@ -2,7 +2,7 @@ import { Component, ElementRef, Input, OnChanges, ViewChild, AfterViewInit, OnDe
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Track, Data } from '../globald'; 
-import { FunctionsService } from './services/functions.service';
+import { GeoMathService } from './services/geo-math.service';
 
 @Component({
   selector: 'app-track-chart',
@@ -76,6 +76,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
   @Input() title!: string;
   @Input() mode: 'x' | 't' = 'x'; // 'x' para distancia, 't' para tiempo
   @Input() markerPosition?: number | null;
+  @Input() updateTrigger: number = 0;
   
   @ViewChild('chartCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('container') containerRef!: ElementRef<HTMLDivElement>;
@@ -85,7 +86,9 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
   private resizeObserver!: ResizeObserver;
   margin: number = 25;
 
-  constructor(private fs: FunctionsService) {}
+  constructor(
+    private geoMath: GeoMathService
+  ) {}
 
   ngAfterViewInit() {
     this.resizeObserver = new ResizeObserver(() => this.draw());
@@ -151,7 +154,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
 
     if (xTot <= 0.0001) xTot = 0.0001;
 
-    const bounds = await this.fs.computeMinMaxProperty(data, this.property);
+    const bounds = await this.geoMath.computeMinMaxProperty(data, this.property);
     if (bounds.max === bounds.min) { bounds.max += 2; bounds.min -= 2; }
 
     const availSize = size - 2 * this.margin;
@@ -249,7 +252,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
         let totalDist = 0;
         data[0].distance = 0; 
         for (let k = 1; k < num; k++) {
-            const d = this.fs.quickDistance(coords[k-1][0], coords[k-1][1], coords[k][0], coords[k][1]);
+            const d = this.geoMath.quickDistance(coords[k-1][0], coords[k-1][1], coords[k][0], coords[k][1]);
             totalDist += d;
             data[k].distance = totalDist;
         }

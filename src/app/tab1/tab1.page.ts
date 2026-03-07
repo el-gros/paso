@@ -28,6 +28,9 @@ import { WikiCardComponent } from '../wiki-card.component';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PhotoService } from '../services/photo.service';
 import { lastValueFrom } from 'rxjs';
+import { SearchService } from '../services/search.service';
+import { AppStateService } from '../services/appState.service'; // Asegúrate de que el nombre del archivo coincide
+import { GeoMathService } from '../services/geo-math.service';
 
 // --- OPENLAYERS IMPORTS ---
 import { MapBrowserEvent } from 'ol';
@@ -88,7 +91,10 @@ export class Tab1Page implements OnInit, OnDestroy {
     private platform: Platform,
     private popoverController: PopoverController,
     private toastCtrl: ToastController,
-    private photo: PhotoService
+    private photo: PhotoService,
+    private searchService: SearchService,
+    private appState: AppStateService, 
+    private geoMath: GeoMathService    
   ) {}
 
   // ==========================================================================
@@ -248,6 +254,15 @@ export class Tab1Page implements OnInit, OnDestroy {
   // ==========================================================================
   async initializeEvents() {
     if (this.eventsInitialized) return; 
+
+    this.appState.onEnterForeground$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async () => {
+        if (this.present.currentTrack) {
+          console.log("App en primer plano: Refrescando track actual en el mapa...");
+          await this.refreshMapOnForeground();
+        }
+      });
 
     this.mapService.locationActivated$
       .pipe(takeUntil(this.destroy$))
@@ -665,7 +680,7 @@ export class Tab1Page implements OnInit, OnDestroy {
         let placeName = this.translate.instant('MAP.PHOTO_WAYPOINT_NAME') || 'Foto'; 
 
         try {
-          const addressObservable = this.mapService.reverseGeocode(currentPoint[1], currentPoint[0]);
+          const addressObservable = this.searchService.reverseGeocode(currentPoint[1], currentPoint[0]);
           const addressPromise = lastValueFrom(addressObservable);
           const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 800)); 
           
@@ -715,6 +730,38 @@ export class Tab1Page implements OnInit, OnDestroy {
     if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
     this.location.state = 'tracking';
     await this.location.sendReferenceToPlugin();
+  }
+
+  // ==========================================================================
+  // 9. ACTUALIZACIÓN AL VOLVER DE BACKGROUND
+  // ==========================================================================
+  async refreshMapOnForeground() {
+    if (!this.present.currentTrack) return;
+    
+    try {
+      let track = this.present.currentTrack;
+      const num = track.features[0].geometry.coordinates.length;
+      
+      // 1. Redibujamos la línea
+      await this.present.displayCurrentTrack(track);
+      
+      // 2. Recalculamos distancias y limpiamos ruido de altitud/velocidad
+      track = await this.present.accumulatedDistances(track);
+      track = await this.geoMath.filterSpeedAndAltitude(track, this.present.filtered + 1);
+      
+      this.present.filtered = Math.max(0, num - 1);
+      
+      // 3. Obligamos a OpenLayers y a Angular a repintar la pantalla
+      this.geography.map?.updateSize(); 
+      this.geography.map?.render();
+      this.cd.detectChanges();
+      
+      // 4. Centramos la vista
+      await this.geography.setMapView(track);
+      
+    } catch (error) {
+      console.error('Error al refrescar el mapa desde foreground:', error);
+    }
   }
 
 }

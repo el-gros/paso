@@ -2,12 +2,15 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Feature } from 'ol';
 import { LineString, Point } from 'ol/geom';
+import { Subject, interval } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
 
 // Internal Imports
 import { Track, Waypoint, ParsedPoint } from 'src/globald';
 import { StylerService } from './styler.service';
 import { GeographyService } from './geography.service';
 import { FunctionsService } from '../services/functions.service';
+import { GeoMathService } from '../services/geo-math.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { Location } from 'src/plugins/MyServicePlugin';
 
@@ -42,6 +45,7 @@ export class PresentService {
     private geography: GeographyService,
     public fs: FunctionsService,
     private location: LocationManagerService,
+    private geoMath: GeoMathService
   ) { }
 
   // --- Getters / Setters ---
@@ -101,7 +105,7 @@ export class PresentService {
       const prev = coords[i - 1];
       const curr = coords[i];
       
-      const segmentDist = this.fs.computeDistance(prev[0], prev[1], curr[0], curr[1]);
+      const segmentDist = this.geoMath.computeDistance(prev[0], prev[1], curr[0], curr[1]);
       data[i].distance = data[i - 1].distance + segmentDist;
       
       if (feature.bbox) {
@@ -126,7 +130,7 @@ export class PresentService {
     if (!track) return undefined;
     
     track = await this.accumulatedDistances(track);
-    track = await this.fs.filterSpeedAndAltitude(track, this.filtered);
+    track = await this.geoMath.filterSpeedAndAltitude(track, this.filtered);
     
     this.filtered = track.features[0].geometry.coordinates.length - 1;
     

@@ -12,6 +12,7 @@ import { PluginListenerHandle } from '@capacitor/core';
 
 // --- SERVICES ---
 import { FunctionsService } from './services/functions.service';
+import { GeoMathService } from './services/geo-math.service';
 import { GeographyService } from './services/geography.service';
 import { LocationManagerService } from './services/location-manager.service';
 import { ReferenceService } from './services/reference.service';
@@ -19,6 +20,7 @@ import { AppStateService } from './services/appState.service';
 import { MapService } from './services/map.service';
 import { PresentService } from './services/present.service';
 import { LanguageService } from './services/language.service';
+import { FileParserService } from './services/file-parser.service';
 
 // --- INTERFACES & UTILS ---
 import { ParsedPoint, Track, TrackDefinition, Waypoint, Data } from 'src/globald';
@@ -26,6 +28,13 @@ import JSZip from "jszip";
 import { useGeographic } from 'ol/proj';
 
 useGeographic();
+
+// Interfaz para unificar las respuestas de los parsers
+interface ParseResult {
+  waypoints: Waypoint[];
+  trackPoints: ParsedPoint[];
+  trk: Element | null;
+}
 
 @Component({
   selector: 'app-root',
@@ -40,7 +49,6 @@ useGeographic();
   ],
 })
 export class AppComponent implements OnDestroy {
-  // Guardamos los handles de los listeners para poder destruirlos correctamente
   private appStateListener?: PluginListenerHandle;
   private appUrlListener?: PluginListenerHandle;
 
@@ -57,6 +65,8 @@ export class AppComponent implements OnDestroy {
     private present: PresentService,
     private appState: AppStateService,
     private language: LanguageService,
+    private geoMath: GeoMathService,
+    private fileParser: FileParserService
   ) {
     this.initializeApp();
   }
@@ -71,7 +81,6 @@ export class AppComponent implements OnDestroy {
     this.setupFileListener();
   }
 
-  // Limpieza de recursos al destruir el componente
   ngOnDestroy() {
     if (this.appStateListener) this.appStateListener.remove();
     if (this.appUrlListener) this.appUrlListener.remove();
@@ -99,15 +108,11 @@ export class AppComponent implements OnDestroy {
 
   // 4. SETUP STATE LISTENER //////////////////////////
   private setupAppStateListeners() {
-    // Usamos el servicio AppState para reaccionar a cambios de primer/segundo plano
-    this.appState.onEnterForeground().subscribe(async () => {
+    this.appState.onEnterForeground$.subscribe(() => {
       this.location.foreground = true;
-      if (this.present.currentTrack) {
-        await this.morningTask();
-      }
     });
 
-    this.appState.onEnterBackground().subscribe(() => {
+    this.appState.onEnterBackground$.subscribe(() => {
       this.location.foreground = false;
     });
   }
@@ -136,39 +141,36 @@ export class AppComponent implements OnDestroy {
       const normalizedPath = decodeURIComponent(data.url);
       let ext = normalizedPath.split('.').pop()?.toLowerCase() || '';
       
-      // MIME sniffing básico para detectar contenido real si la extensión falla
       const probe = await Filesystem.readFile({ path: normalizedPath });
+      
       if (typeof probe.data === 'string') {
-        // Leemos solo el inicio para detectar firmas
         const sample = atob(probe.data.substring(0, 100));
         if (sample.includes('<gpx')) ext = 'gpx';
         else if (sample.includes('<kml')) ext = 'kml';
-        else if (probe.data.startsWith('UEsDB')) ext = 'kmz'; // Firma ZIP
+        else if (probe.data.startsWith('UEsDB')) ext = 'kmz';
       }
 
-      let waypoints: Waypoint[] = [];
-      let trackPoints: ParsedPoint[] = [];
-      let trk: Element | null = null;
+      let parsedResult: ParseResult;
 
       if (ext === 'gpx') {
         const fileContent = await Filesystem.readFile({
           path: normalizedPath,
           encoding: Encoding.UTF8,
         });
-        const parsed = await this.mapService.parseGpxXml(fileContent.data as string);
-        ({ waypoints, trackPoints, trk } = parsed);
+        // Asumimos que mapService.parseGpxXml devuelve Promise<ParseResult>
+        parsedResult = await this.fileParser.parseGpxXml(fileContent.data as string);
 
       } else if (ext === 'kmz' || ext === 'kml') {
         const fileContent = await Filesystem.readFile({ path: normalizedPath });
-        // parseKmz maneja tanto KML plano como KMZ comprimido
-        const parsed = await this.parseKmz(fileContent.data as string);
-        ({ waypoints, trackPoints, trk } = parsed);
+        parsedResult = await this.parseKmz(fileContent.data as string);
         
       } else {
         throw new Error('UNSUPPORTED_TYPE');
       }
 
-      if (!trackPoints.length || !trk) {
+      const { waypoints, trackPoints, trk } = parsedResult;
+
+      if (!trackPoints || trackPoints.length === 0 || !trk) {
         this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'), 'warning');
         return null;
       }
@@ -194,63 +196,30 @@ export class AppComponent implements OnDestroy {
     }
   }
 
-  // 7. MORNING TASK ////////////////////////////////////////
-  async morningTask() {
-    if (!this.present.currentTrack) return;
-    
-    this.zone.runOutsideAngular(async () => {
-      try {
-        let track = this.present.currentTrack!;
-        const num = track.features[0].geometry.coordinates.length;
-        
-        // 1. Redibujar en el mapa
-        await this.present.displayCurrentTrack(track);
-        
-        // 2. Recalcular acumulados y filtrado
-        track = await this.present.accumulatedDistances(track);
-        track = await this.fs.filterSpeedAndAltitude(track, this.present.filtered + 1);
-        
-        // Actualizamos el índice de filtrado para la próxima vez
-        this.present.filtered = Math.max(0, num - 1);
-        
-        // 3. Actualizar vista y UI
-        this.zone.run(() => {
-          this.cd.detectChanges();
-          this.geography.setMapView(track);
-        });
-      } catch (error) {
-        console.error('Error during morningTask:', error);
-      }
-    });
-  }
-
   // 8. PARSE KMZ/KML (Optimizado) //////////////////////////
-  async parseKmz(base64Data: string) {
+  async parseKmz(base64Data: string): Promise<ParseResult> {
     try {
-      // Conversión optimizada de Base64 a Uint8Array
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-      
-      // A. Si NO es un ZIP (no empieza por PK..), asumimos KML plano
+      let xmlContent = '';
+
       if (!base64Data.startsWith('UEsDB')) {
-        const kmlText = new TextDecoder('utf-8').decode(byteArray);
-        return this.mapService.parseKmlXml(new DOMParser().parseFromString(kmlText, 'application/xml'));
+        // KML plano
+        xmlContent = new TextDecoder('utf-8').decode(byteArray);
+      } else {
+        // KMZ comprimido
+        const zip = await JSZip.loadAsync(byteArray);
+        const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
+        
+        if (!kmlFileName) throw new Error('No KML found in KMZ');
+        xmlContent = await zip.files[kmlFileName].async('string');
       }
 
-      // B. Si ES un ZIP (KMZ)
-      const zip = await JSZip.loadAsync(byteArray);
-      
-      // Buscamos el primer archivo .kml dentro del zip
-      const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-      
-      if (!kmlFileName) throw new Error('No KML found in KMZ');
-      
-      const kmlText = await zip.files[kmlFileName].async('string');
-      const xmlDoc = new DOMParser().parseFromString(kmlText, 'application/xml');
-      return this.mapService.parseKmlXml(xmlDoc);
+      const xmlDoc = new DOMParser().parseFromString(xmlContent, 'application/xml');
+      // Asumimos que parseKmlXml devuelve ParseResult
+      return await this.fileParser.parseKmlXml(xmlDoc);
 
     } catch (error) {
       console.error('KMZ Parsing Error:', error);
-      // Retornamos estructura vacía para que processUrl maneje el error de "NO_TRACK_FOUND"
       return { waypoints: [], trackPoints: [], trk: null };
     }
   }
@@ -265,9 +234,7 @@ export class AppComponent implements OnDestroy {
     
     const coords: [number, number][] = [];
     
-    // Mapeamos a la interfaz 'Data'
     const pointData: Data[] = trackPoints.map((p, i) => {
-      // Bounding Box
       if (p.lon < lonMin) lonMin = p.lon;
       if (p.lat < latMin) latMin = p.lat;
       if (p.lon > lonMax) lonMax = p.lon;
@@ -275,9 +242,8 @@ export class AppComponent implements OnDestroy {
       
       coords.push([p.lon, p.lat]);
       
-      // Distancia acumulada
       if (i > 0) {
-        distance += this.fs.quickDistance(trackPoints[i-1].lon, trackPoints[i-1].lat, p.lon, p.lat);
+        distance += this.geoMath.quickDistance(trackPoints[i-1].lon, trackPoints[i-1].lat, p.lon, p.lat);
       }
 
       return {
@@ -313,15 +279,13 @@ export class AppComponent implements OnDestroy {
           coordinates: coords,
           properties: { data: pointData }
         },
-        // Bounding Box estándar [minX, minY, maxX, maxY]
         bbox: [lonMin, latMin, lonMax, latMax],
         waypoints: waypoints
       }]
     };
 
-    // Post-procesado para suavizar alturas y calcular velocidades
     if (pointData.length > 1) {
-      await this.fs.filterSpeedAndAltitude(track, 0);
+      await this.geoMath.filterSpeedAndAltitude(track, 0);
     }
 
     return track;
@@ -344,7 +308,7 @@ export class AppComponent implements OnDestroy {
       const trackDef: TrackDefinition = {
         name: props.name || 'Imported Track',
         date: trackDate,
-        place: track.features[0].geometry.coordinates[0], // Guardamos primera coord como referencia
+        place: track.features[0].geometry.coordinates[0], 
         description: props.description || '',
         isChecked: true
       };
@@ -352,7 +316,6 @@ export class AppComponent implements OnDestroy {
       this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
       
-      // Usamos displayToast del servicio Functions
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
     } catch (e) {
       console.error("Error saving track to storage", e);

@@ -1,9 +1,10 @@
 <ion-content>
-  <ion-list-header>
-    <ion-label>{{ 'SETTINGS.GENERAL_GROUP' | translate }}</ion-label>
-  </ion-list-header>
-
+  
   <ion-list inset="true">
+    <ion-list-header>
+      <ion-label>{{ 'SETTINGS.GENERAL_GROUP' | translate }}</ion-label>
+    </ion-list-header>
+
     <ion-item lines="full">
       <ion-icon name="language-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
@@ -25,11 +26,11 @@
     </ion-item>
   </ion-list>
 
-  <ion-list-header>
-    <ion-label>{{ 'SETTINGS.STYLE' | translate }}</ion-label>
-  </ion-list-header>
-
   <ion-list inset="true">
+    <ion-list-header>
+      <ion-label>{{ 'SETTINGS.STYLE' | translate }}</ion-label>
+    </ion-list-header>
+
     <ion-item lines="full">
       <ion-icon name="git-commit-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
@@ -53,66 +54,18 @@
     </ion-item>
   </ion-list>
 
-  <ion-list-header>
-    <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
-  </ion-list-header>
-
   <ion-list inset="true">
-    <ion-item lines="full">
-      <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
+    <ion-list-header>
+      <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
+    </ion-list-header>
+
+    <ion-item lines="none"> <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
-    <!--
-    <ion-item lines="full">
-      <ion-label>{{ 'SETTINGS.GEOCODING' | translate }}</ion-label>
-      <ion-select [value]="fs.geocoding" (ionChange)="onGeocodingServiceChange($event.detail.value)" interface="popover" slot="end">
-        @for (service of geocodingServices; track service) {
-          <ion-select-option [value]="service">{{ service }}</ion-select-option>
-        }
-      </ion-select>
-    </ion-item>
-  -->  
-  </ion-list>
-  <!--
-  <ion-list-header>
-    <ion-label>{{ 'SETTINGS.OFFLINE_MAPS' | translate }}</ion-label>
-  </ion-list-header>
+    
+    </ion-list>
 
-  <ion-list inset="true">
-    <ion-item lines="full">
-      <ion-icon name="download-sharp" slot="start" color="success"></ion-icon>
-      <ion-label>{{ 'SETTINGS.UPLOAD_MAPS' | translate }}</ion-label>
-      <ion-select [value]="" (ionChange)="onMapUploadChange($event.detail.value)" interface="popover" slot="end">
-        @for (map of missingOfflineMaps; track map) {
-          <ion-select-option [value]="map">{{ map }}</ion-select-option>
-        }
-      </ion-select>
-    </ion-item>
-
-    <ion-item lines="none">
-      <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
-      <ion-label>{{ 'SETTINGS.REMOVE_MAP' | translate }}</ion-label>
-      <ion-select [value]="" (ionChange)="onMapRemoveChange($event.detail.value)"  interface="popover" slot="end">
-        @for (map of availableOfflineMaps; track map) {
-          <ion-select-option [value]="map">{{ map }}</ion-select-option>
-        }
-      </ion-select>
-    </ion-item>
-
-    @if (isDownloading) {
-      <ion-item lines="none" class="download-progress-item">
-        <div style="width: 100%; padding: 10px 0;">
-          <ion-progress-bar [value]="downloadProgress / 100" color="success"></ion-progress-bar>
-          <ion-note class="ion-text-center ion-display-block" style="margin-top: 8px;">
-            {{ downloadProgress }}% {{ 'SETTINGS.DOWNLOADED' | translate }}
-          </ion-note>
-        </div>
-      </ion-item>
-    }
-  </ion-list>
--->
-  
   <div style="height: 120px;"></div>
 </ion-content>
 

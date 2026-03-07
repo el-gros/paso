@@ -16,7 +16,20 @@ export class LocationManagerService {
 
   threshold: number = 40;
   altitudeThreshold: number = 40;
-  state: string = 'inactive';
+  // 1. El Subject privado que emitirá los cambios
+  private _stateSubject = new BehaviorSubject<string>('inactive');
+  // 2. El Observable público al que los componentes se pueden suscribir
+  public state$ = this._stateSubject.asObservable();
+  // 3. Getter y Setter para NO romper el resto de tu app
+  get state(): string {
+    return this._stateSubject.value;
+  }
+  set state(value: string) {
+    // Solo emitimos si el estado realmente cambia
+    if (this._stateSubject.value !== value) {
+      this._stateSubject.next(value);
+    }
+  }
   currentPoint: number = 0;
   averagedSpeed: number = 0;
   stopped: number = 0;

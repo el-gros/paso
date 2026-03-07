@@ -14,6 +14,7 @@ import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { LanguageService } from '../services/language.service';
 import { TrackExportService } from '../services/track-export.service';
+import { FileParserService } from '../services/file-parser.service';
 
 // --- OPENLAYERS IMPORTS ---
 import Map from 'ol/Map';
