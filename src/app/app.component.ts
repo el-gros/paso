@@ -75,7 +75,7 @@ export class AppComponent implements OnDestroy {
   async initializeApp() {
     await this.platform.ready();
     await this.initStorage();
-    await this.language.determineLanguage();
+    await this.language.initLanguage();
     this.lockToPortrait();
     this.setupAppStateListeners();
     this.setupFileListener();

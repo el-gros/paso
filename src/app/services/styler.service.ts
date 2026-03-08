@@ -1,33 +1,32 @@
-
 import { Injectable } from '@angular/core';
-import { global } from '../../environments/environment';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { FeatureLike } from 'ol/Feature';
-import { StyleJSON } from 'src/globald';
 
+// --- INTERNAL IMPORTS ---
+import { global } from '../../environments/environment';
+import { StyleJSON } from 'src/globald';
 
 @Injectable({ 
   providedIn: 'root'
 })
-
 export class StylerService {
 
-    constructor(
+  constructor() { }
 
-    ) { }
+  // ==========================================================================
+  // 1. ESTILOS SIMPLES (UI / GPS)
+  // ==========================================================================
 
-  // SET STROKE STYLE //////////////////////////////////
-
-  setStrokeStyle(color: string): Style {
-    return new Style({ stroke: new Stroke({
-      color: color,
-      width: 3 })
+  public setStrokeStyle(color: string): Style {
+    return new Style({ 
+      stroke: new Stroke({
+        color: color,
+        width: 3 
+      })
     });
   }
 
-    // CREATE PIN STYLE //////////////////////////
-
-  createPinStyle(color: string): Style {
+  public createPinStyle(color: string): Style {
     return new Style({
       image: new Icon({
         src: this.getColoredPin(color),
@@ -37,9 +36,7 @@ export class StylerService {
     });
   }
 
-  // GET COLORED PIN //////////////////////////
-
-  getColoredPin(color: string): string {
+  private getColoredPin(color: string): string {
     const svgTemplate = `
       <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
         <g>
@@ -53,36 +50,39 @@ export class StylerService {
         </g>
       </svg>
     `.trim();
-    // Encode safely as base64
+    
+    // Modern base64 encode for SVG
     const encoded = window.btoa(unescape(encodeURIComponent(svgTemplate)));
     return `data:image/svg+xml;base64,${encoded}`;
   }
 
-    // 1. STYLE FUNCTION ////////////////////////////
+  // ==========================================================================
+  // 2. MOTOR DE RENDERIZADO DE VECTOR TILES (StyleJSON)
+  // ==========================================================================
 
-  styleFunction = (feature: FeatureLike, resolution: number) => {
+  public styleFunction = (feature: FeatureLike, resolution: number): Style | Style[] => {
     const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
-    const classLayer = feature.get('class');
     const styleJSON: StyleJSON | undefined = global && typeof global.maptiler_terrain_modified === 'object'
       ? global.maptiler_terrain_modified
       : undefined;
+
     if (!styleJSON || !Array.isArray(styleJSON.layers)) {
-      // Optionally log an error or warning here
       return new Style({});
     }
+
     const zoom = this.getZoomFromResolution(resolution);
+    const stylesToApply: Style[] = []; // Acumulamos los estilos en lugar de devolver el primero
+
     for (const layerStyle of styleJSON.layers) {
       if (layerStyle['source-layer'] !== sourceLayer) continue;
-      // Apply feature filter before styling
+      
       if (layerStyle.filter && !this.evaluateFilter(layerStyle.filter, feature)) continue;
-      let computedMinZoom = 0; // Default to 0 if undefined
+      
+      let computedMinZoom = 0; 
       if (typeof layerStyle.minzoom === 'object') {
-        const rank = feature.get('rank') || 0; // Default rank to 0 if undefined
-        // Sort the minzoom keys in ascending order (to handle arbitrary input like "2": 9, "5": 11, etc.)
-        const sortedKeys = Object.keys(layerStyle.minzoom)
-          .map(Number) // Convert to number
-          .sort((a, b) => a - b); // Sort in ascending order
-        // Find the correct zoom level based on the rank
+        const rank = feature.get('rank') || 0; 
+        const sortedKeys = Object.keys(layerStyle.minzoom).map(Number).sort((a, b) => a - b); 
+        
         for (let i = 0; i < sortedKeys.length; i++) {
           const rankStop = sortedKeys[i];
           const nextRankStop = sortedKeys[i + 1];
@@ -90,7 +90,6 @@ export class StylerService {
             computedMinZoom = layerStyle.minzoom[rankStop];
             break;
           }
-          // If rank is larger than the last key, default to the max zoom value
           if (nextRankStop === undefined) {
             computedMinZoom = layerStyle.minzoom[rankStop];
           }
@@ -98,88 +97,102 @@ export class StylerService {
       } else if (typeof layerStyle.minzoom === 'number') {
         computedMinZoom = layerStyle.minzoom;
       }
-      // Apply minzoom and maxzoom filtering
+      
       if (zoom < computedMinZoom) continue;
       if (layerStyle.maxzoom !== undefined && zoom > layerStyle.maxzoom) continue;
+
+      // Generar el estilo según el tipo de capa
       switch (layerStyle.type) {
+        
         case 'fill':
-          return new Style({
+          stylesToApply.push(new Style({
             fill: new Fill({
               color: this.getPaintValue(layerStyle.paint, 'fill-color', '#000000'),
             }),
-          });
+          }));
+          break;
+
         case 'line': {
-          let lineWidth = 1; // Default width
-          if (Array.isArray(lineWidth)) {
-            const stops = this.extractStops(lineWidth);
+          // 🚀 BUG CORREGIDO: Extraer el grosor real del JSON antes de evaluarlo
+          const rawLineWidth = layerStyle.paint?.['line-width'] ?? 1;
+          let computedLineWidth = 1; 
+
+          if (Array.isArray(rawLineWidth)) {
+            const stops = this.extractStops(rawLineWidth);
             if (stops.length > 0) {
-              lineWidth = this.interpolateStops(stops, zoom); // Use zoom level to adjust line width
+              computedLineWidth = this.interpolateStops(stops, zoom);
             }
-          } else if (typeof lineWidth === 'number') {
-            lineWidth = lineWidth;
+          } else if (typeof rawLineWidth === 'number') {
+            computedLineWidth = rawLineWidth;
           }
-          // Apply calculated line width
-          return new Style({
+
+          stylesToApply.push(new Style({
             stroke: new Stroke({
               color: this.getPaintValue(layerStyle.paint, 'line-color', '#000000'),
-              width: Math.max(lineWidth, 1), // Ensure minimum width is 1
+              width: Math.max(computedLineWidth, 1), 
             }),
-          });
+          }));
+          break;
         }
+
         case 'symbol': {
-          // Read text size from layer, default to 10px if not specified
-          const textSizeRaw = layerStyle.layout?.['text-size'] || 10; // Default to 10 if not provided
-          // Ensure textSize is a number
-          let textSize = typeof textSizeRaw === 'number' ? textSizeRaw : 10;
-          return new Style({
+          const textSizeRaw = layerStyle.layout?.['text-size'] ?? 10; 
+          const textSize = typeof textSizeRaw === 'number' ? textSizeRaw : 10;
+          
+          stylesToApply.push(new Style({
             text: new Text({
               text: (feature.get('name') || feature.get('rawName') || 'Unknown').replace(/\n/g, ' '),
-              font: `bold ${textSize}px sans-serif`, // Use textSize from layer
+              font: `bold ${textSize}px sans-serif`, 
               fill: new Fill({ color: this.getPaintValue(layerStyle.paint, 'text-color', '#000000') }),
               stroke: new Stroke({ color: this.getPaintValue(layerStyle.paint, 'text-halo-color', '#FFFFFF'), width: 2 }),
-              scale: Math.max(textSize / 10, 1), // Prevent too-large scaling
+              scale: Math.max(textSize / 10, 1), 
             }),
-          });
+          }));
+          break;
         }
-        default:
-          continue;
       }
     }
-    // Default return value to prevent errors
-    return new Style({});
+
+    // Retornamos el array de estilos superpuestos (OL lo soporta nativamente)
+    return stylesToApply.length > 0 ? stylesToApply : new Style({});
   };
 
-  // 2. GET ZOOM FROM RESOLUTION ////////////////////////////
+  // ==========================================================================
+  // 3. HELPERS MATEMÁTICOS Y DE FILTROS (Mapbox Style Specs)
+  // ==========================================================================
 
-  getZoomFromResolution(resolution: number): number {
+  private getZoomFromResolution(resolution: number): number {
     if (typeof resolution !== 'number' || resolution <= 0) {
       throw new Error('Invalid resolution value');
     }
     return Math.log2(156543.03 / resolution);
   }
 
-  // 3. EVALUATE FILTER ////////////////////////////
-
-  evaluateFilter(filter: any[], feature: FeatureLike): boolean {
-    if (!Array.isArray(filter) || filter.length === 0) return true; // No filter = always matches
-    if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; // Ignore invalid filters
-    const properties = feature.getProperties() || {}; // Ensure properties exist
-    function matchCondition(condition: any[]): boolean {
+  private evaluateFilter(filter: any[], feature: FeatureLike): boolean {
+    if (!Array.isArray(filter) || filter.length === 0) return true; 
+    if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; 
+    
+    const properties = feature.getProperties() || {}; 
+    
+    const matchCondition = (condition: any[]): boolean => {
       if (!Array.isArray(condition) || condition.length < 2) return false;
       const [operator, field, ...values] = condition;
       const value = properties[field] ?? null;
+      
       if (operator === "==") return value === values[0];
       if (operator === "!=") return value !== values[0];
       if (operator === ">") return typeof value === 'number' && value > values[0];
       if (operator === ">=") return typeof value === 'number' && value >= values[0];
       if (operator === "<") return typeof value === 'number' && value < values[0];
       if (operator === "<=") return typeof value === 'number' && value <= values[0];
-      if (operator === "in") return values.includes(value); // FIXED
-      if (operator === "!in") return !values.includes(value); // FIXED
+      if (operator === "in") return values.includes(value); 
+      if (operator === "!in") return !values.includes(value); 
       if (operator === "has") return field in properties;
       if (operator === "!has") return !(field in properties);
-      return false; // Unknown operator
-    }
+      
+      return false; 
+    };
+
     if (filter[0] === "all") {
       return filter.slice(1).every(matchCondition);
     } else if (filter[0] === "any") {
@@ -187,24 +200,19 @@ export class StylerService {
     } else if (filter[0] === "none") {
       return !filter.slice(1).some(matchCondition);
     }
-    return matchCondition(filter); // Direct condition
+    return matchCondition(filter); 
   }
 
-  // 4. GET PAINT VALUE ////////////////////////////
-
-  getPaintValue(paint: any, key: string, fallback: any) {
+  private getPaintValue(paint: any, key: string, fallback: any): any {
     return paint?.[key] ?? fallback;
   }
 
-  // 5. EXTRACT STOPS ////////////////////////////
-
-  extractStops(expression: any[]): [number, number][] {
+  private extractStops(expression: any[]): [number, number][] {
     if (Array.isArray(expression) && expression.length > 4 && expression[0] === "interpolate") {
       const stops: [number, number][] = [];
       for (let i = 3; i < expression.length; i += 2) {
         if (expression[i] !== undefined && expression[i + 1] !== undefined) {
-          const stop: [number, number] = [Number(expression[i]), Number(expression[i + 1])]; // Convert to numbers
-          // Check if both values are numbers
+          const stop: [number, number] = [Number(expression[i]), Number(expression[i + 1])]; 
           if (!isNaN(stop[0]) && !isNaN(stop[1])) {
             stops.push(stop);
           }
@@ -215,10 +223,9 @@ export class StylerService {
     return [];
   }
 
-  // 6. INTERPOLATE STOPS ////////////////////////////
-
-  interpolateStops(stops: [number, number][], zoom: number): number {
-    if (!Array.isArray(stops) || stops.length === 0) return 1; // Default value if stops is empty
+  private interpolateStops(stops: [number, number][], zoom: number): number {
+    if (!Array.isArray(stops) || stops.length === 0) return 1; 
+    
     for (let i = 0; i < stops.length - 1; i++) {
       const [z1, v1] = stops[i];
       const [z2, v2] = stops[i + 1];
@@ -226,7 +233,7 @@ export class StylerService {
         return v1 + ((zoom - z1) / (z2 - z1)) * (v2 - v1);
       }
     }
-    return stops[stops.length - 1][1]; // Return last value if zoom is beyond last stop
+    // Retornar el último valor si nos pasamos del zoom máximo
+    return stops[stops.length - 1][1]; 
   }
-
-}    
+}

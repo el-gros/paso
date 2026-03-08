@@ -22,9 +22,9 @@ export class GeoMathService {
 
   constructor() {}
 
-  // ==========================================
-  // MATEMÁTICAS Y PROCESAMIENTO
-  // ==========================================
+  // ==========================================================================
+  // 1. FILTRADO Y SUAVIZADO (Kalman & Altitud)
+  // ==========================================================================
 
   private applyKalman(measurement: number): number {
     this.k_p = this.k_p + this.k_q;
@@ -105,6 +105,10 @@ export class GeoMathService {
     return track;
   }
 
+  // ==========================================================================
+  // 2. MATEMÁTICAS GEOMÉTRICAS BÁSICAS (Distancias y BBox)
+  // ==========================================================================
+
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     const dLat = (lat2 - lat1) * DEG_TO_RAD;
     const dLon = (lon2 - lon1) * DEG_TO_RAD;
@@ -114,6 +118,42 @@ export class GeoMathService {
 
   quickDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     return this.computeDistance(lon1, lat1, lon2, lat2);
+  }
+
+  private updateBBox(bbox: [number, number, number, number], coord: number[]): void {
+    bbox[0] = Math.min(bbox[0], coord[0]); // Min Lon
+    bbox[1] = Math.min(bbox[1], coord[1]); // Min Lat
+    bbox[2] = Math.max(bbox[2], coord[0]); // Max Lon
+    bbox[3] = Math.max(bbox[3], coord[1]); // Max Lat
+  }
+
+  // ==========================================================================
+  // 3. CÁLCULO DE DISTANCIAS ACUMULADAS (Las que faltaban)
+  // ==========================================================================
+
+  public async accumulatedDistances(track: Track, startIndex: number): Promise<Track> {
+    const feature = track.features[0];
+    const coords = feature.geometry.coordinates;
+    const data = feature.geometry.properties.data;
+    const num = coords.length;
+
+    if (num < 2) return track;
+
+    for (let i = Math.max(1, startIndex); i < num; i++) {
+      const prev = coords[i - 1];
+      const curr = coords[i];
+      
+      const segmentDist = this.computeDistance(prev[0], prev[1], curr[0], curr[1]);
+      data[i].distance = data[i - 1].distance + segmentDist;
+      
+      if (feature.bbox) {
+        this.updateBBox(feature.bbox, curr);
+      }
+    }
+
+    feature.properties.totalDistance = data[num - 1].distance;
+    feature.properties.totalNumber = num;
+    return track;
   }
 
   computeCumulativeDistances(coords: [number, number][]): number[] {
@@ -126,15 +166,39 @@ export class GeoMathService {
     return dists;
   }
 
-  fillProperties(distances: number[], altitudes: number[], times: number[], speed: number): Data[] {
-    return distances.map((d, i) => ({ 
-      altitude: altitudes[i], 
-      speed, 
-      time: times[i], 
-      compSpeed: speed, 
-      compAltitude: altitudes[i], 
-      distance: d 
-    }));
+  // ==========================================================================
+  // 4. GENERACIÓN DE ESTADÍSTICAS Y PARCIALES
+  // ==========================================================================
+
+  computePartialSpeeds(track: Track): PartialSpeed[] {
+    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
+    if (!data.length) return [];
+    
+    const results: PartialSpeed[] = [];
+    let kmIndex = 1;
+    let startTime = data[0].time;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].distance >= kmIndex && data[i].distance > data[i-1].distance) {
+        const ratio = (kmIndex - data[i-1].distance) / (data[i].distance - data[i-1].distance);
+        const crossingTime = data[i-1].time + ratio * (data[i].time - data[i-1].time);
+        
+        const durS = (crossingTime - startTime) / 1000;
+        
+        if (durS > 0) {
+          const kmh = Number((3600 / durS).toFixed(2));
+          const s = Math.floor(durS);
+          const formattedTime = [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
+            .map(v => v.toString().padStart(2, '0')).join(':');
+            
+          results.push([`${kmIndex-1}-${kmIndex} km`, formattedTime, kmh]);
+        }
+        
+        startTime = crossingTime;
+        kmIndex++;
+      }
+    }
+    return results;
   }
 
   computeMinMaxProperty(data: Data[], propertyName: keyof Data): Bounds {
@@ -147,6 +211,21 @@ export class GeoMathService {
       }
     });
     return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
+  }
+
+  // ==========================================================================
+  // 5. UTILIDADES DE INTERPOLACIÓN (Rutas externas / Simulación)
+  // ==========================================================================
+
+  fillProperties(distances: number[], altitudes: number[], times: number[], speed: number): Data[] {
+    return distances.map((d, i) => ({ 
+      altitude: altitudes[i], 
+      speed, 
+      time: times[i], 
+      compSpeed: speed, 
+      compAltitude: altitudes[i], 
+      distance: d 
+    }));
   }
 
   createTimes(data: any, date: Date, distances: number[]): number[] {
@@ -199,38 +278,5 @@ export class GeoMathService {
     }
 
     return { newCoordinates, newProperties };
-  }
-
-  computePartialSpeeds(track: Track): PartialSpeed[] {
-    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
-    if (!data.length) return [];
-    
-    const results: PartialSpeed[] = [];
-    let kmIndex = 1;
-    let startTime = data[0].time;
-
-    for (let i = 1; i < data.length; i++) {
-      if (data[i].distance >= kmIndex && data[i].distance > data[i-1].distance) {
-        const ratio = (kmIndex - data[i-1].distance) / (data[i].distance - data[i-1].distance);
-        const crossingTime = data[i-1].time + ratio * (data[i].time - data[i-1].time);
-        
-        const durS = (crossingTime - startTime) / 1000;
-        
-        if (durS > 0) {
-          const kmh = Number((3600 / durS).toFixed(2));
-          // Importante: hemos movido formatMillisecondsToUTC a FunctionsService,
-          // así que aquí lo hacemos manualmente para no crear una dependencia circular.
-          const s = Math.floor(durS);
-          const formattedTime = [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-            .map(v => v.toString().padStart(2, '0')).join(':');
-            
-          results.push([`${kmIndex-1}-${kmIndex} km`, formattedTime, kmh]);
-        }
-        
-        startTime = crossingTime;
-        kmIndex++;
-      }
-    }
-    return results;
   }
 }

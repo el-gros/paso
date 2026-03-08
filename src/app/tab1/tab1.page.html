@@ -57,7 +57,7 @@
   </app-wiki-card>
 }
 
-@if (location.state === 'tracking' && firstPointReceived) {
+@if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
   <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
     <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
       <ion-icon name="camera-sharp"></ion-icon>

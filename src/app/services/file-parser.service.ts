@@ -2,12 +2,23 @@ import { Injectable } from '@angular/core';
 import { FunctionsService } from './functions.service';
 import { Waypoint, ParsedPoint } from '../../globald';
 
-@Injectable({ providedIn: 'root' })
+export interface ParsedRouteData {
+  waypoints: Waypoint[];
+  trackPoints: ParsedPoint[];
+  trk: Element | null;
+}
+
+@Injectable({ 
+  providedIn: 'root' 
+})
 export class FileParserService {
 
   constructor(private fs: FunctionsService) {}
 
-  async parseGpxXml(gpxText: string) {
+  // ==========================================================================
+  // 1. PARSER GPX
+  // ==========================================================================
+  async parseGpxXml(gpxText: string): Promise<ParsedRouteData> {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = [];
     let trk: Element | null = null;
@@ -15,9 +26,11 @@ export class FileParserService {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(gpxText, 'application/xml');
     
-    if (xmlDoc.getElementsByTagName('parsererror').length > 0) throw new Error('Invalid GPX file format.');
+    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+      throw new Error('Invalid GPX file format.');
+    }
     
-    // Parse waypoints
+    // --- Extraer Waypoints ---
     const wptNodes = xmlDoc.getElementsByTagName("wpt");
     for (const wpt of Array.from(wptNodes)) {
       const latStr = wpt.getAttribute("lat");
@@ -36,9 +49,10 @@ export class FileParserService {
       waypoints.push({ latitude, longitude, altitude, name, comment });
     }
     
-    // Extract first track
+    // --- Extraer Ruta Principal (Track) ---
     const tracks = xmlDoc.getElementsByTagName('trk');
     if (!tracks.length) return { waypoints, trackPoints, trk: null };
+    
     trk = tracks[0];
     const trackSegments = trk.getElementsByTagName('trkseg');
     if (!trackSegments.length) return { waypoints, trackPoints, trk: null };
@@ -48,53 +62,71 @@ export class FileParserService {
       const lat = parseFloat(trkpt.getAttribute('lat') || "");
       const lon = parseFloat(trkpt.getAttribute('lon') || "");
       const ele = parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || "0");
+      
       const timeStr = trkpt.getElementsByTagName('time')[0]?.textContent;
       const time = timeStr ? new Date(timeStr).getTime() : 0;
       
-      if (!isNaN(lat) && !isNaN(lon)) trackPoints.push({ lat, lon, ele, time });
+      if (!isNaN(lat) && !isNaN(lon)) {
+        trackPoints.push({ lat, lon, ele, time });
+      }
     }
+    
     return { waypoints, trackPoints, trk };
   }
 
-  async parseKmlXml(xmlDoc: Document) {
+  // ==========================================================================
+  // 2. PARSER KML
+  // ==========================================================================
+  async parseKmlXml(xmlDoc: Document): Promise<ParsedRouteData> {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = []; 
     let trk: Element | null = null;
     
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
+    
     for (const pm of Array.from(placemarks)) {
       const name = pm.getElementsByTagName("name")[0]?.textContent || "";
       const desc = pm.getElementsByTagName("description")[0]?.textContent || "";
       
-      // Waypoint
+      // --- Extraer Waypoint ---
       const point = pm.getElementsByTagName("Point")[0];
       if (point) {
         const coordText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
         if (coordText) {
           const [lonStr, latStr, eleStr] = coordText.split(",");
           waypoints.push({
-            latitude: parseFloat(latStr), longitude: parseFloat(lonStr),
+            latitude: parseFloat(latStr), 
+            longitude: parseFloat(lonStr),
             altitude: eleStr ? parseFloat(eleStr) : 0,
-            name: this.fs.sanitize(name), comment: this.fs.sanitize(desc),
+            name: this.fs.sanitize(name), 
+            comment: this.fs.sanitize(desc),
           });
         }
       }
       
-      // Track
+      // --- Extraer Ruta Principal (LineString) ---
       const line = pm.getElementsByTagName("LineString")[0];
       if (line) {
         trk = pm; 
         const coordText = line.getElementsByTagName("coordinates")[0]?.textContent?.trim();
+        
         if (coordText) {
           const coords = coordText.split(/\s+/);
           for (const c of coords) {
             const [lonStr, latStr, eleStr] = c.split(",");
             if (!lonStr || !latStr) continue;
-            trackPoints.push({ lon: parseFloat(lonStr), lat: parseFloat(latStr), ele: eleStr ? parseFloat(eleStr) : 0, time: 0 });
+            
+            trackPoints.push({ 
+              lon: parseFloat(lonStr), 
+              lat: parseFloat(latStr), 
+              ele: eleStr ? parseFloat(eleStr) : 0, 
+              time: 0 
+            });
           }
         }
       }
     }
+    
     return { waypoints, trackPoints, trk };
   }
 }

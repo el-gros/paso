@@ -4,145 +4,183 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { PopoverController } from '@ionic/angular';
 
+// --- CONSTANTES ---
 const PENDING_PHOTOS_KEY = 'pending_photos_queue';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PhotoService {
+  
+  // --- ESTADO INTERNO ---
+  // Guarda los nombres de los archivos temporales de la ruta actual
   private sessionFiles: string[] = []; 
 
-  // Injectem l'AlertController al constructor
   constructor(private popoverController: PopoverController) { }
 
+  // ==========================================================================
+  // 1. MANTENIMIENTO Y ARRANQUE (Lifecycle)
+  // ==========================================================================
+
+  /**
+   * Ejecutar al arrancar la app (ej. app.component o tab1). 
+   * Elimina fotos que se quedaron "colgadas" si la app se cerró de golpe.
+   */
+  public async cleanOrphanedPhotosOnStartup(): Promise<void> {
+    try {
+      const { value } = await Preferences.get({ key: PENDING_PHOTOS_KEY });
+      
+      if (value) {
+        const orphanedFiles: string[] = JSON.parse(value);
+        console.log(`[PhotoService] 🧹 Limpiando ${orphanedFiles.length} fotos zombis de una sesión anterior...`);
+        
+        for (const fileName of orphanedFiles) {
+          try {
+            await Filesystem.deleteFile({ path: fileName, directory: Directory.Data });
+          } catch (e) {
+            // Ignoramos si el archivo ya no existe físicamente
+          }
+        }
+        
+        await Preferences.remove({ key: PENDING_PHOTOS_KEY });
+      }
+    } catch (error) {
+      console.error('[PhotoService] Error limpiando fotos huérfanas:', error);
+    }
+  }
+
+  // ==========================================================================
+  // 2. ACCIONES PRINCIPALES (Public API)
+  // ==========================================================================
+
+  /**
+   * Abre la cámara, toma la foto, la guarda en el sistema de archivos
+   * y la registra en la cola de la sesión actual.
+   */
   public async takeAndSavePhoto(): Promise<string | null> {
     try {
-      // 1. Comprovem l'estat actual dels permisos de la càmera
-      let permissions = await Camera.checkPermissions();
-      console.log("-> 2. Permisos actuals:", permissions);
-
-      // 2. Si l'usuari ho ha denegat anteriorment o el sistema demana justificació
-      if (permissions.camera === 'denied' || permissions.camera === 'prompt-with-rationale') {
-        
-        // Mostrem l'alerta d'Ionic i esperem a veure què decideix l'usuari
-        const wantsToRetry = await this.mostrarAlertaPermisos();
-        
-        if (!wantsToRetry) {
-          console.log("L'usuari ha cancel·lat l'explicació dels permisos.");
-          return null; // Sortim sense fer res més
-        }
+      // 1. Gestionar Permisos
+      const hasPermission = await this.ensureCameraPermissions();
+      if (!hasPermission) {
+        console.warn("[PhotoService] 🚫 Permiso de cámara denegado por el usuario.");
+        return null;
       }
 
-      // 3. Si no tenim el permís concedit (ja sigui per primer cop o perquè ha acceptat l'alerta), el demanem
-      if (permissions.camera !== 'granted') {
-        permissions = await Camera.requestPermissions();
-        
-        // Si després de demanar-ho segueix sense estar concedit, cancel·lem
-        if (permissions.camera !== 'granted') {
-          console.log("Permís de càmera denegat finalment.");
-          return null;
-        }
-      }
-
-      // 4. Si arribem aquí, tenim el permís! Obrim la càmera.
-      console.log("-> 3. Cridant a Camera.getPhoto...");
+      // 2. Abrir cámara nativa
+      console.log("[PhotoService] 📸 Abriendo cámara...");
       const capturedPhoto = await Camera.getPhoto({
         resultType: CameraResultType.Uri,
         source: CameraSource.Camera,
         quality: 80
       });
-      console.log("-> 4. Foto capturada!");
 
       if (!capturedPhoto.path) return null;
 
+      // 3. Guardar en el sistema de archivos (Data Directory)
       const fileName = `photo_${Date.now()}.jpeg`;
-
       const file = await Filesystem.readFile({ path: capturedPhoto.path });
+      
       const savedFile = await Filesystem.writeFile({
         path: fileName,
         data: file.data,
         directory: Directory.Data
       });
 
-      // Afegim a la memòria i GUARDEM EN PERSISTÈNCIA
+      // 4. Registrar en la sesión y persistir la cola por seguridad
       this.sessionFiles.push(fileName);
       await this.saveQueueToDisk();
 
+      console.log(`[PhotoService] ✅ Foto guardada con éxito: ${fileName}`);
       return savedFile.uri;
+
     } catch (error) {
-      console.error("Error al capturar la foto:", error);
+      console.error("[PhotoService] ❌ Error al capturar o guardar la foto:", error);
       return null;
     }
   }
 
   /**
-   * Mostra un diàleg d'Ionic preguntant a l'usuari si vol donar permisos
-   * Retorna una Promesa amb 'true' si accepta, o 'false' si cancel·la.
+   * Llama a este método si el usuario GUARDA la ruta al final.
+   * Borra la memoria temporal porque las fotos ya son definitivas.
    */
-  private async mostrarAlertaPermisos(): Promise<boolean> {
-    // Asegúrate de poner la ruta correcta hacia el archivo que acabamos de crear
-    const { CameraPermissionPopoverComponent } = await import('../camera-permission-popover.component');
-
-    const popover = await this.popoverController.create({
-      component: CameraPermissionPopoverComponent,
-      cssClass: 'glass-island-wrapper', // Tu clase global clave
-      backdropDismiss: false, // Recomiendo false para que el usuario tenga que pulsar un botón
-      translucent: true
-    });
-
-    await popover.present();
-
-    // Esperamos a que el popover se cierre y recogemos el dato que envía (true o false)
-    const { data } = await popover.onDidDismiss();
-
-    // Retornamos el valor. Si data es undefined (por ejemplo si forzó el cierre), devolverá false.
-    return data === true;
-  }
-
-  // Llama a este método si el usuario GUARDA la ruta al final
-  public async confirmSessionPhotos() {
+  public async confirmSessionPhotos(): Promise<void> {
     this.sessionFiles = []; 
-    await Preferences.remove({ key: PENDING_PHOTOS_KEY }); // Limpiamos la cola
+    await Preferences.remove({ key: PENDING_PHOTOS_KEY }); 
+    console.log("[PhotoService] 💾 Sesión de fotos confirmada y cola limpiada.");
   }
 
-  // Llama a este método si el usuario CANCELA la ruta explícitamente
-  public async discardSessionPhotos() {
+  /**
+   * Llama a este método si el usuario CANCELA la ruta en curso.
+   * Borra los archivos físicos creados durante esta sesión.
+   */
+  public async discardSessionPhotos(): Promise<void> {
+    console.log(`[PhotoService] 🗑️ Descartando ${this.sessionFiles.length} fotos de la sesión actual...`);
+    
     for (const fileName of this.sessionFiles) {
       try {
         await Filesystem.deleteFile({ path: fileName, directory: Directory.Data });
-      } catch (e) {} // Ignoramos errores si el archivo ya no existe
+      } catch (e) {
+        // Ignoramos errores si el archivo ya no existe
+      }
     }
+    
     this.sessionFiles = []; 
     await Preferences.remove({ key: PENDING_PHOTOS_KEY });
   }
 
-  // --- MÉTODOS PARA EL MANEJO DE CIERRES INESPERADOS ---
+  // ==========================================================================
+  // 3. MÉTODOS PRIVADOS (Helpers)
+  // ==========================================================================
 
-  private async saveQueueToDisk() {
+  /**
+   * Verifica los permisos. Si es necesario, muestra el popover explicativo
+   * y lanza la petición nativa.
+   */
+  private async ensureCameraPermissions(): Promise<boolean> {
+    let permissions = await Camera.checkPermissions();
+
+    // Si está denegado o requiere explicación previa (Android)
+    if (permissions.camera === 'denied' || permissions.camera === 'prompt-with-rationale') {
+      const wantsToRetry = await this.showPermissionRationalePopover();
+      if (!wantsToRetry) return false;
+    }
+
+    // Si aún no está concedido, lanzamos el prompt nativo del SO
+    if (permissions.camera !== 'granted') {
+      permissions = await Camera.requestPermissions();
+    }
+
+    return permissions.camera === 'granted';
+  }
+
+  /**
+   * Muestra el popover de Ionic para explicar por qué necesitamos la cámara.
+   */
+  private async showPermissionRationalePopover(): Promise<boolean> {
+    // Importación dinámica (Lazy Load) para evitar dependencias circulares
+    const { CameraPermissionPopoverComponent } = await import('../camera-permission-popover.component');
+
+    const popover = await this.popoverController.create({
+      component: CameraPermissionPopoverComponent,
+      cssClass: 'glass-island-wrapper', 
+      backdropDismiss: false, 
+      translucent: true
+    });
+
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+    
+    return data === true;
+  }
+
+  /**
+   * Persiste la lista de archivos temporales en las Preferencias
+   * para sobrevivir a un cierre inesperado de la app.
+   */
+  private async saveQueueToDisk(): Promise<void> {
     await Preferences.set({
       key: PENDING_PHOTOS_KEY,
       value: JSON.stringify(this.sessionFiles)
     });
-  }
-
-  /**
-   * Ejecutar al arrancar la app. 
-   * Elimina cualquier foto que se quedó "colgada" de una sesión interrumpida.
-   */
-  public async cleanOrphanedPhotosOnStartup() {
-    const { value } = await Preferences.get({ key: PENDING_PHOTOS_KEY });
-    
-    if (value) {
-      const orphanedFiles: string[] = JSON.parse(value);
-      console.log(`🧹 Limpiando ${orphanedFiles.length} fotos zombis de un cierre anterior...`);
-      
-      for (const fileName of orphanedFiles) {
-        try {
-          await Filesystem.deleteFile({ path: fileName, directory: Directory.Data });
-        } catch (e) {}
-      }
-      
-      await Preferences.remove({ key: PENDING_PHOTOS_KEY });
-    }
   }
 }

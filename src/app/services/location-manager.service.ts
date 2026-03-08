@@ -1,54 +1,71 @@
-import { Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { ReferenceService } from '../services/reference.service';
-import { firstValueFrom, filter, timeout } from 'rxjs';
-import MyService, { Location, RouteStatus } from 'src/plugins/MyServicePlugin';
-import { FunctionsService } from '../services/functions.service';
-import { TranslateService } from '@ngx-translate/core';
-import { Track } from 'src/globald';
-import { GpsPopoverComponent } from '..//gps-popover.component';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { filter, timeout } from 'rxjs/operators';
 import { PopoverController } from '@ionic/angular';
+import { TranslateService } from '@ngx-translate/core';
+
+// --- PLUGIN & INTERFACES ---
+import MyService, { Location } from 'src/plugins/MyServicePlugin';
+import { Track } from 'src/globald';
+
+// --- SERVICES & COMPONENTS ---
+import { ReferenceService } from '../services/reference.service';
+import { FunctionsService } from '../services/functions.service';
+import { GpsPopoverComponent } from '../gps-popover.component'; // Ajustado path (..// a ../)
 
 @Injectable({
   providedIn: 'root'
 })
 export class LocationManagerService {
 
-  threshold: number = 40;
-  altitudeThreshold: number = 40;
-  // 1. El Subject privado que emitirá los cambios
+  // ==========================================================================
+  // 1. CONFIGURACIÓN
+  // ==========================================================================
+  public threshold: number = 40;
+  public altitudeThreshold: number = 40;
+  public threshDist: number = 0.0000002;
+  private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; // 10 minutos
+
+  // ==========================================================================
+  // 2. ESTADO GENERAL (State)
+  // ==========================================================================
   private _stateSubject = new BehaviorSubject<string>('inactive');
-  // 2. El Observable público al que los componentes se pueden suscribir
   public state$ = this._stateSubject.asObservable();
-  // 3. Getter y Setter para NO romper el resto de tu app
+
   get state(): string {
     return this._stateSubject.value;
   }
+  
   set state(value: string) {
-    // Solo emitimos si el estado realmente cambia
     if (this._stateSubject.value !== value) {
       this._stateSubject.next(value);
     }
   }
-  currentPoint: number = 0;
-  averagedSpeed: number = 0;
-  stopped: number = 0;
-  threshDist: number = 0.0000002;
-  isSharing = false;
-  shareToken: string | null = null;
-  deviceId: string | null = null;
-  foreground: boolean = true;
+
+  // ==========================================================================
+  // 3. DATOS DE SEGUIMIENTO (Públicos para Tab1 y otros componentes)
+  // ==========================================================================
+  public currentPoint: number = 0;
+  public averagedSpeed: number = 0;
+  public stopped: number = 0;
+  
+  public isSharing: boolean = false;
+  public shareToken: string | null = null;
+  public deviceId: string | null = null;
+  
+  public foreground: boolean = true;
+
+  // ==========================================================================
+  // 4. API REACTIVA DE UBICACIÓN
+  // ==========================================================================
+  private latestLocationSubject = new BehaviorSubject<Location | null>(null);
+  public latestLocation$ = this.latestLocationSubject.asObservable();
+
+  // ==========================================================================
+  // 5. VARIABLES INTERNAS (Privadas)
+  // ==========================================================================
   private invalidLocationCount: number = 0;
   private lastAlertTime: number = 0;
-  private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; // 10 minutos
-  
-  // ----------------------------------------------------------------------------
-  // 1) PUBLIC API → components/services subscribe here
-  // ----------------------------------------------------------------------------
-  private latestLocationSubject = new BehaviorSubject<Location | null>(null);
-  latestLocation$ = this.latestLocationSubject.asObservable();
-
-  //public lastAccepted: Location | null = null;
 
   constructor(
     private reference: ReferenceService,
@@ -57,18 +74,23 @@ export class LocationManagerService {
     private popoverController: PopoverController
   ) { }
 
- 
-  // ----------------------------------------------------------------------------
-  // 2) RAW + SAMPLING → (merged from the 3 services)
-  // ----------------------------------------------------------------------------
-  processRawLocation(raw: Location) {
+  // ==========================================================================
+  // MÉTODOS PÚBLICOS
+  // ==========================================================================
+
+  /**
+   * Recibe y evalúa un punto GPS en bruto desde el plugin nativo.
+   */
+  public processRawLocation(raw: Location): boolean {
     // 1. Filtros de calidad
-    if (raw.accuracy > this.threshold ||
-        !raw.altitude || raw.altitude == 0 ||
-        raw.altitudeAccuracy > this.altitudeThreshold ||
-        !raw.time) {
-        
-        // --- NUEVA LÓGICA DE FALLOS ---
+    const isBadQuality = (
+      raw.accuracy > this.threshold ||
+      !raw.altitude || raw.altitude === 0 ||
+      raw.altitudeAccuracy > this.altitudeThreshold ||
+      !raw.time
+    );
+
+    if (isBadQuality) {
         this.invalidLocationCount++;
         if (this.invalidLocationCount >= 5) {
           this.checkAndShowGpsWarning();
@@ -76,58 +98,30 @@ export class LocationManagerService {
         return false;
     }
 
-    // --- REINICIAR CONTADOR SI LA LECTURA ES BUENA ---
+    // 2. Lógica si la lectura es buena
     this.invalidLocationCount = 0;
-
-    // 2. Notificar a la App (Mapa, etc)
     this.latestLocationSubject.next(raw);
     console.log('[LocationManager] new accepted location:', raw);
 
     return true;
   }
 
-  // ----------------------------------------------------------------------------
-  // 3) GESTIÓN DE AVISOS GPS
-  // ----------------------------------------------------------------------------
-  private async checkAndShowGpsWarning() {
-    const now = Date.now();
-
-    // Comprobar si han pasado 10 minutos desde la última alerta
-    if (now - this.lastAlertTime > this.ALERT_COOLDOWN_MS) {
-      this.lastAlertTime = now;
-      this.invalidLocationCount = 0; // Reiniciamos para no saturar la lógica
-
-      // Solo mostramos la alerta si la app está en primer plano
-      if (this.foreground) {
-        // Importamos el nuevo componente (ajusta la ruta según dónde lo hayas guardado)
-
-
-        const popover = await this.popoverController.create({
-          component: GpsPopoverComponent,
-          cssClass: 'glass-island-wrapper', // Aplica tu ADN visual global
-          backdropDismiss: true, // Permite cerrar tocando el fondo oscurecido, como tenías antes
-          translucent: true
-        });
-
-        await popover.present();
-      }
-    }
-  }
-
-  async getCurrentPosition(): Promise<[number, number] | null> {
-    // 1) Intentamos obtener el valor actual del Subject directamente
+  /**
+   * Intenta obtener la posición actual de forma síncrona/esperando un instante.
+   */
+  public async getCurrentPosition(): Promise<[number, number] | null> {
+    // 1. Valor inmediato
     const last = this.latestLocationSubject.value;
-    
     if (last) {
       return [last.longitude, last.latitude];
     }
 
-    // 2) Si no hay nada, esperamos al siguiente con un margen un poco mayor (ej. 2s)
+    // 2. Esperar al siguiente (arranque en frío)
     try {
       const nextLoc = await firstValueFrom(
         this.latestLocation$.pipe(
-          filter(v => !!v),
-          timeout(2000) // 1s a veces es poco para un arranque en frío
+          filter((v): v is Location => !!v), // Type guard vital para Typescript
+          timeout(2000)
         )
       );
       return [nextLoc.longitude, nextLoc.latitude];
@@ -137,19 +131,25 @@ export class LocationManagerService {
     }
   }
 
-  async fillGeojson(track: Track | undefined, location: Location) {
+  /**
+   * Añade el punto procesado al Track GeoJSON y recalcula el Bounding Box.
+   */
+  public async fillGeojson(track: Track | undefined, location: Location): Promise<Track | undefined> {
     if (!track) return undefined;
+    
     // Add minimal data
     track.features[0].geometry.properties.data.push({
       altitude: location.altitude,
       speed: location.speed,
       time: location.time,
-      compSpeed: location.speed,  // Initial value; further processing can adjust it
-      compAltitude: location.altitude, // Initial value; further processing can adjust it
-      distance: 0  // Placeholder, will be computed later
+      compSpeed: location.speed,
+      compAltitude: location.altitude,
+      distance: 0
     });
+    
     // Add coordinates
     track.features[0].geometry.coordinates.push([location.longitude, location.latitude]);
+    
     // Update bbox
     const bbox = track.features[0].bbox || [Infinity, Infinity, -Infinity, -Infinity];
     track.features[0].bbox = [
@@ -158,21 +158,46 @@ export class LocationManagerService {
       Math.max(bbox[2], location.longitude),
       Math.max(bbox[3], location.latitude)
     ];
-    return track
+    
+    return track;
   }
   
-  async sendReferenceToPlugin() {
-    let coordinates: number[][];
-    if (this.state != 'tracking' || this.fs.alert != 'on' || !this.reference.archivedTrack) coordinates = []
-    else coordinates = this.reference.archivedTrack.features[0].geometry.coordinates
+  /**
+   * Envía las coordenadas de la ruta cargada al plugin nativo para comparar desvíos.
+   */
+  public async sendReferenceToPlugin(): Promise<void> {
+    const shouldSend = this.state === 'tracking' && this.fs.alert === 'on' && !!this.reference.archivedTrack;
+    const coordinates = shouldSend ? this.reference.archivedTrack!.features[0].geometry.coordinates : [];
+    
     try {
-        await MyService.setReferenceTrack({ coordinates: coordinates });
+        await MyService.setReferenceTrack({ coordinates });
         console.log("📍 Track de referencia sincronizado con el servicio nativo");
     } catch (e) {
         console.error("❌ Error sincronizando track con nativo:", e);
     }
   }
 
-}
+  // ==========================================================================
+  // MÉTODOS PRIVADOS
+  // ==========================================================================
 
-    
+  private async checkAndShowGpsWarning(): Promise<void> {
+    const now = Date.now();
+
+    if (now - this.lastAlertTime > this.ALERT_COOLDOWN_MS) {
+      this.lastAlertTime = now;
+      this.invalidLocationCount = 0;
+
+      if (this.foreground) {
+        const popover = await this.popoverController.create({
+          component: GpsPopoverComponent,
+          cssClass: 'glass-island-wrapper',
+          backdropDismiss: true,
+          translucent: true
+        });
+        await popover.present();
+      }
+    }
+  }
+
+}
