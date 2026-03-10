@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_recording_track">Запись и анализ маршрута...</string>
+    <string name="notification_off_route">⚠️ Сбились с маршрута</string>
+    <string name="notification_on_route">✅ Вернулись на маршрут</string>
+</resources>

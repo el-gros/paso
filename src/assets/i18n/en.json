@@ -64,6 +64,7 @@
     "LOADING_ERROR": "Error loading track",
     "EMPTY_TRACKS": "No valid coordinates found in files",
     "TRACK_UPDATED": "Track updated successfully",
+    "TRACK_SAVED": "Track saved successfully",
     "GENERATING_FILES": "Generating files, please wait..."
   },
   "SETTINGS": {
@@ -136,7 +137,10 @@
     "DELETE_YES": "Yes",
     "DELETE_NO": "No",
     "DEFAULT_NAME": "No name",
-    "SHARE_TEXT": "You can view my route at: "
+    "SHARE_TEXT": "You can view my route at: ",
+    "SEARCHING_PLACE": "Searching place...",
+    "ROUTE_AROUND": "Route around {{place}}",
+    "UNKNOWN_PLACE": "Unknown place"
   },
   "COLORS": {
     "crimson": "Crimson",

@@ -24,7 +24,6 @@ import { GeoMathService } from './services/geo-math.service';
     </div>
   `,
   styles: [`
-    /* --- CSS ESPECÍFICO DEL GRÁFICO (Movido desde canvas.component.scss) --- */
     .canvas-container {
       background: transparent;
       margin-bottom: 30px;
@@ -81,14 +80,12 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
   @ViewChild('chartCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('container') containerRef!: ElementRef<HTMLDivElement>;
 
-  unit: string = '';
-  noData: boolean = false;
+  public unit: string = '';
+  public noData: boolean = false;
   private resizeObserver!: ResizeObserver;
-  margin: number = 25;
+  private readonly margin: number = 25;
 
-  constructor(
-    private geoMath: GeoMathService
-  ) {}
+  constructor(private geoMath: GeoMathService) {}
 
   ngAfterViewInit() {
     this.resizeObserver = new ResizeObserver(() => this.draw());
@@ -103,7 +100,9 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     if (this.resizeObserver) this.resizeObserver.disconnect();
   }
 
-  // --- MATEMÁTICAS PURAS Y DIBUJO ---
+  // ==========================================
+  // MATEMÁTICAS PURAS Y DIBUJO
+  // ==========================================
   private async draw() {
     if (!this.track || !this.canvasRef || !this.containerRef) return;
 
@@ -125,7 +124,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     }
 
     const canvas = this.canvasRef.nativeElement;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const wrapper = this.containerRef.nativeElement.querySelector('.canvas-wrapper') as HTMLElement;
@@ -169,20 +168,25 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     const isSpeedPlot = this.property === 'compSpeed' || this.property === 'speed';
     const mainColor = isSpeedPlot ? '0, 191, 255' : '255, 215, 0';
 
-    ctx.beginPath();
-    const startYPixel = bounds.min * scaleY + offsetY;
-    ctx.moveTo(offsetX, startYPixel);
+    // 🚀 1. Dibujamos la cuadrícula (grid) PRIMERO para que quede de fondo
+    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
 
-    for (let i = 0; i < num; i++) {
-      const p = data[i];
+    // 🚀 2. Pre-calculamos los puntos en píxeles UNA SOLA VEZ
+    const points = data.map(p => {
       const valX = this.mode === 'x' ? p.distance : (p.time - startTime) / xDiv;
-      const px = (isNaN(valX) ? 0 : valX) * scaleX + offsetX;
-      const py = (p[this.property] as number) * scaleY + offsetY;
-      ctx.lineTo(px, py);
-    }
+      return {
+        x: (isNaN(valX) ? 0 : valX) * scaleX + offsetX,
+        y: (p[this.property] as number) * scaleY + offsetY
+      };
+    });
 
-    const endXPixel = xTot * scaleX + offsetX;
-    ctx.lineTo(endXPixel, startYPixel);
+    const startYPixel = bounds.min * scaleY + offsetY;
+
+    // 🚀 3. Dibujamos el relleno (Gradiente)
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, startYPixel); // Esquina inferior izquierda
+    points.forEach(p => ctx.lineTo(p.x, p.y)); // Curva de datos
+    ctx.lineTo(points[points.length - 1].x, startYPixel); // Esquina inferior derecha
     ctx.closePath();
 
     const fillGradient = ctx.createLinearGradient(0, this.margin, 0, startYPixel);
@@ -192,31 +196,22 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     ctx.fillStyle = fillGradient;
     ctx.fill();
 
+    // 🚀 4. Dibujamos la línea principal (Stroke)
     ctx.beginPath();
-    const firstValX = this.mode === 'x' ? data[0].distance : 0;
-    ctx.moveTo(firstValX * scaleX + offsetX, (data[0][this.property] as number) * scaleY + offsetY);
-
-    for (let i = 1; i < num; i++) {
-      const p = data[i];
-      const valX = this.mode === 'x' ? p.distance : (p.time - startTime) / xDiv;
-      const px = (isNaN(valX) ? 0 : valX) * scaleX + offsetX;
-      const py = (p[this.property] as number) * scaleY + offsetY;
-      ctx.lineTo(px, py);
-    }
-
+    ctx.moveTo(points[0].x, points[0].y);
+    points.forEach(p => ctx.lineTo(p.x, p.y));
+    
     ctx.lineWidth = 2; 
     ctx.strokeStyle = `rgba(${mainColor}, 1)`;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.stroke();
-
-    await this.grid(ctx, 0, xTot, bounds.min, bounds.max, scaleX, scaleY, offsetX, offsetY);
     
-    // 2. DIBUJAR LA LÍNEA AZUL
+    // 🚀 5. Dibujar la línea indicadora (Marcador) por encima de todo
     if (this.mode === 'x' && this.markerPosition != null) {
       const markerX = this.markerPosition * scaleX + offsetX;
-      const topY = bounds.max * scaleY + offsetY; // Parte superior del gráfico
-      const bottomY = bounds.min * scaleY + offsetY; // Parte inferior del gráfico
+      const topY = this.margin; // Límite superior exacto del área de dibujo
+      const bottomY = size - this.margin; // Límite inferior exacto
 
       // Asegurarnos de que el marcador está dentro de los límites del track
       if (markerX >= offsetX && markerX <= xTot * scaleX + offsetX) {
@@ -227,18 +222,14 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
         
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#3880ff'; // Color azul (primary de Ionic)
-        
-        // Opcional: Hacer la línea discontinua
-        // ctx.setLineDash([4, 4]); 
-        
+        ctx.setLineDash([4, 4]); // Línea discontinua elegante
         ctx.stroke();
 
-        // Opcional: Un pequeño círculo en la base de la línea
+        // Pequeño círculo en la base de la línea
         ctx.beginPath();
         ctx.arc(markerX, bottomY, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#3880ff';
         ctx.fill();
-        
         ctx.restore();
       }
     }
@@ -249,6 +240,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     if (num > 1 && data[num - 1].distance === 0) {
         const coords = track.features[0].geometry.coordinates as number[][];
         if (!coords || coords.length !== num) return; 
+        
         let totalDist = 0;
         data[0].distance = 0; 
         for (let k = 1; k < num; k++) {
@@ -272,6 +264,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     const gridx = this.calculateStep(xMax - xMin, targetDivisionsX);
     const gridy = this.calculateStep(yMax - yMin, targetDivisionsY);
 
+    // Líneas verticales (Eje X)
     ctx.textAlign = 'center'; 
     ctx.textBaseline = 'top'; 
     for (let xi = Math.ceil(xMin / gridx) * gridx; xi <= xMax; xi += gridx) {
@@ -284,6 +277,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
       ctx.fillText(label, px, (yMax * d + f) + 6); 
     }
 
+    // Líneas horizontales (Eje Y)
     ctx.textAlign = 'left'; 
     ctx.textBaseline = 'bottom'; 
     for (let yi = Math.ceil(yMin / gridy) * gridy; yi <= yMax; yi += gridy) {
@@ -303,11 +297,10 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     const mag = Math.floor(Math.log10(rawStep));
     const magPow = Math.pow(10, mag);
     const msd = rawStep / magPow;
-    let step;
-    if (msd > 5.0) step = 10 * magPow;
-    else if (msd > 2.0) step = 5 * magPow;
-    else if (msd > 1.0) step = 2 * magPow;
-    else step = magPow;
-    return step;
+    
+    if (msd > 5.0) return 10 * magPow;
+    if (msd > 2.0) return 5 * magPow;
+    if (msd > 1.0) return 2 * magPow;
+    return magPow;
   }
 }

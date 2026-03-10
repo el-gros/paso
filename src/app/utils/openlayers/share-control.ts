@@ -11,7 +11,7 @@ export class ShareControl extends Control {
 
   constructor(
     private locationService: LocationManagerService,
-    private locationSharing: LocationSharingService, // 👈 Añadimos el nuevo servicio
+    private locationSharing: LocationSharingService,
     private translate: TranslateService
   ) {
     const element = document.createElement('div');
@@ -19,9 +19,20 @@ export class ShareControl extends Control {
 
     super({ element: element });
 
+    // 1. CONFIGURACIÓN DEL BOTÓN PRINCIPAL
     this.button = document.createElement('button');
     this.button.type = 'button';
-    this.button.addEventListener('click', this.handleMainButtonClick.bind(this), false);
+    this.button.style.touchAction = 'none'; // 🚀 Cero lag en móviles
+    this.button.title = this.translate.instant('MAP.SHARE') || 'Share Location'; // Accesibilidad
+
+    // 🚀 Usamos pointerdown para respuesta instantánea y arrow function
+    this.button.addEventListener('pointerdown', (e) => this.handleMainButtonClick(e), { capture: true });
+    
+    // Fallback de seguridad para toques fantasmas
+    this.button.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
 
     element.appendChild(this.button);
 
@@ -32,7 +43,11 @@ export class ShareControl extends Control {
   private initConfirmationUI() {
     this.backdrop = document.createElement('div');
     this.backdrop.className = 'share-backdrop';
-    this.backdrop.addEventListener('click', () => this.hideConfirmation());
+    this.backdrop.style.touchAction = 'none';
+    this.backdrop.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.hideConfirmation();
+    });
     document.body.appendChild(this.backdrop);
 
     this.popup = document.createElement('div');
@@ -50,11 +65,11 @@ export class ShareControl extends Control {
       <div class="popover-island confirm-box">
         <p class="confirm-title">${txtConfirm}</p>
         <div class="button-grid horizontal">
-          <button id="btnShareYes" class="nav-item-btn green-pill">
+          <button id="btnShareYes" class="nav-item-btn green-pill" style="touch-action: none;">
             <ion-icon name="checkmark-sharp" style="font-size: 32px; pointer-events: none;"></ion-icon>
             <p style="pointer-events: none;">${txtYes}</p>
           </button>
-          <button id="btnShareNo" class="nav-item-btn red-pill">
+          <button id="btnShareNo" class="nav-item-btn red-pill" style="touch-action: none;">
             <ion-icon name="close-sharp" style="font-size: 32px; pointer-events: none;"></ion-icon>
             <p style="pointer-events: none;">${txtNo}</p>
           </button>
@@ -62,10 +77,14 @@ export class ShareControl extends Control {
       </div>
     `;
 
-    this.popup.querySelector('#btnShareYes')?.addEventListener('click', async (e) => {
+    // 🚀 Eventos de los botones internos optimizados
+    const btnYes = this.popup.querySelector('#btnShareYes') as HTMLButtonElement;
+    const btnNo = this.popup.querySelector('#btnShareNo') as HTMLButtonElement;
+
+    btnYes?.addEventListener('pointerdown', async (e) => {
       e.preventDefault();
+      e.stopPropagation(); // Evita clics en el mapa subyacente
       
-      // 🚀 Llamada DIRECTA al servicio
       const success = await this.locationSharing.startSharing(); 
       if (success) {
         this.updateUI();
@@ -73,13 +92,17 @@ export class ShareControl extends Control {
       this.hideConfirmation();
     });
 
-    this.popup.querySelector('#btnShareNo')?.addEventListener('click', () => this.hideConfirmation());
+    btnNo?.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.hideConfirmation();
+    });
   }
 
   private async handleMainButtonClick(event: Event) {
     event.preventDefault();
+    event.stopPropagation();
     
-    // 🚀 Leemos el estado real del servicio
     if (this.locationService.isSharing) {
       await this.locationSharing.stopSharing();
       this.updateUI();
@@ -88,11 +111,11 @@ export class ShareControl extends Control {
     }
   }
 
-  private updateUI() {
+  // 🚀 Función pública para que otros componentes puedan forzar el refresco
+  public updateUI() {
     const activeColor = '#3880ff';
     const inactiveColor = '#999999';
     
-    // Leemos siempre la verdad del servicio
     const isSharing = this.locationService.isSharing; 
     
     const iconName = isSharing ? 'share-social-sharp' : 'share-social-outline';

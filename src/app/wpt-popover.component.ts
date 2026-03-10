@@ -1,11 +1,11 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
-import { PopoverController, ModalController, IonicModule } from '@ionic/angular'; // Añadido ModalController
+import { PopoverController, ModalController, IonicModule } from '@ionic/angular'; 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
 import { Waypoint } from 'src/globald';
 import { Capacitor } from '@capacitor/core';
-import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta la ruta
+import { PhotoViewerComponent } from './photo-viewer.component';
 
 @Component({
   selector: 'app-waypoint-popover',
@@ -21,12 +21,23 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
         </div>
 
         @if (editableWpt.photos && editableWpt.photos.length > 0) {
-          <div class="photo-preview-container" (click)="openPhotoViewer()">
-            <img [src]="getWebUrl(editableWpt.photos[0])" class="waypoint-photo" />
+          <div class="photo-preview-container ion-activatable" (click)="openPhotoViewer()">
+            <img [src]="getWebUrl(editableWpt.photos[0])" class="waypoint-photo" loading="lazy" />
+            
             <div class="photo-badge">
-              <ion-icon name="expand-outline"></ion-icon> </div>
+              <ion-icon name="expand-outline"></ion-icon> 
+            </div>
+            
+            @if(editableWpt.photos.length > 1) {
+              <div class="photo-count-badge">
+                +{{ editableWpt.photos.length - 1 }}
+              </div>
+            }
+            
+            <ion-ripple-effect></ion-ripple-effect>
           </div>
         }
+        
         <div class="meta-tags-row">
           @if (editableWpt.altitude !== undefined && editableWpt.altitude !== null) {
             <span class="meta-tag">
@@ -35,6 +46,7 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
             </span>
           }
         </div>
+        
         <div class="form-container">
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
@@ -48,13 +60,15 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
         </div>
 
         <div class="button-grid">
-          <button class="nav-item-btn green-pill" (click)="confirm()">
+          <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
             <ion-icon name="checkmark-sharp"></ion-icon>
-            <p>OK</p>
+            <span>OK</span>
+            <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="nav-item-btn red-pill" (click)="cancel()">
+          <button class="nav-item-btn red-pill ion-activatable" (click)="cancel()">
             <ion-icon name="close-sharp"></ion-icon>
-            <p>{{ 'EDIT.CANCEL' | translate }}</p>
+            <span>{{ 'EDIT.CANCEL' | translate }}</span>
+            <ion-ripple-effect></ion-ripple-effect>
           </button>
         </div>
 
@@ -62,7 +76,10 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
     </ion-content>
   `,
   styles: [`
-    ion-content { --background: transparent; }
+    ion-content { 
+      --background: transparent; 
+    }
+
     .local-glass-island {
       background: rgba(255, 255, 255, 0.96) !important;
       backdrop-filter: blur(16px);
@@ -81,8 +98,9 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
       border-radius: 18px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      cursor: pointer; /* Indicar que es clicable */
+      cursor: pointer; 
       transition: transform 0.2s;
+      background: #f0f0f0; /* Color de fondo mientras carga */
       
       &:active { transform: scale(0.98); }
 
@@ -103,13 +121,28 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
         display: flex;
         ion-icon { font-size: 14px; }
       }
+      
+      /* 🚀 Nuevo Badge si hay más de 1 foto */
+      .photo-count-badge {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 800;
+        backdrop-filter: blur(4px);
+      }
     }
-    /* Meta tags row */
+    
     .meta-tags-row {
       display: flex;
       gap: 8px;
       margin-bottom: 15px;
     }
+
     .meta-tag {
       display: flex;
       align-items: center;
@@ -121,26 +154,56 @@ import { PhotoViewerComponent } from './photo-viewer.component'; // <-- Ajusta l
       font-size: 11px;
       font-weight: 600;
     }
-    /* ... Resto de tus estilos se mantienen igual ... */
+    
     .popover-header {
       display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
       padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
+      
       .header-icon { font-size: 20px; color: var(--ion-color-primary); }
       h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
     }
+    
     .form-container { display: flex; flex-direction: column; gap: 14px; }
-    .custom-label { font-size: 10px; font-weight: 800; color: var(--ion-color-primary); text-transform: uppercase; }
-    .custom-textarea { background: rgba(0, 0, 0, 0.05); border-radius: 14px; --padding-start: 12px; }
-    .button-grid { display: flex; justify-content: center; gap: 16px; margin-top: 25px; }
+    
+    .custom-label { 
+      font-size: 10px; 
+      font-weight: 800; 
+      color: var(--ion-color-primary); 
+      text-transform: uppercase; 
+      margin-bottom: 4px;
+      display: block;
+    }
+    
+    .custom-textarea { 
+      background: rgba(0, 0, 0, 0.05); 
+      border-radius: 14px; 
+      --padding-start: 12px; 
+      margin: 0;
+    }
+
+    .button-grid { 
+      display: flex; 
+      justify-content: center; 
+      gap: 16px; 
+      margin-top: 25px; 
+    }
+
     .nav-item-btn {
+      position: relative;
+      overflow: hidden;
       flex: 1; min-width: 100px; height: 70px; 
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       border: none; border-radius: 20px; background: white;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      ion-icon { font-size: 28px; margin-bottom: 4px; }
-      p { margin: 0; font-size: 11px; font-weight: 800; }
+      cursor: pointer;
+      transition: transform 0.1s;
+      
+      ion-icon { font-size: 28px; margin-bottom: 4px; pointer-events: none; }
+      span { margin: 0; font-size: 11px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
+      
       &:active { transform: scale(0.94); }
     }
+    
     .green-pill { color: #2dd36f; }
     .red-pill { color: #eb445a; }
   `]
@@ -150,40 +213,39 @@ export class WptPopoverComponent implements OnInit {
   @Input() edit: boolean = false;
   @Input() showAltitude: boolean = false;
 
-  editableWpt: any;
+  public editableWpt: any;
 
   private popoverCtrl = inject(PopoverController);
-  private modalCtrl = inject(ModalController); // Inyectamos el ModalController
+  private modalCtrl = inject(ModalController); 
 
   ngOnInit() {
     this.editableWpt = { ...this.wptEdit };
   }
 
-  getWebUrl(path: string): string {
-    return Capacitor.convertFileSrc(path);
+  public getWebUrl(path: string): string {
+    return path ? Capacitor.convertFileSrc(path) : '';
   }
 
-  // Nueva función para abrir el visor
-  async openPhotoViewer() {
+  public async openPhotoViewer() {
     if (!this.editableWpt.photos || this.editableWpt.photos.length === 0) return;
 
     const modal = await this.modalCtrl.create({
       component: PhotoViewerComponent,
       componentProps: {
-        // Le pasamos solo la foto de este waypoint como un array
-        photos: [this.editableWpt.photos[0]]
+        // 🚀 Le pasamos el array COMPLETO para que el usuario pueda usar el carrusel
+        photos: this.editableWpt.photos 
       },
-      cssClass: 'fullscreen-modal' // Opcional, si quieres aplicar estilos específicos al modal
+      cssClass: 'fullscreen-modal' 
     });
 
     await modal.present();
   }
 
-  cancel() {
+  public cancel() {
     this.popoverCtrl.dismiss();
   }
 
-  confirm() {
+  public confirm() {
     this.popoverCtrl.dismiss({
       action: 'ok',
       ...this.editableWpt 

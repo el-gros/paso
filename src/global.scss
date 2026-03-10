@@ -435,6 +435,19 @@ ion-popover.top-search-popover {
   &.btn-no { background: #eb445a; }
 }
 
+/* --- Popover Centrado con Efecto de Cristal --- */
+.centered-glass-popover {
+  --width: 280px; /* Ancho fijo elegante */
+  --max-height: 80vh; 
+  --box-shadow: none; /* Quitamos la sombra de Ionic porque se la hemos puesto a nuestra 'island' */
+  --background: transparent; /* Fondo transparente para que se vea el cristal */
+  
+  &::part(content) {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+}
 
 /* ==========================================================================
    ================= 7. COMPONENTES: TOASTS & LOADING =======================

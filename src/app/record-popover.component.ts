@@ -1,27 +1,26 @@
-import { Component, NgZone, ChangeDetectorRef, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectorRef, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, PopoverController, Platform, ModalController } from '@ionic/angular';
+import { IonicModule, PopoverController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { lastValueFrom, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 
-// OpenLayers & Plugins
+// OpenLayers
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
-import { register } from 'swiper/element/bundle';
-import { Waypoint } from 'src/globald';
 
-// Tus Servicios
+// Servicios
 import { FunctionsService } from './services/functions.service';
 import { GeographyService } from './services/geography.service';
 import { LocationManagerService } from './services/location-manager.service';
 import { PresentService } from './services/present.service';
 import { StylerService } from './services/styler.service';
-import { SaveTrackPopover } from './save-track-popover.component';
 import { MapService } from './services/map.service';
 import { PhotoService } from './services/photo.service';
+import { SaveTrackPopover } from './save-track-popover.component';
 
-register();
+// Opcional pero recomendado: Inyectar el motor que creamos ayer para apagarlo correctamente
+// import { TrackingEngineService } from './services/tracking-engine.service'; 
 
 @Component({
   standalone: true,
@@ -94,20 +93,10 @@ register();
     </ion-popover>
   `,
   styles: [`
-    /* --- ESTRUCTURA BASE FLOTANTE --- */
     .popover-island { padding: 16px 10px; }
-
-    /* --- GRID Y CONTENEDORES --- */
-    .button-grid {
-      display: flex; justify-content: space-around; align-items: center; gap: 5px;
-    }
-    .button-grid.horizontal {
-      justify-content: center; gap: 40px; 
-    }
-
-    /* --- COLORES Y ESTADOS --- */
+    .button-grid { display: flex; justify-content: space-around; align-items: center; gap: 5px; }
+    .button-grid.horizontal { justify-content: center; gap: 40px; }
     .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
-
     .enabled ion-icon { animation: pulse 2s infinite; }
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -128,16 +117,19 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private cd = inject(ChangeDetectorRef);
   private mapService = inject(MapService);
   private photo = inject(PhotoService);
+  // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
   loading = false;
   subscription?: Subscription;
   
-  // Variables para evitar cruces al dispararse didDismiss automáticamente al pulsar SÍ
   private isProcessingStop = false;
   private isProcessingDelete = false;
 
   ngOnInit() {}
-  ngOnDestroy() { this.subscription?.unsubscribe(); }
+  
+  ngOnDestroy() { 
+    this.subscription?.unsubscribe(); 
+  }
 
   closeAllPopovers() {
     this.present.isRecordPopoverOpen = false;
@@ -149,19 +141,25 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // FLUJO DE PARADA (STOP)
   // ==========================================
   async confirmStop() {
-    this.isProcessingStop = true; // Bloqueamos
-    this.present.isConfirmStopOpen = false; // Inicia la animación de cierre
-    await this.stopTracking(); 
-    // NO restablecemos la variable aquí
+    this.isProcessingStop = true; // 1. Ponemos el candado
+    this.present.isConfirmStopOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
+    
+    try {
+      await this.stopTracking(); 
+    } catch (error) {
+      console.error('Error al detener track:', error);
+    }
+    // IMPORTANTE: NO ponemos finally aquí. El candado se liberará en cancelStop()
   }
 
   cancelStop() {
-    // Si se está cerrando porque pulsamos "SÍ", restablecemos el candado y abortamos
     if (this.isProcessingStop) {
+      // Entra aquí si se cerró porque pulsamos SÍ. 
+      // Liberamos el candado y NO hacemos nada más.
       this.isProcessingStop = false; 
       return; 
     }
-    // Si pulsamos "NO" o tocamos fuera, simplemente se cierra
+    // Entra aquí si pulsamos NO o clicamos fuera del popover.
     this.present.isConfirmStopOpen = false; 
   }
 
@@ -169,28 +167,37 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // FLUJO DE BORRADO (DELETE)
   // ==========================================
   async confirmDelete() {
-    this.isProcessingDelete = true; // Bloqueamos
-    this.present.isConfirmDeletionOpen = false; // Inicia la animación de cierre
-    await this.deleteTrack();
-    // NO restablecemos la variable aquí
+    this.isProcessingDelete = true; // 1. Ponemos el candado
+    this.present.isConfirmDeletionOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
+    
+    try {
+      await this.deleteTrack();
+    } catch (error) {
+      console.error('Error al borrar track:', error);
+    }
+    // IMPORTANTE: NO ponemos finally aquí. El candado se liberará en cancelDelete()
   }
 
   cancelDelete() {
-    // Si se está cerrando porque pulsamos "SÍ", restablecemos el candado y abortamos
     if (this.isProcessingDelete) {
+      // Entra aquí si se cerró porque pulsamos SÍ. 
+      // Liberamos el candado y NO REABRIMOS el menú anterior.
       this.isProcessingDelete = false; 
       return; 
     }
-    // Si pulsamos "NO" o tocamos fuera, reabrimos el menú principal
+    
+    // Entra aquí si pulsamos NO o clicamos fuera del popover.
+    // Solo entonces reabrimos el popover principal.
     this.present.isConfirmDeletionOpen = false; 
     this.present.isRecordPopoverOpen = true; 
   }
-
   // ==========================================
   // ACCIONES DEL TRACK
   // ==========================================
   async deleteTrack() {
     this.location.state = 'inactive';
+    // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
+    
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
     await this.photo.discardSessionPhotos();
@@ -199,18 +206,19 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   async stopTracking(): Promise<void> {
     this.location.state = 'stopped';
+    // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
+    
     this.subscription?.unsubscribe();
     const source = this.geography.currentLayer?.getSource();
+    
     if (!source || !this.present.currentTrack || !this.geography.map) return;
 
-    let coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 1) {
+    // 🚀 Corregido: Limpiamos la duplicidad de validación
+    const coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
       this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'), 'warning');
       return;
     }
-
-    coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 1) return;
 
     const features = source.getFeatures();
     const routeLine = features.find(f => f.get('type') === 'route_line');
@@ -226,7 +234,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       startPin.setStyle(this.stylerService.createPinStyle('green'));
     }
     if (endPin) {
-      endPin.setGeometry(new Point(coordinates.at(-1)!));
+      // 🚀 Corregido: Forma más segura y compatible de obtener el último elemento
+      endPin.setGeometry(new Point(coordinates[coordinates.length - 1]));
       endPin.setStyle(this.stylerService.createPinStyle('red'));
     }
 
@@ -234,7 +243,6 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
     await this.location.sendReferenceToPlugin();
 
-    // Abrir ventana para guardar
     await this.setTrackDetails();
   }
 
@@ -242,11 +250,12 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     const modalEdit = { name: '', description: '' };
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit},
+      componentProps: { modalEdit },
       cssClass: 'glass-island-wrapper',
       translucent: true,
       backdropDismiss: true
     });
+    
     await popover.present();
     const { data } = await popover.onDidDismiss();
     
@@ -254,7 +263,6 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
       await this.saveFile(name, data.description);
     } else {
-      // Si la acción fue 'cancel' O el rol fue 'backdrop' (pulsar fuera)
       if (this.location.state === 'stopped') {
         this.present.isRecordPopoverOpen = true;
       }
@@ -263,8 +271,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
-    
     if (!track?.features?.[0]) return;
+    
     this.loading = true;
     try {
       const trackToSave = JSON.parse(JSON.stringify(track));
@@ -301,12 +309,14 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.collection = [...this.fs.collection];
+      
       await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
+      
       this.location.state = 'inactive';
       this.present.currentTrack = undefined;
       this.geography.currentLayer?.getSource()?.clear();
-      this.closeAllPopovers()
+      this.closeAllPopovers(); // 🚀 Corregido: faltaba punto y coma aquí
     } catch (e) {
       console.error("Save failed", e);
     } finally {

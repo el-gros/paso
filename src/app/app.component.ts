@@ -141,31 +141,39 @@ export class AppComponent implements OnDestroy {
       const normalizedPath = decodeURIComponent(data.url);
       let ext = normalizedPath.split('.').pop()?.toLowerCase() || '';
       
-      const probe = await Filesystem.readFile({ path: normalizedPath });
-      
-      if (typeof probe.data === 'string') {
-        const sample = atob(probe.data.substring(0, 100));
-        if (sample.includes('<gpx')) ext = 'gpx';
-        else if (sample.includes('<kml')) ext = 'kml';
-        else if (probe.data.startsWith('UEsDB')) ext = 'kmz';
-      }
-
       let parsedResult: ParseResult;
 
+      // 1. Si es GPX (leemos directamente en UTF-8, la forma más ligera)
       if (ext === 'gpx') {
         const fileContent = await Filesystem.readFile({
           path: normalizedPath,
           encoding: Encoding.UTF8,
         });
-        // Asumimos que mapService.parseGpxXml devuelve Promise<ParseResult>
         parsedResult = await this.fileParser.parseGpxXml(fileContent.data as string);
 
+      // 2. Si es KMZ o KML (leemos en Base64 porque KMZ es un zip binario)
       } else if (ext === 'kmz' || ext === 'kml') {
         const fileContent = await Filesystem.readFile({ path: normalizedPath });
         parsedResult = await this.parseKmz(fileContent.data as string);
         
+      // 3. Si no hay extensión clara, hacemos un "probe" leyendo como texto
       } else {
-        throw new Error('UNSUPPORTED_TYPE');
+        const probe = await Filesystem.readFile({ 
+          path: normalizedPath,
+          encoding: Encoding.UTF8 
+        });
+        
+        const sample = typeof probe.data === 'string' ? probe.data.substring(0, 100) : '';
+        
+        if (sample.includes('<gpx')) {
+          parsedResult = await this.fileParser.parseGpxXml(probe.data as string);
+        } else if (sample.includes('<kml')) {
+          // Si descubrimos que es KML de texto plano, lo pasamos al parser
+          const xmlDoc = new DOMParser().parseFromString(probe.data as string, 'application/xml');
+          parsedResult = await this.fileParser.parseKmlXml(xmlDoc);
+        } else {
+          throw new Error('UNSUPPORTED_TYPE');
+        }
       }
 
       const { waypoints, trackPoints, trk } = parsedResult;

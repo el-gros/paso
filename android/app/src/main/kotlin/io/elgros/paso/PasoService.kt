@@ -22,6 +22,8 @@ import com.google.android.gms.location.*
 import android.media.AudioManager
 import android.media.ToneGenerator
 
+import io.elgros.paso.R // 🚀 IMPORTANTE: Añadida la importación de recursos
+
 class PasoService : Service() {
 
     private lateinit var fusedClient: FusedLocationProviderClient
@@ -84,7 +86,8 @@ class PasoService : Service() {
         when (intent.action) {
             ACTION_START -> {
                 acquireWakeLock()
-                startForegroundServiceSafe("Grabando y analizando ruta...")
+                // 🚀 TEXTO TRADUCIDO: Al arrancar el tracking
+                startForegroundServiceSafe(getString(R.string.notification_recording_track))
                 startLocationUpdates()
             }
             ACTION_UPDATE_SHARING -> {
@@ -133,7 +136,9 @@ class PasoService : Service() {
             put("owner_user_id", deviceId)
             put("lat", loc.latitude)
             put("lon", loc.longitude)
-            put("updated_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).format(java.util.Date(loc.time)))
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            put("updated_at", sdf.format(java.util.Date(loc.time)))
         }
 
         // 2. Lo metemos en la mochila (si no está llena)
@@ -237,11 +242,13 @@ class PasoService : Service() {
 
         if (redCounter >= REQUIRED_CONFIRMATIONS && lastConfirmedStatus == "green") {
             triggerAlert(true)
-            updateNotification("⚠️ Fuera de ruta")
+            // 🚀 TEXTO TRADUCIDO: Al salirse de la ruta
+            updateNotification(getString(R.string.notification_off_route))
             lastConfirmedStatus = "red"
         } else if (greenCounter >= REQUIRED_CONFIRMATIONS && lastConfirmedStatus == "red") {
             triggerAlert(false)
-            updateNotification("✅ Camino recuperado")
+            // 🚀 TEXTO TRADUCIDO: Al volver a la ruta
+            updateNotification(getString(R.string.notification_on_route))
             lastConfirmedStatus = "green"
         }
     }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_recording_track">正在记录并分析路线...</string>
+    <string name="notification_off_route">⚠️ 偏离路线</string>
+    <string name="notification_on_route">✅ 已回到路线</string>
+</resources>

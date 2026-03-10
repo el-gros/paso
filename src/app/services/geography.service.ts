@@ -3,6 +3,7 @@ import Map from 'ol/Map';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Track } from 'src/globald';
+import { boundingExtent } from 'ol/extent';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +28,15 @@ export class GeographyService {
     return new Promise((resolve) => {
       if (!this.map) return resolve();
       
-      const boundaries = track.features?.[0]?.bbox;
+      let boundaries = track.features?.[0]?.bbox;
+      const coordinates = track.features?.[0]?.geometry?.coordinates;
+
+      // 🚀 NUEVO: Si no hay bbox pero tenemos coordenadas, lo calculamos al vuelo
+      if (!boundaries && coordinates && coordinates.length > 0) {
+        boundaries = boundingExtent(coordinates) as [number, number, number, number];
+      }
+
+      // Si después de intentar calcularlo seguimos sin nada, abortamos
       if (!boundaries) return resolve();
 
       // Copia del extent para no mutar el original
@@ -54,7 +63,7 @@ export class GeographyService {
 
       this.map.updateSize();
 
-      // Mejora: Guardamos el ID del timeout para limpiarlo si la animación termina bien
+      // Guardamos el ID del timeout para limpiarlo si la animación termina bien
       let fallbackTimeout: any;
 
       this.map.getView().fit(viewExtent, {

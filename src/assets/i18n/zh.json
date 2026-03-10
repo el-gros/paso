@@ -64,6 +64,7 @@
     "LOADING_ERROR": "加载轨迹时出错",
     "EMPTY_TRACKS": "文件中未找到有效坐标",
     "TRACK_UPDATED": "轨迹更新成功",
+    "TRACK_SAVED": "轨迹保存成功",
     "GENERATING_FILES": "正在生成文件，请稍候..."
   },
   "SETTINGS": {
@@ -136,7 +137,10 @@
     "DELETE_YES": "是",
     "DELETE_NO": "否",
     "DEFAULT_NAME": "未命名",
-    "SHARE_TEXT": "您可以通过以下链接查看我的路线： "
+    "SHARE_TEXT": "您可以通过以下链接查看我的路线： ",
+    "SEARCHING_PLACE": "正在搜索地点...",
+    "ROUTE_AROUND": "途经 {{place}} 的路线",
+    "UNKNOWN_PLACE": "未知地点"
   },
   "COLORS": {
     "crimson": "深红色",

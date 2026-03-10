@@ -64,6 +64,7 @@
     "LOADING_ERROR": "Erreur lors du chargement du parcours",
     "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
     "TRACK_UPDATED": "Le parcours a été mis à jour avec succès",
+    "TRACK_SAVED": "Le parcours a été enregistré avec succès",
     "GENERATING_FILES": "Génération des fichiers en cours..."
   },
   "SETTINGS": {
@@ -136,7 +137,10 @@
     "DELETE_YES": "Oui",
     "DELETE_NO": "Non",
     "DEFAULT_NAME": "Sans nom",
-    "SHARE_TEXT": "Vous pouvez voir mon itinéraire à : "
+    "SHARE_TEXT": "Vous pouvez voir mon itinéraire à : ",
+    "SEARCHING_PLACE": "Recherche du lieu...",
+    "ROUTE_AROUND": "Itinéraire par {{place}}",
+    "UNKNOWN_PLACE": "Lieu inconnu"
   },
   "COLORS": {
     "crimson": "Cramoisi",

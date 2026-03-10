@@ -25,7 +25,7 @@ import { TranslateModule } from '@ngx-translate/core';
         </p>
         
         <div class="steps-container">
-          @for (step of steps; track step) {
+          @for (step of steps; track $index) {
             <div class="step-item">
               <ion-icon name="chevron-forward-circle-sharp" color="primary"></ion-icon>
               <p>{{ step | translate }}</p>
@@ -34,12 +34,14 @@ import { TranslateModule } from '@ngx-translate/core';
         </div>
 
         <div class="actions">
-          <button class="btn-main" (click)="confirmar()">
+          <button class="btn-main ion-activatable" (click)="confirmar()">
             <ion-icon name="settings-sharp" slot="start"></ion-icon>
             {{ 'BATTERY.CONFIRM' | translate }}
+            <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="btn-cancel" (click)="cerrar()">
+          <button class="btn-cancel ion-activatable" (click)="cerrar()">
             {{ 'BATTERY.CANCEL' | translate }}
+            <ion-ripple-effect></ion-ripple-effect>
           </button>
         </div>
       </div>
@@ -49,12 +51,9 @@ import { TranslateModule } from '@ngx-translate/core';
     ion-content { --background: transparent; }
 
     .popover-island {
-      // Las variables que quieras "personalizar" para este caso concreto
       --glass-bg: rgba(255, 255, 255, 0.96);
       --glass-blur: 16px;
       --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-
-      // La geometría única de este componente
       margin: 10px;
       padding: 24px 20px;
     }
@@ -122,7 +121,10 @@ import { TranslateModule } from '@ngx-translate/core';
       gap: 8px;
     }
 
+    /* 🚀 Añadido relative y overflow hidden para que el Ripple funcione bien */
     .btn-main {
+      position: relative;
+      overflow: hidden;
       background: var(--ion-color-primary);
       color: white;
       border: none;
@@ -140,6 +142,8 @@ import { TranslateModule } from '@ngx-translate/core';
     }
 
     .btn-cancel {
+      position: relative;
+      overflow: hidden;
       background: transparent;
       color: var(--ion-color-medium);
       border: none;
@@ -155,7 +159,7 @@ export class BatteryPopoverComponent implements OnInit {
   @Input() brand: string = 'generic';
 
   title: string = '';
-  message: string = 'BATTERY.GENERIC_MSG';
+  // CUIDADO: Faltaba inicializar el steps, lo dejo vacío
   steps: string[] = [];
 
   private popoverCtrl = inject(PopoverController);

@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
-import { Filesystem, Directory } from '@capacitor/filesystem'; // <-- AÑADIDO PARA LA IMAGEN
-import Map from 'ol/Map'; // <-- AÑADIDO PARA LA IMAGEN
+import { Filesystem, Directory } from '@capacitor/filesystem'; 
+import Map from 'ol/Map'; 
+import * as htmlToImage from 'html-to-image'; // <-- AÑADIDO PARA LA GRÁFICA
 
 // --- INTERNAL IMPORTS ---
 import { FunctionsService } from './functions.service';
-import { GeographyService } from './geography.service'; // <-- AÑADIDO PARA LA IMAGEN
+import { GeographyService } from './geography.service'; 
 import { TrackFeature, TrackDefinition, Track } from '../../globald';
 
 @Injectable({
@@ -18,7 +19,7 @@ export class TrackExportService {
   constructor(
     private translate: TranslateService,
     private fs: FunctionsService,
-    private geography: GeographyService // <-- INYECTADO AQUÍ
+    private geography: GeographyService 
   ) {}
 
   // ==========================================================================
@@ -86,6 +87,36 @@ export class TrackExportService {
     } catch (err) {
       console.error('[TrackExportService] Error capturando imagen del mapa:', err);
       this.geography.currentLayer?.setVisible(true); // Restaurar UI incluso si falla
+      return false;
+    }
+  }
+
+  // ==========================================================================
+  // 1.5. GENERACIÓN DE IMAGEN DE DATOS (Gráfica de Altitud)
+  // ==========================================================================
+  
+  /**
+   * Captura un elemento HTML (como la gráfica de CanvasComponent) y lo guarda
+   * en la caché externa del dispositivo.
+   */
+  public async generateAndSaveDataImage(elementId: string): Promise<boolean> {
+    try {
+      const exportArea = document.getElementById(elementId);
+      if (!exportArea) return false;
+      
+      await document.fonts.ready;
+      
+      const dataUrl = await htmlToImage.toPng(exportArea, { backgroundColor: '#ffffff' });
+      
+      await Filesystem.writeFile({
+        path: 'data.png',
+        data: dataUrl.split(',')[1],
+        directory: Directory.ExternalCache,
+      });
+      
+      return true;
+    } catch (err) {
+      console.error('[TrackExportService] Error exportando gráfica a imagen:', err);
       return false;
     }
   }
@@ -308,4 +339,166 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
       map.renderSync();
     });
   }
+
+  // ==========================================================================
+  // 6. GENERADORES PARA PDF (Mapas invisibles y Gráficas de Altitud)
+  // ==========================================================================
+
+  public async generateInvisibleMapImage(trackData: any): Promise<string> {
+    return new Promise((resolve) => {
+      try {
+        const GeoJSONFormat = require('ol/format/GeoJSON').default;
+        const VectorSource = require('ol/source/Vector').default;
+        const VectorLayer = require('ol/layer/Vector').default;
+        const OSM = require('ol/source/OSM').default;
+        const TileLayer = require('ol/layer/Tile').default;
+        const View = require('ol/View').default;
+        const Style = require('ol/style/Style').default;
+        const Stroke = require('ol/style/Stroke').default;
+
+        const features = new GeoJSONFormat().readFeatures(trackData);
+        if(!features.length) { resolve(''); return; }
+
+        const vectorSource = new VectorSource({ features });
+        const extent = vectorSource.getExtent();
+        if (!extent || !isFinite(extent[0])) { resolve(''); return; }
+
+        const centerX = (extent[0] + extent[2]) / 2;
+        const centerY = (extent[1] + extent[3]) / 2;
+
+        const mapDiv = document.getElementById('map-export');
+        if (mapDiv) {
+          mapDiv.style.width = '1000px';
+          mapDiv.style.height = '800px';
+        }
+
+        const mapExport = new Map({
+          target: 'map-export',
+          layers: [
+            new TileLayer({ source: new OSM({ crossOrigin: 'anonymous' }) }),
+            new VectorLayer({
+              source: vectorSource,
+              style: new Style({ stroke: new Stroke({ color: '#FF0000', width: 6 }) }),
+              zIndex: 999 
+            })
+          ],
+          controls: [], 
+          interactions: [],
+          view: new View({ center: [centerX, centerY], zoom: 14, enableRotation: false })
+        });
+
+        mapExport.updateSize();
+        mapExport.getView().fit(extent, { padding: [100, 100, 100, 100], size: [1000, 800] });
+
+        mapExport.once('rendercomplete', () => {
+          const size = mapExport.getSize();
+          if (!size) { mapExport.dispose(); resolve(''); return; }
+
+          const mapCanvas = document.createElement('canvas');
+          mapCanvas.width = size[0];
+          mapCanvas.height = size[1];
+          const mapContext = mapCanvas.getContext('2d');
+          
+          if (!mapContext) { mapExport.dispose(); resolve(''); return; }
+
+          mapContext.fillStyle = '#FFFFFF';
+          mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+          const layers = document.querySelectorAll<HTMLCanvasElement>('#map-export .ol-layer canvas');
+          layers.forEach((canvas) => {
+            if (canvas.width > 0) {
+              const parent = canvas.parentNode as HTMLElement;
+              mapContext.globalAlpha = Number(parent?.style.opacity || '1');
+              const transform = canvas.style.transform;
+              let matrix = [1, 0, 0, 1, 0, 0];
+              if (transform) {
+                const match = transform.match(/^matrix\(([^\(]*)\)$/);
+                if (match && match[1]) matrix = match[1].split(',').map(Number);
+              }
+              mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+              mapContext.drawImage(canvas, 0, 0);
+            }
+          });
+
+          mapContext.setTransform(1, 0, 0, 1, 0, 0);
+          const data = mapCanvas.toDataURL('image/jpeg', 0.8);
+          mapExport.setTarget(undefined);
+          mapExport.dispose(); 
+          resolve(data);
+        });
+      } catch (e) {
+        console.error('[TrackExportService] Error in generateInvisibleMapImage:', e);
+        resolve('');
+      }
+    });
+  }
+
+  public async generateAltitudeCanvasImage(track: Track): Promise<string> {
+    const data = track.features[0]?.geometry?.properties?.data;
+    if (!data || data.length < 2) return '';
+
+    const width = 1000;
+    const height = 400;
+    const margin = 60;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+
+    const alts = data.map(d => d.compAltitude);
+    const minAlt = Math.min(...alts);
+    const maxAlt = Math.max(...alts);
+    const rangeAlt = (maxAlt - minAlt) || 20;
+    
+    const totalDist = data[data.length - 1].distance;
+    const scaleX = (width - 2 * margin) / totalDist;
+    const scaleY = (height - 2 * margin) / rangeAlt;
+
+    ctx.beginPath();
+    ctx.moveTo(margin, height - margin);
+    data.forEach(p => ctx.lineTo(margin + p.distance * scaleX, height - margin - (p.compAltitude - minAlt) * scaleY));
+    ctx.lineTo(margin + totalDist * scaleX, height - margin);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, margin, 0, height - margin);
+    grad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+    grad.addColorStop(1, 'rgba(255, 215, 0, 0.05)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    data.forEach((p, i) => {
+      const x = margin + p.distance * scaleX;
+      const y = height - margin - (p.compAltitude - minAlt) * scaleY;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    ctx.strokeStyle = '#999';
+    ctx.fillStyle = '#666';
+    ctx.font = 'bold 16px Arial';
+    ctx.lineWidth = 1;
+    
+    ctx.beginPath();
+    ctx.moveTo(margin, height - margin);
+    ctx.lineTo(width - margin, height - margin);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(`${totalDist.toFixed(1)} km`, width - margin, height - margin + 25);
+
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(maxAlt)} m`, margin - 10, margin + 5);
+    ctx.fillText(`${Math.round(minAlt)} m`, margin - 10, height - margin + 5);
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  }
+  
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectorRef, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { TranslateModule } from '@ngx-translate/core';
@@ -8,8 +8,11 @@ import { TranslateModule } from '@ngx-translate/core';
   selector: 'app-wiki-card',
   imports: [IonicModule, CommonModule, TranslateModule],
   template: `
-    <div class="wiki-floating-card" *ngIf="data">
-      <div class="handle-container" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)" (click)="close()">
+    <div class="wiki-floating-card" *ngIf="data" 
+         (touchstart)="onTouchStart($event)" 
+         (touchend)="onTouchEnd($event)">
+      
+      <div class="handle-container" (click)="close()">
         <div class="handlebar"></div>
       </div>
       
@@ -28,7 +31,7 @@ import { TranslateModule } from '@ngx-translate/core';
         </div>
       </div>
       
-      <div class="wiki-scroll-area">
+      <div class="wiki-scroll-area" (scroll)="onScroll($event)">
         <ng-container *ngIf="data.wiki?.originalimage || data.originalimage">
           <img [src]="data.wiki?.originalimage?.source || data.originalimage?.source" class="wiki-img">
         </ng-container>
@@ -50,23 +53,90 @@ import { TranslateModule } from '@ngx-translate/core';
     </div>
   `,
   styles: [`
-    /* Tu CSS se mantiene igual, está perfecto */
-    .wiki-floating-card { position: fixed; bottom: 0; left: 0; width: 100%; height: 38vh; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.15); z-index: 1001; display: flex; flex-direction: column; border-top: 1px solid rgba(255,255,255,0.5); animation: slideUp 0.3s ease-out; }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .handle-container { width: 100%; padding: 12px 0; cursor: pointer; display: flex; justify-content: center; }
-    .handlebar { width: 40px; height: 5px; background: rgba(0,0,0,0.15); border-radius: 10px; }
-    .wiki-header { padding: 0 20px 15px; h3 { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: #111; letter-spacing: -0.5px; } }
-    .weather-pill { display: inline-flex; align-items: center; background: rgba(0, 0, 0, 0.06); padding: 6px 14px; border-radius: 100px; gap: 8px;
-      .weather-icon { width: 28px; height: 28px; margin: -5px 0; }
-      .temp { font-weight: 700; color: #222; font-size: 15px; }
-      .separator { color: rgba(0,0,0,0.15); }
-      .desc { font-size: 12px; color: #555; text-transform: capitalize; }
-      .weather-details { margin-left: 4px; font-size: 11px; color: #777; display: flex; align-items: center; gap: 2px; }
+    /* 🚀 Todo anidado bajo la clase principal para evitar sangrado de estilos */
+    .wiki-floating-card { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 38vh; 
+      background: rgba(255, 255, 255, 0.85); 
+      backdrop-filter: blur(20px); 
+      -webkit-backdrop-filter: blur(20px); 
+      border-radius: 28px 28px 0 0; 
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.15); 
+      z-index: 1001; 
+      display: flex; 
+      flex-direction: column; 
+      border-top: 1px solid rgba(255,255,255,0.5); 
+      animation: slideUp 0.3s ease-out; 
+      touch-action: pan-y; /* 🚀 Mejora la respuesta táctil nativa */
+
+      .handle-container { 
+        width: 100%; 
+        padding: 12px 0; 
+        cursor: pointer; 
+        display: flex; 
+        justify-content: center; 
+      }
+      
+      .handlebar { 
+        width: 40px; 
+        height: 5px; 
+        background: rgba(0,0,0,0.15); 
+        border-radius: 10px; 
+      }
+      
+      .wiki-header { 
+        padding: 0 20px 15px; 
+        h3 { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: #111; letter-spacing: -0.5px; } 
+      }
+      
+      .weather-pill { 
+        display: inline-flex; align-items: center; background: rgba(0, 0, 0, 0.06); padding: 6px 14px; border-radius: 100px; gap: 8px;
+        .weather-icon { width: 28px; height: 28px; margin: -5px 0; }
+        .temp { font-weight: 700; color: #222; font-size: 15px; }
+        .separator { color: rgba(0,0,0,0.15); }
+        .desc { font-size: 12px; color: #555; text-transform: capitalize; }
+        .weather-details { margin-left: 4px; font-size: 11px; color: #777; display: flex; align-items: center; gap: 2px; }
+      }
+      
+      .wiki-scroll-area { 
+        flex: 1; 
+        overflow-y: auto; 
+        -webkit-overflow-scrolling: touch; 
+        /* 🚀 Respetamos el margen inferior del sistema operativo */
+        padding-bottom: calc(40px + var(--ion-safe-area-bottom, 0px)); 
+      }
+      
+      .wiki-img { 
+        width: 100%; max-height: 200px; object-fit: cover; margin-bottom: 12px; mask-image: linear-gradient(to bottom, black 80%, transparent 100%); 
+      }
+      
+      .wiki-body { 
+        padding: 0 20px; 
+        p { font-size: 15px; line-height: 1.6; color: #333; margin: 0; } 
+        .no-data { font-style: italic; color: #888; text-align: center; padding: 20px 0; } 
+      }
+      
+      a { 
+        color: var(--ion-color-primary); 
+        font-weight: 800; 
+        text-decoration: none; 
+        font-size: 11px; 
+        margin-top: 18px; 
+        display: inline-block; 
+        letter-spacing: 1px; 
+        border: 1.5px solid var(--ion-color-primary); 
+        padding: 6px 14px; 
+        border-radius: 8px; 
+      }
     }
-    .wiki-scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 40px; }
-    .wiki-img { width: 100%; max-height: 200px; object-fit: cover; margin-bottom: 12px; mask-image: linear-gradient(to bottom, black 80%, transparent 100%); }
-    .wiki-body { padding: 0 20px; p { font-size: 15px; line-height: 1.6; color: #333; margin: 0; } .no-data { font-style: italic; color: #888; text-align: center; padding: 20px 0; } }
-    a { color: var(--ion-color-primary); font-weight: 800; text-decoration: none; font-size: 11px; margin-top: 18px; display: inline-block; letter-spacing: 1px; border: 1.5px solid var(--ion-color-primary); padding: 6px 14px; border-radius: 8px; }
+
+    @keyframes slideUp { 
+      from { transform: translateY(100%); } 
+      to { transform: translateY(0); } 
+    }
   `]
 })
 export class WikiCardComponent implements OnChanges {
@@ -75,24 +145,38 @@ export class WikiCardComponent implements OnChanges {
 
   private cdr = inject(ChangeDetectorRef);
   private startY: number = 0;
+  private scrollTop: number = 0; // 🚀 Controla si el texto está scrolleado
 
-  // ESTO ES LO QUE FALTABA:
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['data']) {
+    if (changes['data'] && this.data) {
       console.log('WikiCard: Datos actualizados', this.data);
       this.cdr.detectChanges(); // Fuerza a la UI a pintar el clima
     }
   }
 
-  close() { this.onClose.emit(); }
+  public close() { 
+    this.onClose.emit(); 
+  }
 
-  onTouchStart(event: TouchEvent) {
+  // 🚀 Guardamos la posición del scroll interno
+  public onScroll(event: any) {
+    this.scrollTop = event.target.scrollTop;
+  }
+
+  // 🚀 Hemos movido los eventos Touch al contenedor principal
+  public onTouchStart(event: TouchEvent) {
     this.startY = event.touches[0].clientY;
   }
 
-  onTouchEnd(event: TouchEvent) {
+  public onTouchEnd(event: TouchEvent) {
     const endY = event.changedTouches[0].clientY;
     const deltaY = endY - this.startY;
-    if (deltaY > 60) this.close();
+    
+    // 🚀 Solo cerramos si el usuario desliza hacia abajo (deltaY > 60)
+    // Y además, el área de texto debe estar arriba del todo (scrollTop <= 0)
+    // Si el usuario está leyendo el texto más abajo, el deslizamiento solo hará scroll
+    if (deltaY > 60 && this.scrollTop <= 0) {
+      this.close();
+    }
   }
 }

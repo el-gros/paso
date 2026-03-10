@@ -64,6 +64,7 @@
   "LOADING_ERROR": "Error al carregar el trajecte",
   "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers",
   "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
+  "TRACK_SAVED": "El trajecte s'ha guardat correctament",
   "GENERATING_FILES": "S'estan generant els fitxers, espereu..."
 },
   "SETTINGS": {
@@ -136,7 +137,10 @@
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
     "DEFAULT_NAME": "Sense nom",
-    "SHARE_TEXT": "Podeu veure la meva ruta a: "
+    "SHARE_TEXT": "Podeu veure la meva ruta a: ",
+    "SEARCHING_PLACE": "Buscando lugar...",
+    "ROUTE_AROUND": "Ruta por {{place}}",
+    "UNKNOWN_PLACE": "Lugar desconocido"
   },
   "COLORS": {
     "crimson": "carmesí",

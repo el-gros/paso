@@ -64,6 +64,7 @@
     "LOADING_ERROR": "Error al cargar el trayecto",
     "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
     "TRACK_UPDATED": "El trayecto se ha actualizado correctamente",
+    "TRACK_SAVED": "El trayecto se ha guardado correctamente",
     "GENERATING_FILES": "Se están generando los archivos, espere por favor..."
   },
   "SETTINGS": {
@@ -136,7 +137,10 @@
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
     "DEFAULT_NAME": "Sin nombre",
-    "SHARE_TEXT": "Puedes ver mi ruta en: "
+    "SHARE_TEXT": "Puedes ver mi ruta en: ",
+    "SEARCHING_PLACE": "Buscando lugar...",
+    "ROUTE_AROUND": "Ruta por {{place}}",
+    "UNKNOWN_PLACE": "Lugar desconocido"
   },
   "COLORS": {
     "crimson": "Carmesí",

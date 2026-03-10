@@ -4,4 +4,7 @@
     <string name="title_activity_main">paso</string>
     <string name="package_name">io.elgros.paso</string>
     <string name="custom_url_scheme">io.elgros.paso</string>
+    <string name="notification_recording_track">Enregistrant i analitzant la ruta...</string>
+    <string name="notification_off_route">⚠️ Fora de ruta</string>
+    <string name="notification_on_route">✅ Camí recuperat</string>
 </resources>

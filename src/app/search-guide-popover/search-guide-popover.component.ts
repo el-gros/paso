@@ -25,6 +25,7 @@ import { StylerService } from '../services/styler.service';
 import { WikiService, WikiSummary } from '../services/wiki.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
 import { SearchService } from '../services/search.service'; // 🚀 NUEVO
+import { GeoMathService } from '../services/geo-math.service';
 
 // --- INTERFACES ---
 import { LocationResult, Track, WikiWeatherResult } from 'src/globald';
@@ -56,7 +57,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private zone = inject(NgZone);
   private wikiService = inject(WikiService);
   private weatherService = inject(WeatherService);
-  private searchService = inject(SearchService); // 🚀 NUEVO
+  private searchService = inject(SearchService);
+  private geoMath = inject(GeoMathService);
 
   private backButtonSub?: Subscription;
 
@@ -220,6 +222,24 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     const stats = routeFeature.properties.summary;
     const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
 
+    // 🚀 SOLUCIÓN: Calcular la distancia acumulada punto a punto
+    let accumulatedDistance = 0;
+    const trackData = routeCoordinates.map((c, index) => {
+      if (index > 0) {
+        const prev = routeCoordinates[index - 1];
+        // Sumamos la distancia respecto al punto anterior
+        accumulatedDistance += this.geoMath.quickDistance(prev[0], prev[1], c[0], c[1]);
+      }
+      return {
+        altitude: c[2] || 0,
+        speed: 0,
+        time: 0,
+        compAltitude: c[2] || 0,
+        compSpeed: 0,
+        distance: accumulatedDistance // 👈 ¡Ahora la gráfica funcionará perfecta!
+      };
+    });
+
     const newTrack: Track = {
       type: 'FeatureCollection',
       features: [{
@@ -231,21 +251,23 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
           description: this.translate.instant(`TRANSPORT.${this.selectedTransport.toUpperCase().replace('-', '_')}`),
           totalDistance: stats.distance / 1000,
           totalTime: Math.round(stats.duration * 1000),
-          inMotion: Math.round(stats.duration * 1000), // 👈 Requerido por la interfaz
+          inMotion: Math.round(stats.duration * 1000), 
           totalElevationGain: Math.round(routeFeature.properties.ascent || 0),
           totalElevationLoss: Math.round(routeFeature.properties.descent || 0),
           totalNumber: routeCoordinates.length,
-          currentSpeed: 0, currentAltitude: 0
+          currentSpeed: 0, 
+          currentAltitude: 0
         },
         geometry: {
           type: 'LineString',
           coordinates: routeCoordinates as [number, number][],
-          properties: { data: routeCoordinates.map(c => ({ altitude: c[2] || 0, speed: 0, time: 0, compAltitude: c[2] || 0, compSpeed: 0, distance: 0 })) }
+          properties: { data: trackData } // 👈 Pasamos el array calculado
         }
       }]
     };
 
     this.reference.archivedTrack = newTrack;
+    this.reference.foundRoute = true; // 👈 NUEVO: Asegura que la UI sepa que hay ruta activa
     await this.location.sendReferenceToPlugin();
     await this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack);

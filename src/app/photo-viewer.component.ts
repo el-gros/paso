@@ -1,26 +1,29 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { ModalController, IonicModule } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-photo-viewer',
-  standalone: true, // Ideal para no tener que declararlo en ningún module.ts
+  standalone: true,
   imports: [IonicModule],
   template: `
-    <ion-content class="immersive-dark">
+    <ion-content class="immersive-dark" [fullscreen]="true">
       
-      <button class="floating-close" (click)="dismiss()">
+      <button class="floating-close ion-activatable" (click)="dismiss()" aria-label="Cerrar visor">
         <ion-icon name="close-outline"></ion-icon>
+        <ion-ripple-effect></ion-ripple-effect>
       </button>
 
       <div class="gallery-container">
-        @for (photo of photos; track photo; let i = $index) {
+        @for (photo of photos; track $index) {
           <div class="gallery-slide">
-            <img [src]="getWebUrl(photo)" alt="Foto de la ruta" />
+            <img [src]="getWebUrl(photo)" alt="Foto de la ruta" loading="lazy" />
             
-            <div class="slide-counter">
-              {{ i + 1 }} / {{ photos.length }}
-            </div>
+            @if (photos.length > 1) {
+              <div class="slide-counter">
+                {{ $index + 1 }} / {{ photos.length }}
+              </div>
+            }
           </div>
         }
       </div>
@@ -28,15 +31,14 @@ import { Capacitor } from '@capacitor/core';
     </ion-content>
   `,
   styles: [`
-    /* Fondo negro para el visor */
     .immersive-dark {
       --background: #000000;
     }
 
-    /* Botón de cerrar flotante (Glass-morphism) */
     .floating-close {
       position: absolute;
-      top: 40px; 
+      /* 🚀 Respetamos el notch/isla dinámica del móvil */
+      top: calc(16px + var(--ion-safe-area-top, 0px)); 
       right: 16px;
       z-index: 100;
       background: rgba(255, 255, 255, 0.2);
@@ -52,6 +54,11 @@ import { Capacitor } from '@capacitor/core';
       color: white;
       font-size: 28px;
       cursor: pointer;
+      overflow: hidden; /* Para contener el ripple */
+    }
+
+    .floating-close ion-icon {
+      pointer-events: none;
     }
 
     .floating-close:active {
@@ -59,7 +66,6 @@ import { Capacitor } from '@capacitor/core';
       transform: scale(0.95);
     }
 
-    /* El truco del carrusel: Scroll Snap Horizontal */
     .gallery-container {
       display: flex;
       width: 100%;
@@ -69,7 +75,6 @@ import { Capacitor } from '@capacitor/core';
       scroll-snap-type: x mandatory;
       scroll-behavior: smooth;
       
-      /* Ocultar la barra de scroll */
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
@@ -78,7 +83,6 @@ import { Capacitor } from '@capacitor/core';
       display: none; 
     }
 
-    /* Cada "diapositiva" ocupa toda la pantalla */
     .gallery-slide {
       flex: 0 0 100%;
       width: 100%;
@@ -94,13 +98,13 @@ import { Capacitor } from '@capacitor/core';
     .gallery-slide img {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* Mantiene la proporción sin recortar */
+      object-fit: contain; 
     }
 
-    /* Contador flotante */
     .slide-counter {
       position: absolute;
-      bottom: 30px;
+      /* 🚀 Respetamos la zona de gestos inferior de iOS/Android */
+      bottom: calc(30px + var(--ion-safe-area-bottom, 0px));
       background: rgba(0, 0, 0, 0.6);
       color: white;
       padding: 6px 16px;
@@ -112,19 +116,15 @@ import { Capacitor } from '@capacitor/core';
   `]
 })
 export class PhotoViewerComponent {
-  // Recibimos el array de fotos desde el componente que abre el modal
   @Input() photos: string[] = [];
 
-  constructor(private modalCtrl: ModalController) {}
+  private modalCtrl = inject(ModalController);
 
-  // Función para que el WebView pueda leer el archivo local
-  getWebUrl(uri: string): string {
-    if (!uri) return '';
-    return Capacitor.convertFileSrc(uri);
+  public getWebUrl(uri: string): string {
+    return uri ? Capacitor.convertFileSrc(uri) : '';
   }
 
-  // Cierra el modal
-  dismiss() {
+  public dismiss() {
     this.modalCtrl.dismiss();
   }
 }
