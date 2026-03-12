@@ -162,7 +162,7 @@ export class PhotoService {
 
     const popover = await this.popoverController.create({
       component: CameraPermissionPopoverComponent,
-      cssClass: 'glass-island-wrapper', 
+      cssClass: 'top-glass-island-wrapper', 
       backdropDismiss: false, 
       translucent: true
     });

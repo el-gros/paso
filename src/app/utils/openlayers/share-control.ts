@@ -8,6 +8,9 @@ export class ShareControl extends Control {
   private button: HTMLButtonElement;
   private popup!: HTMLDivElement;
   private backdrop!: HTMLDivElement;
+  
+  // 🚀 NUEVO: Candado lógico para evitar toques múltiples
+  private isProcessing: boolean = false; 
 
   constructor(
     private locationService: LocationManagerService,
@@ -22,13 +25,11 @@ export class ShareControl extends Control {
     // 1. CONFIGURACIÓN DEL BOTÓN PRINCIPAL
     this.button = document.createElement('button');
     this.button.type = 'button';
-    this.button.style.touchAction = 'none'; // 🚀 Cero lag en móviles
-    this.button.title = this.translate.instant('MAP.SHARE') || 'Share Location'; // Accesibilidad
+    this.button.style.touchAction = 'none';
+    this.button.title = this.translate.instant('MAP.SHARE') || 'Share Location';
 
-    // 🚀 Usamos pointerdown para respuesta instantánea y arrow function
     this.button.addEventListener('pointerdown', (e) => this.handleMainButtonClick(e), { capture: true });
     
-    // Fallback de seguridad para toques fantasmas
     this.button.addEventListener('touchstart', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -77,19 +78,29 @@ export class ShareControl extends Control {
       </div>
     `;
 
-    // 🚀 Eventos de los botones internos optimizados
     const btnYes = this.popup.querySelector('#btnShareYes') as HTMLButtonElement;
     const btnNo = this.popup.querySelector('#btnShareNo') as HTMLButtonElement;
 
     btnYes?.addEventListener('pointerdown', async (e) => {
       e.preventDefault();
-      e.stopPropagation(); // Evita clics en el mapa subyacente
+      e.stopPropagation();
       
-      const success = await this.locationSharing.startSharing(); 
-      if (success) {
+      // 🚀 Evita clics repetidos si ya está procesando
+      if (this.isProcessing) return; 
+
+      this.isProcessing = true;
+      this.hideConfirmation(); // Ocultamos el popup inmediatamente
+      this.updateUI();         // Mostramos el spinner en el botón principal del mapa
+
+      try {
+        await this.locationSharing.startSharing(); 
+      } catch (error) {
+        console.error("Error al compartir:", error);
+      } finally {
+        // 🚀 Pase lo que pase, quitamos el candado al terminar
+        this.isProcessing = false;
         this.updateUI();
       }
-      this.hideConfirmation();
     });
 
     btnNo?.addEventListener('pointerdown', (e) => {
@@ -103,19 +114,39 @@ export class ShareControl extends Control {
     event.preventDefault();
     event.stopPropagation();
     
+    // 🚀 Evita que detengan o inicien mientras está trabajando
+    if (this.isProcessing) return;
+
     if (this.locationService.isSharing) {
-      await this.locationSharing.stopSharing();
-      this.updateUI();
+      this.isProcessing = true;
+      this.updateUI(); // Mostramos el spinner
+      
+      try {
+        await this.locationSharing.stopSharing();
+      } finally {
+        this.isProcessing = false;
+        this.updateUI();
+      }
     } else {
       this.showConfirmation();
     }
   }
 
-  // 🚀 Función pública para que otros componentes puedan forzar el refresco
   public updateUI() {
+    // 🚀 Si está procesando, dibujamos un spinner en lugar del icono
+    if (this.isProcessing) {
+      this.button.innerHTML = `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
+          <ion-spinner name="crescent" style="transform: scale(0.8); color: #999999;"></ion-spinner>
+        </div>
+      `;
+      this.button.style.border = '1px solid #ccc';
+      this.button.style.backgroundColor = '#f9f9f9';
+      return; // Salimos para no dibujar el resto
+    }
+
     const activeColor = '#3880ff';
     const inactiveColor = '#999999';
-    
     const isSharing = this.locationService.isSharing; 
     
     const iconName = isSharing ? 'share-social-sharp' : 'share-social-outline';

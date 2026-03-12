@@ -1,50 +1,172 @@
-    .search-input-wrapper, .input-stack {
-      display: flex; align-items: center; background: rgba(0, 0, 0, 0.05);
-      border-radius: 16px; padding: 4px 12px; margin-bottom: 12px;
-      ion-input { --padding-start: 8px; flex: 1; }
-      &.confirmed { background: rgba(45, 211, 111, 0.1); border: 1px solid rgba(45, 211, 111, 0.3); }
-    }
+/* ==========================================================================
+   1. ISLA DEL POPOVER (Contenedor Principal)
+   ========================================================================== */
+.popover-island {
+  padding: 16px 12px; 
+  max-height: 85vh !important; 
+  display: flex;
+  flex-direction: column;
+  transition: max-height 0.3s ease; 
+}
 
-    .input-actions-row { display: flex; align-items: center; gap: 12px; margin-left: 8px; }
-    
-    .mic-icon { font-size: 20px; color: #888; }
-    .mic-active { color: #007bff !important; animation: pulse 1s infinite; }
-    .action-icon { font-size: 20px; color: var(--ion-color-primary); }
-    .clear-icon { font-size: 18px; color: #eb445a; }
+/* ==========================================================================
+   2. INPUTS DE BÚSQUEDA (Estilo Píldora)
+   ========================================================================== */
+.search-input-wrapper, .input-stack {
+  display: flex; 
+  align-items: center; 
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 16px; 
+  padding: 4px 12px; 
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
 
-    .main-action-btn {
-      width: 100%; background: var(--ion-color-primary); color: white;
-      border: none; border-radius: 20px; padding: 14px;
-      font-weight: 700; text-transform: uppercase; font-size: 11px;
-    }
+  ion-input { 
+    --padding-start: 8px; 
+    flex: 1; 
+    font-weight: 500;
+  }
 
-    .button-grid { display: flex; justify-content: space-around; }
-    .header-title { text-align: center; font-weight: 800; font-size: 12px; color: #555; margin-bottom: 12px; text-transform: uppercase; }
-    .transport-selection { display: flex; justify-content: center; gap: 10px; margin: 12px 0; }
-    .mode-chip { 
-      width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-      background: #f0f0f0; &.active { background: var(--ion-color-primary); color: white; }
-    }
-    .footer-buttons { display: flex; gap: 10px; align-items: center; }
-    .primary-icon { color: var(--ion-color-primary) !important; }
+  /* Estado cuando ya se ha seleccionado un origen/destino */
+  &.confirmed { 
+    background: rgba(45, 211, 111, 0.08); 
+    border: 1px solid rgba(45, 211, 111, 0.3); 
+  }
+}
 
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+/* Iconos dentro del Input */
+.inner-icon { 
+  font-size: 20px; 
+  color: #888; 
+}
 
-/* 1. Permitimos que el contenedor de resultados sea más alto */
-    .results-container { 
-      max-height: 60vh; /* Antes estaba en 180px. Ahora usa casi la mitad de la pantalla */
-      overflow-y: auto; 
-      margin-top: 8px; 
-      
-      /* Opcional: una sombra interna para indicar que hay scroll si la lista es enorme */
-      box-shadow: inset 0px -10px 10px -10px rgba(0,0,0,0.1);
-    }
+.input-actions-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  margin-left: 8px; 
+}
 
-    /* 2. Expandimos el límite de altura de la "isla" principal */
-    .popover-island {
-      padding: 16px 10px; 
-      max-height: 85vh !important; /* Aumentado drásticamente desde 450px */
-      display: flex;
-      flex-direction: column;
-      transition: max-height 0.3s ease; /* Transición suave al expandirse */
-    }
+.mic-icon { 
+  font-size: 20px; 
+  color: #888; 
+  padding: 4px;
+  margin: -4px; /* Aumenta el área de toque sin mover el icono */
+}
+
+.mic-active { 
+  color: var(--ion-color-danger) !important; /* Rojo suele ser mejor para indicar grabación */
+  animation: pulse-mic 1.2s infinite; 
+}
+
+.action-icon { 
+  font-size: 20px; 
+  color: var(--ion-color-primary); 
+}
+
+.clear-icon { 
+  font-size: 18px; 
+  color: #eb445a; 
+}
+
+/* ==========================================================================
+   3. SELECTOR DE TRANSPORTE
+   ========================================================================== */
+.transport-selection { 
+  display: flex; 
+  justify-content: center; 
+  gap: 12px; 
+  margin: 12px 0 16px 0; 
+}
+
+.mode-chip { 
+  width: 42px; 
+  height: 42px; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: rgba(0,0,0,0.05); 
+  color: #666;
+  transition: all 0.2s ease;
+  
+  ion-icon { font-size: 22px; }
+
+  &.active { 
+    background: var(--ion-color-primary); 
+    color: white; 
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(var(--ion-color-primary-rgb), 0.3);
+  }
+}
+
+/* ==========================================================================
+   4. BOTONES DE ACCIÓN
+   ========================================================================== */
+.button-grid { 
+  display: flex; 
+  justify-content: space-around; 
+  gap: 12px;
+}
+
+.main-action-btn {
+  width: 100%; 
+  background: var(--ion-color-primary); 
+  color: white;
+  border: none; 
+  border-radius: 20px; 
+  padding: 14px;
+  font-weight: 700; 
+  text-transform: uppercase; 
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px; /* Evita saltos cuando aparece el spinner */
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}
+
+.primary-icon { 
+  color: var(--ion-color-primary) !important; 
+}
+
+/* ==========================================================================
+   5. CONTENEDOR DE RESULTADOS
+   ========================================================================== */
+.results-container { 
+  max-height: 50vh; 
+  overflow-y: auto; 
+  margin-top: 12px; 
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding-top: 8px;
+  
+  /* Sombra interna sutil para el scroll */
+  background: linear-gradient(white 30%, rgba(255,255,255,0)), 
+              linear-gradient(rgba(255,255,255,0), white 70%) 0 100%, 
+              radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.05), rgba(0,0,0,0)), 
+              radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.05), rgba(0,0,0,0)) 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+  background-attachment: local, local, scroll, scroll;
+
+  ion-item {
+    --padding-start: 8px;
+    --inner-padding-end: 8px;
+    h2 { font-weight: 600; color: #444; font-size: 14px; }
+  }
+}
+
+/* ==========================================================================
+   6. ANIMACIONES
+   ========================================================================== */
+@keyframes pulse-mic { 
+  0% { opacity: 1; transform: scale(1); } 
+  50% { opacity: 0.5; transform: scale(1.1); } 
+  100% { opacity: 1; transform: scale(1); } 
+}

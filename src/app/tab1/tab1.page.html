@@ -1,83 +1,79 @@
-<!-- FAB button -->
-<ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
-  <ion-row>
-    @if (location.state === 'tracking') {
-      <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
-        <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
-        <span class="tracking-dot"></span>
-        <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
-      </div>
-    } @else {
-      <div class="record-button" (click)="startTracking()">
-        <ion-icon name="caret-forward-circle-sharp" class="primary-icon"></ion-icon>
-        <p>{{ 'RECORD.BUTTON' | translate }}</p>
-      </div>
-    }
-
-    <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">
-      <ion-icon name="search-circle-sharp"></ion-icon>
-      <span>{{ 'SEARCH.BUTTON' | translate }}</span>
-    </div>
-
-    <div class="record-button" (click)="mapService.cycleZoom()">
-      <ion-icon name="expand-sharp"></ion-icon>
-      <span>{{ 'MAP.ZOOM_BUTTON' | translate }}</span>
-    </div>
-  </ion-row>
-</ion-fab>
-
-@if (present.currentTrack && reference.archivedTrack) { 
-  <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
-    <div class="status-indicator-container">
-      <div class="led-button" [ngClass]="fs.routeStatus"> 
-        <ion-icon [name]="fs.routeStatus === 'green' ? 'checkmark-circle' : (fs.routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon> 
-      </div>
-    </div>
-  </ion-fab>
-}
-
 <ion-content [fullscreen]="true">
+  
+  <div id="map-wrapper">
+    <div id="map"></div>
+  </div>
+  <div class="safe-area"></div>
+
+  <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
+    <ion-row>
+      @if (location.state === 'tracking') {
+        <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
+          <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
+          <span class="tracking-dot"></span>
+          <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
+        </div>
+      } @else {
+        <div class="record-button" (click)="startTracking()">
+          <ion-icon name="caret-forward-circle-sharp" class="primary-icon"></ion-icon>
+          <p>{{ 'RECORD.BUTTON' | translate }}</p>
+        </div>
+      }
+
+      <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">
+        <ion-icon name="search-circle-sharp"></ion-icon>
+        <p>{{ 'SEARCH.BUTTON' | translate }}</p> </div>
+
+      <div class="record-button" (click)="mapService.cycleZoom()">
+        <ion-icon name="expand-sharp"></ion-icon>
+        <p>{{ 'MAP.ZOOM_BUTTON' | translate }}</p> </div>
+    </ion-row>
+  </ion-fab>
+
+  @if (present.currentTrack && reference.archivedTrack) { 
+    <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
+      <div class="status-indicator-container">
+        <div class="led-button" [ngClass]="fs.routeStatus"> 
+          <ion-icon [name]="fs.routeStatus === 'green' ? 'checkmark-circle' : (fs.routeStatus === 'red' ? 'alert-circle' : 'help-circle')"></ion-icon> 
+        </div>
+      </div>
+    </ion-fab>
+  }
+
+  @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
+    <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
+      <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
+        <ion-icon name="camera-sharp"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  }
+
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+    <ion-row>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+        <ion-icon name="bar-chart-sharp"></ion-icon>
+        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p> </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
+        <ion-icon name="library-sharp"></ion-icon>
+        <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p> </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
+        <ion-icon name="settings-sharp"></ion-icon>
+        <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p> </div>
+    </ion-row>
+  </ion-fab>
+
   <app-record-popover></app-record-popover>
   
   <app-search-guide-popover 
     (onWikiResult)="handleWikiResult($event)"
     (onClearResult)="wikiData = null">
   </app-search-guide-popover>
-  
-  <div id="map-wrapper">
-    <div id="map"></div>
-  </div>
-  <div class="safe-area"></div>
+
+  @if (wikiData) {
+    <app-wiki-card 
+      [data]="wikiData" 
+      (onClose)="wikiData = null">
+    </app-wiki-card>
+  }
+
 </ion-content>
-
-@if (wikiData) {
-  <app-wiki-card 
-    [data]="wikiData" 
-    (onClose)="wikiData = null">
-  </app-wiki-card>
-}
-
-@if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
-  <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
-    <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
-      <ion-icon name="camera-sharp"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
-}
-
-<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="bar-chart-sharp"></ion-icon>
-      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
-      <ion-icon name="library-sharp"></ion-icon>
-      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
-    </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-sharp"></ion-icon>
-      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
-    </div>
-  </ion-row>
-</ion-fab>

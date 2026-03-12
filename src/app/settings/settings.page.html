@@ -34,6 +34,7 @@
     <ion-item lines="full">
       <ion-icon name="git-commit-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
+      
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'current')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': present.currentColor }"></div>
@@ -45,6 +46,7 @@
     <ion-item lines="none">
       <ion-icon name="trail-sign-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
+      
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'archived')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
@@ -59,12 +61,12 @@
       <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
-    <ion-item lines="none"> <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
+    <ion-item lines="none"> 
+      <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
-    
-    </ion-list>
+  </ion-list>
 
   <div style="height: 120px;"></div>
 </ion-content>

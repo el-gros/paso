@@ -251,21 +251,28 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit },
-      cssClass: 'glass-island-wrapper',
+      cssClass: 'top-glass-island-wrapper',
       translucent: true,
       backdropDismiss: true
     });
     
     await popover.present();
-    const { data } = await popover.onDidDismiss();
     
-    if (data?.action === 'ok') {
-      const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
-      await this.saveFile(name, data.description);
-    } else {
+    // 🚀 Extraemos tanto la data como el role
+    const { data, role } = await popover.onDidDismiss();
+    
+    // 1. Si el usuario cancela (botón o tocando el fondo oscuro)
+    if (role === 'cancel' || role === 'backdrop') {
       if (this.location.state === 'stopped') {
         this.present.isRecordPopoverOpen = true;
       }
+      return; // Salimos para no ejecutar nada más
+    }
+    
+    // 2. Si el usuario confirma y todo está OK
+    if (data?.action === 'ok') {
+      const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+      await this.saveFile(name, data.description);
     }
   }
 

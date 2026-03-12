@@ -5,7 +5,8 @@ import { IonicModule, Platform, PopoverController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Keyboard } from '@capacitor/keyboard';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs'; // 🚀 AÑADIDO: Subject
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators'; // 🚀 AÑADIDO: Operadores
 
 // --- OPENLAYERS ---
 import { GeoJSON } from 'ol/format';
@@ -24,7 +25,7 @@ import { LanguageService } from '../services/language.service';
 import { StylerService } from '../services/styler.service';
 import { WikiService, WikiSummary } from '../services/wiki.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
-import { SearchService } from '../services/search.service'; // 🚀 NUEVO
+import { SearchService } from '../services/search.service';
 import { GeoMathService } from '../services/geo-math.service';
 
 // --- INTERFACES ---
@@ -61,6 +62,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private geoMath = inject(GeoMathService);
 
   private backButtonSub?: Subscription;
+  private searchSubscription?: Subscription; // 🚀 NUEVO
+  public searchSubject = new Subject<string>(); // 🚀 NUEVO: Escuchador de tipeo
 
   // Estado
   public query: string = '';
@@ -92,9 +95,26 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
       this.reference.isGuidePopoverOpen = false;
       this.reference.isSearchGuidePopoverOpen = false;
     });
+
+    // 🚀 NUEVO: Configuramos el "Debounce" para proteger Nominatim (Espera 700ms tras dejar de teclear)
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(700),
+      distinctUntilChanged()
+    ).subscribe(searchTerm => {
+      if (searchTerm.trim().length > 2) {
+        this.openList(searchTerm);
+      } else {
+        this.results = [];
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  ngOnDestroy() { this.backButtonSub?.unsubscribe(); }
+  ngOnDestroy() { 
+    this.backButtonSub?.unsubscribe(); 
+    this.searchSubscription?.unsubscribe(); // Limpieza
+    if (this.isListening) this.stopListening(); 
+  }
 
   // ==========================================
   // LÓGICA DE VOZ (DICTADO)
@@ -115,7 +135,10 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     this.speechPluginListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
       if (data.matches?.length > 0) {
         this.zone.run(() => {
-          if (this.activeTarget === 'query') this.query = data.matches[0];
+          if (this.activeTarget === 'query') {
+            this.query = data.matches[0];
+            this.onSearchInput(this.query); // 🚀 Lanzar búsqueda reactiva
+          }
           else if (this.activeTarget === 'query2') this.query2 = data.matches[0];
           else if (this.activeTarget === 'query3') this.query3 = data.matches[0];
           this.cdr.detectChanges();
@@ -142,7 +165,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         this.zone.run(async () => {
           if (targetAtStop === 'query2') { this.query = this.query2; this.activeRouteField = 'origin'; }
           else if (targetAtStop === 'query3') { this.query = this.query3; this.activeRouteField = 'destination'; }
-          if (this.query?.trim().length > 1) await this.openList();
+          
+          if (targetAtStop !== 'query' && this.query?.trim().length > 1) await this.openList(this.query);
           this.activeTarget = null;
         });
       }, 400);
@@ -152,14 +176,21 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   // ==========================================
   // BÚSQUEDA DE LUGARES (USANDO SEARCHSERVICE)
   // ==========================================
-  async openList() {
-    if (!this.query.trim()) return;
-    if (this.platform.is('capacitor')) await Keyboard.hide();
+
+  // 🚀 NUEVO: Método para inyectar tecleos en el Subject
+  onSearchInput(text: string | null | undefined) {
+    if (text !== null && text !== undefined) {
+      this.searchSubject.next(text);
+    }
+  }
+
+  async openList(termToSearch: string = this.query) {
+    if (!termToSearch.trim()) return;
     
     this.loading = true;
+    this.cdr.detectChanges(); // Forzamos mostrar el spinner
     try {
-      // 🚀 Delegamos la lógica al servicio
-      this.results = await this.searchService.searchPlaces(this.query);
+      this.results = await this.searchService.searchPlaces(termToSearch);
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -168,6 +199,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
 
   async handleLocationSelection(location: LocationResult) {
     if (!location?.boundingbox || !location?.geojson) return;
+    if (this.platform.is('capacitor')) await Keyboard.hide(); // 🚀 Ocultar teclado al seleccionar
+    
     const source = this.geography.searchLayer?.getSource();
     if (!source) return;
 
@@ -198,7 +231,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     }
     this.loading = true;
     try {
-      // 🚀 Delegamos la llamada a OpenRouteService al servicio
+      if (this.platform.is('capacitor')) await Keyboard.hide();
+
       const responseData = await this.searchService.getRoute(
         this.originCoords, 
         this.destinationCoords, 
@@ -222,12 +256,10 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     const stats = routeFeature.properties.summary;
     const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
 
-    // 🚀 SOLUCIÓN: Calcular la distancia acumulada punto a punto
     let accumulatedDistance = 0;
     const trackData = routeCoordinates.map((c, index) => {
       if (index > 0) {
         const prev = routeCoordinates[index - 1];
-        // Sumamos la distancia respecto al punto anterior
         accumulatedDistance += this.geoMath.quickDistance(prev[0], prev[1], c[0], c[1]);
       }
       return {
@@ -236,7 +268,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         time: 0,
         compAltitude: c[2] || 0,
         compSpeed: 0,
-        distance: accumulatedDistance // 👈 ¡Ahora la gráfica funcionará perfecta!
+        distance: accumulatedDistance
       };
     });
 
@@ -261,13 +293,13 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         geometry: {
           type: 'LineString',
           coordinates: routeCoordinates as [number, number][],
-          properties: { data: trackData } // 👈 Pasamos el array calculado
+          properties: { data: trackData }
         }
       }]
     };
 
     this.reference.archivedTrack = newTrack;
-    this.reference.foundRoute = true; // 👈 NUEVO: Asegura que la UI sepa que hay ruta activa
+    this.reference.foundRoute = true;
     await this.location.sendReferenceToPlugin();
     await this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack);

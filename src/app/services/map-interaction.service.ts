@@ -133,6 +133,7 @@ export class MapInteractionService {
 
           if (index >= 0) {
             await this.reference.editTrack(index);
+            this.reference.foundRoute = false; // Reseteamos el estado de "ruta encontrada" al editar
           } else {
             await this.reference.editTrack(-1); // Ruta temporal / borrador
           }
@@ -140,7 +141,7 @@ export class MapInteractionService {
       }
     }
   }
-  
+
   private async handleGeneralMapClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
     // --- CASO 1: Click en Puntos (Waypoints o Clusters) ---
     if (type === 'archived_points') {

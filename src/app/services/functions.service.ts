@@ -133,7 +133,7 @@ export class FunctionsService {
         edit,
         showAltitude
       },
-      cssClass: 'glass-island-wrapper',
+      cssClass: 'top-glass-island-wrapper',
       translucent: true,
       dismissOnSelect: false,
       backdropDismiss: true

@@ -14,6 +14,7 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
+import { SupabaseService } from '../services/supabase.service';
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track } from '../../globald';
@@ -42,7 +43,8 @@ export class ArchivePage implements OnInit {
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private supabaseService: SupabaseService
   ) { }
 
   ngOnInit() { }
@@ -149,7 +151,7 @@ export class ArchivePage implements OnInit {
     this.fs.collection.splice(index, 1);
     await this.fs.storeSet('collection', this.fs.collection);
   }
-  
+
   async editSpecificTrack(index: number, slidingItem?: IonItemSliding) {
     if (slidingItem) slidingItem.close();
     await this.reference.editTrack(index);
@@ -205,14 +207,20 @@ export class ArchivePage implements OnInit {
       const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
       const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-      // 🚀 DELEGAMOS AL SERVICIO: 
+      // 🚀 1. SUBIR LA RUTA A SUPABASE Y OBTENER EL ENLACE
+      // (Si falla por no tener internet, publicUrl será null y el PDF se creará igual sin enlace)
+      const publicUrl = await this.supabaseService.shareRouteToCloud(trackData);
+
+      // 2. GENERAR IMÁGENES
       const mapBase64 = await this.exportService.generateInvisibleMapImage(trackData);
       const altitudeBase64 = await this.exportService.generateAltitudeCanvasImage(trackData);
 
+      // 3. GENERAR ARCHIVOS
       const [gpxText, kmzBase64, pdfBase64] = await Promise.all([
         this.exportService.geoJsonToGpx(featureToExport),
         this.exportService.geoJsonToKmz(featureToExport),
-        this.exportService.createPdfContent(item, trackData, mapBase64, altitudeBase64)
+        // 🚀 PASAMOS EL publicUrl AL PDF AL FINAL DE LOS PARÁMETROS
+        this.exportService.createPdfContent(item, trackData, mapBase64, altitudeBase64, publicUrl ? publicUrl : undefined)
       ]);
 
       const gpxName = `${safeName}.gpx`;
@@ -244,7 +252,7 @@ export class ArchivePage implements OnInit {
       await loading.dismiss();
     }
   }
-
+  
   // ==========================================================================
   // 4. COMPARTIR IMÁGENES (Social)
   // ==========================================================================

@@ -132,14 +132,21 @@ export class ReferenceService {
       component: SaveTrackPopover,
       componentProps: { modalEdit },
       backdropDismiss: true,
-      cssClass: 'glass-island-wrapper',
+      cssClass: 'top-glass-island-wrapper',
       translucent: true,
     });
 
     await popover.present();
-    const { data } = await popover.onDidDismiss();
+    
+    // 🚀 Extraemos tanto la data como el role
+    const { data, role } = await popover.onDidDismiss();
 
-    // 3. Procesar la respuesta del usuario
+    // 🚀 3. Comprobar si el usuario canceló o tocó fuera
+    if (role === 'cancel' || role === 'backdrop') {
+      return; // Morimos silenciosamente, como querías
+    }
+
+    // 4. Procesar la respuesta del usuario
     if (data?.action === 'ok') {
       if (isDraft) {
         await this.saveNewDraft(data);
@@ -147,7 +154,7 @@ export class ReferenceService {
         await this.updateExistingTrack(index, data);
       }
     }
-  }
+  } 
 
   // ==========================================================================
   // 3. MÉTODOS PRIVADOS (Helpers)

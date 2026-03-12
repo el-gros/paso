@@ -204,7 +204,8 @@
     "ELEVATION_GAIN": "Desnivel positivo",
     "ELEVATION_LOSS": "Desnivel negativo",
     "SHARE_SUBJECT": "Informe de seguimiento - Paso App",
-    "SHARE_BODY": "Aquí está el informe de actividad para mi ruta: "
+    "SHARE_BODY": "Aquí está el informe de actividad para mi ruta: ",
+    "VIEW_ROUTE": "Ver ruta interactiva en la web"
   },
   "CAMERA_PERMISSION": {
     "HEADER": "Cámara necesaria",

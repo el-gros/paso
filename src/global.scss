@@ -343,15 +343,11 @@ ion-fab {
 
 /* --- Clase Reutilizable Tipo "Isla" Centrada --- */
 .glass-island-wrapper {
-  --width: 100% !important;
-  --height: 100% !important;
   --background: transparent !important;
   --box-shadow: none !important;
+  /* 🚀 FIX: Dejamos que Ionic calcule el alto, solo limitamos el ancho */
+  --width: 90% !important; 
   
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
   &::part(content) {
     position: fixed !important;
     top: 50% !important;
@@ -360,9 +356,26 @@ ion-fab {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    width: 90% !important;
     max-width: 380px !important;
-    pointer-events: auto !important; 
+    /* 🚀 ELIMINADO: Todo lo que forzaba el 100% de alto/ancho */
+  }
+}
+
+/* --- Popover anclado arriba (Para evitar el teclado) --- */
+.top-glass-island-wrapper {
+  --background: transparent !important;
+  --box-shadow: none !important;
+  --width: 90% !important; 
+  
+  &::part(content) {
+    position: fixed !important;
+    top: 8vh !important; /* 🚀 Lo pegamos al 8% superior de la pantalla */
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* 🚀 Solo lo centramos horizontalmente */
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 380px !important;
   }
 }
 

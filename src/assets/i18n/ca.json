@@ -196,7 +196,8 @@
     "DISTANCE": "Distància",
     "TIME": "Temps",
     "ELEVATION_GAIN": "Desnivell positiu",
-    "ELEVATION_LOSS": "Desnivell negatiu"
+    "ELEVATION_LOSS": "Desnivell negatiu",
+    "VIEW_ROUTE": "Veure ruta interactiva a la web"
   },
   "CAMERA_PERMISSION": {
     "HEADER": "Càmera necessària",

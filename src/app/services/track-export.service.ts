@@ -3,10 +3,14 @@ import { TranslateService } from '@ngx-translate/core';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem'; 
-import Map from 'ol/Map'; 
-import * as htmlToImage from 'html-to-image'; // <-- AÑADIDO PARA LA GRÁFICA
+import * as htmlToImage from 'html-to-image';
 
-// --- INTERNAL IMPORTS ---
+import { Map, View } from 'ol';
+import { GeoJSON } from 'ol/format';
+import { Vector as VectorSource, OSM } from 'ol/source';
+import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
+import { Style, Stroke } from 'ol/style';
+
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service'; 
 import { TrackFeature, TrackDefinition, Track } from '../../globald';
@@ -22,38 +26,27 @@ export class TrackExportService {
     private geography: GeographyService 
   ) {}
 
-  // ==========================================================================
-  // 1. GENERACIÓN DE IMAGEN DEL MAPA (El Fotógrafo)
-  // ==========================================================================
-
-  /**
-   * Captura la vista actual del mapa (archivedLayer), oculta la currentLayer y guarda
-   * la imagen en la caché externa del dispositivo.
-   */
   public async generateAndSaveMapImage(map: Map): Promise<boolean> {
     try {
-      // 1. Preparación de la UI
       await new Promise(resolve => setTimeout(resolve, 150));
-      this.geography.currentLayer?.setVisible(false); // Ocultar capa GPS/Tracking
+      this.geography.currentLayer?.setVisible(false); 
       
       const mapWrapper = document.getElementById('map-wrapper');
-      if (mapWrapper) mapWrapper.style.transform = `scale(1)`; // reset zoom
+      if (mapWrapper) mapWrapper.style.transform = `scale(1)`; 
 
-      // 2. Esperar a que OpenLayers termine de renderizar
       await this.waitForMapRender(map);
 
-      // 3. Crear el Canvas compuesto
       const size = map.getSize() || [window.innerWidth, window.innerHeight];
       const mapCanvas = document.createElement('canvas');
       mapCanvas.width = size[0];
       mapCanvas.height = size[1];
       const ctx = mapCanvas.getContext('2d');
+      
       if (!ctx) {
-        this.geography.currentLayer?.setVisible(true); // Restaurar UI
+        this.geography.currentLayer?.setVisible(true);
         return false;
       }
 
-      // 4. Dibujar todas las capas de OL en nuestro canvas
       document.querySelectorAll<HTMLCanvasElement>('.ol-layer canvas').forEach((canvas) => {
         if (canvas.width > 0) {
           const opacity = (canvas.parentNode as HTMLElement)?.style.opacity || '1';
@@ -70,9 +63,8 @@ export class TrackExportService {
         }
       });
 
-      // 5. Generar Base64 y guardar en disco
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const dataUrl = mapCanvas.toDataURL('image/jpeg', 0.8); // JPEG con compresión del 80%
+      const dataUrl = mapCanvas.toDataURL('image/jpeg', 0.8);
 
       await Filesystem.writeFile({
         path: 'map.jpg',
@@ -80,32 +72,22 @@ export class TrackExportService {
         directory: Directory.ExternalCache,
       });
 
-      // 6. Restaurar la UI y finalizar
       this.geography.currentLayer?.setVisible(true);
       return true;
 
     } catch (err) {
-      console.error('[TrackExportService] Error capturando imagen del mapa:', err);
-      this.geography.currentLayer?.setVisible(true); // Restaurar UI incluso si falla
+      console.error('[TrackExportService] Error capturando imagen:', err);
+      this.geography.currentLayer?.setVisible(true); 
       return false;
     }
   }
 
-  // ==========================================================================
-  // 1.5. GENERACIÓN DE IMAGEN DE DATOS (Gráfica de Altitud)
-  // ==========================================================================
-  
-  /**
-   * Captura un elemento HTML (como la gráfica de CanvasComponent) y lo guarda
-   * en la caché externa del dispositivo.
-   */
   public async generateAndSaveDataImage(elementId: string): Promise<boolean> {
     try {
       const exportArea = document.getElementById(elementId);
       if (!exportArea) return false;
       
       await document.fonts.ready;
-      
       const dataUrl = await htmlToImage.toPng(exportArea, { backgroundColor: '#ffffff' });
       
       await Filesystem.writeFile({
@@ -116,14 +98,10 @@ export class TrackExportService {
       
       return true;
     } catch (err) {
-      console.error('[TrackExportService] Error exportando gráfica a imagen:', err);
+      console.error('[TrackExportService] Error exportando gráfica:', err);
       return false;
     }
   }
-
-  // ==========================================================================
-  // 2. EXPORTACIÓN A KMZ (Google Earth)
-  // ==========================================================================
 
   public async geoJsonToKmz(feature: TrackFeature): Promise<string> {
     try {
@@ -140,7 +118,6 @@ export class TrackExportService {
       </LineStyle>
     </Style>`;
 
-      // --- Waypoints ---
       if (feature.waypoints && feature.waypoints.length > 0) {
         feature.waypoints.forEach((wp) => {
           const altitude = wp.altitude || 0;
@@ -158,7 +135,6 @@ export class TrackExportService {
         });
       }
 
-      // --- Track Line ---
       kmlText += `
     <Placemark>
       <name>${trackName}</name>
@@ -179,7 +155,6 @@ export class TrackExportService {
   </Document>
 </kml>`;
 
-      // Empaquetar KML en un archivo ZIP (KMZ)
       const zip = new JSZip();
       zip.file("doc.kml", kmlText);
 
@@ -195,10 +170,6 @@ export class TrackExportService {
     }
   }
 
-  // ==========================================================================
-  // 3. EXPORTACIÓN A GPX (Estándar GPS)
-  // ==========================================================================
-
   public async geoJsonToGpx(feature: TrackFeature): Promise<string> {
     try {
       const trackName = this.escapeXml(feature.properties?.name || 'Track');
@@ -209,7 +180,6 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xmlns="http://www.topografix.com/GPX/1/1"
 xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">`;
 
-      // --- Waypoints ---
       if (feature.waypoints && feature.waypoints.length > 0) {
         feature.waypoints.forEach((wp) => {
           const name = (wp.name || '').replace(/]]>/g, ']]]]><![CDATA[>');
@@ -225,7 +195,6 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         });
       }
 
-      // --- Track Line ---
       gpxText += `\n  <trk>\n    <name>${trackName}</name>\n    <trkseg>`;
 
       feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
@@ -250,15 +219,12 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
     }
   }
 
-  // ==========================================================================
-  // 4. EXPORTACIÓN A PDF (Reporte)
-  // ==========================================================================
-
   public async createPdfContent(
     item: TrackDefinition, 
     trackData: Track, 
     mapImg: string, 
-    altImg?: string
+    altImg?: string,
+    publicUrl?: string // 🚀 EL ENLACE DE SUPABASE LLEGA AQUÍ
   ): Promise<string> {
     try {
       const pdf = new jsPDF();
@@ -291,16 +257,12 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
       pdf.setFontSize(12);
       pdf.setTextColor(0);
       
-      // Columna 1
       pdf.text(`${this.translate.instant('REPORT.DISTANCE')}: ${(props.totalDistance || 0).toFixed(2)} km`, 10, nextY);
-      
       const timeStr = this.fs.formatMillisecondsToUTC(props.totalTime || 0);
       pdf.text(`${this.translate.instant('REPORT.TIME')}: ${timeStr}`, 10, nextY + 10);
 
-      // Columna 2
       const gainStr = `+${Math.round(props.totalElevationGain || 0)} m`;
       const lossStr = `-${Math.round(props.totalElevationLoss || 0)} m`;
-      
       pdf.text(`${this.translate.instant('REPORT.ELEVATION_GAIN')}: ${gainStr}`, 110, nextY);
       pdf.text(`${this.translate.instant('REPORT.ELEVATION_LOSS')}: ${lossStr}`, 110, nextY + 10);
 
@@ -310,6 +272,22 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         pdf.setTextColor(100);
         const splitDesc = pdf.splitTextToSize(item.description, 180);
         pdf.text(splitDesc, 10, nextY + 25);
+      }
+
+      // --- 5. ENLACE INTERACTIVO A SUPABASE ---
+      if (publicUrl) {
+        const finalY = item.description ? nextY + 45 : nextY + 25;
+        
+        pdf.setFontSize(11);
+        pdf.setTextColor(56, 128, 255); 
+        const linkText = this.translate.instant('REPORT.VIEW_ROUTE') || 'Ver ruta interactiva en la web';
+        
+        pdf.textWithLink(linkText, 10, finalY, { url: publicUrl });
+        
+        const textWidth = pdf.getTextWidth(linkText);
+        pdf.setLineWidth(0.3);
+        pdf.setDrawColor(56, 128, 255);
+        pdf.line(10, finalY + 1, 10 + textWidth, finalY + 1);
       }
 
       return pdf.output('datauristring').split(',')[1];
@@ -330,9 +308,6 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
     }[c] as string));
   }
 
-  /**
-   * Promesa que se resuelve cuando OpenLayers ha terminado el renderizado síncrono.
-   */
   private waitForMapRender(map: Map): Promise<void> {
     return new Promise((r) => {
       map.once('rendercomplete', () => setTimeout(() => r(), 300));
@@ -341,22 +316,15 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
   }
 
   // ==========================================================================
-  // 6. GENERADORES PARA PDF (Mapas invisibles y Gráficas de Altitud)
+  // 6. GENERADORES PARA PDF (Mapas invisibles y Gráficas)
   // ==========================================================================
 
   public async generateInvisibleMapImage(trackData: any): Promise<string> {
     return new Promise((resolve) => {
+      let mapExport: Map | null = null;
+      
       try {
-        const GeoJSONFormat = require('ol/format/GeoJSON').default;
-        const VectorSource = require('ol/source/Vector').default;
-        const VectorLayer = require('ol/layer/Vector').default;
-        const OSM = require('ol/source/OSM').default;
-        const TileLayer = require('ol/layer/Tile').default;
-        const View = require('ol/View').default;
-        const Style = require('ol/style/Style').default;
-        const Stroke = require('ol/style/Stroke').default;
-
-        const features = new GeoJSONFormat().readFeatures(trackData);
+        const features = new GeoJSON().readFeatures(trackData);
         if(!features.length) { resolve(''); return; }
 
         const vectorSource = new VectorSource({ features });
@@ -372,7 +340,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
           mapDiv.style.height = '800px';
         }
 
-        const mapExport = new Map({
+        mapExport = new Map({
           target: 'map-export',
           layers: [
             new TileLayer({ source: new OSM({ crossOrigin: 'anonymous' }) }),
@@ -391,43 +359,52 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         mapExport.getView().fit(extent, { padding: [100, 100, 100, 100], size: [1000, 800] });
 
         mapExport.once('rendercomplete', () => {
-          const size = mapExport.getSize();
-          if (!size) { mapExport.dispose(); resolve(''); return; }
+          try {
+            const size = mapExport!.getSize();
+            if (!size) { resolve(''); return; }
 
-          const mapCanvas = document.createElement('canvas');
-          mapCanvas.width = size[0];
-          mapCanvas.height = size[1];
-          const mapContext = mapCanvas.getContext('2d');
-          
-          if (!mapContext) { mapExport.dispose(); resolve(''); return; }
+            const mapCanvas = document.createElement('canvas');
+            mapCanvas.width = size[0];
+            mapCanvas.height = size[1];
+            const mapContext = mapCanvas.getContext('2d');
+            
+            if (!mapContext) { resolve(''); return; }
 
-          mapContext.fillStyle = '#FFFFFF';
-          mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+            mapContext.fillStyle = '#FFFFFF';
+            mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
 
-          const layers = document.querySelectorAll<HTMLCanvasElement>('#map-export .ol-layer canvas');
-          layers.forEach((canvas) => {
-            if (canvas.width > 0) {
-              const parent = canvas.parentNode as HTMLElement;
-              mapContext.globalAlpha = Number(parent?.style.opacity || '1');
-              const transform = canvas.style.transform;
-              let matrix = [1, 0, 0, 1, 0, 0];
-              if (transform) {
-                const match = transform.match(/^matrix\(([^\(]*)\)$/);
-                if (match && match[1]) matrix = match[1].split(',').map(Number);
+            const layers = document.querySelectorAll<HTMLCanvasElement>('#map-export .ol-layer canvas');
+            layers.forEach((canvas) => {
+              if (canvas.width > 0) {
+                const parent = canvas.parentNode as HTMLElement;
+                mapContext.globalAlpha = Number(parent?.style.opacity || '1');
+                const transform = canvas.style.transform;
+                let matrix = [1, 0, 0, 1, 0, 0];
+                if (transform) {
+                  const match = transform.match(/^matrix\(([^\(]*)\)$/);
+                  if (match && match[1]) matrix = match[1].split(',').map(Number);
+                }
+                mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+                mapContext.drawImage(canvas, 0, 0);
               }
-              mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-              mapContext.drawImage(canvas, 0, 0);
-            }
-          });
+            });
 
-          mapContext.setTransform(1, 0, 0, 1, 0, 0);
-          const data = mapCanvas.toDataURL('image/jpeg', 0.8);
-          mapExport.setTarget(undefined);
-          mapExport.dispose(); 
-          resolve(data);
+            mapContext.setTransform(1, 0, 0, 1, 0, 0);
+            const data = mapCanvas.toDataURL('image/jpeg', 0.8);
+            resolve(data);
+          } finally {
+            if (mapExport) {
+              mapExport.setTarget(undefined);
+              mapExport.dispose(); 
+            }
+          }
         });
       } catch (e) {
         console.error('[TrackExportService] Error in generateInvisibleMapImage:', e);
+        if (mapExport) {
+          mapExport.setTarget(undefined);
+          mapExport.dispose();
+        }
         resolve('');
       }
     });
@@ -500,5 +477,4 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 
     return canvas.toDataURL('image/jpeg', 0.8);
   }
-  
 }

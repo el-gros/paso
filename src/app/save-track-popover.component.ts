@@ -201,7 +201,8 @@ export class SaveTrackPopover implements OnInit {
   }
 
   public cancel() { 
-    this.popoverCtrl.dismiss(); 
+//    this.popoverCtrl.dismiss(); 
+    this.popoverCtrl.dismiss(null, 'cancel'); 
   }
   
   public confirm() { 

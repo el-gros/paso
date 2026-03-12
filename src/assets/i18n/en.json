@@ -198,7 +198,8 @@
     "ELEVATION_GAIN": "Elevation gain",
     "ELEVATION_LOSS": "Elevation loss",
     "SHARE_SUBJECT": "Tracking Report - Paso App",
-    "SHARE_BODY": "Here is the activity report for my route: "
+    "SHARE_BODY": "Here is the activity report for my route: ",
+    "VIEW_ROUTE": "View interactive route on the web"
   },
   "CAMERA_PERMISSION": {
     "HEADER": "Camera required",

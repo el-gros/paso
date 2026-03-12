@@ -204,7 +204,8 @@
     "ELEVATION_GAIN": "累计爬升",
     "ELEVATION_LOSS": "累计下降",
     "SHARE_SUBJECT": "跟踪报告 - Paso App",
-    "SHARE_BODY": "这是我的路线活动报告："
+    "SHARE_BODY": "这是我的路线活动报告：",
+    "VIEW_ROUTE": "在网页上查看交互式路线"
   },
   "CAMERA_PERMISSION": {
     "HEADER": "需要相机权限",

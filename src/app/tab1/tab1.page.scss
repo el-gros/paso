@@ -13,28 +13,30 @@
   height: 100%;
 }
 
-/* --- FIX DE INTERACTIVIDAD --- */
+/* --- FIX DE INTERACTIVIDAD PARA TODOS LOS FAB --- */
 ion-fab {
   pointer-events: none; /* El contenedor FAB no bloquea el mapa */
   
   ion-row {
-    pointer-events: auto; /* ¡IMPORTANTE! Permite interactuar con los botones */
+    pointer-events: auto; /* Permite interactuar con los botones de la fila */
     display: flex;
     justify-content: center;
-    gap: 8px; 
+    gap: 12px; /* 🚀 Un pelín más de separación entre botones de la fila */
+  }
+
+  ion-fab-button {
+    pointer-events: auto; /* Permite pulsar el botón de cámara */
   }
 }
 
-/* --- INDICADOR DE ESTADO DE RUTA --- */
-
+/* --- INDICADOR DE ESTADO DE RUTA (SEMÁFORO) --- */
 .route-indicator-fab {
   position: fixed !important;
-  top: 70px !important;
-  right: 10px !important;
+  top: 95px !important; /* 🚀 Lo bajo un poco para que no choque con el menú superior si hay notch */
+  right: 15px !important;
   z-index: 9999 !important;      
   pointer-events: auto !important; 
   cursor: pointer !important;
-  /* Reset de Ionic */
   margin: 0 !important;
   width: auto !important;
   height: auto !important;
@@ -45,55 +47,61 @@ ion-fab {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Evitamos que el div bloquee clics, que los reciba el ion-fab */
   pointer-events: none; 
 }
 
 .led-button {
-  width: 25px;  /* Aumentado para que el icono de 22px quepa bien */
-  height: 25px;
+  width: 28px;  /* 🚀 Ligeramente más grande para que se vea bien el icono */
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 
   ion-icon {
-    font-size: 18px;
+    font-size: 20px;
     color: white;
   }
 
-  // Estados de color
+  /* Estados de color */
   &.green {
-    background-color: var(--ion-color-success);
-    box-shadow: 0 0 12px var(--ion-color-success-tint);
+    background-color: var(--ion-color-success, #2dd36f);
+    box-shadow: 0 0 12px rgba(45, 211, 111, 0.6);
   }
 
   &.red {
-    background-color: var(--ion-color-danger);
-    box-shadow: 0 0 12px var(--ion-color-danger-tint);
+    background-color: var(--ion-color-danger, #eb445a);
+    box-shadow: 0 0 12px rgba(235, 68, 90, 0.6);
     animation: blink 1.5s infinite;
   }
 
   &.unknown, &.black {
     background-color: #333;
-    box-shadow: 0 0 5px #000;
+    box-shadow: 0 0 6px rgba(0,0,0,0.5);
   }
 }
 
 @keyframes blink {
   0% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
 
 /* --- BOTÓN DE CÁMARA --- */
 .camera-fab {
-  margin-bottom: 85px; /* Ajusta este valor según la altura de tu barra inferior */
-  margin-top: 32px;
+  top: 90px !important; /* 🚀 Lo alineamos con la altura del semáforo para simetría */
+  left: 15px !important;
+  margin: 0 !important;
   
   ion-fab-button {
-    --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    width: 48px;
+    height: 48px;
+    
+    ion-icon {
+      font-size: 24px;
+    }
   }
 }

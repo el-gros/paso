@@ -186,8 +186,11 @@ swiper-slide {
 .top-pagination {
   display: flex;
   justify-content: center;
-  align-items: stretch; /* Importante: para que todos tengan la misma altura si quieres, o center */
-  padding: 10px 15px; // Un poco más de espacio lateral
+  align-items: stretch;
+  
+  /* 🚀 FIX: Sumamos la zona segura del móvil (o 30px) + tus 10px de margen original */
+  padding: calc(var(--ion-safe-area-top, 30px) + 10px) 15px 10px 15px; 
+  
   gap: 8px; 
   background: #f4f4f4;
   position: sticky;
@@ -197,7 +200,7 @@ swiper-slide {
   .dot {
     /* Estilo base (inactivo) */
     background-color: #e0e0e0;
-    border-radius: 8px; /* Un poco menos redondeado para acomodar texto cuadrado */
+    border-radius: 8px; 
     color: #666;
     transition: all 0.3s ease;
     cursor: pointer;
@@ -209,35 +212,35 @@ swiper-slide {
     text-align: center;
     
     /* Dimensiones */
-    height: auto;       /* Dejar que crezca según el texto */
-    min-height: 36px;   /* Altura mínima para que sea pulsable */
-    width: 40px;        /* Ancho cuando está inactivo (cerrado) */
-    padding: 4px;       /* Padding pequeño */
+    height: auto;       
+    min-height: 36px;   
+    width: 40px;        
+    padding: 4px;       
 
     span {
-      display: none; /* Oculto por defecto si está inactivo */
+      display: none; 
       font-size: 0.7rem;
       font-weight: 600;
-      line-height: 1.1; /* Líneas pegaditas para que quepan 2 */
-      width: 100%;      /* Para que el text-align funcione */
+      line-height: 1.1; 
+      width: 100%;      
     }
 
     /* ESTADO ACTIVO */
     &.active {
       background-color: var(--ion-color-primary);
       color: white;
-      width: auto;         /* El ancho se adapta al texto */
-      min-width: 100px;    /* Ancho mínimo para que no se vea ridículo */
-      max-width: 140px;    /* Ancho máximo antes de cortar */
-      padding: 6px 12px;   /* Más espacio interno */
+      width: auto;         
+      min-width: 100px;    
+      max-width: 140px;    
+      padding: 6px 12px;   
       
       span { 
-        display: -webkit-box;       /* Necesario para limitar líneas */
-        -webkit-line-clamp: 2;      /* Máximo 2 líneas */
-        line-clamp: 2;              /* Standard property for compatibility */
+        display: -webkit-box;       
+        -webkit-line-clamp: 2;      
+        line-clamp: 2;              
         -webkit-box-orient: vertical;
-        overflow: hidden;           /* Cortar si hay una 3ra línea */
-        white-space: normal;        /* PERMITIR SALTO DE LÍNEA */
+        overflow: hidden;           
+        white-space: normal;        
       }
     }
 

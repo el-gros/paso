@@ -204,7 +204,8 @@
     "ELEVATION_GAIN": "Dénivelé positif",
     "ELEVATION_LOSS": "Dénivelé négatif",
     "SHARE_SUBJECT": "Rapport de suivi - Paso App",
-    "SHARE_BODY": "Voici le rapport d'activité de mon itinéraire : "
+    "SHARE_BODY": "Voici le rapport d'activité de mon itinéraire : ",
+    "VIEW_ROUTE": "Voir l'itinéraire interactif sur le web"
   },
   "CAMERA_PERMISSION": {
     "HEADER": "Appareil photo requis",
