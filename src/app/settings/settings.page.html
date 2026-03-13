@@ -68,6 +68,28 @@
     </ion-item>
   </ion-list>
 
+  <ion-list inset="true">
+    <ion-list-header>
+      <ion-label>{{ 'SETTINGS.DATA_GROUP' | translate }}</ion-label> 
+    </ion-list-header>
+
+    <ion-item lines="full" button (click)="doExport()">
+      <ion-icon name="push-sharp" slot="start" color="success"></ion-icon>
+      <ion-label>
+        <h2>{{ 'SETTINGS.EXPORT_TITLE' | translate }}</h2>
+        <p>{{ 'SETTINGS.EXPORT_DESC' | translate }}</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none" button (click)="doImport()">
+      <ion-icon name="download-sharp" slot="start" color="primary"></ion-icon>
+      <ion-label>
+        <h2>{{ 'SETTINGS.IMPORT_TITLE' | translate }}</h2>
+        <p>{{ 'SETTINGS.IMPORT_DESC' | translate }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+  
   <div style="height: 120px;"></div>
 </ion-content>
 

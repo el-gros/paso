@@ -520,3 +520,54 @@ ion-popover.top-search-popover {
     font-size: 13px;
   }
 }
+
+/* =========================================
+   EFECTO GLASS ISLAND PARA ALERTAS
+   ========================================= */
+.glass-island-alert {
+  /* Hacemos transparente el fondo base de Ionic para controlar el nuestro */
+  --background: transparent; 
+  --backdrop-opacity: 0.4; /* Oscurece un poco la pantalla de fondo */
+
+  .alert-wrapper {
+    /* Fondo semitransparente (Aquí es oscuro, estilo iOS Dark Mode) */
+    background: rgba(30, 30, 30, 0.65) !important; 
+    
+    /* El desenfoque mágico del cristal */
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    
+    /* Borde sutil brillante para dar volumen */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important; 
+    
+    /* Curvas muy pronunciadas (Estilo isla) */
+    border-radius: 32px !important; 
+    
+    /* Sombra suave para que flote */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important; 
+  }
+
+  /* Textos en blanco para que contrasten bien con el cristal oscuro */
+  .alert-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+
+  .alert-message {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  /* Color de los botones (Cámbialo por el color principal de tu app) */
+  .alert-button-group {
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Línea separadora sutil */
+  }
+
+  .alert-button.alert-button-role-cancel {
+    color: #ff4961 !important; /* Rojo si hay botón cancelar */
+  }
+
+  .alert-button {
+    color: #3880ff !important; /* Azul eléctrico para el OK */
+    font-weight: bold !important;
+  }
+}

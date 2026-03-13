@@ -7,6 +7,8 @@ import { Subscription, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
+import { LoadingController, AlertController } from '@ionic/angular';
 
 // --- SERVICES & ENV ---
 import { FunctionsService } from '../services/functions.service';
@@ -17,6 +19,7 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
+import { BackupService } from '../services/backup.service'; 
 import { global } from '../../environments/environment';
 
 // --- COMPONENTS ---
@@ -90,6 +93,9 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     public geography: GeographyService,
     public present: PresentService,
     private location: LocationManagerService,
+    private backupService: BackupService,
+    private loadingCtrl: LoadingController,
+    private alertCtrl: AlertController,
   ) {
     this.setupMapActions();
   }
@@ -175,7 +181,7 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATED'), 'success');
     } catch (error) {
       console.error("Error reloading map:", error);
-      this.fs.displayToast('Error updating map provider', 'error');
+      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATE_ERROR'), 'error');
     }
   }
 
@@ -284,4 +290,143 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_REMOVEMAP'), 'error');
     }
   }
+
+  async doExport() {
+    const loading = await this.loadingCtrl.create({ 
+      message: this.translate.instant('SETTINGS.BACKUP_PACKING'),
+      spinner: 'crescent'
+    });
+    await loading.present();
+
+    try {
+      // 1. CREAR EL PAYLOAD (Súper Objeto)
+      // Empezamos con la colección resumen
+      const payload: any = {
+        collection: this.fs.collection
+      };
+
+      // 2. OBTENER CADA TRACK INDIVIDUAL
+      // Mapeamos la colección para obtener las llaves (ISO Strings)
+      const keys = this.fs.collection
+        .filter((item: any) => item && item.date)
+        .map((item: any) => {
+            const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date);
+            return dateObj.toISOString();
+        });
+
+      // Leemos todos los tracks del storage
+      const tracksData = await Promise.all(keys.map((key: string) => this.fs.storeGet(key)));
+
+      // 3. ASIGNAR TRACKS AL PAYLOAD USANDO SU LLAVE
+      // En lugar de un array "tracks", metemos cada track con su fecha como nombre de propiedad
+      keys.forEach((key, index) => {
+        if (tracksData[index]) {
+          payload[key] = tracksData[index];
+        }
+      });
+
+      console.log('📦 Payload preparado con', Object.keys(payload).length - 1, 'tracks.');
+
+      // 4. EXPORTAR
+      const success = await this.backupService.exportBackup(payload);
+      
+      await loading.dismiss();
+      
+      if (success) {
+        this.showAlert(
+          this.translate.instant('SETTINGS.BACKUP_SUCCESS_TITLE'), 
+          this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC')
+        );
+      }
+    } catch (e) {
+      console.error('❌ Error exportando:', e);
+      await loading.dismiss();
+      this.showAlert(
+        this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'), 
+        this.translate.instant('SETTINGS.BACKUP_ERROR_DESC')
+      );
+    }
+  }
+
+  async doImport() {
+    let loading: HTMLIonLoadingElement | null = null;
+
+    try {
+      const result = await FilePicker.pickFiles({
+        types: ['application/zip', 'application/octet-stream', '.paso', '.zip'] 
+      });
+
+      const file = result.files[0];
+      if (!file || !file.path) return;
+
+      loading = await this.loadingCtrl.create({ 
+        message: this.translate.instant('SETTINGS.BACKUP_RESTORING'),
+        spinner: 'crescent'
+      });
+      await loading.present();
+
+      // 1. EL SERVICIO EXTRAE EL ZIP Y PROCESA LAS FOTOS
+      const backupData = await this.backupService.importBackup(file.path);
+
+      // Verificamos que llegó algo y que al menos tiene la colección (formato moderno)
+      if (backupData && backupData.collection) {
+        
+        console.log('📚 Restaurando colección...');
+        
+        // 2A. AÑADIMOS O REEMPLAZAMOS LA COLECCIÓN COMPLETA (igual que en app.component)
+        this.fs.collection = backupData.collection;
+        await this.fs.storeSet('collection', this.fs.collection);
+
+        // 2B. GUARDAR LOS TRACKS INDIVIDUALES
+        const keys = Object.keys(backupData);
+        console.log('✅ Elementos a restaurar:', keys.length);
+
+        for (const key of keys) {
+          // Ignoramos settings y la colección; el resto son los tracks
+          if (key !== 'collection' && key !== 'settings') {
+            console.log(`💾 Restaurando track: ${key}`);
+            await this.fs.storeSet(key, backupData[key]);
+          }
+        }
+
+        if (loading) await loading.dismiss();
+        
+        this.fs.displayToast(
+          this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success'
+        );
+
+        // 3. RECARGA PARA APLICAR CAMBIOS
+        setTimeout(() => {
+          // location.replace reinicia la app pero forzándola a ir a la ruta principal
+          // Cambia '/' por '/tabs/tab1' si esa es la ruta base de tu app
+          window.location.replace('/'); 
+        }, 1500);
+
+      } else {
+        if (loading) await loading.dismiss();
+        this.showAlert(
+          this.translate.instant('SETTINGS.INVALID_FILE_TITLE'), 
+          this.translate.instant('SETTINGS.INVALID_FILE_DESC')
+        );
+      }
+    } catch (e: any) {
+      if (loading) {
+        await loading.dismiss();
+      }
+
+      if (e.message !== 'Pick files canceled.') {
+        console.error('Error importando:', e);
+        this.showAlert(
+          this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'), 
+          this.translate.instant('SETTINGS.RESTORE_ERROR_DESC')
+        );
+      }
+    }
+  }
+
+  private async showAlert(header: string, message: string) {
+    const alert = await this.alertCtrl.create({ header, message, buttons: ['OK'], cssClass: 'glass-island-alert' });
+    await alert.present();
+  }
+
 }

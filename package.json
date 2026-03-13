@@ -42,6 +42,7 @@
     "@capacitor/share": "^7.0.0",
     "@capawesome-team/capacitor-android-foreground-service": "^7.0.1",
     "@capawesome/capacitor-background-task": "^7.0.1",
+    "@capawesome/capacitor-file-picker": "^7.2.0",
     "@ionic/angular": "^8.6.3",
     "@ionic/storage-angular": "^4.0.0",
     "@mapbox/polyline": "^1.2.1",

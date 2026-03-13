@@ -52,3 +52,6 @@ project(':capawesome-team-capacitor-android-foreground-service').projectDir = ne
 
 include ':capawesome-capacitor-background-task'
 project(':capawesome-capacitor-background-task').projectDir = new File('../node_modules/@capawesome/capacitor-background-task/android')
+
+include ':capawesome-capacitor-file-picker'
+project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')

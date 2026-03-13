@@ -1,14 +1,13 @@
 import { Component, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, Platform } from '@ionic/angular';
+import { AlertController, IonicModule, Platform, LoadingController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 // --- CAPACITOR IMPORTS ---
 import { App, URLOpenListenerEvent } from '@capacitor/app';
-import { Filesystem, Encoding } from '@capacitor/filesystem';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
-import { PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 // --- SERVICES ---
 import { FunctionsService } from './services/functions.service';
@@ -18,9 +17,9 @@ import { LocationManagerService } from './services/location-manager.service';
 import { ReferenceService } from './services/reference.service';
 import { AppStateService } from './services/appState.service';
 import { MapService } from './services/map.service';
-import { PresentService } from './services/present.service';
-import { LanguageService } from './services/language.service';
 import { FileParserService } from './services/file-parser.service';
+import { LanguageService } from './services/language.service';
+import { BackupService } from './services/backup.service';
 
 // --- INTERFACES & UTILS ---
 import { ParsedPoint, Track, TrackDefinition, Waypoint, Data } from 'src/globald';
@@ -29,7 +28,6 @@ import { useGeographic } from 'ol/proj';
 
 useGeographic();
 
-// Interfaz para unificar las respuestas de los parsers
 interface ParseResult {
   waypoints: Waypoint[];
   trackPoints: ParsedPoint[];
@@ -49,7 +47,6 @@ interface ParseResult {
   ],
 })
 export class AppComponent implements OnDestroy {
-  private appStateListener?: PluginListenerHandle;
   private appUrlListener?: PluginListenerHandle;
 
   constructor(
@@ -60,64 +57,41 @@ export class AppComponent implements OnDestroy {
     public location: LocationManagerService,
     private reference: ReferenceService,
     private translate: TranslateService,
-    private geography: GeographyService,
     private mapService: MapService,
-    private present: PresentService,
-    private appState: AppStateService,
     private language: LanguageService,
     private geoMath: GeoMathService,
-    private fileParser: FileParserService
+    private fileParser: FileParserService,
+    private backupService: BackupService,
+    private loadingCtrl: LoadingController,
+    private alertCtrl: AlertController
   ) {
     this.initializeApp();
   }
 
-  // 1. INITIALIZE APP /////////////////////////////
+  // 1. INITIALIZE APP
   async initializeApp() {
     await this.platform.ready();
-    await this.initStorage();
+    await this.fs.init();
     await this.language.initLanguage();
     this.lockToPortrait();
-    this.setupAppStateListeners();
     this.setupFileListener();
   }
 
   ngOnDestroy() {
-    if (this.appStateListener) this.appStateListener.remove();
     if (this.appUrlListener) this.appUrlListener.remove();
   }
 
-  // 2. LOCK PORTRAIT ///////////////////////////////
   async lockToPortrait() {
     if (this.platform.is('capacitor')) {
       try {
         await ScreenOrientation.lock({ orientation: 'portrait' });
       } catch (err) {
-        console.warn('Orientation lock not supported on this platform/device');
+        console.warn('Orientation lock not supported');
       }
     }
   }
 
-  // 3. INITIALIZE STORAGE ///////////////////////////
-  private async initStorage() {
-    try {
-      await this.fs.init();
-    } catch (err) {
-      console.error('Failed to initialize storage:', err);
-    }
-  }
-
-  // 4. SETUP STATE LISTENER //////////////////////////
-  private setupAppStateListeners() {
-    this.appState.onEnterForeground$.subscribe(() => {
-      this.location.foreground = true;
-    });
-
-    this.appState.onEnterBackground$.subscribe(() => {
-      this.location.foreground = false;
-    });
-  }
-
-  // 5. SETUP FILE LISTENER ///////////////////////////
+  // 2. SETUP FILE LISTENER
   private async setupFileListener() {
     this.appUrlListener = await App.addListener('appUrlOpen', (data: URLOpenListenerEvent) => {
       this.zone.run(async () => {
@@ -130,116 +104,203 @@ export class AppComponent implements OnDestroy {
     });
   }
 
-  // 6. PROCESS URL /////////////////////////////////// 
+  // 3. MAIN PROCESSOR
   async processUrl(data: URLOpenListenerEvent): Promise<Track | null> {
-    if (!data?.url) {
-      this.fs.displayToast(this.translate.instant('MAP.NO_FILE_SELECTED'), 'warning');
-      return null;
-    }
+    console.log('🔔 [DEBUG] processUrl llamado:', data.url);
+
+    if (!data?.url) return null;
 
     try {
       const normalizedPath = decodeURIComponent(data.url);
-      let ext = normalizedPath.split('.').pop()?.toLowerCase() || '';
-      
-      let parsedResult: ParseResult;
+      const webPath = Capacitor.convertFileSrc(normalizedPath);
 
-      // 1. Si es GPX (leemos directamente en UTF-8, la forma más ligera)
-      if (ext === 'gpx') {
-        const fileContent = await Filesystem.readFile({
-          path: normalizedPath,
-          encoding: Encoding.UTF8,
+      // Descargamos el archivo a memoria
+      const response = await fetch(webPath);
+      const fileBlob = await response.blob(); 
+      const urlLower = normalizedPath.toLowerCase();
+
+      // --- A. DETECCIÓN .PASO (BACKUP) ---
+      if (urlLower.endsWith('.paso')) {
+        console.log('📂 Detectado archivo de respaldo .paso');
+        // Extraemos todo como texto (Base64) de forma segura
+        const textContent = await fileBlob.text();
+        await this.handlePasoImport(textContent);
+        return null;
+      }
+
+      // --- B. DETECCIÓN MAPAS (KMZ, GPX, KML) ---
+      let result: ParseResult | null = null;
+
+      if (urlLower.endsWith('.kmz')) {
+        console.log('📦 Procesando KMZ...');
+        // Transformamos el Blob binario del KMZ a Base64 para que tu parseKmz lo entienda
+        const base64Kmz = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(fileBlob);
         });
-        parsedResult = await this.fileParser.parseGpxXml(fileContent.data as string);
-
-      // 2. Si es KMZ o KML (leemos en Base64 porque KMZ es un zip binario)
-      } else if (ext === 'kmz' || ext === 'kml') {
-        const fileContent = await Filesystem.readFile({ path: normalizedPath });
-        parsedResult = await this.parseKmz(fileContent.data as string);
+        result = await this.parseKmz(base64Kmz);
         
-      // 3. Si no hay extensión clara, hacemos un "probe" leyendo como texto
       } else {
-        const probe = await Filesystem.readFile({ 
-          path: normalizedPath,
-          encoding: Encoding.UTF8 
-        });
-        
-        const sample = typeof probe.data === 'string' ? probe.data.substring(0, 100) : '';
-        
-        if (sample.includes('<gpx')) {
-          parsedResult = await this.fileParser.parseGpxXml(probe.data as string);
-        } else if (sample.includes('<kml')) {
-          // Si descubrimos que es KML de texto plano, lo pasamos al parser
-          const xmlDoc = new DOMParser().parseFromString(probe.data as string, 'application/xml');
-          parsedResult = await this.fileParser.parseKmlXml(xmlDoc);
+        // GPX, KML o si es un backup sin extensión
+        const textContent = await fileBlob.text();
+
+        if (textContent.includes('<gpx')) {
+          console.log('📍 Procesando GPX...');
+          result = await this.fileParser.parseGpxXml(textContent);
+        } else if (textContent.includes('<kml')) {
+          console.log('🗺️ Procesando KML...');
+          result = await this.processKmlDocument(textContent);
+        } else if (textContent.startsWith('UEsDB')) {
+          // Backup oculto (sin extensión pero su interior empieza por UEsDB en base64)
+          console.log('📂 Detectado archivo de respaldo enmascarado');
+          await this.handlePasoImport(textContent);
+          return null;
         } else {
           throw new Error('UNSUPPORTED_TYPE');
         }
       }
 
-      const { waypoints, trackPoints, trk } = parsedResult;
+      return result ? await this.finalizeTrack(result) : null;
 
-      if (!trackPoints || trackPoints.length === 0 || !trk) {
-        this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'), 'warning');
-        return null;
-      }
-
-      const track = await this.computeTrackStats(trackPoints, waypoints, trk);
-      await this.saveTrack(track);
-      
-      this.reference.archivedTrack = track;   
-      await this.location.sendReferenceToPlugin();
-      this.reference.foundRoute = false;
-      this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'), 'success');
-      
-      return track;
-
-    } catch (error: unknown) {
-      console.error('Import failed:', error);
-      const message = error instanceof Error ? error.message : '';
-      const translationKey = message === 'UNSUPPORTED_TYPE' 
-        ? 'MAP.ERROR_UNSUPPORTED' 
-        : 'MAP.ERROR_IMPORT';
-      this.fs.displayToast(this.translate.instant(translationKey), 'error');
+    } catch (error) {
+      console.error('❌ Error en processUrl:', error);
+      if (this.showImportError) this.showImportError(error);
       return null;
     }
   }
 
-  // 8. PARSE KMZ/KML (Optimizado) //////////////////////////
-  async parseKmz(base64Data: string): Promise<ParseResult> {
-    try {
-      const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-      let xmlContent = '';
+  // 4. KML SPECIALIST (Resuelve errores 2345, 193, 211)
+  private async processKmlDocument(xmlString: string): Promise<ParseResult> {
+    const doc: Document = new DOMParser().parseFromString(xmlString, 'application/xml');
+    const root = doc.documentElement;
 
-      if (!base64Data.startsWith('UEsDB')) {
-        // KML plano
-        xmlContent = new TextDecoder('utf-8').decode(byteArray);
-      } else {
-        // KMZ comprimido
-        const zip = await JSZip.loadAsync(byteArray);
-        const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-        
-        if (!kmlFileName) throw new Error('No KML found in KMZ');
-        xmlContent = await zip.files[kmlFileName].async('string');
+    if (!root) throw new Error('UNSUPPORTED_TYPE');
+
+    // Enviamos el Document completo para evitar error de propiedades faltantes
+    return await this.fileParser.parseKmlXml(doc);
+  }
+
+  // 5. BACKUP HANDLER (.PASO) - Versión Definitiva con Fotos
+async handlePasoImport(fileData: Blob | string) {
+    let loading: HTMLIonLoadingElement | null = null;
+
+    try {
+      // 1. Mostramos la alerta de carga bloqueante
+      loading = await this.loadingCtrl.create({ 
+        message: this.translate.instant('SETTINGS.BACKUP_RESTORING'),
+        spinner: 'crescent'
+      });
+      await loading.present();
+
+      // 2. Usamos el BackupService para procesar el ZIP
+      const backupData = await this.backupService.importPasoFile(fileData); 
+
+      if (!backupData) {
+        throw new Error('IMPORT_FAILED');
       }
 
-      const xmlDoc = new DOMParser().parseFromString(xmlContent, 'application/xml');
-      // Asumimos que parseKmlXml devuelve ParseResult
-      return await this.fileParser.parseKmlXml(xmlDoc);
+      // 3. Restaurar la Colección (Índice de rutas)
+      if (backupData.collection) {
+        console.log('📚 Restaurando colección...');
+        this.fs.collection = backupData.collection;
+        await this.fs.storeSet('collection', this.fs.collection);
+      }
 
+      // 4. Restaurar Tracks individuales
+      const keys = Object.keys(backupData);
+      console.log('✅ Elementos a restaurar:', keys.length);
+
+      for (const key of keys) {
+        if (key !== 'collection' && key !== 'settings') {
+          console.log(`💾 Restaurando track: ${key}`);
+          await this.fs.storeSet(key, backupData[key]);
+        }
+      }
+
+      // 5. Éxito: Cerramos el loading, avisamos (toast) y recargamos
+      if (loading) await loading.dismiss();
+      this.fs.displayToast(this.translate.instant('BACKUP.RESTORE_SUCCESS'), 'success');
+      
+      setTimeout(() => {
+        // location.replace reinicia la app pero forzándola a ir a la ruta principal
+        window.location.replace('/'); 
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('[AppComponent] Error en restauración:', error);
+      
+      // Asegurarnos de cerrar el loading también si hay error
+      if (loading) await loading.dismiss();
+      
+      // ❌ Alerta bloqueante de error en lugar de Toast
+      const alert = await this.alertCtrl.create({
+        header: this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'), // O el título que prefieras
+        message: this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'),
+        buttons: ['OK'],
+        cssClass: 'glass-island-alert'
+      });
+      await alert.present();
+    }
+  }
+
+  // 6. TRACK FINALIZER
+  private async finalizeTrack(result: ParseResult): Promise<Track | null> {
+    const { waypoints, trackPoints, trk } = result;
+    if (!trackPoints?.length || !trk) {
+      this.fs.displayToast(this.translate.instant('MAP.NO_TRACK_FOUND'), 'warning');
+      return null;
+    }
+
+    const track = await this.computeTrackStats(trackPoints, waypoints, trk);
+    await this.saveTrack(track);
+    
+    this.reference.archivedTrack = track;   
+    await this.location.sendReferenceToPlugin();
+    this.reference.foundRoute = false;
+    
+    this.fs.displayToast(this.translate.instant('MAP.IMPORTED_TRACK'), 'success');
+    return track;
+  }
+
+  // 7. KMZ PARSER
+  async parseKmz(base64Data: string): Promise<ParseResult> {
+    try {
+      const zip = await JSZip.loadAsync(base64Data, { base64: true });
+      const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
+      
+      if (!kmlFile) throw new Error('No KML in KMZ');
+      
+      const xmlContent = await zip.files[kmlFile].async('string');
+      const xmlDoc = new DOMParser().parseFromString(xmlContent, 'application/xml');
+      
+      return await this.fileParser.parseKmlXml(xmlDoc);
     } catch (error) {
-      console.error('KMZ Parsing Error:', error);
+      console.error('KMZ Error:', error);
       return { waypoints: [], trackPoints: [], trk: null };
     }
   }
 
-  // 9. COMPUTE TRACK STATISTICS //////////////////////
+  // 8. HELPERS
+  private safeAtob(b64: string): string {
+    try { return atob(b64); } catch (e) { return ''; }
+  }
+
+  private showImportError(error: any): void {
+    console.error('❌ Error:', error);
+    const translationKey = (error instanceof Error && error.message === 'UNSUPPORTED_TYPE') 
+      ? 'MAP.ERROR_UNSUPPORTED' 
+      : 'SETTINGS.RESTORE_ERROR_DESC';
+    this.fs.displayToast(this.translate.instant(translationKey), 'error');
+  }
+
+  // 9. STATS & SAVE
   async computeTrackStats(trackPoints: ParsedPoint[], waypoints: Waypoint[], trk: Element): Promise<Track> {
     const name = this.fs.sanitize(trk.querySelector('name')?.textContent || 'Imported Track');
     const desc = this.fs.sanitize(trk.querySelector('cmt, description')?.textContent || '');
 
     let distance = 0;
     let lonMin = Infinity, latMin = Infinity, lonMax = -Infinity, latMax = -Infinity;
-    
     const coords: [number, number][] = [];
     
     const pointData: Data[] = trackPoints.map((p, i) => {
@@ -249,18 +310,12 @@ export class AppComponent implements OnDestroy {
       if (p.lat > latMax) latMax = p.lat;
       
       coords.push([p.lon, p.lat]);
-      
       if (i > 0) {
         distance += this.geoMath.quickDistance(trackPoints[i-1].lon, trackPoints[i-1].lat, p.lon, p.lat);
       }
-
       return {
-        altitude: p.ele ?? 0,
-        speed: 0,
-        time: p.time || 0,
-        compSpeed: 0,
-        compAltitude: p.ele ?? 0,
-        distance: distance
+        altitude: p.ele ?? 0, speed: 0, time: p.time || 0,
+        compSpeed: 0, compAltitude: p.ele ?? 0, distance: distance
       };
     });
 
@@ -269,50 +324,37 @@ export class AppComponent implements OnDestroy {
       features: [{
         type: 'Feature',
         properties: {
-          name: name,
-          place: '', 
-          date: new Date(pointData[pointData.length - 1]?.time || Date.now()),
+          name,
+          place: '', // <--- 🛠️ AÑADE ESTA LÍNEA PARA ARREGLAR EL ERROR 2741
           description: desc,
+          date: new Date(pointData[pointData.length - 1]?.time || Date.now()),
           totalDistance: distance,
           totalElevationGain: 0,
           totalElevationLoss: 0,
           totalTime: 0,
-          inMotion: 0, 
+          inMotion: 0,
           totalNumber: pointData.length,
-          currentAltitude: undefined, 
+          currentAltitude: undefined,
           currentSpeed: undefined      
         },
-        geometry: {
-          type: 'LineString',
-          coordinates: coords,
-          properties: { data: pointData }
-        },
+        geometry: { type: 'LineString', coordinates: coords, properties: { data: pointData } },
         bbox: [lonMin, latMin, lonMax, latMax],
         waypoints: waypoints
       }]
     };
 
-    if (pointData.length > 1) {
-      await this.geoMath.filterSpeedAndAltitude(track, 0);
-    }
-
+    if (pointData.length > 1) await this.geoMath.filterSpeedAndAltitude(track, 0);
     return track;
   }
 
-  // 11. SAVE TRACK //////////////////////////////////////////////////
   async saveTrack(track: Track) {
     if (!track?.features?.[0]) return;
-
     const props = track.features[0].properties;
     const trackDate = props.date instanceof Date ? props.date : new Date(props.date || Date.now());
     const dateKey = trackDate.toISOString();
 
-    const existing = await this.fs.storeGet(dateKey);
-    if (existing) return;
-
     try {
       await this.fs.storeSet(dateKey, track);
-      
       const trackDef: TrackDefinition = {
         name: props.name || 'Imported Track',
         date: trackDate,
@@ -320,13 +362,11 @@ export class AppComponent implements OnDestroy {
         description: props.description || '',
         isChecked: true
       };
-
       this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
-      
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
     } catch (e) {
-      console.error("Error saving track to storage", e);
+      console.error("Error saving track", e);
     }
   }
 }
