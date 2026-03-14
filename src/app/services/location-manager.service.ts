@@ -114,7 +114,7 @@ export class LocationManagerService {
     this.latestLocationSubject.next(raw);
     return true;
   }
-  
+
   /**
    * Intenta obtener la posición actual de forma síncrona/esperando un instante.
    */
@@ -154,7 +154,7 @@ export class LocationManagerService {
       compSpeed: location.speed,
       compAltitude: location.altitude,
       distance: 0,
-      geoidApplied: true, 
+      geoidApplied: location.isMSL ? true : false,
       isMSL: location.isMSL || false
     });
     

@@ -69,12 +69,14 @@ export class GeoMathService {
       props.totalTime = 0;
 
       const firstPoint = data[0];
-      
+      console.log(`[GeoMath] Punto CERO -> Alt original: ${firstPoint.altitude}, geoidApplied: ${firstPoint.geoidApplied}, isMSL: ${firstPoint.isMSL}`);
+
       // Verificamos si la corrección ya la hizo el SO (isMSL) o LocationManager (geoidApplied)
-      if (!firstPoint.geoidApplied && !firstPoint.isMSL) {
+      if (firstPoint.geoidApplied === false || firstPoint.isMSL === false) {
         const lon = coords[0][0];
         const lat = coords[0][1];
         firstPoint.altitude = this.geoidService.getCorrectedAltitude(lat, lon, firstPoint.altitude);
+        console.log(`[GeoMath] Punto CERO -> Se ha aplicado corrección. Nueva Alt: ${firstPoint.altitude}`);
       }
       // Lo marcamos siempre como true para que si se repasa el array, no se vuelva a calcular
       firstPoint.geoidApplied = true;
@@ -108,6 +110,7 @@ export class GeoMathService {
       if (!curr.geoidApplied && !curr.isMSL) {
         const lon = coords[i][0];
         const lat = coords[i][1];
+        console.log(`[GeoMath] Punto ${i} -> Corrigiendo altitud. Original: ${curr.altitude}, geoidApplied: ${curr.geoidApplied}`);
         curr.altitude = this.geoidService.getCorrectedAltitude(lat, lon, curr.altitude);
       }
       curr.geoidApplied = true;
