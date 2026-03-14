@@ -10,6 +10,7 @@ export interface Location {
   simulated: boolean;
   speed: number;
   time: number;
+  isMSL?: boolean;
 }
 
 // Nueva interfaz para el estado de la ruta

@@ -3,6 +3,7 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { filter, timeout } from 'rxjs/operators';
 import { PopoverController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
+import { GeoidService } from './geoid.service';
 
 // --- PLUGIN & INTERFACES ---
 import MyService, { Location } from 'src/plugins/MyServicePlugin';
@@ -71,7 +72,8 @@ export class LocationManagerService {
     private reference: ReferenceService,
     private fs: FunctionsService,
     private translate: TranslateService,
-    private popoverController: PopoverController
+    private popoverController: PopoverController,
+    private geoidService: GeoidService
   ) { }
 
   // ==========================================================================
@@ -82,7 +84,6 @@ export class LocationManagerService {
    * Recibe y evalúa un punto GPS en bruto desde el plugin nativo.
    */
   public processRawLocation(raw: Location): boolean {
-    // 1. Filtros de calidad
     const isBadQuality = (
       raw.accuracy > this.threshold ||
       !raw.altitude || raw.altitude === 0 ||
@@ -92,20 +93,28 @@ export class LocationManagerService {
 
     if (isBadQuality) {
         this.invalidLocationCount++;
-        if (this.invalidLocationCount >= 5) {
-          this.checkAndShowGpsWarning();
-        }
         return false;
     }
 
-    // 2. Lógica si la lectura es buena
+    // --- CHIVATO DE DEPURACIÓN ---
+    const altOriginal = raw.altitude;
+    let origenDato = raw.isMSL ? "🤖 NATIVO ANDROID 15" : "🔴 ELIPSOIDE CRUDO";
+
+    if (!raw.isMSL && this.foreground) {
+      raw.altitude = this.geoidService.getCorrectedAltitude(raw.latitude, raw.longitude, raw.altitude);
+      origenDato = "🧮 CORREGIDO POR TS (10 Grados)";
+      raw.isMSL = true; 
+    }
+
+    // Imprimimos por consola de Chrome Inspect exactamente qué pasa
+    console.log(`📍 GPS: ${origenDato} | Alt Original: ${altOriginal.toFixed(2)}m -> Alt Final: ${raw.altitude.toFixed(2)}m | Precisión GPS: ${raw.accuracy.toFixed(1)}m`);
+    // -----------------------------
+
     this.invalidLocationCount = 0;
     this.latestLocationSubject.next(raw);
-    console.log('[LocationManager] new accepted location:', raw);
-
     return true;
   }
-
+  
   /**
    * Intenta obtener la posición actual de forma síncrona/esperando un instante.
    */
@@ -144,7 +153,9 @@ export class LocationManagerService {
       time: location.time,
       compSpeed: location.speed,
       compAltitude: location.altitude,
-      distance: 0
+      distance: 0,
+      geoidApplied: true, 
+      isMSL: location.isMSL || false
     });
     
     // Add coordinates

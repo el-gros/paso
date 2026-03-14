@@ -130,12 +130,19 @@ class PasoService : Service() {
             return 
         }
 
+        val bestAltitude = if (Build.VERSION.SDK_INT >= 34 && loc.hasMslAltitude()) {
+            loc.mslAltitudeMeters
+        } else {
+            loc.altitude
+        }
+        
         // 1. Convertimos la coordenada a JSON usando el tiempo real del GPS (loc.time)
         val jsonPoint = JSONObject().apply {
             put("share_token", shareToken)
             put("owner_user_id", deviceId)
             put("lat", loc.latitude)
             put("lon", loc.longitude)
+            put("alt", bestAltitude)
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
             sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
             put("updated_at", sdf.format(java.util.Date(loc.time)))

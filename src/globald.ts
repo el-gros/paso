@@ -5,6 +5,8 @@ export interface Data {
   compSpeed: number,
   compAltitude: number  
   distance: number,
+  geoidApplied?: boolean;
+  isMSL?: boolean;
 }
 
 export interface Waypoint {

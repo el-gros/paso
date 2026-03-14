@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Track, Data, Bounds, PartialSpeed } from 'src/globald';
+import { GeoidService } from './geoid.service';
 
 const DEG_TO_RAD = Math.PI / 180;
 const EARTH_RADIUS_KM = 6371;
@@ -20,7 +21,9 @@ export class GeoMathService {
   private k_p = 1.0; 
   private k_v = 0.0; 
 
-  constructor() {}
+  constructor(
+        private geoidService: GeoidService
+  ) {}
 
   // ==========================================================================
   // 1. FILTRADO Y SUAVIZADO (Kalman & Altitud)
@@ -34,10 +37,20 @@ export class GeoMathService {
     return this.k_v;
   }
 
+  /**
+   * Filtra velocidad y altitud, aplica corrección del geoide y calcula desniveles.
+   * @param track El objeto Track a procesar
+   * @param initial Índice desde el cual empezar el filtrado
+   */
+  /**
+   * Filtra velocidad y altitud, aplica corrección del geoide y calcula desniveles.
+   */
   async filterSpeedAndAltitude(track: Track, initial: number): Promise<Track> {
     const feature = track.features[0];
     if (!feature || !feature.geometry || !feature.geometry.properties) return track;
 
+    // Obtenemos las coordenadas para sacar Lat/Lng reales
+    const coords = feature.geometry.coordinates;
     const data = feature.geometry.properties.data;
     const props = feature.properties;
     const num = data.length;
@@ -46,24 +59,39 @@ export class GeoMathService {
     const ALT_SMOOTHING = 0.15;   
     const VERTICAL_THRESHOLD = 3.0; 
 
-    if (initial === 0) {
+    // --- 1. PROCESAMIENTO DEL PUNTO INICIAL ---
+    if (initial === 0 && num > 0) {
       this.k_p = 1.0; 
       this.k_v = 0;
       props.inMotion = 0;
       props.totalElevationGain = 0;
       props.totalElevationLoss = 0;
       props.totalTime = 0;
-      data[0].compAltitude = data[0].altitude;
-      data[0].compSpeed = 0;
-      this.lastStableAlt = data[0].altitude; 
+
+      const firstPoint = data[0];
+      
+      // Verificamos si la corrección ya la hizo el SO (isMSL) o LocationManager (geoidApplied)
+      if (!firstPoint.geoidApplied && !firstPoint.isMSL) {
+        const lon = coords[0][0];
+        const lat = coords[0][1];
+        firstPoint.altitude = this.geoidService.getCorrectedAltitude(lat, lon, firstPoint.altitude);
+      }
+      // Lo marcamos siempre como true para que si se repasa el array, no se vuelva a calcular
+      firstPoint.geoidApplied = true;
+
+      firstPoint.compAltitude = firstPoint.altitude;
+      firstPoint.compSpeed = 0;
+      this.lastStableAlt = firstPoint.altitude; 
     }
 
     const startIndex = initial === 0 ? 1 : initial + 1;
 
+    // --- 2. BUCLE DE PROCESAMIENTO DE PUNTOS ---
     for (let i = startIndex; i < num; i++) {
       const prev = data[i - 1];
       const curr = data[i];
 
+      // A) Cálculo de Velocidad y Tiempo
       const distDelta = curr.distance - prev.distance;
       const timeDelta = curr.time - prev.time;
       const rawSpeed = timeDelta > 0 ? (3600000 * distDelta) / timeDelta : 0;
@@ -75,13 +103,25 @@ export class GeoMathService {
         props.inMotion += timeDelta;
       }
 
+      // B) Corrección del Geoide
+      // Solo aplicamos la matemática si no viene corregido nativamente ni se procesó en foreground
+      if (!curr.geoidApplied && !curr.isMSL) {
+        const lon = coords[i][0];
+        const lat = coords[i][1];
+        curr.altitude = this.geoidService.getCorrectedAltitude(lat, lon, curr.altitude);
+      }
+      curr.geoidApplied = true;
+
+      // C) Suavizado de Altitud
+      curr.compAltitude = prev.compAltitude + ALT_SMOOTHING * (curr.altitude - prev.compAltitude);
+      
       if (i < 5) {
          this.lastStableAlt = curr.compAltitude;
          props.totalElevationGain = 0;
          props.totalElevationLoss = 0;
       }
 
-      curr.compAltitude = prev.compAltitude + ALT_SMOOTHING * (curr.altitude - prev.compAltitude);
+      // D) Cálculo de Desniveles
       const verticalDiff = curr.compAltitude - this.lastStableAlt;
 
       if (Math.abs(verticalDiff) >= VERTICAL_THRESHOLD) {
@@ -94,11 +134,14 @@ export class GeoMathService {
       }
     }
 
-    props.currentSpeed = data[num - 1].compSpeed;
-    props.currentAltitude = data[num - 1].compAltitude;
+    // --- 3. ACTUALIZACIÓN DE PROPIEDADES FINALES ---
+    const lastPoint = data[num - 1];
+    props.currentSpeed = lastPoint.compSpeed;
+    props.currentAltitude = lastPoint.compAltitude;
 
     const hoursTotal = props.totalTime / 3600000;
     const hoursInMotion = props.inMotion / 3600000;
+    
     this.averageSpeed = hoursTotal > 0 ? (props.totalDistance / hoursTotal) : 0;
     this.averageMotionSpeed = hoursInMotion > 0 ? (props.totalDistance / hoursInMotion) : 0;
 
@@ -279,4 +322,6 @@ export class GeoMathService {
 
     return { newCoordinates, newProperties };
   }
+
+
 }
