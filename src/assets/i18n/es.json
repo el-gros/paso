@@ -81,7 +81,6 @@
     "REMOVEMAP": "El mapa ha sido eliminado",
     "FAILED_REMOVEMAP": "Error al eliminar el mapa",
     "FAILED_UPLOADMAP": "Error al descargar el mapa",
-    "REMOVE_MAP": "Eliminar mapas",
     "MAP_UPDATED": "Proveedor de mapa actualizado",
     "OFFLINE_MAPS": "Mapas Offline",
     "DOWNLOADED": "Descargado",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "Archivo inválido",
     "INVALID_FILE_DESC": "El archivo no es una copia de seguridad válida.",
     "RESTORE_ERROR_DESC": "No se pudo procesar el archivo seleccionado.",
-    "RESTORE_ERROR_TITLE": "Error de restauración"
+    "RESTORE_ERROR_TITLE": "Error de restauración",
+    "OFFLINE_MAPS_GROUP": "Mapas sin conexión",
+    "DOWNLOADING": "Descargando",
+    "DOWNLOAD_MAP": "Descargar mapa",
+    "SELECT": "Seleccionar",
+    "REMOVE_MAP": "Eliminar mapa",
+    "ALL_MAPS_DOWNLOADED": "Todos los mapas están descargados"
   },
   "CANVAS": {
     "TRACK": "Trayecto",

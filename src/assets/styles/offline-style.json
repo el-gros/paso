@@ -1,0 +1,29 @@
+{
+  "version": 8,
+  "name": "Mi Mapa Offline Global",
+  "sources": {
+    "cataluna": {
+      "type": "vector",
+      "tiles": [
+        "mbtiles://cataluna-shortbread-1.0.mbtiles/{z}/{x}/{y}"
+      ],
+      "minzoom": 0,
+      "maxzoom": 14
+    },
+    "aragon": {
+      "type": "vector",
+      "tiles": [
+        "mbtiles://aragon-shortbread-1.0.mbtiles/{z}/{x}/{y}"
+      ],
+      "minzoom": 0,
+      "maxzoom": 14
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#f8f4f0" }
+    }
+  ]
+}

@@ -81,7 +81,6 @@
     "REMOVEMAP": "Карта удалена",
     "FAILED_REMOVEMAP": "Ошибка при удалении карты",
     "FAILED_UPLOADMAP": "Ошибка при скачивании карты",
-    "REMOVE_MAP": "Удалить карты",
     "MAP_UPDATED": "Картографический сервис обновлен",
     "OFFLINE_MAPS": "Офлайн-карты",
     "DOWNLOADED": "Скачано",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "Неверный файл",
     "INVALID_FILE_DESC": "Файл не является действительной резервной копией.",
     "RESTORE_ERROR_DESC": "Не удалось обработать выбранный файл.",
-    "RESTORE_ERROR_TITLE": "Ошибка восстановления"
+    "RESTORE_ERROR_TITLE": "Ошибка восстановления",
+    "OFFLINE_MAPS_GROUP": "Офлайн-карты",
+    "DOWNLOADING": "Загрузка",
+    "DOWNLOAD_MAP": "Скачать карту",
+    "SELECT": "Выбрать",
+    "REMOVE_MAP": "Удалить карту",
+    "ALL_MAPS_DOWNLOADED": "Все карты загружены"
   },
   "CANVAS": {
     "TRACK": "Трек",

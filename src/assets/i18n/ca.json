@@ -81,7 +81,6 @@
     "REMOVEMAP": "S'ha eliminat el mapa",
     "FAILED_REMOVEMAP": "Error en eliminar el mapa",
     "FAILED_UPLOADMAP": "Error en descarregar el mapa",
-    "REMOVE_MAP": "Eliminar mapes",
     "MAP_UPDATED": "Proveïdor de mapa actualitzat",
     "OFFLINE_MAPS": "Mapes Offline",
     "DOWNLOADED": "Descarregat",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "Fitxer invàlid",
     "INVALID_FILE_DESC": "El fitxer no és una còpia de seguretat vàlida.",
     "RESTORE_ERROR_DESC": "No s'ha pogut processar el fitxer seleccionat.",
-    "RESTORE_ERROR_TITLE": "Error de restauració"
+    "RESTORE_ERROR_TITLE": "Error de restauració",
+    "OFFLINE_MAPS_GROUP": "Mapes sense connexió",
+    "DOWNLOADING": "Descarregant",
+    "DOWNLOAD_MAP": "Descarregar mapa",
+    "SELECT": "Seleccionar",
+    "REMOVE_MAP": "Eliminar mapa",
+    "ALL_MAPS_DOWNLOADED": "Tots els mapes estan descarregats"
   },
   "CANVAS": {
     "TRACK": "Trajecte",

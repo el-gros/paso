@@ -81,7 +81,6 @@
     "REMOVEMAP": "La carte a été supprimée",
     "FAILED_REMOVEMAP": "Erreur lors de la suppression de la carte",
     "FAILED_UPLOADMAP": "Erreur lors du téléchargement de la carte",
-    "REMOVE_MAP": "Supprimer des cartes",
     "MAP_UPDATED": "Fournisseur de carte mis à jour",
     "OFFLINE_MAPS": "Cartes hors ligne",
     "DOWNLOADED": "Téléchargé",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "Fichier invalide",
     "INVALID_FILE_DESC": "Le fichier n'est pas une sauvegarde valide.",
     "RESTORE_ERROR_DESC": "Impossible de traiter le fichier sélectionné.",
-    "RESTORE_ERROR_TITLE": "Erreur de restauration"
+    "RESTORE_ERROR_TITLE": "Erreur de restauration",
+    "OFFLINE_MAPS_GROUP": "Cartes hors ligne",
+    "DOWNLOADING": "Téléchargement en cours",
+    "DOWNLOAD_MAP": "Télécharger la carte",
+    "SELECT": "Sélectionner",
+    "REMOVE_MAP": "Supprimer la carte",
+    "ALL_MAPS_DOWNLOADED": "Toutes les cartes sont téléchargées"
   },
   "CANVAS": {
     "TRACK": "Trajet",

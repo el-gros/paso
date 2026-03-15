@@ -12,14 +12,14 @@ import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 // --- SERVICES ---
 import { FunctionsService } from './services/functions.service';
 import { GeoMathService } from './services/geo-math.service';
-import { GeographyService } from './services/geography.service';
 import { LocationManagerService } from './services/location-manager.service';
 import { ReferenceService } from './services/reference.service';
-import { AppStateService } from './services/appState.service';
 import { MapService } from './services/map.service';
 import { FileParserService } from './services/file-parser.service';
 import { LanguageService } from './services/language.service';
 import { BackupService } from './services/backup.service';
+import { MbTilesService } from './services/mbtiles.service';
+import { ServerService } from './services/server.service';
 
 // --- INTERFACES & UTILS ---
 import { ParsedPoint, Track, TrackDefinition, Waypoint, Data } from 'src/globald';
@@ -52,7 +52,6 @@ export class AppComponent implements OnDestroy {
   constructor(
     private platform: Platform,
     private zone: NgZone,
-    private cd: ChangeDetectorRef,
     public fs: FunctionsService,
     public location: LocationManagerService,
     private reference: ReferenceService,
@@ -63,7 +62,9 @@ export class AppComponent implements OnDestroy {
     private fileParser: FileParserService,
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private mbTilesService: MbTilesService,
+    private server: ServerService
   ) {
     this.initializeApp();
   }
@@ -73,6 +74,7 @@ export class AppComponent implements OnDestroy {
     await this.platform.ready();
     await this.fs.init();
     await this.language.initLanguage();
+    await this.initPhysicalOfflineMaps();
     this.lockToPortrait();
     this.setupFileListener();
   }
@@ -369,4 +371,40 @@ async handlePasoImport(fileData: Blob | string) {
       console.error("Error saving track", e);
     }
   }
+
+  // --- INICIALIZADOR DE MAPAS OFFLINE ---
+  private async initPhysicalOfflineMaps() {
+    try {
+      // 1. Inicializamos el plugin nativo de SQLite
+      await this.mbTilesService.initializePlugin();
+
+      // 2. Buscamos qué archivos hay físicamente en la carpeta Data de la app
+      const filesInDataDirectory = await this.server.listFilesInDataDirectory();
+
+      // 3. Filtramos solo los que sean bases de datos .mbtiles
+      const downloadedMaps = filesInDataDirectory.filter(file => file.endsWith('.mbtiles'));
+
+      if (downloadedMaps.length === 0) {
+        console.log('🗺️ No hay mapas offline descargados en el dispositivo.');
+        return;
+      }
+
+      console.log(`🗺️ Preparando ${downloadedMaps.length} mapa(s) offline...`);
+
+      // 4. Los abrimos todos de golpe para que el MbTilesService los guarde en su Map<string, SQLiteDBConnection>
+      for (const fileName of downloadedMaps) {
+        // Ejecutamos el open de tu servicio, el cual ya se encarga de guardar la conexión en this.dbs
+        const success = await this.mbTilesService.open(fileName);
+        if (success) {
+          console.log(`✅ Mapa offline listo y en caché: ${fileName}`);
+        } else {
+          console.warn(`⚠️ Error al pre-cargar el mapa offline: ${fileName}`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error crítico inicializando los mapas offline físicos:', error);
+    }
+  }
+  
 }

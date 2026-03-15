@@ -81,7 +81,6 @@
     "REMOVEMAP": "地图已删除",
     "FAILED_REMOVEMAP": "删除地图失败",
     "FAILED_UPLOADMAP": "下载地图时出错",
-    "REMOVE_MAP": "移除地图",
     "MAP_UPDATED": "地图提供商已更新",
     "OFFLINE_MAPS": "离线地图",
     "DOWNLOADED": "已下载",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "无效文件",
     "INVALID_FILE_DESC": "该文件不是有效的备份文件。",
     "RESTORE_ERROR_DESC": "无法处理所选文件。",
-    "RESTORE_ERROR_TITLE": "恢复错误"
+    "RESTORE_ERROR_TITLE": "恢复错误",
+    "OFFLINE_MAPS_GROUP": "离线地图",
+    "DOWNLOADING": "正在下载",
+    "DOWNLOAD_MAP": "下载地图",
+    "SELECT": "选择",
+    "REMOVE_MAP": "删除地图",
+    "ALL_MAPS_DOWNLOADED": "所有地图已下载"
   },
   "CANVAS": {
     "TRACK": "轨迹",

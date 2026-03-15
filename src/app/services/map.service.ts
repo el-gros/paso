@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
+import maplibregl from 'maplibre-gl';
+import { MapLibreLayer } from '@geoblocks/ol-maplibre-layer';
 
 // --- OPENLAYERS IMPORTS ---
 import Map from 'ol/Map';
@@ -77,8 +79,30 @@ export class MapService {
     private sharing: LocationSharingService,
     private locationManager: LocationManagerService,
     private locationSharingService: LocationSharingService,
-    private mbTiles: MbTilesService
-  ) { }
+    private mbTiles: MbTilesService,
+  ) {
+    // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
+    maplibregl.addProtocol('mbtiles', async (params, abortController) => {
+      // params.url tendrá este formato: "mbtiles://cataluna-shortbread-1.0.mbtiles/14/8200/6100"
+      const urlParts = params.url.replace('mbtiles://', '').split('/');
+      
+      const fileName = urlParts[0]; 
+      const z = parseInt(urlParts[1], 10);
+      const x = parseInt(urlParts[2], 10);
+      const y = parseInt(urlParts[3], 10);
+
+      // Pedimos el buffer al servicio SQLite
+      const buffer = await this.mbTiles.getVectorTile(fileName, z, x, y);
+
+      if (buffer) {
+        // La nueva API requiere devolver un objeto con la propiedad 'data'
+        return { data: buffer };
+      } else {
+        // Si no hay datos (ej. el mar), lanzamos un error que MapLibre atrapará en silencio
+        throw new Error('Tile not found');
+      }
+    });
+  }
 
   // 1. CENTER ALL TRACKS ///////////////////////////////////
   async centerAllTracks(): Promise<void> {
@@ -220,18 +244,7 @@ export class MapService {
           })
         });
         break;
-      case 'catalonia': {
-        await this.mbTiles.open('catalonia.mbtiles');
-        const sourceResult = await this.createSource(this.mbTiles);
-        if (sourceResult) {
-            olLayer = new VectorTileLayer({
-                source: sourceResult,
-                style: this.stylerService.styleFunction
-            });
-        }
-        break;
-      }
-      case 'MapTiler_v_outdoor':
+      case 'MapTiler_v_outdoor': {
         credits = '© MapTiler © OpenStreetMap contributors';
         const vtLayer = new VectorTileLayer({
           source: new VectorTileSource({
@@ -243,10 +256,23 @@ export class MapService {
         await applyStyle(vtLayer, `https://api.maptiler.com/maps/outdoor/style.json?key=${global.mapTilerKey}`);
         olLayer = vtLayer;
         break;
-      default:
-        credits = '© OpenStreetMap contributors';
-        olLayer = new TileLayer({ source: new OSM() });
+      }
+      
+      // 🔥 CUALQUIER OTRO CASO: Se asume que es un mapa Offline (ej. 'cataluna-shortbread-1.0')
+      default: {
+        // Si no es un mapa online conocido, cargamos la capa hiper-rápida de MapLibre
+        credits = 'Mapas Offline © OpenStreetMap contributors';
+        
+        olLayer = new MapLibreLayer({
+          mapLibreOptions: { // <--- AQUÍ ESTÁ EL CAMBIO (L mayúscula)
+            // Aquí es donde definiremos los colores y conectaremos los archivos .mbtiles
+            style: 'assets/styles/offline-style.json'
+          }
+        });
+        break;
+      }
     }
+    
     return { olLayer, credits };
   }
 
@@ -412,4 +438,5 @@ export class MapService {
     this.geography.map?.render();
     this.fs.reDraw = false;
   }
-}
+
+  }

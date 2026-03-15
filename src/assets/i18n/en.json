@@ -81,7 +81,6 @@
     "REMOVEMAP": "Map has been deleted",
     "FAILED_REMOVEMAP": "Error deleting map",
     "FAILED_UPLOADMAP": "Error downloading map",
-    "REMOVE_MAP": "Delete maps",
     "MAP_UPDATED": "Map provider updated",
     "OFFLINE_MAPS": "Offline Maps",
     "DOWNLOADED": "Downloaded",
@@ -102,7 +101,13 @@
     "INVALID_FILE_TITLE": "Invalid file",
     "INVALID_FILE_DESC": "The file is not a valid backup.",
     "RESTORE_ERROR_DESC": "Could not process the selected file.",
-    "RESTORE_ERROR_TITLE": "Restoration Error"
+    "RESTORE_ERROR_TITLE": "Restoration Error",
+    "OFFLINE_MAPS_GROUP": "Offline Maps",
+    "DOWNLOADING": "Downloading",
+    "DOWNLOAD_MAP": "Download map",
+    "SELECT": "Select",
+    "REMOVE_MAP": "Remove map",
+    "ALL_MAPS_DOWNLOADED": "All maps are downloaded"
   },
   "CANVAS": {
     "TRACK": "Track",
