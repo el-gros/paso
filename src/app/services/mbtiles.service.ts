@@ -93,12 +93,24 @@ export class MbTilesService {
       y = arg3;
     }
 
-    const db = this.dbs.get(mbtilesFile);
+    let db = this.dbs.get(mbtilesFile);
     
+    // 🚀 EL ARREGLO: Lazy Loading (Apertura al vuelo)
     if (!db) {
-      console.error(`❌ Database connection for ${mbtilesFile} is not open.`);
-      return null;
+      console.warn(`⚠️ La base de datos no estaba lista. Abriendo al vuelo: ${mbtilesFile}`);
+      const success = await this.open(mbtilesFile);
+      
+      if (!success) {
+        console.error(`❌ Imposible abrir el archivo ${mbtilesFile}. ¿Seguro que está descargado?`);
+        return null; // Salimos si realmente el archivo no existe físicamente
+      }
+      
+      // Si tuvo éxito, lo recuperamos del diccionario
+      db = this.dbs.get(mbtilesFile);
     }
+    
+    // 🛡️ Doble comprobación de seguridad para contentar a TypeScript
+    if (!db) return null;
 
     const tmsY = Math.pow(2, zoom) - 1 - y;
 
@@ -130,5 +142,26 @@ export class MbTilesService {
     }
     
     return null;
+  }
+
+  getOpenedFiles(): string[] {
+    // Retorna los nombres de los archivos que están en el Map de dbs
+    return Array.from(this.dbs.keys());
+  }
+
+  async close(mbtilesFile: string): Promise<boolean> {
+    const db = this.dbs.get(mbtilesFile);
+    
+    if (!db) return true; // Si no estaba en memoria, no hay nada que cerrar
+
+    try {
+      await db.close();
+      this.dbs.delete(mbtilesFile);
+      console.log(`🔒 MBTiles cerrado y liberado: ${mbtilesFile}`);
+      return true;
+    } catch (err) {
+      console.error(`[MbTilesService] Error cerrando MBTiles ${mbtilesFile}:`, err);
+      return false;
+    }
   }
 }

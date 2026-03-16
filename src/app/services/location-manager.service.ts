@@ -107,7 +107,7 @@ export class LocationManagerService {
     }
 
     // Imprimimos por consola de Chrome Inspect exactamente qué pasa
-    console.log(`📍 GPS: ${origenDato} | Alt Original: ${altOriginal.toFixed(2)}m -> Alt Final: ${raw.altitude.toFixed(2)}m | Precisión GPS: ${raw.accuracy.toFixed(1)}m`);
+    //console.log(`📍 GPS: ${origenDato} | Alt Original: ${altOriginal.toFixed(2)}m -> Alt Final: ${raw.altitude.toFixed(2)}m | Precisión GPS: ${raw.accuracy.toFixed(1)}m`);
     // -----------------------------
 
     this.invalidLocationCount = 0;

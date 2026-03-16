@@ -66,6 +66,9 @@ export class MapService {
   public shareStopped$ = new Subject<void>();
   public pendingTrack$ = new BehaviorSubject<Track | null>(null);
 
+  private offlineLayer: any = null;
+  private lastStyleHash: string = '';
+
   constructor(
     public fs: FunctionsService,
     private server: ServerService,
@@ -82,24 +85,38 @@ export class MapService {
     private mbTiles: MbTilesService,
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
-    maplibregl.addProtocol('mbtiles', async (params, abortController) => {
-      // params.url tendrá este formato: "mbtiles://cataluna-shortbread-1.0.mbtiles/14/8200/6100"
-      const urlParts = params.url.replace('mbtiles://', '').split('/');
-      
-      const fileName = urlParts[0]; 
-      const z = parseInt(urlParts[1], 10);
-      const x = parseInt(urlParts[2], 10);
-      const y = parseInt(urlParts[3], 10);
 
-      // Pedimos el buffer al servicio SQLite
-      const buffer = await this.mbTiles.getVectorTile(fileName, z, x, y);
+    maplibregl.addProtocol('mbtiles', async (params) => {
+      try {
+        const urlWithoutScheme = params.url.replace('mbtiles://', '');
+        const parts = urlWithoutScheme.split('/');
 
-      if (buffer) {
-        // La nueva API requiere devolver un objeto con la propiedad 'data'
+        // Extraemos las coordenadas desde el final hacia el principio con pop()
+        // Esto es invulnerable a los slashes en los nombres de archivo o rutas
+        const y = parseInt(parts.pop()!, 10);
+        const x = parseInt(parts.pop()!, 10);
+        const z = parseInt(parts.pop()!, 10);
+        
+        // Todo lo que quede en el array es el nombre del archivo/ruta
+        const fileName = parts.join('/');
+
+        // 🚀 Pasamos la 'y' ORIGINAL. Tu MbTilesService ya calcula el TMS internamente.
+        const buffer = await this.mbTiles.getVectorTile(fileName, z, x, y);
+
+        if (!buffer || buffer.byteLength === 0) {
+          return { data: new ArrayBuffer(0) };
+        }
+
+        const uint8 = new Uint8Array(buffer);
+        if (uint8[0] === 0x1f && uint8[1] === 0x8b) {
+          const unzippedData = pako.inflate(uint8);
+          return { data: unzippedData.buffer };
+        }
+
         return { data: buffer };
-      } else {
-        // Si no hay datos (ej. el mar), lanzamos un error que MapLibre atrapará en silencio
-        throw new Error('Tile not found');
+      } catch (e) {
+        console.error(`❌ Error en protocolo para ${params.url}:`, e);
+        return { data: new ArrayBuffer(0) };
       }
     });
   }
@@ -121,50 +138,58 @@ export class MapService {
 
   // 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
-    const mapElement = document.getElementById('map');
-    if (!mapElement) return;
+    const mapConfigs: Record<string, { min: number, max: number, zoom: number }> = {
+      'OSM offline': { min: 0, max: 19, zoom: 8 }, 
+      'default': { min: 0, max: 19, zoom: 7.5 }
+    };
 
-    this.shareControl = new ShareControl(
-      this.locationManager, 
-      this.locationSharingService, 
-      this.translate
-    );
+    const providerKey = this.geography.mapProvider.toLowerCase();
+    // Detectar si es un proveedor offline genérico (si no está en el config, pero es offline)
+    const isOffline = providerKey === 'OSM offline' || !['openstreetmap', 'opentopomap', 'german_osm', 'maptiler', 'icgc', 'ign'].some(p => providerKey.includes(p));
     
+    const config = isOffline ? mapConfigs['OSM offline'] : mapConfigs['default'];
+
+    const { min: minZoom, max: maxZoom, zoom } = config;
+    const defaultCenter: [number, number] = [1.7403, 41.7282];
+    
+    if (!document.getElementById('map')) return;
+
+    // Inicializar controles si no existen
+    if (!this.shareControl) {
+      this.shareControl = new ShareControl(this.locationManager, this.locationSharingService, this.translate);
+    }
+
+    // Asegurar capas vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
     this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
 
+    // Crear o actualizar la capa base (PUNTO 5: Limpieza interna ocurre aquí)
     const result = await this.createMapLayer();
     const olLayer = result.olLayer;
-    
     if (!olLayer) return;
 
-    let minZoom = 0, maxZoom = 19, zoom = 7.5;
-    const defaultCenter: [number, number] = [1.7403, 41.7282];
-
-    if (this.geography.mapProvider.toLowerCase() === 'catalonia') {
-      minZoom = 0; maxZoom = 14; zoom = 8;
-    }
-
     if (this.geography.map) {
+      // Actualización de mapa existente
       const layers = this.geography.map.getLayers();
-      if (layers.getLength() >= 1) {
-        layers.setAt(0, olLayer);
-      }
+      layers.setAt(0, olLayer);
+      
       const view = this.geography.map.getView();
       view.setMinZoom(minZoom);
       view.setMaxZoom(maxZoom);
+      // Opcional: view.setZoom(zoom); 
     } else {
+      // Creación desde cero
       const mapLayers: BaseLayer[] = [
         olLayer,
         this.geography.currentLayer,
         this.geography.archivedLayer,
         this.geography.searchLayer,
         this.geography.locationLayer,
-      ].filter((l): l is BaseLayer => !!l);
+      ].filter(l => !!l);
 
-      const map = new Map({
+      this.geography.map = new Map({
         target: 'map',
         layers: mapLayers,
         view: new View({
@@ -175,52 +200,65 @@ export class MapService {
           multiWorld: false
         }),
         controls: [
-          new ScaleLine({
-            className: 'ol-scale-line vertical-scale',
-            target: 'scale-container', 
-            units: 'metric'
-          }),
+          new ScaleLine({ className: 'ol-scale-line vertical-scale', target: 'scale-container', units: 'metric' }),
           new Rotate()
         ],
       });
 
-      this.geography.map = map;
       this.customControl = new LocationButtonControl(this.trackingService, this.translate);
-      
-      map.addControl(this.customControl);
-      map.addControl(this.shareControl); 
+      this.geography.map.addControl(this.customControl);
+      this.geography.map.addControl(this.shareControl); 
     }
 
     this.mapIsReady = true;
+
+    // Disparar el estilo si es offline
+    if (isOffline) {
+      this.geography.map.once('rendercomplete', () => {
+        setTimeout(() => this.refreshOfflineStyle(), 100);
+      });
+    }
+
     this.mapWrapperElement = document.getElementById('map-wrapper');
   }
 
   // 3. CREATE MAP LAYER //////////////////////////////////
   async createMapLayer(): Promise<{ olLayer: BaseLayer | null, credits: string }> {
+    // --- PUNTO 5: LIMPIEZA SUAVE ---
+    // En lugar de destruir el motor (remove), simplemente reseteamos la referencia.
+    // Esto evita que MapLibre se quede "huérfano" pero no rompe el renderizado actual.
+    if (this.offlineLayer) {
+      this.offlineLayer = null;
+    }
+
     let olLayer: BaseLayer | null = null;
     let credits = '';
-    
-    switch (this.geography.mapProvider) {
+    const provider = this.geography.mapProvider;
+
+    switch (provider) {
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({ source: new OSM() });
         break;
+
       case 'OpenTopoMap':
         credits = '© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)';
         olLayer = new TileLayer({
           source: new XYZ({ url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png' })
         });
         break;
+
       case 'German_OSM':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({
           source: new XYZ({ url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png' })
         });
         break;
+
       case 'MapTiler_streets':
       case 'MapTiler_outdoor':
       case 'MapTiler_hybrid': {
-        const mapType = this.geography.mapProvider.split('_')[1];
+        const mapType = provider.split('_')[1];
         credits = '© MapTiler © OpenStreetMap contributors';
         olLayer = new TileLayer({
           source: new XYZ({
@@ -230,12 +268,14 @@ export class MapService {
         });
         break;
       }
+
       case 'ICGC':
         credits = 'Institut Cartogràfic i Geològic de Catalunya';
         olLayer = new TileLayer({
           source: new XYZ({ url: 'https://tiles.icgc.cat/xyz/mtn1000m/{z}/{x}/{y}.jpeg' })
         });
         break;
+
       case 'IGN':
         credits = 'Instituto Geográfico Nacional (IGN)';
         olLayer = new TileLayer({
@@ -244,6 +284,7 @@ export class MapService {
           })
         });
         break;
+
       case 'MapTiler_v_outdoor': {
         credits = '© MapTiler © OpenStreetMap contributors';
         const vtLayer = new VectorTileLayer({
@@ -257,22 +298,25 @@ export class MapService {
         olLayer = vtLayer;
         break;
       }
-      
-      // 🔥 CUALQUIER OTRO CASO: Se asume que es un mapa Offline (ej. 'cataluna-shortbread-1.0')
+
+      // 🔥 CASO OFFLINE (Recuperamos la lógica simple que te funcionaba)
+      case 'OSM offline':
       default: {
-        // Si no es un mapa online conocido, cargamos la capa hiper-rápida de MapLibre
-        credits = 'Mapas Offline © OpenStreetMap contributors';
+        credits = 'Offline Maps Data';
+        const dynamicStyle = this.generateDynamicStyle();
         
-        olLayer = new MapLibreLayer({
-          mapLibreOptions: { // <--- AQUÍ ESTÁ EL CAMBIO (L mayúscula)
-            // Aquí es donde definiremos los colores y conectaremos los archivos .mbtiles
-            style: 'assets/styles/offline-style.json'
+        this.offlineLayer = new MapLibreLayer({
+          mapLibreOptions: {
+            style: dynamicStyle
+            // Eliminamos container y trackResize por si causan conflictos de tipos o renderizado
           }
         });
+        
+        olLayer = this.offlineLayer;
         break;
       }
     }
-    
+
     return { olLayer, credits };
   }
 
@@ -439,4 +483,215 @@ export class MapService {
     this.fs.reDraw = false;
   }
 
+  private generateDynamicStyle() {
+    const openedFiles = this.mbTiles.getOpenedFiles();
+
+    // Paleta de colores suave y moderna
+    const THEME = {
+      background: '#f8f4f0',
+      water: '#a1cae2',
+      forest: '#d2e3bc',
+      park: '#dbe9c6',
+      roadCasing: '#cfc7bc',
+      highway: '#f7c352',
+      majorRoad: '#f9d88d',
+      minorRoad: '#ffffff',
+      buildings: '#e8e4e0',
+      text: '#5d5854',
+      fonts: ["OpenSansRegular"] // Usaremos solo esta fuente
+      //fonts: ["Open Sans Regular"]
+    };
+
+    const style: any = {
+      version: 8,
+      name: "Shortbread Offline Style",
+      // 🚀 Cargamos las fuentes desde la carpeta local del dispositivo
+      glyphs: "/assets/fonts/{fontstack}/{range}.pbf",
+      //glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {},
+      layers: [
+        {
+          id: 'background',
+          type: 'background',
+          paint: { 'background-color': THEME.background }
+        }
+      ]
+    };
+
+    const waterLayers: any[] = [];
+    const landLayers: any[] = [];
+    const buildingLayers: any[] = [];
+    const roadLayers: any[] = [];
+    const labelLayers: any[] = [];
+
+    openedFiles.forEach((fileName: string) => {
+      const sourceId = `src_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+      style.sources[sourceId] = {
+        type: 'vector',
+        tiles: [`mbtiles://${fileName}/{z}/{x}/{y}`],
+        minzoom: 0,
+        maxzoom: 14 // Geofabrik llega hasta el zoom 14
+      };
+
+      // --- AGUA ---
+      waterLayers.push(
+        {
+          id: `ocean_${sourceId}`,
+          type: 'fill',
+          source: sourceId,
+          'source-layer': 'ocean',
+          paint: { 'fill-color': THEME.water }
+        },
+        {
+          id: `water_polygons_${sourceId}`,
+          type: 'fill',
+          source: sourceId,
+          'source-layer': 'water_polygons',
+          paint: { 'fill-color': THEME.water }
+        }
+      );
+
+      // --- NATURALEZA ---
+      landLayers.push({
+        id: `land_forest_${sourceId}`,
+        type: 'fill',
+        source: sourceId,
+        'source-layer': 'land',
+        filter: ['in', 'kind', 'forest', 'wood', 'nature_reserve', 'national_park'],
+        paint: { 'fill-color': THEME.forest }
+      },
+      {
+        id: `land_park_${sourceId}`,
+        type: 'fill',
+        source: sourceId,
+        'source-layer': 'land',
+        filter: ['in', 'kind', 'park', 'grass', 'garden', 'pitch'],
+        paint: { 'fill-color': THEME.park }
+      });
+
+      // --- EDIFICIOS ---
+      buildingLayers.push({
+        id: `buildings_${sourceId}`,
+        type: 'fill',
+        source: sourceId,
+        'source-layer': 'buildings',
+        minzoom: 13, // Solo se dibujan al acercarse mucho
+        paint: { 
+          'fill-color': THEME.buildings,
+          'fill-outline-color': '#dfdcd8'
+        }
+      });
+
+      // --- CARRETERAS ---
+      roadLayers.push(
+        {
+          id: `road_casing_${sourceId}`,
+          type: 'line',
+          source: sourceId,
+          'source-layer': 'streets',
+          minzoom: 10,
+          paint: {
+            'line-color': THEME.roadCasing,
+            'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 1.5, 18, 12]
+          }
+        },
+        {
+          id: `road_inner_${sourceId}`,
+          type: 'line',
+          source: sourceId,
+          'source-layer': 'streets',
+          minzoom: 10,
+          paint: {
+            'line-color': [
+              'match', ['get', 'kind'],
+              'motorway', THEME.highway,
+              'trunk', THEME.highway,
+              'primary', THEME.majorRoad,
+              'secondary', THEME.majorRoad,
+              THEME.minorRoad
+            ],
+            'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 0.5, 18, 10]
+          }
+        }
+      );
+
+    // --- ETIQUETAS Y NOMBRES ---
+    // Hacemos un solo push con las dos capas para asegurarnos de no duplicar IDs
+    labelLayers.push(
+      // 1. Nombres de las calles
+      {
+        id: `street_labels_${sourceId}`,
+        type: 'symbol',
+        source: sourceId,
+        'source-layer': 'street_labels',
+        minzoom: 13,
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': THEME.fonts,
+          'symbol-placement': 'line',
+          'text-size': 12,
+          'text-max-angle': 30
+        },
+        paint: {
+          'text-color': THEME.text,
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2
+        }
+      },
+      // 2. Nombres de pueblos y ciudades
+      {
+        id: `places_${sourceId}`,
+        type: 'symbol',
+        source: sourceId,
+        'source-layer': 'place_labels',
+        minzoom: 5,
+        layout: {
+          'text-field': ['get', 'name'], 
+          'text-font': THEME.fonts,
+          'text-size': [
+            'match', ['get', 'kind'],
+            'city', 18,
+            'town', 14,
+            'village', 12,
+            10
+          ],
+          'text-variable-anchor': ['center', 'top', 'bottom'],
+          'text-justify': 'center'
+        },
+        paint: {
+          'text-color': THEME.text,
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2
+        }
+      }
+    );
+
+  });
+
+    // Juntamos todas las capas en el orden correcto
+    style.layers.push(...waterLayers, ...landLayers, ...buildingLayers, ...roadLayers, ...labelLayers);
+
+    return style;
   }
+
+  public refreshOfflineStyle() {
+    if (!this.offlineLayer) return;
+
+    const maplibreMap = (this.offlineLayer as any).mapLibreMap;
+
+    if (maplibreMap?.setStyle) {
+      const newStyle = this.generateDynamicStyle();
+      const currentHash = JSON.stringify(newStyle.sources); // Hash simple por fuentes
+
+      if (this.lastStyleHash !== currentHash) {
+        console.log("🚀 Aplicando nuevo estilo con Diff...");
+        maplibreMap.setStyle(newStyle, { diff: true });
+        this.lastStyleHash = currentHash;
+      }
+    } else {
+      // Reintento más corto para mejor sensación de carga
+      setTimeout(() => this.refreshOfflineStyle(), 500);
+    }
+  }
+}

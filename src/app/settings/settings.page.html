@@ -73,16 +73,6 @@
       <ion-label>{{ 'SETTINGS.OFFLINE_MAPS_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
-    @if (isDownloading) {
-      <ion-item lines="none" class="download-progress-item">
-        <ion-icon name="cloud-download-sharp" slot="start" color="success"></ion-icon>
-        <ion-label>
-          <h2>{{ 'SETTINGS.DOWNLOADING' | translate }}...</h2>
-          <ion-progress-bar [value]="downloadProgress" color="success"></ion-progress-bar>
-        </ion-label>
-      </ion-item>
-    }
-
     @if (!isDownloading && missingOfflineMaps.length > 0) {
       <ion-item [lines]="availableOfflineMaps.length > 0 ? 'full' : 'none'">
         <ion-icon name="cloud-download-sharp" slot="start" color="primary"></ion-icon>

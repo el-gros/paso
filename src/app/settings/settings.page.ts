@@ -21,6 +21,7 @@ import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { BackupService } from '../services/backup.service'; 
 import { global } from '../../environments/environment';
+import { MbTilesService } from '../services/mbtiles.service';
 
 // --- COMPONENTS ---
 import { ColorPopoverComponent } from '../color-popover.component';
@@ -59,12 +60,11 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   public baseMaps: string[] = [];
   private mapUploadSubject = new Subject<string>();
   private mapRemoveSubject = new Subject<string>();
-
-  // --- Descargas ---
+// --- Descargas ---
   public downloadProgress = 0; 
   public isDownloading = false; 
   private progressSubscription?: Subscription; 
-
+  private downloadLoading: HTMLIonLoadingElement | null = null; // 🚀 Nueva variable
   // --- Preferencias (UI) ---
   public languages: LanguageOption[] = [
     { name: 'Català', code: 'ca' },
@@ -88,6 +88,7 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private popoverController: PopoverController,
     private languageService: LanguageService,
     private translate: TranslateService,
+    private mbTiles: MbTilesService,
     private mapService: MapService,
     public reference: ReferenceService,
     public geography: GeographyService,
@@ -195,19 +196,29 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.mapUploadSubject.pipe(
       debounceTime(500),
       takeUntil(this.destroy$)
-    ).subscribe(async (mapName: string) => {
-      const mapWithExtension = mapName + '.mbtiles';
-      const match = offlineMapsDef.find(item => item.filename === mapWithExtension);
-      if (match) await this.mapUpload(match.url, match.filename);
+    ).subscribe(async (displayName: string) => {
+      // 🚀 Buscamos el mapa cuyo 'name' coincida con lo que ha seleccionado el usuario
+      const match = offlineMapsDef.find(item => 
+        (item.name || item.filename.replace(/\.mbtiles$/i, '')) === displayName
+      );
+      
+      if (match) {
+        await this.mapUpload(match.url, match.filename);
+      }
     });
 
     this.mapRemoveSubject.pipe(
       debounceTime(500),
       takeUntil(this.destroy$)
-    ).subscribe(async (mapName: string) => {
-      const mapWithExtension = mapName + '.mbtiles';
-      const match = offlineMapsDef.find(item => item.filename === mapWithExtension);
-      if (match) await this.removeMapFile(match.filename);
+    ).subscribe(async (displayName: string) => {
+      // 🚀 Lo mismo para el borrado
+      const match = offlineMapsDef.find(item => 
+        (item.name || item.filename.replace(/\.mbtiles$/i, '')) === displayName
+      );
+      
+      if (match) {
+        await this.removeMapFile(match.filename);
+      }
     });
   }
 
@@ -217,15 +228,21 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     try {
       const filesInDataDirectory = await this.server.listFilesInDataDirectory();
       
+      // 🚀 Guardamos el 'name' amigable en lugar del filename
       this.missingOfflineMaps = offlineMapsDef
         .filter(map => !filesInDataDirectory.includes(map.filename))
-        .map(map => map.filename.replace(/\.mbtiles$/i, ''));
+        .map(map => map.name || map.filename.replace(/\.mbtiles$/i, ''));
 
       this.availableOfflineMaps = offlineMapsDef
         .filter(map => filesInDataDirectory.includes(map.filename))
-        .map(map => map.filename.replace(/\.mbtiles$/i, ''));
+        .map(map => map.name || map.filename.replace(/\.mbtiles$/i, ''));
 
-      this.baseMaps = [...this.onlineMaps, ...this.availableOfflineMaps];
+      this.baseMaps = [...this.onlineMaps];
+      
+      if (this.availableOfflineMaps.length > 0) {
+        this.baseMaps.push('OSM offline');
+      }
+
     } catch (e) {
       console.warn('Error checking offline maps:', e);
       this.baseMaps = [...this.onlineMaps];
@@ -246,19 +263,49 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.isDownloading = true; 
     this.downloadProgress = 0;
 
+    // 🚀 1. TRADUCCIÓN: Recuperamos el texto de tus archivos de idiomas
+    // Suponiendo que la clave en tu i18n sea 'SETTINGS.DOWNLOADING'
+    const downloadingText = this.translate.instant('SETTINGS.DOWNLOADING') || 'Descargando...';
+
+    // 🚀 2. ALERT OPACO: Quitamos la clase CSS personalizada para que sea estándar
+    this.downloadLoading = await this.loadingCtrl.create({
+      message: downloadingText, // Empezamos sin porcentaje
+      spinner: 'crescent',
+      backdropDismiss: false 
+    });
+    await this.downloadLoading.present();
+
+    const updateProgress = (progress: number) => {
+      this.downloadProgress = progress;
+      const percent = Math.round(progress);
+      
+      if (this.downloadLoading) {
+        // 🚀 3. LÓGICA DE PROGRESO: Solo mostramos el número cuando empieza a subir
+        if (percent > 0) {
+          this.downloadLoading.message = `${downloadingText} ${percent}%`;
+        }
+      }
+    };
+
     if (this.server.getDownloadProgress) {
-        this.progressSubscription = this.server.getDownloadProgress().subscribe((progress) => {
-            this.downloadProgress = progress;
-        });
+        this.progressSubscription = this.server.getDownloadProgress().subscribe(updateProgress);
     }
 
     try {
-      await this.server.downloadBinaryFile(url, filePath, (progress) => {
-        this.downloadProgress = progress;
-      });
+      await this.server.downloadBinaryFile(url, filePath, updateProgress);
       console.log('Download complete!');
+      
+      // Abrimos e indexamos el nuevo archivo inmediatamente
+      await this.mbTiles.open(filePath);
+
       await this.cleanupSubscription(true);
       await this.checkMaps(); 
+
+      // Si ya estamos en la vista offline, recargamos
+      if (this.geography.mapProvider === 'OSM offline') {
+        await this.mapService.loadMap();
+      }
+
     } catch (err) {
       console.error('Download failed:', err);
       await this.cleanupSubscription(false);
@@ -273,6 +320,12 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.isDownloading = false; 
     this.downloadProgress = 0;  
     
+    // 🚀 Cerramos el Alert de descarga si sigue abierto
+    if (this.downloadLoading) {
+      await this.downloadLoading.dismiss();
+      this.downloadLoading = null;
+    }
+    
     if (success) {
         this.fs.displayToast(this.translate.instant('SETTINGS.UPLOADMAP'), 'success');
     } else {
@@ -282,9 +335,21 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
 
   private async removeMapFile(filename: string) {
     try {
+      // 1. 🔒 IMPORTANTE: Soltar el archivo en SQLite antes de borrar
+      await this.mbTiles.close(filename);
+
+      // 2. 🗑️ Ahora es seguro borrar el archivo físico
       await Filesystem.deleteFile({ path: filename, directory: Directory.Data });
+      
       await this.checkMaps();
       this.fs.displayToast(this.translate.instant('SETTINGS.REMOVEMAP'), 'success');
+
+      // 3. 🔄 Si tenemos el mapa offline activo, forzamos un redibujado 
+      // para que elimine las capas del archivo borrado de la pantalla
+      if (this.geography.mapProvider === 'OSM offline') {
+        await this.mapService.loadMap();
+      }
+
     } catch (error) {
       console.error(`Error removing file ${filename}:`, error);
       this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_REMOVEMAP'), 'error');
