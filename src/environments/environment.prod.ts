@@ -22,7 +22,7 @@ export var global: any = {
     };
   },
 
-    offlineMaps: [
+  offlineMaps: [
     {
       "name": "Catalunya",
       "filename": "cataluna-shortbread-1.0.mbtiles",
@@ -40,7 +40,19 @@ export var global: any = {
       "filename": "valencia-shortbread-1.0.mbtiles",
       "url": "https://download.geofabrik.de/europe/spain/valencia-shortbread-1.0.mbtiles",
       "size": 160
-    }
+    },
+    {
+      "name": "Languedoc-Roussillon",
+      "filename": "languedoc-roussillon-shortbread-1.0.mbtiles",
+      "url": "https://download.geofabrik.de/europe/france/languedoc-roussillon-shortbread-1.0.mbtiles",
+      "size": 284
+    },
+        {
+      "name": "Midi-Pyrénées",
+      "filename": "midi-pyrenees-shortbread-1.0.mbtiles",
+      "url": "https://download.geofabrik.de/europe/france/midi-pyrenees-shortbread-1.0.mbtiles",
+      "size": 391
+    },
   ]
   
 }

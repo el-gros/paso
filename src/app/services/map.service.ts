@@ -3,6 +3,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import maplibregl from 'maplibre-gl';
 import { MapLibreLayer } from '@geoblocks/ol-maplibre-layer';
+import { NgZone } from '@angular/core';
 
 // --- OPENLAYERS IMPORTS ---
 import Map from 'ol/Map';
@@ -33,13 +34,14 @@ import { global } from '../../environments/environment';
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
-import { ServerService } from './server.service';
 import { MbTilesService } from './mbtiles.service';
 import { LocationManagerService } from './location-manager.service';
 import { LocationSharingService } from './locationSharing.service';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { TrackingControlService } from './trackingControl.service';
+import { OfflineMapService } from './offline-map.service';
+import { AppStateService } from '../services/appState.service';
 import { LocationButtonControl } from '../utils/openlayers/custom-control';
 import { ShareControl } from '../utils/openlayers/share-control';
 import { Track, TrackDefinition } from '../../globald';
@@ -69,9 +71,12 @@ export class MapService {
   private offlineLayer: any = null;
   private lastStyleHash: string = '';
 
+  private isOnline = window.navigator.onLine;
+  private connectionTimeout: any = null;
+  private readonly CONNECTION_GRACE_PERIOD = 5000;
+  
   constructor(
     public fs: FunctionsService,
-    private server: ServerService,
     private location: LocationManagerService,
     private translate: TranslateService,
     private stylerService: StylerService,
@@ -79,10 +84,12 @@ export class MapService {
     private reference: ReferenceService,
     private present: PresentService,
     private trackingService: TrackingControlService,
-    private sharing: LocationSharingService,
     private locationManager: LocationManagerService,
     private locationSharingService: LocationSharingService,
     private mbTiles: MbTilesService,
+    private offlineMapService: OfflineMapService,
+    private zone: NgZone,
+    private appState: AppStateService,
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
 
@@ -119,6 +126,21 @@ export class MapService {
         return { data: new ArrayBuffer(0) };
       }
     });
+
+    // Escuchar cambios de conexión en tiempo real
+    window.addEventListener('online', () => this.handleConnectionChange(true));
+    window.addEventListener('offline', () => this.handleConnectionChange(false));
+    this.appState.onEnterForeground$.subscribe(() => {
+      // Al volver a la app, evaluamos inmediatamente por si la red cambió en el "bolsillo"
+      this.handleConnectionChange(window.navigator.onLine, true);
+    });  
+
+    // 🚀 Escuchar cuando el servicio offline nos diga que el mapa necesita refrescarse
+    this.offlineMapService.mapNeedsRefresh$.subscribe(() => {
+      console.log("🗺️ MapService: Recibida orden de refresco desde OfflineMapService");
+      this.loadMap();
+    });
+
   }
 
   // 1. CENTER ALL TRACKS ///////////////////////////////////
@@ -138,6 +160,12 @@ export class MapService {
 
   // 2. LOAD MAP //////////////////////////////////////
   async loadMap(): Promise<void> {
+    // Si la lista está vacía, forzamos la lectura antes de tomar decisiones.
+    if (this.offlineMapService.availableMaps$.value.length === 0) {
+      console.log("⏳ MapService: Esperando a que OfflineMapService lea el disco...");
+      await this.offlineMapService.refreshMapsList();
+    }
+
     const mapConfigs: Record<string, { min: number, max: number, zoom: number }> = {
       'OSM offline': { min: 0, max: 19, zoom: 8 }, 
       'default': { min: 0, max: 19, zoom: 7.5 }
@@ -233,9 +261,24 @@ export class MapService {
 
     let olLayer: BaseLayer | null = null;
     let credits = '';
-    const provider = this.geography.mapProvider;
+    // 1. Comprobamos si hay archivos descargados actualmente
+    const hasOfflineFiles = this.offlineMapService.availableMaps$.value.length > 0;
+    const isOnline = window.navigator.onLine;
+    let provider = this.geography.mapProvider;
 
+    // EL SALVAVIDAS UNIVERSAL
+    if (!isOnline) {
+      if (hasOfflineFiles) {
+        // Pisa siempre la elección del usuario si no hay internet
+        provider = 'OSM offline';
+      } else {
+        return { olLayer: null, credits: 'No connection / No offline maps' };
+      }
+    }
+
+    // 3. SWITCH DE PROVEEDORES
     switch (provider) {
+    
       case 'OpenStreetMap':
         credits = '© OpenStreetMap contributors';
         olLayer = new TileLayer({ source: new OSM() });
@@ -302,21 +345,20 @@ export class MapService {
       // 🔥 CASO OFFLINE (Recuperamos la lógica simple que te funcionaba)
       case 'OSM offline':
       default: {
-        credits = 'Offline Maps Data';
-        const dynamicStyle = this.generateDynamicStyle();
-        
-        this.offlineLayer = new MapLibreLayer({
-          mapLibreOptions: {
-            style: dynamicStyle
-            // Eliminamos container y trackResize por si causan conflictos de tipos o renderizado
-          }
-        });
-        
-        olLayer = this.offlineLayer;
+        if (hasOfflineFiles) {
+          credits = 'Offline Maps Data';
+          const dynamicStyle = this.generateDynamicStyle();
+          this.offlineLayer = new MapLibreLayer({
+            mapLibreOptions: { style: dynamicStyle }
+          });
+          olLayer = this.offlineLayer;
+        } else {
+          // Si por error llegamos aquí sin archivos
+          olLayer = new TileLayer({ source: new OSM() }); // O un placeholder
+        }
         break;
       }
-    }
-
+    }  
     return { olLayer, credits };
   }
 
@@ -694,4 +736,58 @@ export class MapService {
       setTimeout(() => this.refreshOfflineStyle(), 500);
     }
   }
+
+  /**
+     * Maneja la lógica de conmutación de mapas basada en red y visibilidad de la app
+     * @param online Estado actual de la red
+     * @param immediate Si es true, ignora el delay de cortesía (útil al volver a foreground)
+     */
+  // En MapService.ts
+
+  private async handleConnectionChange(online: boolean, immediate: boolean = false) {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+
+    if (!this.appState.currentForegroundValue) {
+      return;
+    }
+
+    if (online || immediate) {
+      // Si vuelve la red o abrimos la app, recargamos. 
+      // Si estábamos en un mapa online que hizo fallback a offline, esto lo devolverá a su estado online.
+      // Si ya estábamos explícitamente en 'OSM offline', no pasará nada visualmente.
+      if (this.geography.mapProvider !== 'OSM offline') {
+          console.log("🌐 Red recuperada: Restaurando mapa online...");
+          await this.loadMap();
+      }
+      return;
+    }
+
+    // PÉRDIDA DE RED
+    console.log(`📡 Señal perdida. Esperando ${this.CONNECTION_GRACE_PERIOD / 1000}s de cortesía...`);
+    
+    this.zone.runOutsideAngular(() => {
+      this.connectionTimeout = setTimeout(async () => {
+        
+        if (!window.navigator.onLine && this.appState.currentForegroundValue) {
+          
+          this.zone.run(async () => {
+            const hasFiles = this.offlineMapService.availableMaps$.value.length > 0;
+            const provider = this.geography.mapProvider;
+
+            // Si el usuario estaba viendo un mapa online y tenemos archivos salvavidas:
+            if (hasFiles && provider !== 'OSM offline') {
+              console.log("🔄 Timeout cumplido: Salvavidas activado. Pasando a Offline.");
+              this.fs.displayToast(this.translate.instant('SETTINGS.OFFLINE_MODE_ON'), 'warning');
+              await this.loadMap();
+            }
+          });
+        }
+        this.connectionTimeout = null;
+      }, this.CONNECTION_GRACE_PERIOD);
+    });
+  }
+
 }

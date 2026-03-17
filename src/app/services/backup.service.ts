@@ -2,14 +2,17 @@ import { Capacitor } from '@capacitor/core';
 import { Injectable } from '@angular/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import * as JSZip from 'jszip';
+import JSZip from 'jszip';
+import { FunctionsService } from '../services/functions.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BackupService {
 
-  constructor() { }
+  constructor(
+    private fs: FunctionsService
+  ) { }
 
   /**
    * Genera un archivo de copia de seguridad (.paso) y abre el menú para compartirlo.
@@ -268,6 +271,45 @@ export class BackupService {
       console.error('[BackupService] Error leyendo la URI desde Ajustes:', error);
       return null;
     }
+  }
+
+  async runFullExport() {
+    // 1. Preparar Payload
+    const payload: any = { collection: this.fs.collection };
+    const keys = this.fs.collection
+      .filter((item: any) => item?.date)
+      .map((item: any) => {
+        const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date);
+        return dateObj.toISOString();
+      });
+
+    const tracksData = await Promise.all(keys.map(key => this.fs.storeGet(key)));
+    keys.forEach((key, index) => {
+      if (tracksData[index]) payload[key] = tracksData[index];
+    });
+
+    // 2. Llamar a la función que genera el ZIP (la que ya tenías)
+    return await this.exportBackup(payload); 
+  }
+
+  async runFullImport(filePath: string) {
+    const backupData = await this.importBackup(filePath);
+    
+    if (backupData && backupData.collection) {
+      // Guardar colección
+      this.fs.collection = backupData.collection;
+      await this.fs.storeSet('collection', this.fs.collection);
+
+      // Guardar tracks individuales
+      const keys = Object.keys(backupData);
+      for (const key of keys) {
+        if (key !== 'collection' && key !== 'settings') {
+          await this.fs.storeSet(key, backupData[key]);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
 }

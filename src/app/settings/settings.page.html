@@ -15,11 +15,12 @@
       </ion-select>
     </ion-item>
 
-    <ion-item lines="none">
-      <ion-icon name="map-sharp" slot="start" color="primary"></ion-icon>
+    <ion-item lines="full">
       <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
-      <ion-select [value]="geography.mapProvider" (ionChange)="onMapChange($event.detail.value)" interface="popover" slot="end">
-        @for (map of baseMaps; track map) {
+      <ion-select [value]="geography.mapProvider" 
+                  (ionChange)="onMapChange($event.detail.value)" 
+                  interface="popover" slot="end">
+        @for (map of (offlineMapService.displayMaps$ | async); track map) {
           <ion-select-option [value]="map">{{ map }}</ion-select-option>
         }
       </ion-select>
@@ -73,43 +74,48 @@
       <ion-label>{{ 'SETTINGS.OFFLINE_MAPS_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
-    @if (!isDownloading && missingOfflineMaps.length > 0) {
-      <ion-item [lines]="availableOfflineMaps.length > 0 ? 'full' : 'none'">
-        <ion-icon name="cloud-download-sharp" slot="start" color="primary"></ion-icon>
-        <ion-label>{{ 'SETTINGS.DOWNLOAD_MAP' | translate }}</ion-label>
-        
-        <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
-                    (ionChange)="onMapUploadChange($event.detail.value); $event.target.value = null" 
-                    interface="popover" slot="end">
-          @for (map of missingOfflineMaps; track map) {
-            <ion-select-option [value]="map">{{ map }}</ion-select-option>
-          }
-        </ion-select>
-      </ion-item>
-    }
+    @if ({
+      isDownloading: (offlineMapService.isDownloading$ | async),
+      missing: (offlineMapService.missingMaps$ | async),
+      available: (offlineMapService.availableMaps$ | async)
+    }; as state) {
 
-    @if (availableOfflineMaps.length > 0) {
-      <ion-item lines="none">
-        <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
-        <ion-label>{{ 'SETTINGS.REMOVE_MAP' | translate }}</ion-label>
-        
-        <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
-                    (ionChange)="onMapRemoveChange($event.detail.value); $event.target.value = null" 
-                    interface="popover" slot="end">
-          @for (map of availableOfflineMaps; track map) {
-            <ion-select-option [value]="map">{{ map }}</ion-select-option>
-          }
-        </ion-select>
-      </ion-item>
-    }
+      @if (!state.isDownloading && state.missing && state.missing.length > 0) {
+        <ion-item [lines]="state.available && state.available.length > 0 ? 'full' : 'none'">
+          <ion-icon name="cloud-download-sharp" slot="start" color="primary"></ion-icon>
+          <ion-label>{{ 'SETTINGS.DOWNLOAD_MAP' | translate }}</ion-label>
+          <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
+                      (ionChange)="onMapUploadChange($event.detail.value); $event.target.value = null" 
+                      interface="popover" slot="end">
+            @for (map of state.missing; track map) {
+              <ion-select-option [value]="map">{{ map }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+      }
 
-    @if (!isDownloading && missingOfflineMaps.length === 0 && availableOfflineMaps.length === 0) {
-      <ion-item lines="none">
-        <ion-icon name="checkmark-circle-sharp" slot="start" color="medium"></ion-icon>
-        <ion-label color="medium">
-          <p>{{ 'SETTINGS.ALL_MAPS_DOWNLOADED' | translate }}</p>
-        </ion-label>
-      </ion-item>
+      @if (state.available && state.available.length > 0) {
+        <ion-item lines="none">
+          <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
+          <ion-label>{{ 'SETTINGS.REMOVE_MAP' | translate }}</ion-label>
+          <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
+                      (ionChange)="onMapRemoveChange($event.detail.value); $event.target.value = null" 
+                      interface="popover" slot="end">
+            @for (map of state.available; track map) {
+              <ion-select-option [value]="map">{{ map }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+      }
+
+      @if (!state.isDownloading && state.missing?.length === 0 && state.available?.length === 0) {
+        <ion-item lines="none">
+          <ion-icon name="checkmark-circle-sharp" slot="start" color="medium"></ion-icon>
+          <ion-label color="medium">
+            <p>{{ 'SETTINGS.ALL_MAPS_DOWNLOADED' | translate }}</p>
+          </ion-label>
+        </ion-item>
+      }
     }
   </ion-list>
 
