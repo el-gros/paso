@@ -235,7 +235,7 @@ export class MapService {
 
       this.customControl = new LocationButtonControl(this.trackingService, this.translate);
       this.geography.map.addControl(this.customControl);
-      this.geography.map.addControl(this.shareControl); 
+      //this.geography.map.addControl(this.shareControl); 
     }
 
     this.mapIsReady = true;

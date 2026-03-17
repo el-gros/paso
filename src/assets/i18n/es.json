@@ -110,7 +110,7 @@
     "ALL_MAPS_DOWNLOADED": "Todos los mapas están descargados"
   },
   "CANVAS": {
-    "TRACK": "Trayecto",
+    "TRACK": "Guardar trayecto",
     "ARCTITLE": "TRAYECTO DE REFERENCIA",
     "CURTITLE": "TRAYECTO ACTUAL",
     "DISTANCE": "Distancia",

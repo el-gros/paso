@@ -219,85 +219,6 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
     }
   }
 
-  public async createPdfContent(
-    item: TrackDefinition, 
-    trackData: Track, 
-    mapImg: string, 
-    altImg?: string,
-    publicUrl?: string // 🚀 EL ENLACE DE SUPABASE LLEGA AQUÍ
-  ): Promise<string> {
-    try {
-      const pdf = new jsPDF();
-      const props = trackData.features[0].properties;
-
-      // --- CABECERA ---
-      pdf.setFontSize(18);
-      pdf.text(item.name || 'Track Report', 10, 20);
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(100);
-      const dateStr = item.date ? new Date(item.date).toLocaleDateString() : '';
-      pdf.text(dateStr, 10, 28);
-
-      // --- 1. IMAGEN DEL MAPA ---
-      if (mapImg) {
-        pdf.addImage(mapImg, 'JPEG', 10, 35, 190, 90);
-      }
-
-      // --- 2. PERFIL DE ALTITUD ---
-      let nextY = 135; 
-      if (altImg) {
-        pdf.setFontSize(14);
-        pdf.setTextColor(0);
-        pdf.addImage(altImg, 'JPEG', 10, nextY, 190, 50);
-        nextY += 70; 
-      }
-
-      // --- 3. ESTADÍSTICAS ---
-      pdf.setFontSize(12);
-      pdf.setTextColor(0);
-      
-      pdf.text(`${this.translate.instant('REPORT.DISTANCE')}: ${(props.totalDistance || 0).toFixed(2)} km`, 10, nextY);
-      const timeStr = this.fs.formatMillisecondsToUTC(props.totalTime || 0);
-      pdf.text(`${this.translate.instant('REPORT.TIME')}: ${timeStr}`, 10, nextY + 10);
-
-      const gainStr = `+${Math.round(props.totalElevationGain || 0)} m`;
-      const lossStr = `-${Math.round(props.totalElevationLoss || 0)} m`;
-      pdf.text(`${this.translate.instant('REPORT.ELEVATION_GAIN')}: ${gainStr}`, 110, nextY);
-      pdf.text(`${this.translate.instant('REPORT.ELEVATION_LOSS')}: ${lossStr}`, 110, nextY + 10);
-
-      // --- 4. DESCRIPCIÓN ---
-      if (item.description) {
-        pdf.setFontSize(10);
-        pdf.setTextColor(100);
-        const splitDesc = pdf.splitTextToSize(item.description, 180);
-        pdf.text(splitDesc, 10, nextY + 25);
-      }
-
-      // --- 5. ENLACE INTERACTIVO A SUPABASE ---
-      if (publicUrl) {
-        const finalY = item.description ? nextY + 45 : nextY + 25;
-        
-        pdf.setFontSize(11);
-        pdf.setTextColor(56, 128, 255); 
-        const linkText = this.translate.instant('REPORT.VIEW_ROUTE') || 'Ver ruta interactiva en la web';
-        
-        pdf.textWithLink(linkText, 10, finalY, { url: publicUrl });
-        
-        const textWidth = pdf.getTextWidth(linkText);
-        pdf.setLineWidth(0.3);
-        pdf.setDrawColor(56, 128, 255);
-        pdf.line(10, finalY + 1, 10 + textWidth, finalY + 1);
-      }
-
-      return pdf.output('datauristring').split(',')[1];
-      
-    } catch (error) {
-      console.error('[TrackExportService] Error generando PDF:', error);
-      throw error;
-    }
-  }
-
   // ==========================================================================
   // 5. MÉTODOS PRIVADOS (Helpers)
   // ==========================================================================
@@ -316,165 +237,186 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
   }
 
   // ==========================================================================
-  // 6. GENERADORES PARA PDF (Mapas invisibles y Gráficas)
+  // 6. GENERADOR HTML (OpenLayers + Tarjeta Flotante + Gráfica Perfil)
   // ==========================================================================
 
-  public async generateInvisibleMapImage(trackData: any): Promise<string> {
-    return new Promise((resolve) => {
-      let mapExport: Map | null = null;
+  public generateStandaloneHtml(trackData: Track, routeName: string = 'Ruta Exportada'): string {
+    try {
+      const geoJsonString = JSON.stringify(trackData);
+      const safeTitle = this.escapeXml(routeName);
+
+      const props = trackData.features[0]?.properties || {};
       
-      try {
-        const features = new GeoJSON().readFeatures(trackData);
-        if(!features.length) { resolve(''); return; }
+      const distLabel = this.translate.instant('REPORT.DISTANCE');
+      const timeLabel = this.translate.instant('REPORT.TIME');
+      const gainLabel = this.translate.instant('REPORT.ELEVATION_GAIN');
+      const lossLabel = this.translate.instant('REPORT.ELEVATION_LOSS');
+      const altLabel = this.translate.instant('REPORT.ALTITUDE') !== 'REPORT.ALTITUDE' ? this.translate.instant('REPORT.ALTITUDE') : 'Altitud';
 
-        const vectorSource = new VectorSource({ features });
-        const extent = vectorSource.getExtent();
-        if (!extent || !isFinite(extent[0])) { resolve(''); return; }
+      const distVal = (props.totalDistance || 0).toFixed(2);
+      const timeVal = this.fs.formatMillisecondsToUTC(props.totalTime || 0);
+      const gainVal = Math.round(props.totalElevationGain || 0);
+      const lossVal = Math.round(props.totalElevationLoss || 0);
 
-        const centerX = (extent[0] + extent[2]) / 2;
-        const centerY = (extent[1] + extent[3]) / 2;
+      const htmlContent = `<!DOCTYPE html>
+<html lang="${this.translate.currentLang || 'es'}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>${safeTitle} - Visor de Ruta</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; background-color: #121212; overflow: hidden; display: flex; flex-direction: column; }
+    
+    #map-container { flex: 1 1 75vh; position: relative; width: 100%; }
+    #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
-        const mapDiv = document.getElementById('map-export');
-        if (mapDiv) {
-          mapDiv.style.width = '1000px';
-          mapDiv.style.height = '800px';
-        }
+    /* TARJETA COLAPSABLE MEJORADA */
+    #info-card {
+      position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+      width: 92%; max-width: 420px; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      padding: 15px; box-sizing: border-box; z-index: 1000;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .title { font-size: 1rem; font-weight: 800; color: #1a1a1a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: left; }
+    .toggle-btn { background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; color: #555; transition: background 0.2s; }
+    .toggle-btn:active { background: rgba(0,0,0,0.15); }
+    
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: max-height 0.3s ease, opacity 0.3s ease; max-height: 200px; opacity: 1; overflow: hidden; }
+    .stat-box { background: rgba(0,0,0,0.04); padding: 8px; border-radius: 12px; text-align: center; }
+    .stat-label { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; color: #888; display: block; margin-bottom: 2px; }
+    .stat-val { font-size: 1rem; font-weight: 700; color: #ff3b30; }
+    .stat-unit { font-size: 0.65rem; color: #999; }
+    .color-gain { color: #2dd36f; }
 
-        mapExport = new Map({
-          target: 'map-export',
-          layers: [
-            new TileLayer({ source: new OSM({ crossOrigin: 'anonymous' }) }),
-            new VectorLayer({
-              source: vectorSource,
-              style: new Style({ stroke: new Stroke({ color: '#FF0000', width: 6 }) }),
-              zIndex: 999 
+    /* Estado minimizado */
+    #info-card.minimized .stats-grid { max-height: 0; opacity: 0; margin-top: 0; }
+    #info-card.minimized .title-row { margin-bottom: 0; }
+    #info-card.minimized .toggle-btn { transform: rotate(180deg); }
+
+    /* GRÁFICA */
+    #chart-container { flex: 0 0 25vh; background-color: white; padding: 10px 15px 15px 5px; box-sizing: border-box; position: relative; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+
+  <div id="map-container">
+      <div id="map"></div>
+      
+      <div id="info-card" class="minimized"> <div class="title-row" onclick="toggleCard()">
+          <h2 class="title" id="r-name">${safeTitle}</h2>
+          <button class="toggle-btn" id="t-btn">▼</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box"><span class="stat-label">${distLabel}</span><span class="stat-val">${distVal} <span class="stat-unit">km</span></span></div>
+          <div class="stat-box"><span class="stat-label">${timeLabel}</span><span class="stat-val">${timeVal}</span></div>
+          <div class="stat-box"><span class="stat-label">${gainLabel}</span><span class="stat-val color-gain">+${gainVal} <span class="stat-unit">m</span></span></div>
+          <div class="stat-box"><span class="stat-label">${lossLabel}</span><span class="stat-val">-${lossVal} <span class="stat-unit">m</span></span></div>
+        </div>
+      </div>
+  </div>
+
+  <div id="chart-container"><canvas id="elevationChart"></canvas></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    ol.proj.useGeographic(); 
+
+    // LÓGICA DE LA TARJETA
+    function toggleCard() {
+      const card = document.getElementById('info-card');
+      card.classList.toggle('minimized');
+    }
+
+    const routeGeoJSON = ${geoJsonString};
+
+    function createPinStyle(color) {
+      return new ol.style.Style({
+        image: new ol.style.Icon({
+          anchor: [0.5, 1], scale: 1.2,
+          src: 'data:image/svg+xml;utf8,' + encodeURIComponent(\`
+            <svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="\${color}"/>
+              <circle cx="12" cy="9" r="2.5" fill="white"/>
+            </svg>\`)
+        })
+      });
+    }
+
+    const features = new ol.format.GeoJSON().readFeatures(routeGeoJSON);
+    const feature = features[0];
+
+    const map = new ol.Map({
+      target: 'map',
+      layers: [
+        new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: 'https://{a-c}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                attributions: '&copy; OpenStreetMap | &copy; CARTO'
             })
-          ],
-          controls: [], 
-          interactions: [],
-          view: new View({ center: [centerX, centerY], zoom: 14, enableRotation: false })
-        });
+        })
+      ],
+      view: new ol.View({ center: [0, 0], zoom: 2 }),
+      controls: []
+    });
 
-        mapExport.updateSize();
-        mapExport.getView().fit(extent, { padding: [100, 100, 100, 100], size: [1000, 800] });
+    feature.setStyle(new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#ff3b30', width: 6, lineCap: 'round' }) }));
 
-        mapExport.once('rendercomplete', () => {
-          try {
-            const size = mapExport!.getSize();
-            if (!size) { resolve(''); return; }
+    const coords = feature.getGeometry().getCoordinates();
+    const startPoint = new ol.Feature({ geometry: new ol.geom.Point(coords[0]) });
+    const endPoint = new ol.Feature({ geometry: new ol.geom.Point(coords[coords.length - 1]) });
 
-            const mapCanvas = document.createElement('canvas');
-            mapCanvas.width = size[0];
-            mapCanvas.height = size[1];
-            const mapContext = mapCanvas.getContext('2d');
-            
-            if (!mapContext) { resolve(''); return; }
+    startPoint.setStyle(createPinStyle('#2dd36f')); 
+    endPoint.setStyle(createPinStyle('#ff3b30'));   
 
-            mapContext.fillStyle = '#FFFFFF';
-            mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+    const source = new ol.source.Vector({ features: [feature, startPoint, endPoint] });
+    map.addLayer(new ol.layer.Vector({ source }));
+    
+    // Encuadramos con padding ajustable
+    map.getView().fit(source.getExtent(), { padding: [50, 50, 100, 50] });
 
-            const layers = document.querySelectorAll<HTMLCanvasElement>('#map-export .ol-layer canvas');
-            layers.forEach((canvas) => {
-              if (canvas.width > 0) {
-                const parent = canvas.parentNode as HTMLElement;
-                mapContext.globalAlpha = Number(parent?.style.opacity || '1');
-                const transform = canvas.style.transform;
-                let matrix = [1, 0, 0, 1, 0, 0];
-                if (transform) {
-                  const match = transform.match(/^matrix\(([^\(]*)\)$/);
-                  if (match && match[1]) matrix = match[1].split(',').map(Number);
-                }
-                mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-                mapContext.drawImage(canvas, 0, 0);
-              }
-            });
+    // GRÁFICA
+    const trackData = routeGeoJSON.features[0]?.geometry?.properties?.data;
+    if (trackData && trackData.length > 1) {
+        const chartData = trackData.map(p => ({ x: parseFloat(p.distance || 0), y: Math.round(p.compAltitude || p.altitude || 0) }));
+        const maxDist = chartData[chartData.length - 1].x;
+        let dynamicStep = 1; 
+        if (maxDist > 100) dynamicStep = 20;
+        else if (maxDist > 50) dynamicStep = 10;
+        else if (maxDist > 20) dynamicStep = 5;
+        else if (maxDist > 10) dynamicStep = 2;
+        else if (maxDist < 2) dynamicStep = 0.5; 
 
-            mapContext.setTransform(1, 0, 0, 1, 0, 0);
-            const data = mapCanvas.toDataURL('image/jpeg', 0.8);
-            resolve(data);
-          } finally {
-            if (mapExport) {
-              mapExport.setTarget(undefined);
-              mapExport.dispose(); 
+        new Chart(document.getElementById('elevationChart').getContext('2d'), {
+            type: 'line',
+            data: { datasets: [{ label: '${altLabel}', data: chartData, borderColor: '#ff3b30', backgroundColor: 'rgba(255, 59, 48, 0.2)', fill: true, pointRadius: 0, pointHitRadius: 15, borderWidth: 2, tension: 0.1 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { title: function(c) { return '${distLabel}: ' + Number(c[0].parsed.x).toFixed(2) + ' km'; }, label: function(c) { return '${altLabel}: ' + c.parsed.y + ' m'; } } } },
+                scales: { x: { type: 'linear', title: { display: false }, ticks: { stepSize: dynamicStep, callback: function(v) { return v + ' km'; } }, grid: { display: false } }, y: { title: { display: false }, beginAtZero: false } }
             }
-          }
         });
-      } catch (e) {
-        console.error('[TrackExportService] Error in generateInvisibleMapImage:', e);
-        if (mapExport) {
-          mapExport.setTarget(undefined);
-          mapExport.dispose();
-        }
-        resolve('');
-      }
-    });
+    } else {
+        document.getElementById('chart-container').innerHTML = '<p style="text-align:center; color:#999; margin-top: 20px;">Sin datos de elevación.</p>';
+    }
+  </script>
+</body>
+</html>`;
+
+      return htmlContent;
+    } catch (error) {
+      console.error('[TrackExportService] Error generando HTML:', error);
+      throw error;
+    }
   }
 
-  public async generateAltitudeCanvasImage(track: Track): Promise<string> {
-    const data = track.features[0]?.geometry?.properties?.data;
-    if (!data || data.length < 2) return '';
-
-    const width = 1000;
-    const height = 400;
-    const margin = 60;
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, width, height);
-
-    const alts = data.map(d => d.compAltitude);
-    const minAlt = Math.min(...alts);
-    const maxAlt = Math.max(...alts);
-    const rangeAlt = (maxAlt - minAlt) || 20;
-    
-    const totalDist = data[data.length - 1].distance;
-    const scaleX = (width - 2 * margin) / totalDist;
-    const scaleY = (height - 2 * margin) / rangeAlt;
-
-    ctx.beginPath();
-    ctx.moveTo(margin, height - margin);
-    data.forEach(p => ctx.lineTo(margin + p.distance * scaleX, height - margin - (p.compAltitude - minAlt) * scaleY));
-    ctx.lineTo(margin + totalDist * scaleX, height - margin);
-    ctx.closePath();
-
-    const grad = ctx.createLinearGradient(0, margin, 0, height - margin);
-    grad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-    grad.addColorStop(1, 'rgba(255, 215, 0, 0.05)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    data.forEach((p, i) => {
-      const x = margin + p.distance * scaleX;
-      const y = height - margin - (p.compAltitude - minAlt) * scaleY;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    ctx.strokeStyle = '#999';
-    ctx.fillStyle = '#666';
-    ctx.font = 'bold 16px Arial';
-    ctx.lineWidth = 1;
-    
-    ctx.beginPath();
-    ctx.moveTo(margin, height - margin);
-    ctx.lineTo(width - margin, height - margin);
-    ctx.stroke();
-    ctx.textAlign = 'right';
-    ctx.fillText(`${totalDist.toFixed(1)} km`, width - margin, height - margin + 25);
-
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(maxAlt)} m`, margin - 10, margin + 5);
-    ctx.fillText(`${Math.round(minAlt)} m`, margin - 10, height - margin + 5);
-
-    return canvas.toDataURL('image/jpeg', 0.8);
-  }
 }

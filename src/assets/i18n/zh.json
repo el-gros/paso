@@ -110,7 +110,7 @@
     "ALL_MAPS_DOWNLOADED": "所有地图已下载"
   },
   "CANVAS": {
-    "TRACK": "轨迹",
+    "TRACK": "保存轨迹",
     "ARCTITLE": "参考轨迹",
     "CURTITLE": "当前轨迹",
     "DISTANCE": "距离",

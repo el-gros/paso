@@ -14,7 +14,7 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
-import { SupabaseService } from '../services/supabase.service';
+// 🚀 Eliminado SupabaseService
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track } from '../../globald';
@@ -43,8 +43,8 @@ export class ArchivePage implements OnInit {
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
-    private modalCtrl: ModalController,
-    private supabaseService: SupabaseService
+    private modalCtrl: ModalController
+    // 🚀 Eliminado SupabaseService del constructor
   ) { }
 
   ngOnInit() { }
@@ -134,20 +134,16 @@ export class ArchivePage implements OnInit {
     if (trackToRemove && trackToRemove.date) {
         const key = new Date(trackToRemove.date).toISOString();
         
-        // 1. Comprobar si el track que vamos a borrar es el que está dibujado en el mapa
         const isCurrentlyVisible = this.isTrackVisible(trackToRemove);
 
-        // 2. Borrar del almacenamiento interno
         if (key) await this.fs.storeRem(key);
 
-        // 3. Si estaba visible, limpiamos el mapa
         if (isCurrentlyVisible) {
            this.reference.clearArchivedTrack();
            await this.location.sendReferenceToPlugin();
         }
     }
     
-    // 4. Quitarlo de la lista visual (colección) y guardar el nuevo estado
     this.fs.collection.splice(index, 1);
     await this.fs.storeSet('collection', this.fs.collection);
   }
@@ -181,7 +177,7 @@ export class ArchivePage implements OnInit {
   }
 
   // ==========================================================================
-  // 3. EXPORTACIÓN DE ARCHIVOS
+  // 3. EXPORTACIÓN DE ARCHIVOS (HTML, GPX, KMZ)
   // ==========================================================================
   async exportTrack(item: TrackDefinition, slidingItem?: IonItemSliding) {
     if (!item || !item.date) return;
@@ -207,35 +203,34 @@ export class ArchivePage implements OnInit {
       const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
       const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-      // 🚀 1. SUBIR LA RUTA A SUPABASE Y OBTENER EL ENLACE
-      // (Si falla por no tener internet, publicUrl será null y el PDF se creará igual sin enlace)
-      const publicUrl = await this.supabaseService.shareRouteToCloud(trackData);
+      // 1. GENERAR EL ARCHIVO HTML INTERACTIVO
+      const htmlText = this.exportService.generateStandaloneHtml(trackData, item.name);
 
-      // 2. GENERAR IMÁGENES
-      const mapBase64 = await this.exportService.generateInvisibleMapImage(trackData);
-      const altitudeBase64 = await this.exportService.generateAltitudeCanvasImage(trackData);
-
-      // 3. GENERAR ARCHIVOS
-      const [gpxText, kmzBase64, pdfBase64] = await Promise.all([
+      // 2. GENERAR ARCHIVOS GPX Y KMZ (Adiós PDF y generación de imágenes)
+      const [gpxText, kmzBase64] = await Promise.all([
         this.exportService.geoJsonToGpx(featureToExport),
-        this.exportService.geoJsonToKmz(featureToExport),
-        // 🚀 PASAMOS EL publicUrl AL PDF AL FINAL DE LOS PARÁMETROS
-        this.exportService.createPdfContent(item, trackData, mapBase64, altitudeBase64, publicUrl ? publicUrl : undefined)
+        this.exportService.geoJsonToKmz(featureToExport)
       ]);
 
       const gpxName = `${safeName}.gpx`;
       const kmzName = `${safeName}.kmz`;
-      const pdfName = `${safeName}.pdf`;
+      const htmlName = `${safeName}.html`;
 
-      const [savedGpx, savedKmz, savedPdf] = await Promise.all([
+      // 3. GUARDAR ARCHIVOS EN CACHÉ EXTERNA
+      const [savedGpx, savedKmz, savedHtml] = await Promise.all([
           this.writeFile(gpxName, gpxText, Encoding.UTF8),
           this.writeFile(kmzName, kmzBase64),
-          this.writeFile(pdfName, pdfBase64)
+          this.writeFile(htmlName, htmlText, Encoding.UTF8)
       ]);
 
+      // 4. COMPARTIR (Mensajes mejorados para WhatsApp y Gmail)
+      const shareMessage = `Te envío información sobre la ruta: ${item.name}`;
+      const shareSubject = `Ruta: ${item.name}`; // Gmail usa esto como Asunto
+
       const result = await this.socialSharing.shareWithOptions({
-        message: `${this.translate.instant('REPORT.ROUTE_NAME')}: ${item.name}`,
-        files: [savedGpx.uri, savedKmz.uri, savedPdf.uri],
+        message: shareMessage,
+        subject: shareSubject,
+        files: [savedGpx.uri, savedKmz.uri, savedHtml.uri],
         chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
 
@@ -243,7 +238,8 @@ export class ArchivePage implements OnInit {
         await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success'); 
       }
 
-      this.cleanupFiles([gpxName, kmzName, pdfName]);
+      // Limpieza de archivos
+      this.cleanupFiles([gpxName, kmzName, htmlName]);
 
     } catch (e) {
       console.error('Export error:', e);

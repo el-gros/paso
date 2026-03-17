@@ -110,7 +110,7 @@
     "ALL_MAPS_DOWNLOADED": "Toutes les cartes sont téléchargées"
   },
   "CANVAS": {
-    "TRACK": "Trajet",
+    "TRACK": "Enregistrer la trace",
     "ARCTITLE": "PARCOURS DE RÉFÉRENCE",
     "CURTITLE": "PARCOURS ACTUEL",
     "DISTANCE": "Distance",

@@ -110,7 +110,7 @@
     "ALL_MAPS_DOWNLOADED": "Tots els mapes estan descarregats"
   },
   "CANVAS": {
-    "TRACK": "Trajecte",
+    "TRACK": "Guardar Trajecte",
     "ARCTITLE": "TRAJECTE DE REFERÈNCIA",
     "CURTITLE": "TRAJECTE ACTUAL",
     "DISTANCE": "Distància",
