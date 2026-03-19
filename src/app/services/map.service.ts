@@ -183,9 +183,9 @@ export class MapService {
     if (!document.getElementById('map')) return;
 
     // Inicializar controles si no existen
-    if (!this.shareControl) {
-      this.shareControl = new ShareControl(this.locationManager, this.locationSharingService, this.translate);
-    }
+    //if (!this.shareControl) {
+    //  this.shareControl = new ShareControl(this.locationManager, this.locationSharingService, this.translate);
+    //}
 
     // Asegurar capas vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
