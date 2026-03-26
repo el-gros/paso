@@ -1,5 +1,14 @@
 <ion-content [fullscreen]="true">
   
+  @if (hasReferenceContent) {
+    <ion-fab slot="fixed" vertical="top" horizontal="start" class="clear-reference-fab" (click)="clearReferenceLayer()">
+      <div class="map-control-btn">
+        <ion-icon name="eye-off-sharp" class="danger-icon"></ion-icon>
+        <span>{{ 'MAP.REMOVE_REFERENCE' | translate }}</span>
+      </div>
+    </ion-fab>
+  }
+
   <div id="map-wrapper">
     <div id="map"></div>
   </div>

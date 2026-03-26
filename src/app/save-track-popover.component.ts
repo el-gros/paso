@@ -35,7 +35,8 @@ import { LocationManagerService } from './services/location-manager.service';
           
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.DESCRIPTION' | translate }}</ion-label>
-            <ion-textarea [(ngModel)]="modalEdit.description" rows="3" autoGrow="true" class="custom-textarea"></ion-textarea>
+            <ion-textarea [(ngModel)]="modalEdit.description" rows="4" class="custom-textarea scrollable-textarea">
+            </ion-textarea>
           </div>
         </div>
 
@@ -70,6 +71,7 @@ import { LocationManagerService } from './services/location-manager.service';
       padding: 24px;
       display: flex;
       flex-direction: column;
+      max-height: 90vh;
     }
     
     .popover-header {
@@ -80,8 +82,14 @@ import { LocationManagerService } from './services/location-manager.service';
       h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
     }
     
-    .form-container { display: flex; flex-direction: column; gap: 14px; }
+    .form-container { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
     
+    /* Limita la altura del textarea y le añade scroll */
+    .scrollable-textarea { 
+      max-height: 150px; /* Ajusta este valor según lo que prefieras */
+      overflow-y: auto;
+    }
+
     .custom-label { 
       font-size: 10px; 
       font-weight: 800; 
@@ -184,7 +192,7 @@ export class SaveTrackPopover implements OnInit {
     
     // 🚀 Añadimos un Header para no ser bloqueados por Nominatim (Buena práctica)
     const headers = new HttpHeaders({
-      'User-Agent': 'PasoApp/1.0 (Contact: admin@pasoapp.com)'
+      'User-Agent': 'PasoApp/1.0 (Contact: enric.terradellas@gmail.com)'
     });
 
     try {

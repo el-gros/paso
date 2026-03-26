@@ -18,6 +18,9 @@ import { StylerService } from './services/styler.service';
 import { MapService } from './services/map.service';
 import { PhotoService } from './services/photo.service';
 import { SaveTrackPopover } from './save-track-popover.component';
+import { SnapToTrailService } from './services/snapToTrail.service';
+import { GeoMathService } from './services/geo-math.service';
+
 
 // Opcional pero recomendado: Inyectar el motor que creamos ayer para apagarlo correctamente
 // import { TrackingEngineService } from './services/tracking-engine.service'; 
@@ -117,6 +120,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private cd = inject(ChangeDetectorRef);
   private mapService = inject(MapService);
   private photo = inject(PhotoService);
+  public snapToTrailService = inject(SnapToTrailService);
+  private geoMath = inject(GeoMathService);
   // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
   loading = false;
@@ -276,14 +281,31 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     }
   }
 
-  async saveFile(name: string, description: string) {
+async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
     
     this.loading = true;
     try {
-      const trackToSave = JSON.parse(JSON.stringify(track));
-      const feature = trackToSave.features[0];
+      // 1. Clonamos el track original crudo
+      let trackToProcess = JSON.parse(JSON.stringify(track));
+
+      // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
+      
+      // A. Creamos la referencia geométrica (usando el propio track por ahora)
+      const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({ lng: c[0], lat: c[1] }));
+      
+      // B. Ajuste a sendero + Altitud API + Suavizado de media móvil
+      const snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(trackToProcess, trailReference);
+
+      // C. Filtro final de suavizado y recálculo de desnivel
+      // (Nota: Usa this.geoMath.filter... si tu método está ahí, o this.fs.filter... si está en FunctionsService)
+      const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(snappedTrack, 0); 
+      
+      // --- FIN DEL PIPELINE ---
+
+      // 2. Extraemos la feature ya optimizada
+      const feature = optimizedTrack.features[0];
       const saveDate = new Date();
       const dateKey = saveDate.toISOString();
 
@@ -301,7 +323,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
         }
       }
 
-      await this.fs.storeSet(dateKey, trackToSave);
+      // 3. Guardamos el archivo optimizado en el Storage
+      await this.fs.storeSet(dateKey, optimizedTrack);
       
       const newItem = {
         name,
@@ -323,7 +346,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       this.location.state = 'inactive';
       this.present.currentTrack = undefined;
       this.geography.currentLayer?.getSource()?.clear();
-      this.closeAllPopovers(); // 🚀 Corregido: faltaba punto y coma aquí
+      this.closeAllPopovers(); 
     } catch (e) {
       console.error("Save failed", e);
     } finally {

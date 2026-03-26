@@ -22,7 +22,8 @@
     "ERROR_IMPORT": "Error importing file",
     "TOIMAGE_FAILED": "Could not generate image",
     "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
-    "YES": "Yes"
+    "YES": "Yes",
+    "REMOVE_REFERENCE": "Ref."
   },
   "SEARCH": {
     "BUTTON": "Search",
@@ -237,5 +238,9 @@
     "FOOT_HIKING": "Hiking",
     "WHEELCHAIR": "Wheelchair",
     "UNKNOWN": "Unknown"
+  },
+  "BACKUP": {
+    "TRACKS": "Tracks backup",
+    "EXPORT": "Export backup"
   }
 }

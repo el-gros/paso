@@ -149,7 +149,6 @@ export class WikiCardComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data'] && this.data) {
-      console.log('WikiCard: Datos actualizados', this.data);
       this.cdr.detectChanges(); // Fuerza a la UI a pintar el clima
     }
   }

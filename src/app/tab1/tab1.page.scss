@@ -105,3 +105,40 @@ ion-fab {
     }
   }
 }
+
+.clear-reference-fab {
+  top: env(safe-area-inset-top, 10px);
+  margin-top: -10px; 
+  left: 10px;
+  z-index: 9999 !important; /* 👈 Nos aseguramos de que esté arriba del todo */
+  pointer-events: auto !important; /* 👈 Obligamos a que reciba el toque del dedo */
+
+  .map-control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--ion-background-color, #ffffff);
+    padding: 4px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor: pointer;
+    pointer-events: auto !important; /* 👈 Por si acaso, se lo ponemos también al div */
+
+    /* ... el resto de tu CSS (icon y span) se queda igual ... */
+    .danger-icon {
+      color: var(--ion-color-danger, #eb445a);
+      font-size: 24px; /* Icono un poco más grande */
+      margin-bottom: 4px; /* Separación con el texto */
+      margin-right: 0; /* Quitamos el margen derecho que teníamos antes */
+    }
+
+    span {
+      font-size: 11px; /* Texto más pequeño para que quepa bien */
+      font-weight: bold;
+      color: var(--ion-text-color, #333);
+      text-align: center;
+      line-height: 1;
+    }
+  }
+}

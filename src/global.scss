@@ -56,7 +56,7 @@
   z-index: 10000 !important;
   position: absolute !important;
   bottom: 25px !important; 
-  left: 60px !important; 
+  left: 50px !important; 
   background: transparent !important;
   pointer-events: none;
   transform: rotate(-90deg) !important;
@@ -94,7 +94,7 @@
 
 /* --- Contenedores de Controles Personalizados (Posicionamiento) --- */
 .ol-control.location-button-control {
-  bottom: 86px !important;
+  bottom: 25px !important;
   right: 15px !important;
   top: auto !important;
   left: auto !important;
@@ -258,7 +258,7 @@
   pointer-events: none;
 }
 
-/* Punto de Tracking (Centro arriba) */
+/* Punto de control (Centro arriba) */
 .tracking-dot {
   position: absolute;
   top: 4px;            
@@ -390,10 +390,12 @@ ion-popover.top-search-popover {
     left: 3vw !important;          
     max-width: 420px !important;   
     
-    @media (min-width: 450px) { left: calc(50% - 210px) !important; }
-    
+    /* 1. PRIMERO LAS PROPIEDADES DIRECTAS */
     max-height: 45vh !important;   
     border-radius: var(--glass-radius, 28px) !important;
+
+    /* 2. POR ÚLTIMO LAS ANIDACIONES O MEDIA QUERIES */
+    @media (min-width: 450px) { left: calc(50% - 210px) !important; }
   }
 }
 

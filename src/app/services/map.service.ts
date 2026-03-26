@@ -36,14 +36,12 @@ import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
 import { MbTilesService } from './mbtiles.service';
 import { LocationManagerService } from './location-manager.service';
-import { LocationSharingService } from './locationSharing.service';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { TrackingControlService } from './trackingControl.service';
 import { OfflineMapService } from './offline-map.service';
 import { AppStateService } from '../services/appState.service';
 import { LocationButtonControl } from '../utils/openlayers/custom-control';
-import { ShareControl } from '../utils/openlayers/share-control';
 import { Track, TrackDefinition } from '../../globald';
 
 @Injectable({
@@ -56,7 +54,6 @@ export class MapService {
   mapWrapperElement: HTMLElement | null = null;
   
   public customControl!: LocationButtonControl;  
-  public shareControl!: ShareControl;
   
   mapIsReady: boolean = false;
   hasPendingDisplay: boolean = false;
@@ -85,7 +82,6 @@ export class MapService {
     private present: PresentService,
     private trackingService: TrackingControlService,
     private locationManager: LocationManagerService,
-    private locationSharingService: LocationSharingService,
     private mbTiles: MbTilesService,
     private offlineMapService: OfflineMapService,
     private zone: NgZone,
@@ -181,11 +177,6 @@ export class MapService {
     const defaultCenter: [number, number] = [1.7403, 41.7282];
     
     if (!document.getElementById('map')) return;
-
-    // Inicializar controles si no existen
-    //if (!this.shareControl) {
-    //  this.shareControl = new ShareControl(this.locationManager, this.locationSharingService, this.translate);
-    //}
 
     // Asegurar capas vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);

@@ -4,6 +4,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import JSZip from 'jszip';
 import { FunctionsService } from '../services/functions.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,8 @@ import { FunctionsService } from '../services/functions.service';
 export class BackupService {
 
   constructor(
-    private fs: FunctionsService
+    private fs: FunctionsService,
+    private translate: TranslateService
   ) { }
 
   /**
@@ -61,9 +63,7 @@ export class BackupService {
         }
       });
 
-      console.log('💾 Escribiendo archivo físico en el móvil por fragmentos...');
-
-      const backupFileName = `Copia_PasoApp_${new Date().getTime()}.paso`; 
+      const backupFileName = `Backup_paso_${new Date().getTime()}.paso`; 
       
       // 🛡️ SALVAVIDAS 3: Troceamos el archivo para no reventar el Bridge de Capacitor
       const chunkSize = 1048576; // Exactamente 1MB (múltiplo de 4, seguro para Base64)
@@ -101,10 +101,9 @@ export class BackupService {
 
       // 4. Abrimos el menú nativo para compartir
       await Share.share({
-        title: 'Copia de Seguridad PasoApp',
-        text: 'Aquí tienes tu copia de seguridad con todas tus rutas y fotos.',
+        title: this.translate.instant('BACKUP.TRACKS'),
         url: fileUri.uri,
-        dialogTitle: 'Exportar Copia'
+        dialogTitle: this.translate.instant('BACKUP.EXPORT')
       });
 
       return true;

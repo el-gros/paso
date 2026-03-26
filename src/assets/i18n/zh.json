@@ -22,7 +22,8 @@
     "ERROR_IMPORT": "导入文件出错",
     "TOIMAGE_FAILED": "无法生成图像",
     "CONFIRM_SHARING": "您确定要与他人分享您的位置吗？",
-    "YES": "是"
+    "YES": "是",
+    "REMOVE_REFERENCE": "参考"
   },
   "SEARCH": {
     "BUTTON": "搜索",
@@ -243,5 +244,9 @@
     "FOOT_HIKING": "徒步",
     "WHEELCHAIR": "轮椅",
     "UNKNOWN": "未知"
+  },
+  "BACKUP": {
+    "TRACKS": "轨迹备份副本",
+    "EXPORT": "导出备份"
   }
 }

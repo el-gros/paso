@@ -22,7 +22,8 @@
     "ERROR_IMPORT": "Error al importar el archivo",
     "TOIMAGE_FAILED": "No se ha podido generar la imagen",
     "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
-    "YES": "Sí"
+    "YES": "Sí",
+    "REMOVE_REFERENCE": "Ref."
   },
   "SEARCH": {
     "BUTTON": "Buscar",
@@ -243,5 +244,9 @@
     "FOOT_HIKING": "Senderismo",
     "WHEELCHAIR": "Silla de ruedas",
     "UNKNOWN": "Desconocido"
+  },
+  "BACKUP": {
+    "TRACKS": "Copia de seguridad de los trayectos",
+    "EXPORT": "Exportar copia de seguridad"
   }
 }

@@ -10,7 +10,6 @@ import { IonicModule, Platform, ToastController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { TrackingControlService } from '../services/trackingControl.service';
-import { LocationSharingService } from '../services/locationSharing.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
@@ -49,13 +48,18 @@ export class Tab1Page implements OnInit, OnDestroy {
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
 
+  get hasReferenceContent(): boolean {
+    const source = this.geography.archivedLayer?.getSource();
+    const hasLayerContent = source ? source.getFeatures().length > 0 : false;
+    return hasLayerContent
+  }
+
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
     private cd: ChangeDetectorRef,
     private translate: TranslateService,
     private trackingControlService: TrackingControlService,
-    private locationSharingService: LocationSharingService,
     public location: LocationManagerService,
     public reference: ReferenceService,
     public geography: GeographyService,
@@ -133,9 +137,9 @@ export class Tab1Page implements OnInit, OnDestroy {
             await this.mapService.updateColors();
             this.fs.reDraw = false;
         }
-        if (this.fs.buildTrackImage) {
+        /*if (this.fs.buildTrackImage) {
             await this.buildTrackImage();
-        }
+        }*/
         if (this.mapService.visibleAll) {
             const source = this.geography.archivedLayer?.getSource();
             if (source && source.getFeatures().length === 0) {
@@ -173,15 +177,13 @@ export class Tab1Page implements OnInit, OnDestroy {
 
     this.mapService.locationActivated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.trackingControlService.start());
     this.mapService.locationDeactivated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.trackingControlService.stop());
-    this.mapService.shareStarted$.pipe(takeUntil(this.destroy$)).subscribe(() => this.locationSharingService.startSharing());
-    this.mapService.shareStopped$.pipe(takeUntil(this.destroy$)).subscribe(() => this.locationSharingService.stopSharing());
 
     this.mapInteraction.initClickHandling();
     this.trackingControlService.start();
     this.eventsInitialized = true;
   }
 
-  public async buildTrackImage() {
+  /*public async buildTrackImage() {
     const map = this.geography.map;
     if (!map) {
       this.fs.buildTrackImage = false;
@@ -196,7 +198,7 @@ export class Tab1Page implements OnInit, OnDestroy {
       await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'), 'error');
       this.fs.gotoPage('archive');
     }
-  }
+  }*/
 
   handleWikiResult(event: WikiWeatherResult) {
     this.wikiData = event;       
@@ -251,6 +253,24 @@ export class Tab1Page implements OnInit, OnDestroy {
       await this.geography.setMapView(track);
     } catch (error) {
       console.error('Error al refrescar el mapa desde foreground:', error);
+    }
+  }
+
+ async clearReferenceLayer() {
+    this.reference.archivedTrack = undefined; 
+    this.reference.foundRoute = false;
+    this.mapService.visibleAll = false; 
+
+    // Limpiamos el mapa
+    this.geography.archivedLayer?.getSource()?.clear();
+    
+    // Le decimos a Angular: "Revisa el HTML ahora"
+    this.cd.detectChanges(); 
+
+    try {
+      await this.location.sendReferenceToPlugin();
+    } catch (error) {
+      console.error(error);
     }
   }
 }

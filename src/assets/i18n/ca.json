@@ -22,7 +22,8 @@
     "ERROR_IMPORT": "Error en importar el fitxer",
     "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
     "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
-    "YES": "Sí"
+    "YES": "Sí",
+    "REMOVE_REFERENCE": "Ref."
   },
   "SEARCH": {
     "BUTTON": "Cercar",
@@ -235,5 +236,11 @@
     "FOOT_HIKING": "Senderisme",
     "WHEELCHAIR": "Cadira de rodes",
     "UNKNOWN": "Desconegut"
+  },
+  "BACKUP": {
+    "TRACKS": "Còpia de seguretat dels trajectes",
+    "EXPORT": "Exportar còpia de seguretat"
   }
+
+
 }

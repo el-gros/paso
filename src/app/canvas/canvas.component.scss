@@ -314,3 +314,72 @@ swiper-slide {
     color: var(--ion-color-dark, #333);
   }
 }
+
+/* PARTIALS */
+
+/* Contenedor principal de los parciales */
+.partials-container {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Cabecera de la tabla (3 columnas) */
+.partials-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ion-color-medium, #888);
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  align-items: center;
+}
+
+/* Fila de cada parcial (3 columnas) */
+.partial-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.05);
+}
+
+/* Alineación a la derecha para ritmo y velocidad */
+.align-right {
+  text-align: right;
+  justify-self: end;
+}
+
+/* Estilo del "badge" para el número de kilómetro */
+.km-badge {
+  background: var(--ion-color-primary, #3880ff);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* Estilos de los valores */
+.pace-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.speed-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+
+.speed-value span {
+  font-size: 10px;
+  font-weight: normal;
+  color: #888;
+}

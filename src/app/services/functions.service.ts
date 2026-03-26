@@ -19,7 +19,7 @@ export class FunctionsService {
   private _storage: Storage | null = null;
   
   public key: string | undefined = undefined;
-  public buildTrackImage: boolean = false;
+  //public buildTrackImage: boolean = false;
   public reDraw: boolean = false;
   public lag: number = 8;
   public geocoding: string = 'maptiler';

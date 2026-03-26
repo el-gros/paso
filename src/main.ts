@@ -11,9 +11,9 @@ import { TranslateModule } from '@ngx-translate/core';
 import { TranslateLoader } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { File } from '@awesome-cordova-plugins/file/ngx';
+//import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
+//import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
+//import { File } from '@awesome-cordova-plugins/file/ngx';
 
 // Standalone loader factory
 export function httpTranslateLoader(http: HttpClient) {
@@ -26,9 +26,6 @@ if (environment.production) {
 
 bootstrapApplication(AppComponent, {
   providers: [
-    SocialSharing,
-    FilePath,
-    File,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
 
     importProvidersFrom(IonicModule.forRoot({})),

@@ -4,8 +4,8 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share'; // 👈 IMPORTANTE: El nuevo import
 
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
@@ -14,7 +14,8 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
-// 🚀 Eliminado SupabaseService
+import { SnapToTrailService } from '../services/snapToTrail.service';
+import { GeoMathService } from '../services/geo-math.service';
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track } from '../../globald';
@@ -37,21 +38,22 @@ export class ArchivePage implements OnInit {
     public fs: FunctionsService,
     public mapService: MapService,
     private translate: TranslateService,
-    private socialSharing: SocialSharing,
     public reference: ReferenceService,
     public geography: GeographyService,
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
-    private modalCtrl: ModalController
-    // 🚀 Eliminado SupabaseService del constructor
+    private modalCtrl: ModalController,
+    private snapToTrailService: SnapToTrailService,
+    private geoMath: GeoMathService
+    // ELIMINADO: private socialSharing: SocialSharing
   ) { }
 
   ngOnInit() { }
 
-  async ionViewDidEnter() {
+  /*async ionViewDidEnter() {
     if (this.fs.buildTrackImage) await this.shareImages();
-  }
+  }*/
 
   // ==========================================================================
   // 1. VISUALIZACIÓN Y NAVEGACIÓN
@@ -206,7 +208,7 @@ export class ArchivePage implements OnInit {
       // 1. GENERAR EL ARCHIVO HTML INTERACTIVO
       const htmlText = this.exportService.generateStandaloneHtml(trackData, item.name);
 
-      // 2. GENERAR ARCHIVOS GPX Y KMZ (Adiós PDF y generación de imágenes)
+      // 2. GENERAR ARCHIVOS GPX Y KMZ 
       const [gpxText, kmzBase64] = await Promise.all([
         this.exportService.geoJsonToGpx(featureToExport),
         this.exportService.geoJsonToKmz(featureToExport)
@@ -217,33 +219,32 @@ export class ArchivePage implements OnInit {
       const htmlName = `${safeName}.html`;
 
       // 3. GUARDAR ARCHIVOS EN CACHÉ EXTERNA
+      // Aseguramos de no pasar Encoding al KMZ porque es base64 y debe decodificarse a binario.
       const [savedGpx, savedKmz, savedHtml] = await Promise.all([
           this.writeFile(gpxName, gpxText, Encoding.UTF8),
-          this.writeFile(kmzName, kmzBase64),
+          Filesystem.writeFile({ path: kmzName, data: kmzBase64, directory: Directory.Cache }), // Guardado binario
           this.writeFile(htmlName, htmlText, Encoding.UTF8)
       ]);
 
-      // 4. COMPARTIR (Mensajes mejorados para WhatsApp y Gmail)
-      const shareMessage = `Te envío información sobre la ruta: ${item.name}`;
-      const shareSubject = `Ruta: ${item.name}`; // Gmail usa esto como Asunto
+      // 4. COMPARTIR USANDO CAPACITOR SHARE
+      const shareSubject = `${this.translate.instant('SEARCH_ROUTE')}: ${item.name}`;
 
-      const result = await this.socialSharing.shareWithOptions({
-        message: shareMessage,
-        subject: shareSubject,
+      await Share.share({
+        title: shareSubject,
         files: [savedGpx.uri, savedKmz.uri, savedHtml.uri],
-        chooserTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
+        dialogTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
 
-      if (result && result.completed) {
-        await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success'); 
-      }
-
-      // Limpieza de archivos
-      this.cleanupFiles([gpxName, kmzName, htmlName]);
+      // El plugin Share no devuelve una propiedad 'completed' garantizada en todas las plataformas,
+      // pero si el await no lanza error, asumimos éxito.
+      await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success'); 
 
     } catch (e) {
       console.error('Export error:', e);
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
+      // Solo mostramos error si no es una cancelación del usuario (Canceled share)
+      if (String(e).indexOf('Canceled') === -1 && String(e).indexOf('canceled') === -1) {
+          await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
+      }
     } finally {
       await loading.dismiss();
     }
@@ -252,7 +253,7 @@ export class ArchivePage implements OnInit {
   // ==========================================================================
   // 4. COMPARTIR IMÁGENES (Social)
   // ==========================================================================
-  async prepareImageExport() {
+  /* async prepareImageExport() {
     this.fs.buildTrackImage = true;
     await this.displayTrack(true);
   }
@@ -262,23 +263,27 @@ export class ArchivePage implements OnInit {
       const mapFile = await Filesystem.getUri({ path: 'map.png', directory: Directory.ExternalCache });
       const slideFile = await Filesystem.getUri({ path: 'data.png', directory: Directory.ExternalCache });
       
-      await this.socialSharing.share(undefined, this.translate.instant('ARCHIVE.TEXT'), [mapFile.uri, slideFile.uri]);
+      // CAMBIO A CAPACITOR SHARE
+      await Share.share({
+        title: this.translate.instant('ARCHIVE.TEXT'),
+        text: this.translate.instant('ARCHIVE.TEXT'),
+        files: [mapFile.uri, slideFile.uri]
+      });
+      
       this.fs.buildTrackImage = false; 
     } catch (err) {
       console.error('Failed to share images:', err);
     }
-  }
+  }*/
 
   private async writeFile(path: string, data: string, encoding?: Encoding) {
-    return Filesystem.writeFile({ path, data, directory: Directory.ExternalCache, encoding });
+    return Filesystem.writeFile({ path, data, directory: Directory.Cache, encoding });
   }
 
   private cleanupFiles(paths: string[]) {
-    setTimeout(async () => {
       for (const path of paths) {
-        try { await Filesystem.deleteFile({ path, directory: Directory.ExternalCache }); } catch(e) {}
+        Filesystem.deleteFile({ path, directory: Directory.Cache }).catch(e => console.log('Cleanup error', e));
       }
-    }, 5000);
   }
 
   // ==========================================================================
@@ -303,4 +308,5 @@ export class ArchivePage implements OnInit {
     });
     await modal.present();
   }
+
 }

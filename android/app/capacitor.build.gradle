@@ -9,11 +9,9 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
-    implementation project(':capacitor-community-background-geolocation')
     implementation project(':capacitor-community-speech-recognition')
     implementation project(':capacitor-community-sqlite')
     implementation project(':capacitor-app')
-    implementation project(':capacitor-app-launcher')
     implementation project(':capacitor-camera')
     implementation project(':capacitor-device')
     implementation project(':capacitor-filesystem')
@@ -21,14 +19,10 @@ dependencies {
     implementation project(':capacitor-keyboard')
     implementation project(':capacitor-local-notifications')
     implementation project(':capacitor-preferences')
-    implementation project(':capacitor-push-notifications')
     implementation project(':capacitor-screen-orientation')
     implementation project(':capacitor-share')
-    implementation project(':capawesome-team-capacitor-android-foreground-service')
-    implementation project(':capawesome-capacitor-background-task')
     implementation project(':capawesome-capacitor-file-picker')
-    implementation "androidx.webkit:webkit:1.4.0"
-    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+
 }
 
 

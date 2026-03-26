@@ -27,13 +27,6 @@ export interface MyServicePlugin {
   openAutostartSettings(): Promise<void>;
   openBatteryOptimization(): Promise<void>;
   isIgnoringBatteryOptimizations(): Promise<{ value: boolean }>;
-  updateSharingConfig(options: {
-    isSharing: boolean;
-    shareToken?: string;
-    deviceId?: string;
-    supabaseUrl?: string;
-    supabaseKey?: string;
-  }): Promise<void>;
 
   // Evento original de ubicación
   addListener(
