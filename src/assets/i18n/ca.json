@@ -161,9 +161,15 @@
     "DELETE_NO": "No",
     "DEFAULT_NAME": "Sense nom",
     "SHARE_TEXT": "Podeu veure la meva ruta a: ",
-    "SEARCHING_PLACE": "Buscando lugar...",
+    "SEARCHING_PLACE": "Cercant lloc...",
     "ROUTE_AROUND": "Ruta por {{place}}",
-    "UNKNOWN_PLACE": "Lugar desconocido"
+    "UNKNOWN_PLACE": "Lugar desconocido",
+    "CIRCULAR_ROUTE": "Ruta circular des de {{start}}",
+    "LINEAR_ROUTE": "Ruta de {{start}} a {{end}}",
+    "PASSING_BY_CIRCULAR": "Ruta circular des de {{start}} passant per:\n",
+    "PASSING_BY_LINEAR": "Ruta des de {{start}} cap a {{end}} passant per:\n",
+    "NO_POIS": "- Sense punts d'interès destacats registrats.\n",
+    "START_POINT": "Punt d'inici"
   },
   "COLORS": {
     "crimson": "carmesí",
@@ -240,7 +246,11 @@
   "BACKUP": {
     "TRACKS": "Còpia de seguretat dels trajectes",
     "EXPORT": "Exportar còpia de seguretat"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "Foto de la meva ruta: {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "Foto de la meva ruta amb PasoApp ⛰️",
+    "SHARE_DIALOG": "Compartir foto"
   }
-
 
 }

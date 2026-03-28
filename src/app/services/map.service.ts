@@ -41,6 +41,7 @@ import { PresentService } from '../services/present.service';
 import { TrackingControlService } from './trackingControl.service';
 import { OfflineMapService } from './offline-map.service';
 import { AppStateService } from '../services/appState.service';
+import { SearchService } from './search.service';
 import { LocationButtonControl } from '../utils/openlayers/custom-control';
 import { Track, TrackDefinition } from '../../globald';
 
@@ -86,6 +87,7 @@ export class MapService {
     private offlineMapService: OfflineMapService,
     private zone: NgZone,
     private appState: AppStateService,
+    private searchService: SearchService
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
 
@@ -224,7 +226,7 @@ export class MapService {
         ],
       });
 
-      this.customControl = new LocationButtonControl(this.trackingService, this.translate);
+      this.customControl = new LocationButtonControl(this.trackingService, this.translate, this.searchService);
       this.geography.map.addControl(this.customControl);
       //this.geography.map.addControl(this.shareControl); 
     }

@@ -3,8 +3,6 @@ import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { PresentService } from './services/present.service';
 import { LocationManagerService } from './services/location-manager.service';
 
@@ -28,8 +26,7 @@ import { LocationManagerService } from './services/location-manager.service';
               [(ngModel)]="modalEdit.name" 
               rows="1" 
               autoGrow="true" 
-              class="custom-textarea"
-              [placeholder]="isNaming ? ('RECORD.SEARCHING_PLACE' | translate) : ''">
+              class="custom-textarea">
             </ion-textarea>
           </div>
           
@@ -41,7 +38,7 @@ import { LocationManagerService } from './services/location-manager.service';
         </div>
 
         <div class="button-grid">
-          <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()" [disabled]="isNaming">
+          <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
             <ion-icon name="checkmark-sharp"></ion-icon>
             <span>OK</span>
             <ion-ripple-effect></ion-ripple-effect>
@@ -84,9 +81,8 @@ import { LocationManagerService } from './services/location-manager.service';
     
     .form-container { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
     
-    /* Limita la altura del textarea y le añade scroll */
     .scrollable-textarea { 
-      max-height: 150px; /* Ajusta este valor según lo que prefieras */
+      max-height: 150px; 
       overflow-y: auto;
     }
 
@@ -113,7 +109,6 @@ import { LocationManagerService } from './services/location-manager.service';
       margin-top: 25px; 
     }
 
-    /* 🚀 Botones actualizados al estándar de la app */
     .nav-item-btn {
       position: relative;
       overflow: hidden;
@@ -149,67 +144,14 @@ export class SaveTrackPopover implements OnInit {
   public location = inject(LocationManagerService);
   public present = inject(PresentService);
   private popoverCtrl = inject(PopoverController);
-  private http = inject(HttpClient);
-  private translate = inject(TranslateService); // 🚀 NUEVO
+  private translate = inject(TranslateService); 
   
-  public isNaming = false;
-
-  async ngOnInit() {
-    this.modalEdit = { ...this.modalEdit };
-    const coords = this.modalEdit.coords;
-
-    if (!this.modalEdit.name && coords && coords.length > 0) {
-      await this.generateSuggestedName(coords);
-    }
-  }
-
-  async generateSuggestedName(coords: any[]) {
-    this.isNaming = true;
-    try {
-      const start = coords[0];
-      const end = coords[coords.length - 1];
-
-      const startPlace = await this.getPlaceName(start[1], start[0]); 
-      const endPlace = await this.getPlaceName(end[1], end[0]);
-
-      if (startPlace && endPlace) {
-        if (startPlace === endPlace) {
-          // 🚀 Usamos TranslateService con parámetros dinámicos
-          this.modalEdit.name = this.translate.instant('RECORD.ROUTE_AROUND', { place: startPlace });
-        } else {
-          this.modalEdit.name = `${startPlace} - ${endPlace}`;
-        }
-      }
-    } catch (error) {
-      console.error('Error sugiriendo nombre:', error);
-    } finally {
-      this.isNaming = false;
-    }
-  }
-
-  private async getPlaceName(lat: number, lon: number): Promise<string> {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`;
-    
-    // 🚀 Añadimos un Header para no ser bloqueados por Nominatim (Buena práctica)
-    const headers = new HttpHeaders({
-      'User-Agent': 'PasoApp/1.0 (Contact: enric.terradellas@gmail.com)'
-    });
-
-    try {
-      const data: any = await firstValueFrom(this.http.get(url, { headers }));
-      
-      return data.address.village || 
-             data.address.town || 
-             data.address.city || 
-             data.address.suburb || 
-             this.translate.instant('RECORD.UNKNOWN_PLACE'); // 🚀 Texto traducido
-    } catch {
-      return '';
-    }
+  ngOnInit() {
+    // Simplemente aseguramos que el objeto exista y lo copiamos para editarlo
+    this.modalEdit = { name: '', description: '', ...this.modalEdit };
   }
 
   public cancel() { 
-//    this.popoverCtrl.dismiss(); 
     this.popoverCtrl.dismiss(null, 'cancel'); 
   }
   

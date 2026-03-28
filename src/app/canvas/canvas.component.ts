@@ -132,14 +132,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.swiperRef.nativeElement.initialize();
     }
 
-    /*if (this.fs.buildTrackImage) {
-      setTimeout(async () => {
-        // 🚀 Delegamos la lógica nativa al servicio
-        const success = await this.trackExport.generateAndSaveDataImage('exportArea');
-        this.fs.buildTrackImage = false;
-        if (success) this.fs.gotoPage('archive');
-      }, 800); 
-    }*/
   }
 
   // ====================================================================

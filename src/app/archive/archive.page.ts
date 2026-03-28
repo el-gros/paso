@@ -51,10 +51,6 @@ export class ArchivePage implements OnInit {
 
   ngOnInit() { }
 
-  /*async ionViewDidEnter() {
-    if (this.fs.buildTrackImage) await this.shareImages();
-  }*/
-
   // ==========================================================================
   // 1. VISUALIZACIÓN Y NAVEGACIÓN
   // ==========================================================================
@@ -250,32 +246,6 @@ export class ArchivePage implements OnInit {
     }
   }
   
-  // ==========================================================================
-  // 4. COMPARTIR IMÁGENES (Social)
-  // ==========================================================================
-  /* async prepareImageExport() {
-    this.fs.buildTrackImage = true;
-    await this.displayTrack(true);
-  }
-
-  async shareImages() {
-    try {
-      const mapFile = await Filesystem.getUri({ path: 'map.png', directory: Directory.ExternalCache });
-      const slideFile = await Filesystem.getUri({ path: 'data.png', directory: Directory.ExternalCache });
-      
-      // CAMBIO A CAPACITOR SHARE
-      await Share.share({
-        title: this.translate.instant('ARCHIVE.TEXT'),
-        text: this.translate.instant('ARCHIVE.TEXT'),
-        files: [mapFile.uri, slideFile.uri]
-      });
-      
-      this.fs.buildTrackImage = false; 
-    } catch (err) {
-      console.error('Failed to share images:', err);
-    }
-  }*/
-
   private async writeFile(path: string, data: string, encoding?: Encoding) {
     return Filesystem.writeFile({ path, data, directory: Directory.Cache, encoding });
   }

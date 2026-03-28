@@ -20,7 +20,7 @@ import { PhotoService } from './services/photo.service';
 import { SaveTrackPopover } from './save-track-popover.component';
 import { SnapToTrailService } from './services/snapToTrail.service';
 import { GeoMathService } from './services/geo-math.service';
-
+import { SmartRouteBuilderService } from './services/smart-route-builder.service';
 
 // Opcional pero recomendado: Inyectar el motor que creamos ayer para apagarlo correctamente
 // import { TrackingEngineService } from './services/tracking-engine.service'; 
@@ -122,6 +122,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private photo = inject(PhotoService);
   public snapToTrailService = inject(SnapToTrailService);
   private geoMath = inject(GeoMathService);
+  public smartRouteBuilder = inject(SmartRouteBuilderService);
   // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
   loading = false;
@@ -251,11 +252,32 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     await this.setTrackDetails();
   }
 
-  async setTrackDetails(ev?: any) {
-    const modalEdit = { name: '', description: '' };
+async setTrackDetails(ev?: any) {
+    const track = this.present.currentTrack;
+    let proposedTexts = { name: '', description: '' };
+
+    // 1. Si hay un track válido, autogeneramos los textos
+    if (track && track.features && track.features[0]) {
+      this.loading = true; // Activa el spinner (o bloquea la UI) para que el usuario espere
+      try {
+        const feature = track.features[0];
+        const autoTexts = await this.smartRouteBuilder.generateWikilocStyleTexts(feature);
+        proposedTexts = { 
+          name: autoTexts.title, 
+          description: autoTexts.description 
+        };
+      } catch (err) {
+        console.warn('No se pudo autogenerar el texto de la ruta', err);
+      } finally {
+        this.loading = false;
+        this.cd.detectChanges();
+      }
+    }
+
+    // 2. Abrimos el popover pasando los textos propuestos
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit },
+      componentProps: { modalEdit: proposedTexts }, // 👈 Aquí inyectamos el auto-título y descripción
       cssClass: 'top-glass-island-wrapper',
       translucent: true,
       backdropDismiss: true
@@ -263,25 +285,26 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     
     await popover.present();
     
-    // 🚀 Extraemos tanto la data como el role
+    // 3. Esperamos a que el usuario confirme o edite
     const { data, role } = await popover.onDidDismiss();
     
-    // 1. Si el usuario cancela (botón o tocando el fondo oscuro)
     if (role === 'cancel' || role === 'backdrop') {
       if (this.location.state === 'stopped') {
         this.present.isRecordPopoverOpen = true;
       }
-      return; // Salimos para no ejecutar nada más
+      return; 
     }
     
-    // 2. Si el usuario confirma y todo está OK
     if (data?.action === 'ok') {
-      const name = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
-      await this.saveFile(name, data.description);
+      // Si el usuario borró todo y lo dejó en blanco, le ponemos un nombre por defecto
+      const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+      
+      // Llamamos al guardado (que ahora incluye tu pipeline de Snap-To-Trail y Elevación API)
+      await this.saveFile(finalName, data.description);
     }
   }
 
-async saveFile(name: string, description: string) {
+  async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
     
@@ -354,4 +377,5 @@ async saveFile(name: string, description: string) {
       this.cd.detectChanges();
     }
   }
+
 }

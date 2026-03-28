@@ -163,7 +163,13 @@
     "SHARE_TEXT": "您可以通过以下链接查看我的路线： ",
     "SEARCHING_PLACE": "正在搜索地点...",
     "ROUTE_AROUND": "途经 {{place}} 的路线",
-    "UNKNOWN_PLACE": "未知地点"
+    "UNKNOWN_PLACE": "未知地点",
+    "CIRCULAR_ROUTE": "从 {{start}} 出发的环形路线",
+    "LINEAR_ROUTE": "从 {{start}} 到 {{end}} 的路线",
+    "PASSING_BY_CIRCULAR": "从 {{start}} 出发的环形路线，途经：\n",
+    "PASSING_BY_LINEAR": "从 {{start}} 到 {{end}} 的路线，途经：\n",
+    "NO_POIS": "- 没有记录到重要的兴趣点。\n",
+    "START_POINT": "起点"
   },
   "COLORS": {
     "crimson": "深红色",
@@ -248,5 +254,10 @@
   "BACKUP": {
     "TRACKS": "轨迹备份副本",
     "EXPORT": "导出备份"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "我的路线照片: {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "使用 PasoApp 拍摄的路线照片 ⛰️",
+    "SHARE_DIALOG": "分享照片"
   }
 }

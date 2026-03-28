@@ -163,7 +163,13 @@
     "SHARE_TEXT": "Vous pouvez voir mon itinéraire à : ",
     "SEARCHING_PLACE": "Recherche du lieu...",
     "ROUTE_AROUND": "Itinéraire par {{place}}",
-    "UNKNOWN_PLACE": "Lieu inconnu"
+    "UNKNOWN_PLACE": "Lieu inconnu",
+    "CIRCULAR_ROUTE": "Itinéraire en boucle depuis {{start}}",
+    "LINEAR_ROUTE": "Itinéraire de {{start}} à {{end}}",
+    "PASSING_BY_CIRCULAR": "Itinéraire en boucle depuis {{start}} passant par :\n",
+    "PASSING_BY_LINEAR": "Itinéraire de {{start}} vers {{end}} passant par :\n",
+    "NO_POIS": "- Aucun point d'intérêt remarquable enregistré.\n",
+    "START_POINT": "Point de départ"
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -248,5 +254,10 @@
   "BACKUP": {
     "TRACKS": "Sauvegarde des trajets",
     "EXPORT": "Exporter la sauvegarde"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "Photo de mon itinéraire : {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "Photo de mon itinéraire avec PasoApp ⛰️",
+    "SHARE_DIALOG": "Partager la photo"
   }
 }

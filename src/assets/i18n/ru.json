@@ -163,7 +163,13 @@
     "SHARE_TEXT": "Вы можете посмотреть мой маршрут по ссылке: ",
     "SEARCHING_PLACE": "Поиск места...",
     "ROUTE_AROUND": "Маршрут через {{place}}",
-    "UNKNOWN_PLACE": "Неизвестное место"
+    "UNKNOWN_PLACE": "Неизвестное место",
+    "CIRCULAR_ROUTE": "Круговой маршрут от {{start}}",
+    "LINEAR_ROUTE": "Маршрут от {{start}} до {{end}}",
+    "PASSING_BY_CIRCULAR": "Круговой маршрут от {{start}}, проходящий через:\n",
+    "PASSING_BY_LINEAR": "Маршрут от {{start}} до {{end}}, проходящий через:\n",
+    "NO_POIS": "- Нет зарегистрированных достопримечательностей.\n",
+    "START_POINT": "Начальная точка"
   },
   "COLORS": {
     "crimson": "Малиновый",
@@ -248,5 +254,10 @@
   "BACKUP": {
     "TRACKS": "Резервная копия маршрутов",
     "EXPORT": "Экспорт резервной копии"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "Фото моего маршрута: {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "Фото моего маршрута с PasoApp ⛰️",
+    "SHARE_DIALOG": "Поделиться фото"
   }
 }

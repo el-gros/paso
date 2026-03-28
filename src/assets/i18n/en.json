@@ -163,7 +163,13 @@
     "SHARE_TEXT": "You can view my route at: ",
     "SEARCHING_PLACE": "Searching place...",
     "ROUTE_AROUND": "Route around {{place}}",
-    "UNKNOWN_PLACE": "Unknown place"
+    "UNKNOWN_PLACE": "Unknown place",
+    "CIRCULAR_ROUTE": "Circular route from {{start}}",
+    "LINEAR_ROUTE": "Route from {{start}} to {{end}}",
+    "PASSING_BY_CIRCULAR": "Circular route from {{start}} passing through:\n",
+    "PASSING_BY_LINEAR": "Route from {{start}} to {{end}} passing through:\n",
+    "NO_POIS": "- No notable points of interest recorded.\n",
+    "START_POINT": "Starting point"
   },
   "COLORS": {
     "crimson": "Crimson",
@@ -242,5 +248,10 @@
   "BACKUP": {
     "TRACKS": "Tracks backup",
     "EXPORT": "Export backup"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "Photo of my route: {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "Photo of my route with PasoApp ⛰️",
+    "SHARE_DIALOG": "Share photo"
   }
 }

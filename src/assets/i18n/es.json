@@ -163,7 +163,13 @@
     "SHARE_TEXT": "Puedes ver mi ruta en: ",
     "SEARCHING_PLACE": "Buscando lugar...",
     "ROUTE_AROUND": "Ruta por {{place}}",
-    "UNKNOWN_PLACE": "Lugar desconocido"
+    "UNKNOWN_PLACE": "Lugar desconocido",
+    "CIRCULAR_ROUTE": "Ruta circular desde {{start}}",
+    "LINEAR_ROUTE": "Ruta de {{start}} a {{end}}",
+    "PASSING_BY_CIRCULAR": "Ruta circular desde {{start}} pasando por:\n",
+    "PASSING_BY_LINEAR": "Ruta desde {{start}} hacia {{end}} pasando por:\n",
+    "NO_POIS": "- Sin puntos de interés destacados registrados.\n",
+    "START_POINT": "Punto de inicio"
   },
   "COLORS": {
     "crimson": "Carmesí",
@@ -248,5 +254,10 @@
   "BACKUP": {
     "TRACKS": "Copia de seguridad de los trayectos",
     "EXPORT": "Exportar copia de seguridad"
+  },
+  "PHOTO": {
+    "SHARE_ROUTE_TITLE": "Foto de mi ruta: {{route}} ⛰️",
+    "SHARE_GENERIC_TITLE": "Foto de mi ruta con PasoApp ⛰️",
+    "SHARE_DIALOG": "Compartir foto"
   }
 }
