@@ -164,12 +164,15 @@
     "SEARCHING_PLACE": "Searching place...",
     "ROUTE_AROUND": "Route around {{place}}",
     "UNKNOWN_PLACE": "Unknown place",
-    "CIRCULAR_ROUTE": "Circular route from {{start}}",
-    "LINEAR_ROUTE": "Route from {{start}} to {{end}}",
-    "PASSING_BY_CIRCULAR": "Circular route from {{start}} passing through:\n",
-    "PASSING_BY_LINEAR": "Route from {{start}} to {{end}} passing through:\n",
     "NO_POIS": "- No notable points of interest recorded.\n",
-    "START_POINT": "Starting point"
+    "START_POINT": "Starting point",
+    "CIRCULAR_ROUTE": "Route from {{start}} to {{target}} (and back)",
+    "LINEAR_ROUTE": "Route from {{start}} to {{end}}",
+    "URBAN_CIRCULAR_ROUTE": "Route through {{city}}: from {{start}} to {{target}} (and back)",
+    "URBAN_LINEAR_ROUTE": "Route through {{city}}: from {{start}} to {{end}}",
+    "SURROUNDINGS": "the surroundings",
+    "PASSING_BY_CIRCULAR": "Circular route from {{start}} to {{target}}, passing by:",
+    "PASSING_BY_LINEAR": "Linear route from {{start}} to {{end}}, passing by:"
   },
   "COLORS": {
     "crimson": "Crimson",

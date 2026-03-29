@@ -164,12 +164,15 @@
     "SEARCHING_PLACE": "正在搜索地点...",
     "ROUTE_AROUND": "途经 {{place}} 的路线",
     "UNKNOWN_PLACE": "未知地点",
-    "CIRCULAR_ROUTE": "从 {{start}} 出发的环形路线",
-    "LINEAR_ROUTE": "从 {{start}} 到 {{end}} 的路线",
-    "PASSING_BY_CIRCULAR": "从 {{start}} 出发的环形路线，途经：\n",
-    "PASSING_BY_LINEAR": "从 {{start}} 到 {{end}} 的路线，途经：\n",
     "NO_POIS": "- 没有记录到重要的兴趣点。\n",
-    "START_POINT": "起点"
+    "START_POINT": "起点",
+    "CIRCULAR_ROUTE": "从 {{start}} 到 {{target}} 的路线（往返）",
+    "LINEAR_ROUTE": "从 {{start}} 到 {{end}} 的路线",
+    "URBAN_CIRCULAR_ROUTE": "穿越 {{city}} 的路线：从 {{start}} 到 {{target}}（往返）",
+    "URBAN_LINEAR_ROUTE": "穿越 {{city}} 的路线：从 {{start}} 到 {{end}}",
+    "SURROUNDINGS": "周边地区",
+    "PASSING_BY_CIRCULAR": "从 {{start}} 到 {{target}} 的环形路线，途经：",
+    "PASSING_BY_LINEAR": "从 {{start}} 到 {{end}} 的线性路线，途经："
   },
   "COLORS": {
     "crimson": "深红色",

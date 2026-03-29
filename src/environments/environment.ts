@@ -28,6 +28,12 @@ export var global: any = {
       "url": "https://download.geofabrik.de/europe/spain/aragon-shortbread-1.0.mbtiles",
       "size": 155
     },
+   {
+      "name": "Castilla La Mancha",
+      "filename": "castilla-la-mancha-shortbread-1.0.mbtiles",
+      "url": "https://download.geofabrik.de/europe/spain/castilla-la-mancha-shortbread-1.0.mbtiles",
+      "size": 230
+    },
     {
       "name": "Comunitat Valenciana",
       "filename": "valencia-shortbread-1.0.mbtiles",
@@ -35,18 +41,30 @@ export var global: any = {
       "size": 160
     },
     {
+      "name": "Galicia",
+      "filename": "galicia-shortbread-1.0.mbtiles",
+      "url": "https://download.geofabrik.de/europe/spain/galicia-shortbread-1.0.mbtiles",
+      "size": 113
+    },
+    {
       "name": "Languedoc-Roussillon",
       "filename": "languedoc-roussillon-shortbread-1.0.mbtiles",
       "url": "https://download.geofabrik.de/europe/france/languedoc-roussillon-shortbread-1.0.mbtiles",
       "size": 284
     },
-        {
+    {
       "name": "Midi-Pyrénées",
       "filename": "midi-pyrenees-shortbread-1.0.mbtiles",
       "url": "https://download.geofabrik.de/europe/france/midi-pyrenees-shortbread-1.0.mbtiles",
       "size": 391
     },
-  ]
+    {
+      "name": "Navarra",
+      "filename": "navarra-shortbread-1.0.mbtiles",
+      "url": "https://download.geofabrik.de/europe/spain/navarra-shortbread-1.0.mbtiles",
+      "size": 71
+    },
+ ]
 }
 
 export const environment = {

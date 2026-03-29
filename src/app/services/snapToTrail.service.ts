@@ -124,7 +124,7 @@ export class SnapToTrailService {
     };
   }
 
-  private calculateHaversineDistance(p1: any, p2: any): number {
+  public calculateHaversineDistance(p1: any, p2: any): number {
     const R = 6371e3; 
     const dLat = (p2.lat - p1.lat) * Math.PI / 180;
     const dLon = (p2.lng - p1.lng) * Math.PI / 180;

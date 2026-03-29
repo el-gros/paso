@@ -163,13 +163,16 @@
     "SHARE_TEXT": "Podeu veure la meva ruta a: ",
     "SEARCHING_PLACE": "Cercant lloc...",
     "ROUTE_AROUND": "Ruta por {{place}}",
-    "UNKNOWN_PLACE": "Lugar desconocido",
-    "CIRCULAR_ROUTE": "Ruta circular des de {{start}}",
-    "LINEAR_ROUTE": "Ruta de {{start}} a {{end}}",
-    "PASSING_BY_CIRCULAR": "Ruta circular des de {{start}} passant per:\n",
-    "PASSING_BY_LINEAR": "Ruta des de {{start}} cap a {{end}} passant per:\n",
+    "UNKNOWN_PLACE": "Lloc desconegut",
     "NO_POIS": "- Sense punts d'interès destacats registrats.\n",
-    "START_POINT": "Punt d'inici"
+    "START_POINT": "Punt d'inici",
+    "CIRCULAR_ROUTE": "Ruta de {{start}} a {{target}} (i tornada)",
+    "LINEAR_ROUTE": "Ruta de {{start}} a {{end}}",
+    "URBAN_CIRCULAR_ROUTE": "Ruta per {{city}}: de {{start}} a {{target}} (i tornada)",
+    "URBAN_LINEAR_ROUTE": "Ruta per {{city}}: de {{start}} a {{end}}",
+    "SURROUNDINGS": "els voltants",
+    "PASSING_BY_CIRCULAR": "Recorregut circular des de {{start}} fins a {{target}}, passant per:",
+    "PASSING_BY_LINEAR": "Recorregut lineal des de {{start}} fins a {{end}}, passant per:"
   },
   "COLORS": {
     "crimson": "carmesí",

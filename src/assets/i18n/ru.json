@@ -164,12 +164,15 @@
     "SEARCHING_PLACE": "Поиск места...",
     "ROUTE_AROUND": "Маршрут через {{place}}",
     "UNKNOWN_PLACE": "Неизвестное место",
-    "CIRCULAR_ROUTE": "Круговой маршрут от {{start}}",
-    "LINEAR_ROUTE": "Маршрут от {{start}} до {{end}}",
-    "PASSING_BY_CIRCULAR": "Круговой маршрут от {{start}}, проходящий через:\n",
-    "PASSING_BY_LINEAR": "Маршрут от {{start}} до {{end}}, проходящий через:\n",
     "NO_POIS": "- Нет зарегистрированных достопримечательностей.\n",
-    "START_POINT": "Начальная точка"
+    "START_POINT": "Начальная точка",
+    "CIRCULAR_ROUTE": "Маршрут от {{start}} до {{target}} (и обратно)",
+    "LINEAR_ROUTE": "Маршрут от {{start}} до {{end}}",
+    "URBAN_CIRCULAR_ROUTE": "Маршрут по {{city}}: от {{start}} до {{target}} (и обратно)",
+    "URBAN_LINEAR_ROUTE": "Маршрут по {{city}}: от {{start}} до {{end}}",
+    "SURROUNDINGS": "окрестности",
+    "PASSING_BY_CIRCULAR": "Круговой маршрут от {{start}} до {{target}}, проходящий через:",
+    "PASSING_BY_LINEAR": "Линейный маршрут от {{start}} до {{end}}, проходящий через:"
   },
   "COLORS": {
     "crimson": "Малиновый",

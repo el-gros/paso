@@ -304,7 +304,7 @@ async setTrackDetails(ev?: any) {
     }
   }
 
-  async saveFile(name: string, description: string) {
+async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
     
@@ -314,21 +314,17 @@ async setTrackDetails(ev?: any) {
       let trackToProcess = JSON.parse(JSON.stringify(track));
 
       // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
-      
-      // A. Creamos la referencia geométrica (usando el propio track por ahora)
       const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({ lng: c[0], lat: c[1] }));
-      
-      // B. Ajuste a sendero + Altitud API + Suavizado de media móvil
       const snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(trackToProcess, trailReference);
-
-      // C. Filtro final de suavizado y recálculo de desnivel
-      // (Nota: Usa this.geoMath.filter... si tu método está ahí, o this.fs.filter... si está en FunctionsService)
       const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(snappedTrack, 0); 
-      
       // --- FIN DEL PIPELINE ---
 
-      // 2. Extraemos la feature ya optimizada
-      const feature = optimizedTrack.features[0];
+      // 🛡️ SAFETY CHECK: Si el pipeline falla y vacía las coordenadas, usamos el track original
+      const finalTrack = optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0 
+        ? optimizedTrack 
+        : trackToProcess;
+
+      const feature = finalTrack.features[0];
       const saveDate = new Date();
       const dateKey = saveDate.toISOString();
 
@@ -346,16 +342,22 @@ async setTrackDetails(ev?: any) {
         }
       }
 
-      // 3. Guardamos el archivo optimizado en el Storage
-      await this.fs.storeSet(dateKey, optimizedTrack);
+      // 3. Guardamos el archivo optimizado en el Storage con su dateKey
+      await this.fs.storeSet(dateKey, finalTrack);
       
+      // 4. Creamos el ítem para la lista (Metadata)
       const newItem = {
         name,
         date: saveDate,
         place: feature.properties.place,
         description,
         isChecked: false,
-        photos: routePhotos
+        photos: routePhotos,
+        file: dateKey, // 👈 CRITICAL FIX: The foreign key linking to the track file
+        
+        // Optional: If your list UI relies on these properties to show stats before opening the map
+        distance: feature.properties.distance || 0,
+        duration: feature.properties.duration || 0 
       };
 
       this.fs.collection.unshift(newItem);
@@ -377,5 +379,5 @@ async setTrackDetails(ev?: any) {
       this.cd.detectChanges();
     }
   }
-
+  
 }

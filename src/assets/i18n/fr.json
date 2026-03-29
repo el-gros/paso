@@ -164,12 +164,15 @@
     "SEARCHING_PLACE": "Recherche du lieu...",
     "ROUTE_AROUND": "Itinéraire par {{place}}",
     "UNKNOWN_PLACE": "Lieu inconnu",
-    "CIRCULAR_ROUTE": "Itinéraire en boucle depuis {{start}}",
-    "LINEAR_ROUTE": "Itinéraire de {{start}} à {{end}}",
-    "PASSING_BY_CIRCULAR": "Itinéraire en boucle depuis {{start}} passant par :\n",
-    "PASSING_BY_LINEAR": "Itinéraire de {{start}} vers {{end}} passant par :\n",
     "NO_POIS": "- Aucun point d'intérêt remarquable enregistré.\n",
-    "START_POINT": "Point de départ"
+    "START_POINT": "Point de départ",
+    "CIRCULAR_ROUTE": "Itinéraire de {{start}} à {{target}} (aller-retour)",
+    "LINEAR_ROUTE": "Itinéraire de {{start}} à {{end}}",
+    "URBAN_CIRCULAR_ROUTE": "Itinéraire dans {{city}} : de {{start}} à {{target}} (aller-retour)",
+    "URBAN_LINEAR_ROUTE": "Itinéraire dans {{city}} : de {{start}} à {{end}}",
+    "SURROUNDINGS": "les environs",
+    "PASSING_BY_CIRCULAR": "Parcours circulaire de {{start}} à {{target}}, en passant par :",
+    "PASSING_BY_LINEAR": "Parcours linéaire de {{start}} à {{end}}, en passant par :"
   },
   "COLORS": {
     "crimson": "Cramoisi",

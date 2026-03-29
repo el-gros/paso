@@ -223,7 +223,7 @@ export class ArchivePage implements OnInit {
       ]);
 
       // 4. COMPARTIR USANDO CAPACITOR SHARE
-      const shareSubject = `${this.translate.instant('SEARCH_ROUTE')}: ${item.name}`;
+      const shareSubject = `${this.translate.instant('SEARCH.ROUTE')}: ${item.name}`;
 
       await Share.share({
         title: shareSubject,
