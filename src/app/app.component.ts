@@ -8,6 +8,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SplashScreen } from '@capacitor/splash-screen'; // 👈 NUEVO IMPORT
 
 // --- SERVICES ---
@@ -134,12 +135,11 @@ export class AppComponent implements OnDestroy {
       // Descargamos el archivo a memoria
       const response = await fetch(webPath);
       const fileBlob = await response.blob(); 
-      const urlLower = normalizedPath.toLowerCase();
+      const urlLower = normalizedPath.toLowerCase().split('?')[0];
 
       // --- A. DETECCIÓN .PASO (BACKUP) ---
       if (urlLower.endsWith('.paso')) {
         console.log('📂 Detectado archivo de respaldo .paso');
-        // Extraemos todo como texto (Base64) de forma segura
         const textContent = await fileBlob.text();
         await this.handlePasoImport(textContent);
         return null;
@@ -147,35 +147,29 @@ export class AppComponent implements OnDestroy {
 
       // --- B. DETECCIÓN MAPAS (KMZ, GPX, KML) ---
       let result: ParseResult | null = null;
+      const textContent = await fileBlob.text();
 
-      if (urlLower.endsWith('.kmz')) {
+      // Detección por extensión o por firma binaria de ZIP (PK)
+      if (urlLower.endsWith('.kmz') || textContent.startsWith('PK')) {
         console.log('📦 Procesando KMZ...');
-        // Transformamos el Blob binario del KMZ a Base64 para que tu parseKmz lo entienda
-        const base64Kmz = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.readAsDataURL(fileBlob);
-        });
+        const base64Kmz = await this.blobToBase64(fileBlob);
         result = await this.parseKmz(base64Kmz);
-        
-      } else {
-        // GPX, KML o si es un backup sin extensión
-        const textContent = await fileBlob.text();
-
-        if (textContent.includes('<gpx')) {
-          console.log('📍 Procesando GPX...');
-          result = await this.fileParser.parseGpxXml(textContent);
-        } else if (textContent.includes('<kml')) {
-          console.log('🗺️ Procesando KML...');
-          result = await this.processKmlDocument(textContent);
-        } else if (textContent.startsWith('UEsDB')) {
-          // Backup oculto (sin extensión pero su interior empieza por UEsDB en base64)
-          console.log('📂 Detectado archivo de respaldo enmascarado');
-          await this.handlePasoImport(textContent);
-          return null;
-        } else {
-          throw new Error('UNSUPPORTED_TYPE');
-        }
+      } 
+      else if (textContent.includes('<gpx')) {
+        console.log('📍 Procesando GPX...');
+        result = await this.fileParser.parseGpxXml(textContent);
+      } 
+      else if (textContent.includes('<kml')) {
+        console.log('🗺️ Procesando KML...');
+        result = await this.processKmlDocument(textContent);
+      } 
+      else if (textContent.startsWith('UEsDB')) {
+        console.log('📂 Detectado archivo de respaldo enmascarado');
+        await this.handlePasoImport(textContent);
+        return null;
+      } 
+      else {
+        throw new Error('UNSUPPORTED_TYPE');
       }
 
       return result ? await this.finalizeTrack(result) : null;
@@ -285,13 +279,33 @@ async handlePasoImport(fileData: Blob | string) {
     try {
       const zip = await JSZip.loadAsync(base64Data, { base64: true });
       const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-      
+
       if (!kmlFile) throw new Error('No KML in KMZ');
-      
+
+      // 📸 Extracción de fotos del KMZ para re-importación
+      const photoMap = new Map<string, string>();
+      const imageFiles = Object.keys(zip.files).filter(name => 
+        name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)
+      );
+
+      for (const imgPath of imageFiles) {
+        const imgData = await zip.files[imgPath].async('base64');
+        const fileName = imgPath.split('/').pop() || `img_${Date.now()}.jpg`;
+
+        const savedFile = await Filesystem.writeFile({
+          path: `pasoapp_photos/${fileName}`,
+          data: imgData,
+          directory: Directory.Data,
+          recursive: true
+        });
+
+        photoMap.set(imgPath, savedFile.uri);
+      }
+
       const xmlContent = await zip.files[kmlFile].async('string');
       const xmlDoc = new DOMParser().parseFromString(xmlContent, 'application/xml');
-      
-      return await this.fileParser.parseKmlXml(xmlDoc);
+
+      return await this.fileParser.parseKmlXml(xmlDoc, photoMap);
     } catch (error) {
       console.error('KMZ Error:', error);
       return { waypoints: [], trackPoints: [], trk: null };
@@ -299,6 +313,18 @@ async handlePasoImport(fileData: Blob | string) {
   }
 
   // 8. HELPERS
+  private async blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = (reader.result as string).split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   private safeAtob(b64: string): string {
     try { return atob(b64); } catch (e) { return ''; }
   }
@@ -375,10 +401,21 @@ async handlePasoImport(fileData: Blob | string) {
       const trackDef: TrackDefinition = {
         name: props.name || 'Imported Track',
         date: trackDate,
-        place: track.features[0].geometry.coordinates[0], 
+        place: track.features[0].geometry.coordinates[0],
         description: props.description || '',
-        isChecked: true
+        isChecked: true,
+        photos: [] // Inicializamos el array de fotos
       };
+
+      // Extraemos las fotos de los waypoints y las añadimos a trackDef
+      if (track.features[0].waypoints && track.features[0].waypoints.length > 0) {
+        track.features[0].waypoints.forEach(wp => {
+          if (wp.photos && wp.photos.length > 0) {
+            trackDef.photos?.push(...wp.photos);
+          }
+        });
+      }
+
       this.fs.collection.unshift(trackDef);
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');

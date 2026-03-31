@@ -258,15 +258,9 @@ export class ArchivePage implements OnInit {
 
       // -- KMZ CON FOTOS --
       if (this.exportConfig.kmzPhotos) {
-        // NOTA: Para esto necesitarás un método en tu TrackExportService que 
-        // empaquete el KML y las fotos en un archivo ZIP/KMZ usando una librería como JSZip.
-        // Si ya lo tienes, descomenta la línea de abajo:
-        
-        // const kmzPhotosBase64 = await this.exportService.geoJsonToKmzWithPhotos(featureToExport, item.photos);
-        // const savedKmzPhotos = await Filesystem.writeFile({ path: `${safeName}_completo.kmz`, data: kmzPhotosBase64, directory: Directory.Cache });
-        // filesToShare.push(savedKmzPhotos.uri);
-        
-        console.warn('Exportar KMZ con fotos está marcado pero requiere la implementación en TrackExportService.');
+        const kmzPhotosBase64 = await this.exportService.geoJsonToKmzWithPhotos(featureToExport);
+        const savedKmzPhotos = await Filesystem.writeFile({ path: `${safeName}_completo.kmz`, data: kmzPhotosBase64, directory: Directory.Cache });
+        filesToShare.push(savedKmzPhotos.uri);
       }
 
       // 4. Compartir usando Capacitor
@@ -330,16 +324,46 @@ export class ArchivePage implements OnInit {
     await modal.present();
   }
 
-  // 1. Abre el menú y guarda qué track se seleccionó
-  openExportMenu(item: any, slidingItem: any) {
+  /**
+   * Abre el menú de exportación. 
+   * Configura HTML como única opción por defecto y permite selección manual.
+   */
+  openExportMenu(item: TrackDefinition, slidingItem: IonItemSliding) {
     this.selectedTrackForExport = item;
+
+    this.exportConfig = {
+      html: true,
+      gpx: false,
+      kmz: false,
+      photos: false,
+      kmzPhotos: false
+    };
+
     this.isExportMenuOpen = true;
-    slidingItem.close(); // Cerramos el slider para limpiar la UI
+    if (slidingItem) slidingItem.close();
+  }
+
+  /**
+   * Helper para deshabilitar opciones en el HTML si no hay fotos.
+   */
+  get trackHasPhotos(): boolean {
+    return !!(this.selectedTrackForExport?.photos && this.selectedTrackForExport.photos.length > 0);
   }
 
   // 2. Comprueba si hay al menos una opción marcada para habilitar el botón OK
   isAnyExportOptionSelected(): boolean {
     return Object.values(this.exportConfig).some(value => value === true);
+  }
+
+  /**
+   * Mantiene la exclusión mutua entre KMZ normal y KMZ con fotos.
+   */
+  onKmzToggle(type: 'kmz' | 'kmzPhotos') {
+    if (type === 'kmz' && this.exportConfig.kmz) {
+      this.exportConfig.kmzPhotos = false;
+    } else if (type === 'kmzPhotos' && this.exportConfig.kmzPhotos) {
+      this.exportConfig.kmz = false;
+    }
   }
 
 }

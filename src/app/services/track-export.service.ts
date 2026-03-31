@@ -139,6 +139,14 @@ export class TrackExportService {
     <Placemark>
       <name>${trackName}</name>
       <styleUrl>#lineStyle</styleUrl>
+      <ExtendedData>
+        <Data name="times">
+          <value>${feature.geometry.properties?.data?.map(d => d.time || 0).join(',')}</value>
+        </Data>
+        <Data name="totalDistance">
+          <value>${feature.properties?.totalDistance || 0}</value>
+        </Data>
+      </ExtendedData>
       <LineString>
         <tessellate>1</tessellate>
         <altitudeMode>clampToGround</altitudeMode>
@@ -166,6 +174,77 @@ export class TrackExportService {
 
     } catch (error) {
       console.error('[TrackExportService] Error generando KMZ:', error);
+      throw error;
+    }
+  }
+
+  public async geoJsonToKmzWithPhotos(feature: TrackFeature): Promise<string> {
+    try {
+      const zip = new JSZip();
+      const trackName = this.escapeXml(feature.properties?.name || "Track");
+
+      let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${trackName}</name>
+    <Style id="lineStyle"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>`;
+
+      if (feature.waypoints && feature.waypoints.length > 0) {
+        for (const wp of feature.waypoints) {
+          const altitude = wp.altitude || 0;
+          const name = this.escapeXml(wp.name || '');
+          const comment = this.escapeXml(wp.comment || '');
+          let description = comment;
+
+          if (wp.photos && wp.photos.length > 0) {
+            for (const photoUri of wp.photos) {
+              try {
+                const fileName = photoUri.split('/').pop() || `img_${Date.now()}.jpg`;
+                const file = await Filesystem.readFile({ path: photoUri });
+                if (file.data) {
+                  // Guardamos las imágenes en una carpeta interna para orden
+                  zip.file(`images/${fileName}`, file.data, { base64: true });
+                  description += `<br/><img src="images/${fileName}" width="300"/>`;
+                }
+              } catch (e) {
+                console.warn("No se pudo adjuntar foto al KMZ:", photoUri);
+              }
+            }
+          }
+
+          kmlText += `
+    <Placemark>
+      <name><![CDATA[${name}]]></name>
+      <description><![CDATA[${description}]]></description>
+      <Point><coordinates>${wp.longitude},${wp.latitude},${altitude}</coordinates></Point>
+    </Placemark>`;
+        }
+      }
+
+      kmlText += `
+    <Placemark>
+      <name>${trackName}</name>
+      <styleUrl>#lineStyle</styleUrl>
+      <ExtendedData>
+        <Data name="times">
+          <value>${feature.geometry.properties?.data?.map(d => d.time || 0).join(',')}</value>
+        </Data>
+        <Data name="totalDistance">
+          <value>${feature.properties?.totalDistance || 0}</value>
+        </Data>
+      </ExtendedData>
+      <LineString><tessellate>1</tessellate>
+    <coordinates>`;
+      feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
+        const altitude = feature.geometry.properties?.data?.[index]?.altitude || 0;
+        kmlText += `${coordinate[0]},${coordinate[1]},${altitude} `;
+      });
+      kmlText += `</coordinates></LineString></Placemark></Document></kml>`;
+
+      zip.file("doc.kml", kmlText);
+      return await zip.generateAsync({ type: "base64", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    } catch (error) {
+      console.error('[TrackExportService] Error generando KMZ con fotos:', error);
       throw error;
     }
   }

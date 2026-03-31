@@ -77,7 +77,7 @@ export class FileParserService {
   // ==========================================================================
   // 2. PARSER KML
   // ==========================================================================
-  async parseKmlXml(xmlDoc: Document): Promise<ParsedRouteData> {
+  async parseKmlXml(xmlDoc: Document, photoMap?: Map<string, string>): Promise<ParsedRouteData> {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = []; 
     let trk: Element | null = null;
@@ -94,13 +94,25 @@ export class FileParserService {
         const coordText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
         if (coordText) {
           const [lonStr, latStr, eleStr] = coordText.split(",");
-          waypoints.push({
+          const waypoint: Waypoint = {
             latitude: parseFloat(latStr), 
             longitude: parseFloat(lonStr),
             altitude: eleStr ? parseFloat(eleStr) : 0,
             name: this.fs.sanitize(name), 
             comment: this.fs.sanitize(desc),
-          });
+            photos: []
+          };
+
+          // Si hay fotos extraídas, las vinculamos buscando el nombre en la descripción
+          if (photoMap) {
+            photoMap.forEach((uri, zipPath) => {
+              const fileName = zipPath.split('/').pop();
+              if (fileName && desc.includes(fileName)) {
+                waypoint.photos?.push(uri);
+              }
+            });
+          }
+          waypoints.push(waypoint);
         }
       }
       
@@ -110,17 +122,27 @@ export class FileParserService {
         trk = pm; 
         const coordText = line.getElementsByTagName("coordinates")[0]?.textContent?.trim();
         
+        let times: number[] = [];
+        const extendedData = pm.getElementsByTagName("ExtendedData")[0];
+        if (extendedData) {
+          const timeDataElement = extendedData.querySelector('Data[name="times"] > value');
+          if (timeDataElement?.textContent) {
+            times = timeDataElement.textContent.split(',').map(t => parseInt(t, 10));
+          }
+        }
+        
         if (coordText) {
           const coords = coordText.split(/\s+/);
-          for (const c of coords) {
+          for (let i = 0; i < coords.length; i++) {
+            const c = coords[i];
             const [lonStr, latStr, eleStr] = c.split(",");
             if (!lonStr || !latStr) continue;
             
             trackPoints.push({ 
               lon: parseFloat(lonStr), 
               lat: parseFloat(latStr), 
-              ele: eleStr ? parseFloat(eleStr) : 0, 
-              time: 0 
+              ele: eleStr ? parseFloat(eleStr) : 0,
+              time: times[i] || 0 // Assign extracted time, or 0 if not found
             });
           }
         }

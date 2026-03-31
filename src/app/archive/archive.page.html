@@ -111,17 +111,17 @@
           </ion-checkbox>
         </ion-item>
         <ion-item>
-          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmz">
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmz" (ionChange)="onKmzToggle('kmz')">
             {{ 'EXPORT.KMZ' | translate }}
           </ion-checkbox>
         </ion-item>        
         <ion-item>
-          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.photos">
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.photos" [disabled]="!trackHasPhotos">
             {{ 'EXPORT.PHOTOS' | translate }}
           </ion-checkbox>
         </ion-item>
         <ion-item>
-          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmzPhotos" [disabled]="true">
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmzPhotos" [disabled]="!trackHasPhotos" (ionChange)="onKmzToggle('kmzPhotos')">
             {{ 'EXPORT.KMZ_PHOTOS' | translate }}
           </ion-checkbox>
         </ion-item>
