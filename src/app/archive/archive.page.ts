@@ -33,6 +33,15 @@ export class ArchivePage implements OnInit {
   public isConfirmDeletionOpen: boolean = false;
   public index: number = -1;
   public slidingItem: IonItemSliding | undefined = undefined;
+  public isExportMenuOpen = false;
+  public selectedTrackForExport: any = null;
+  public exportConfig = {
+    html: true,
+    gpx: false, 
+    kmz: false,
+    photos: false,
+    kmzPhotos: false
+  };
 
   constructor(
     public fs: FunctionsService,
@@ -177,10 +186,14 @@ export class ArchivePage implements OnInit {
   // ==========================================================================
   // 3. EXPORTACIÓN DE ARCHIVOS (HTML, GPX, KMZ)
   // ==========================================================================
-  async exportTrack(item: TrackDefinition, slidingItem?: IonItemSliding) {
+  // 3. Ejecuta la exportación según las opciones seleccionadas
+  async executeExport() {
+    this.isExportMenuOpen = false;
+    const item = this.selectedTrackForExport;
+    
     if (!item || !item.date) return;
-    if (slidingItem) slidingItem.close();
 
+    // 1. Mostrar pantalla de carga
     const loading = await this.loadingCtrl.create({
       message: this.translate.instant('ARCHIVE.GENERATING_FILES'),
       backdropDismiss: false,
@@ -189,63 +202,101 @@ export class ArchivePage implements OnInit {
     });
     await loading.present();
 
+    const filesToShare: string[] = []; 
+
     try {
+      // 2. Obtener el track completo de la base de datos
       const storageKey = new Date(item.date).toISOString();
       const trackData = await this.fs.storeGet(storageKey);
 
       if (!trackData) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
-        return;
+        throw new Error("No se pudo cargar la ruta desde el almacenamiento.");
       }
 
       const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
+
+      if (!featureToExport.properties) featureToExport.properties = {};
+      featureToExport.properties.name = item.name || featureToExport.properties.name || 'Track';
+      featureToExport.properties.description = item.description || featureToExport.properties.description || '';
+
       const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-      // 1. GENERAR EL ARCHIVO HTML INTERACTIVO
-      const htmlText = this.exportService.generateStandaloneHtml(trackData, item.name);
+      // 3. Generar dinámicamente según la configuración
+      
+      // -- HTML --
+      if (this.exportConfig.html) {
+        const htmlText = this.exportService.generateStandaloneHtml(trackData, item.name);
+        const savedHtml = await this.writeFile(`${safeName}.html`, htmlText, Encoding.UTF8);
+        filesToShare.push(savedHtml.uri);
+      }
+      
+      // -- GPX --
+      if (this.exportConfig.gpx) {
+        const gpxText = await this.exportService.geoJsonToGpx(featureToExport);
+        const savedGpx = await this.writeFile(`${safeName}.gpx`, gpxText, Encoding.UTF8);
+        filesToShare.push(savedGpx.uri);
+      }
+      
+      // -- KMZ (Solo ruta) --
+      if (this.exportConfig.kmz) {
+        const kmzBase64 = await this.exportService.geoJsonToKmz(featureToExport);
+        const savedKmz = await Filesystem.writeFile({ path: `${safeName}.kmz`, data: kmzBase64, directory: Directory.Cache });
+        filesToShare.push(savedKmz.uri);
+      }
 
-      // 2. GENERAR ARCHIVOS GPX Y KMZ 
-      const [gpxText, kmzBase64] = await Promise.all([
-        this.exportService.geoJsonToGpx(featureToExport),
-        this.exportService.geoJsonToKmz(featureToExport)
-      ]);
+      // -- FOTOS SUELTAS --
+      if (this.exportConfig.photos && item.photos && item.photos.length > 0) {
+        // Recorremos el array de fotos de la ruta
+        for (const photoPath of item.photos) {
+          // El plugin Share de Capacitor necesita que los archivos locales
+          // empiecen por "file://". Normalmente, tu app ya las guarda así.
+          // Si por algún motivo no tienen ese prefijo, se lo ponemos por seguridad:
+          const finalPath = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
+          filesToShare.push(finalPath);
+        }
+      }
 
-      const gpxName = `${safeName}.gpx`;
-      const kmzName = `${safeName}.kmz`;
-      const htmlName = `${safeName}.html`;
+      // -- KMZ CON FOTOS --
+      if (this.exportConfig.kmzPhotos) {
+        // NOTA: Para esto necesitarás un método en tu TrackExportService que 
+        // empaquete el KML y las fotos en un archivo ZIP/KMZ usando una librería como JSZip.
+        // Si ya lo tienes, descomenta la línea de abajo:
+        
+        // const kmzPhotosBase64 = await this.exportService.geoJsonToKmzWithPhotos(featureToExport, item.photos);
+        // const savedKmzPhotos = await Filesystem.writeFile({ path: `${safeName}_completo.kmz`, data: kmzPhotosBase64, directory: Directory.Cache });
+        // filesToShare.push(savedKmzPhotos.uri);
+        
+        console.warn('Exportar KMZ con fotos está marcado pero requiere la implementación en TrackExportService.');
+      }
 
-      // 3. GUARDAR ARCHIVOS EN CACHÉ EXTERNA
-      // Aseguramos de no pasar Encoding al KMZ porque es base64 y debe decodificarse a binario.
-      const [savedGpx, savedKmz, savedHtml] = await Promise.all([
-          this.writeFile(gpxName, gpxText, Encoding.UTF8),
-          Filesystem.writeFile({ path: kmzName, data: kmzBase64, directory: Directory.Cache }), // Guardado binario
-          this.writeFile(htmlName, htmlText, Encoding.UTF8)
-      ]);
+      // 4. Compartir usando Capacitor
+      if (filesToShare.length > 0) {
+        const shareSubject = `${this.translate.instant('SEARCH.ROUTE')}: ${item.name}`;
 
-      // 4. COMPARTIR USANDO CAPACITOR SHARE
-      const shareSubject = `${this.translate.instant('SEARCH.ROUTE')}: ${item.name}`;
+        await Share.share({
+          title: shareSubject,
+          files: filesToShare,
+          dialogTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
+        });
 
-      await Share.share({
-        title: shareSubject,
-        files: [savedGpx.uri, savedKmz.uri, savedHtml.uri],
-        dialogTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
-      });
+        // Mostrar Toast de éxito
+        this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success');
+      } else {
+        this.fs.displayToast('No se seleccionó ningún archivo para exportar', 'warning');
+      }
 
-      // El plugin Share no devuelve una propiedad 'completed' garantizada en todas las plataformas,
-      // pero si el await no lanza error, asumimos éxito.
-      await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success'); 
-
-    } catch (e) {
-      console.error('Export error:', e);
-      // Solo mostramos error si no es una cancelación del usuario (Canceled share)
-      if (String(e).indexOf('Canceled') === -1 && String(e).indexOf('canceled') === -1) {
-          await this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
+    } catch (error) {
+      console.error("Error al exportar:", error);
+      // Ignoramos el error si el usuario simplemente cerró la ventana de compartir del sistema operativo
+      if (String(error).indexOf('Canceled') === -1 && String(error).indexOf('canceled') === -1) {
+          this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
       }
     } finally {
+      // 5. Ocultar la pantalla de carga
       await loading.dismiss();
     }
   }
-  
+
   private async writeFile(path: string, data: string, encoding?: Encoding) {
     return Filesystem.writeFile({ path, data, directory: Directory.Cache, encoding });
   }
@@ -277,6 +328,18 @@ export class ArchivePage implements OnInit {
       componentProps: { photos: photos }
     });
     await modal.present();
+  }
+
+  // 1. Abre el menú y guarda qué track se seleccionó
+  openExportMenu(item: any, slidingItem: any) {
+    this.selectedTrackForExport = item;
+    this.isExportMenuOpen = true;
+    slidingItem.close(); // Cerramos el slider para limpiar la UI
+  }
+
+  // 2. Comprueba si hay al menos una opción marcada para habilitar el botón OK
+  isAnyExportOptionSelected(): boolean {
+    return Object.values(this.exportConfig).some(value => value === true);
   }
 
 }

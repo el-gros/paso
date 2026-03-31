@@ -172,7 +172,8 @@
     "URBAN_LINEAR_ROUTE": "Ruta por {{city}}: de {{start}} a {{end}}",
     "SURROUNDINGS": "los alrededores",
     "PASSING_BY_CIRCULAR": "Recorrido circular desde {{start}} hasta {{target}}, pasando por:",
-    "PASSING_BY_LINEAR": "Recorrido lineal desde {{start}} hasta {{end}}, pasando por:"
+    "PASSING_BY_LINEAR": "Recorrido lineal desde {{start}} hasta {{end}}, pasando por:",
+    "ANALYZING_ROUTE": "Analizando ruta y buscando lugares de interés..."
   },
   "COLORS": {
     "crimson": "Carmesí",
@@ -262,5 +263,13 @@
     "SHARE_ROUTE_TITLE": "Foto de mi ruta: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Foto de mi ruta con PasoApp ⛰️",
     "SHARE_DIALOG": "Compartir foto"
+  },
+  "EXPORT": {
+    "OPTIONS": "Seleccionar una o más opciones",
+    "HTML": "Información (.HTML)",
+    "GPX": "Fichero .GPX",
+    "KMZ": "Fichero .KMZ",
+    "PHOTOS": "Fotos",
+    "KMZ_PHOTOS": "KMZ con fotos"
   }
 }

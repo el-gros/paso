@@ -1,6 +1,6 @@
 import { Control } from 'ol/control';
 import { Map } from 'ol';
-import Overlay from 'ol/Overlay'; // 👈 ¡NUEVO! Importamos Overlay
+import Overlay from 'ol/Overlay';
 import { TrackingControlService } from '../../services/trackingControl.service';
 import { TranslateService } from '@ngx-translate/core';
 import { SearchService } from '../../services/search.service';
@@ -11,7 +11,7 @@ export class LocationButtonControl extends Control {
   private button: HTMLButtonElement;
   private svgPath: SVGPathElement;
   private labelElement: HTMLDivElement;
-  private labelOverlay: Overlay; // 👈 Referencia a la superposición en el mapa
+  private labelOverlay: Overlay; 
   private labelTimeout: any;
 
   constructor(
@@ -26,7 +26,9 @@ export class LocationButtonControl extends Control {
     // 1. CONFIGURACIÓN DEL BOTÓN
     this.button = document.createElement('button');
     this.button.type = 'button';
-    this.button.title = this.translate.instant('MAP.TRACKING_BTN') || 'Location'; 
+    this.button.title = this.translate.instant('MAP.TRACKING_BTN') !== 'MAP.TRACKING_BTN' 
+      ? this.translate.instant('MAP.TRACKING_BTN') 
+      : 'Location'; 
     this.button.style.touchAction = 'none';
 
     this.button.innerHTML = `
@@ -37,7 +39,7 @@ export class LocationButtonControl extends Control {
     this.svgPath = this.button.querySelector('path') as SVGPathElement;
     element.appendChild(this.button);
 
-    // 2. CONFIGURACIÓN DEL RÓTULO (Píldora gráfica)
+    // 2. CONFIGURACIÓN DEL RÓTULO
     this.labelElement = document.createElement('div');
     Object.assign(this.labelElement.style, {
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -50,18 +52,17 @@ export class LocationButtonControl extends Control {
       whiteSpace: 'normal',
       maxWidth: '80vw',
       textAlign: 'center',
-      lineWeight: '1.4',
+      lineHeight: '1.4',
       opacity: '0',
       pointerEvents: 'none',
       transition: 'opacity 0.3s ease-in-out',
-      // Ya no necesitamos posiciones absolutas de pantalla, OpenLayers lo colocará
     });
 
     // 3. CREACIÓN DEL OVERLAY DE OPENLAYERS
     this.labelOverlay = new Overlay({
       element: this.labelElement,
-      positioning: 'bottom-center', // 👈 Anclamos el centro inferior al punto
-      offset: [0, -25], // 👈 Lo elevamos 25 píxeles para que flote SOBRE el punto azul
+      positioning: 'bottom-center',
+      offset: [0, -25], 
       stopEvent: false
     });
 
@@ -89,6 +90,20 @@ export class LocationButtonControl extends Control {
     }, { passive: false });
   }
 
+  // 🚀 NUEVO: Método seguro para obtener traducciones asíncronas
+  private async getSafeTranslation(key: string, fallback: string): Promise<string> {
+    try {
+      const translation = await firstValueFrom(this.translate.get(key));
+      // Si devuelve la misma clave, significa que no existe en el JSON
+      if (translation === key || !translation) {
+        return fallback;
+      }
+      return translation;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
   // ACTUALIZACIÓN QUIRÚRGICA DE UI
   private updateUI(isRunning: boolean) {
     const color = isRunning ? "#3880ff" : "#999999";
@@ -107,35 +122,29 @@ export class LocationButtonControl extends Control {
     const map = this.getMap();
     if (!map) return;
 
-    // Ponemos el texto inicial y lo hacemos visible
-    this.labelElement.textContent = (this.translate.instant('RECORD.SEARCHING_PLACE') as string) || 'Buscando lugar...';
+    // Ponemos el texto inicial asegurando la traducción
+    this.labelElement.textContent = await this.getSafeTranslation('RECORD.SEARCHING_PLACE', 'Buscando lugar...');
     this.labelElement.style.opacity = '1';
 
     try {
-      // Damos 300ms a que el mapa termine la animación de centrado
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const center = map.getView().getCenter();
       if (!center) throw new Error("No map center");
 
-      // 🚀 Clavamos el Overlay en las coordenadas centrales
       this.labelOverlay.setPosition(center);
 
-      // 🚀 ¡AQUÍ ESTÁ LA CORRECCIÓN!
-      // Al usar geographic(), center ya es directamente [longitud, latitud]
       const lon = center[0];
       const lat = center[1];
       
       const placeName = await this.fetchPlaceName(lat, lon);
-
       this.labelElement.textContent = `📍 ${placeName}`;
 
     } catch (error) {
       console.warn('Error al obtener el rótulo', error);
-      this.labelElement.textContent = (this.translate.instant('RECORD.UNKNOWN_PLACE') as string) || 'Lugar desconocido';
+      this.labelElement.textContent = await this.getSafeTranslation('RECORD.UNKNOWN_PLACE', 'Lugar desconocido');
     }
 
-    // Ocultamos a los 4 segundos
     if (this.labelTimeout) clearTimeout(this.labelTimeout);
     this.labelTimeout = setTimeout(() => {
       this.labelElement.style.opacity = '0';
@@ -151,9 +160,9 @@ export class LocationButtonControl extends Control {
         if (shortName !== '' && shortName !== '(no name)') return shortName;
         if (longName !== '') return longName;
       }
-      return (this.translate.instant('RECORD.UNKNOWN_PLACE') as string) || 'Lugar desconocido';
+      return await this.getSafeTranslation('RECORD.UNKNOWN_PLACE', 'Lugar desconocido');
     } catch (error) {
-      return (this.translate.instant('RECORD.UNKNOWN_PLACE') as string) || 'Lugar desconocido';
+      return await this.getSafeTranslation('RECORD.UNKNOWN_PLACE', 'Lugar desconocido');
     }
   }
 
@@ -162,7 +171,6 @@ export class LocationButtonControl extends Control {
   // ==========================================
   
   override setMap(map: Map | null) {
-    // 1. Si quitamos el control, retiramos también su Overlay
     const oldMap = this.getMap();
     if (oldMap) {
       oldMap.removeOverlay(this.labelOverlay);
@@ -171,7 +179,6 @@ export class LocationButtonControl extends Control {
     super.setMap(map);
 
     if (map) {
-      // 2. Al añadir el control al mapa, insertamos nuestro Overlay (aunque esté oculto al 0% de opacidad)
       map.addOverlay(this.labelOverlay);
     } else {
       if (this.subscription) this.subscription.unsubscribe();

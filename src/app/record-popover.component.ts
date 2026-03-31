@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, PopoverController } from '@ionic/angular';
+import { IonicModule, PopoverController, LoadingController } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 
@@ -123,6 +123,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   public snapToTrailService = inject(SnapToTrailService);
   private geoMath = inject(GeoMathService);
   public smartRouteBuilder = inject(SmartRouteBuilderService);
+  private loadingCtrl = inject(LoadingController);
   // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
   loading = false;
@@ -256,9 +257,17 @@ async setTrackDetails(ev?: any) {
     const track = this.present.currentTrack;
     let proposedTexts = { name: '', description: '' };
 
-    // 1. Si hay un track válido, autogeneramos los textos
+    // 1. Si hay un track válido, autogeneramos los textos mostrando un Loading Alert
     if (track && track.features && track.features[0]) {
-      this.loading = true; // Activa el spinner (o bloquea la UI) para que el usuario espere
+      
+      // Creamos el alert de carga con la variable de traducción
+      const loadingOverlay = await this.loadingCtrl.create({
+        message: this.translate.instant('RECORD.ANALYZING_ROUTE'), // <-- Nueva variable
+        spinner: 'crescent',
+        backdropDismiss: false // Evita que el usuario lo cierre tocando fuera
+      });
+      await loadingOverlay.present();
+
       try {
         const feature = track.features[0];
         const autoTexts = await this.smartRouteBuilder.generateWikilocStyleTexts(feature);
@@ -269,15 +278,15 @@ async setTrackDetails(ev?: any) {
       } catch (err) {
         console.warn('No se pudo autogenerar el texto de la ruta', err);
       } finally {
-        this.loading = false;
-        this.cd.detectChanges();
+        // Pase lo que pase, quitamos el alert al terminar
+        await loadingOverlay.dismiss();
       }
     }
 
     // 2. Abrimos el popover pasando los textos propuestos
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
-      componentProps: { modalEdit: proposedTexts }, // 👈 Aquí inyectamos el auto-título y descripción
+      componentProps: { modalEdit: proposedTexts },
       cssClass: 'top-glass-island-wrapper',
       translucent: true,
       backdropDismiss: true
@@ -296,15 +305,13 @@ async setTrackDetails(ev?: any) {
     }
     
     if (data?.action === 'ok') {
-      // Si el usuario borró todo y lo dejó en blanco, le ponemos un nombre por defecto
       const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
-      
-      // Llamamos al guardado (que ahora incluye tu pipeline de Snap-To-Trail y Elevación API)
+      // Llamamos al guardado (el Toast de éxito ya lo tienes al final de saveFile!)
       await this.saveFile(finalName, data.description);
     }
   }
 
-async saveFile(name: string, description: string) {
+  async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
     
@@ -379,5 +386,5 @@ async saveFile(name: string, description: string) {
       this.cd.detectChanges();
     }
   }
-  
+
 }

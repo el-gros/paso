@@ -173,6 +173,8 @@ export class TrackExportService {
   public async geoJsonToGpx(feature: TrackFeature): Promise<string> {
     try {
       const trackName = this.escapeXml(feature.properties?.name || 'Track');
+      // 1. Capturamos y escapamos la descripción
+      const trackDesc = this.escapeXml(feature.properties?.description || ''); 
 
       let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <gpx version="1.1" creator="PasoApp"
@@ -195,7 +197,15 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         });
       }
 
-      gpxText += `\n  <trk>\n    <name>${trackName}</name>\n    <trkseg>`;
+      // 2. Añadimos el nombre
+      gpxText += `\n  <trk>\n    <name>${trackName}</name>`;
+      
+      // 3. Añadimos la descripción si existe, justo antes del <trkseg>
+      if (trackDesc) {
+        gpxText += `\n    <desc>${trackDesc}</desc>`;
+      }
+      
+      gpxText += `\n    <trkseg>`;
 
       feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
         const dataPoint = feature.geometry.properties?.data?.[index];

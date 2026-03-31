@@ -8,6 +8,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen'; // 👈 NUEVO IMPORT
 
 // --- SERVICES ---
 import { FunctionsService } from './services/functions.service';
@@ -69,7 +70,7 @@ export class AppComponent implements OnDestroy {
     this.initializeApp();
   }
 
-  // 1. INITIALIZE APP
+// 1. INITIALIZE APP
   async initializeApp() {
     await this.platform.ready();
     await this.fs.init();
@@ -85,6 +86,12 @@ export class AppComponent implements OnDestroy {
 
     this.lockToPortrait();
     this.setupFileListener();
+
+    // 🚀 NUEVO: Ocultamos la pantalla de carga suavemente
+    // Le damos un pequeño respiro a Angular (100ms) para renderizar el HTML del mapa
+    setTimeout(async () => {
+      await SplashScreen.hide();
+    }, 100);
   }
 
   ngOnDestroy() {

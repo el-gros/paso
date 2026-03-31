@@ -17,7 +17,7 @@
   }
 }
 
-/* 🚀 Contenedor para la exportación silenciosa del mapa */
+/* Contenedor para la exportación silenciosa del mapa */
 .hidden-map-container {
   position: absolute; 
   top: 0; 
@@ -147,5 +147,73 @@ ion-thumbnail.photo-thumbnail {
   &:active {
     transform: scale(0.92);
     opacity: 0.8;
+  }
+}
+
+/* ==========================================================================
+   4. POPOVER DE EXPORTACIÓN Y BACKUP
+   ========================================================================== */
+
+/* 1. Sobrescribir el ancho del global.scss y forzar bordes */
+.custom-export-popover {
+  --width: 300px !important; /* Ensanchamos la "ventana" de Ionic */
+  --border-radius: 16px !important;
+}
+
+.backup-box {
+  padding: 20px 16px;
+  width: 100%; /* Ahora ocupa exactamente el 100% de la ventana, sin desbordar */
+  box-sizing: border-box;
+  border-radius: 16px; 
+  overflow: hidden;
+}
+
+/* 2. Alineación perfecta de los cuadraditos */
+.backup-options-list {
+  background: transparent;
+  margin: 15px 0;
+  
+  ion-item {
+    --min-height: 42px;
+    --padding-start: 0;
+    --inner-padding-end: 0; 
+    --background: transparent;
+    font-size: 14px;
+    
+    ion-checkbox {
+      --size: 22px;
+      --checkbox-background-checked: var(--ion-color-primary);
+      --border-color-checked: var(--ion-color-primary);
+      font-weight: 500;
+      color: #333;
+      width: 100%;
+      margin: 0;
+    }
+
+    ion-checkbox[disabled] {
+      opacity: 0.5;
+    }
+  }
+}
+
+.top-margin {
+  margin-top: 20px;
+}
+
+/* 3. Botones exactamente del mismo ancho y centrados */
+.equal-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  
+  button {
+    flex: 1 1 0px; 
+    margin: 0 !important; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0; 
   }
 }

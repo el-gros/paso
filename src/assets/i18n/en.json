@@ -172,7 +172,8 @@
     "URBAN_LINEAR_ROUTE": "Route through {{city}}: from {{start}} to {{end}}",
     "SURROUNDINGS": "the surroundings",
     "PASSING_BY_CIRCULAR": "Circular route from {{start}} to {{target}}, passing by:",
-    "PASSING_BY_LINEAR": "Linear route from {{start}} to {{end}}, passing by:"
+    "PASSING_BY_LINEAR": "Linear route from {{start}} to {{end}}, passing by:",
+    "ANALYZING_ROUTE": "Analyzing route and searching for points of interest..."
   },
   "COLORS": {
     "crimson": "Crimson",
@@ -256,5 +257,13 @@
     "SHARE_ROUTE_TITLE": "Photo of my route: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Photo of my route with PasoApp ⛰️",
     "SHARE_DIALOG": "Share photo"
+  },
+  "EXPORT": {
+    "OPTIONS": "Select one or more options",
+    "HTML": "Information (.HTML)",
+    "GPX": ".GPX File",
+    "KMZ": ".KMZ File",
+    "PHOTOS": "Photos",
+    "KMZ_PHOTOS": "KMZ with photos"
   }
 }

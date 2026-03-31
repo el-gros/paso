@@ -18,7 +18,7 @@
               {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
             </ion-item-option>
             
-            <ion-item-option color="secondary" (click)="exportTrack(item, slidingItem)">
+            <ion-item-option color="secondary" (click)="openExportMenu(item, slidingItem)">
               <ion-icon slot="top" name="share-sharp"></ion-icon>
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
@@ -85,6 +85,56 @@
         <button class="nav-item-btn red-pill" (click)="isConfirmDeletionOpen = false">
           <ion-icon name="close-sharp"></ion-icon>
           <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</ion-popover>
+
+<ion-popover
+  [isOpen]="isExportMenuOpen"
+  (didDismiss)="isExportMenuOpen = false"
+  class="confirm-popover custom-export-popover">
+  <ng-template>
+    <div class="popover-island backup-box">
+      <p class="confirm-title">{{ 'EXPORT.OPTIONS' | translate }}</p>
+      
+      <ion-list lines="none" class="backup-options-list">
+        <ion-item>
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.html">
+            {{ 'EXPORT.HTML' | translate }}
+          </ion-checkbox>
+        </ion-item>
+        <ion-item>
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.gpx">
+            {{ 'EXPORT.GPX' | translate }}
+          </ion-checkbox>
+        </ion-item>
+        <ion-item>
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmz">
+            {{ 'EXPORT.KMZ' | translate }}
+          </ion-checkbox>
+        </ion-item>        
+        <ion-item>
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.photos">
+            {{ 'EXPORT.PHOTOS' | translate }}
+          </ion-checkbox>
+        </ion-item>
+        <ion-item>
+          <ion-checkbox justify="start" labelPlacement="end" [(ngModel)]="exportConfig.kmzPhotos" [disabled]="true">
+            {{ 'EXPORT.KMZ_PHOTOS' | translate }}
+          </ion-checkbox>
+        </ion-item>
+      </ion-list>
+
+      <div class="button-grid horizontal top-margin equal-buttons">
+        <button class="nav-item-btn green-pill" (click)="executeExport()" [disabled]="!isAnyExportOptionSelected()">
+          <ion-icon name="checkmark-sharp"></ion-icon>
+          <p>OK</p>
+        </button>
+        <button class="nav-item-btn red-pill" (click)="isExportMenuOpen = false">
+          <ion-icon name="close-sharp"></ion-icon>
+          <p>{{ 'EDIT.CANCEL' | translate }}</p>
         </button>
       </div>
     </div>

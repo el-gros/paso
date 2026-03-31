@@ -172,7 +172,8 @@
     "URBAN_LINEAR_ROUTE": "Ruta per {{city}}: de {{start}} a {{end}}",
     "SURROUNDINGS": "els voltants",
     "PASSING_BY_CIRCULAR": "Recorregut circular des de {{start}} fins a {{target}}, passant per:",
-    "PASSING_BY_LINEAR": "Recorregut lineal des de {{start}} fins a {{end}}, passant per:"
+    "PASSING_BY_LINEAR": "Recorregut lineal des de {{start}} fins a {{end}}, passant per:",
+    "ANALYZING_ROUTE": "Analitzant la ruta i cercant llocs d'interès..."
   },
   "COLORS": {
     "crimson": "carmesí",
@@ -254,6 +255,14 @@
     "SHARE_ROUTE_TITLE": "Foto de la meva ruta: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Foto de la meva ruta amb PasoApp ⛰️",
     "SHARE_DIALOG": "Compartir foto"
+  },
+  "EXPORT": {
+    "OPTIONS": "Seleccioneu una o més opcions",
+    "HTML": "Informació (.HTML)",
+    "GPX": "Fitxer .GPX",
+    "KMZ": "Fitxer .KMZ",
+    "PHOTOS": "Fotos",
+    "KMZ_PHOTOS": "KMZ amb fotos"
   }
 
 }

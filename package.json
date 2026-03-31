@@ -1,8 +1,8 @@
 {
   "name": "paso",
-  "version": "1.4.1",
-  "author": "Ionic Framework",
-  "homepage": "https://ionicframework.com/",
+  "version": "1.4.2",
+  "author": "Enric Terradellas",
+  "homepage": "mailto:enric.terradellas@gmail.com",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -33,6 +33,7 @@
     "@capacitor/preferences": "^7.0.4",
     "@capacitor/screen-orientation": "^7.0.2",
     "@capacitor/share": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.5",
     "@capawesome/capacitor-file-picker": "^7.2.0",
     "@geoblocks/ol-maplibre-layer": "^1.0.3",
     "@ionic/angular": "^8.6.3",

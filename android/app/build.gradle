@@ -19,8 +19,8 @@ android {
         multiDexEnabled true
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "1.4.1"
+        versionCode 16
+        versionName "1.4.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
@@ -59,6 +59,7 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+/*
 try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {
@@ -67,3 +68,4 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+*/

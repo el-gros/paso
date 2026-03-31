@@ -80,7 +80,7 @@ export class SmartRouteBuilderService {
       const pois = await this.fetchPOIsFromOverpass(minLat, minLng, maxLat, maxLng);
 
       if (pois.length > 0) {
-        const matchedPOIs = this.intersectRouteWithPOIs(coords, dataArray, pois, 75);
+        const matchedPOIs = this.intersectRouteWithPOIs(coords, dataArray, pois, 150);
 
         if (matchedPOIs.length > 0) {
           description += '\n';
@@ -121,24 +121,44 @@ export class SmartRouteBuilderService {
     return furthest;
   }
 
-  private intersectRouteWithPOIs(coords: [number, number][], dataArray: any[], pois: any[], thresholdMeters: number): any[] {
-    const matched = [];
+private intersectRouteWithPOIs(coords: [number, number][], dataArray: any[], pois: any[], thresholdMeters: number): any[] {
+    let matched = [];
     const usedPOIs = new Set(); 
+    let accumulatedDistanceMeters = 0; // Guardamos la distancia real que vamos recorriendo
+    let lastPoiKm = -999; // Control para no poner POIs demasiado juntos
 
     for (let i = 0; i < coords.length; i++) {
       const currentPoint = { lat: coords[i][1], lng: coords[i][0] };
-      const currentKm = (dataArray[i]?.distance || 0) / 1000; 
+      
+      // Calculamos la distancia acumulada sumando el tramo desde el punto anterior
+      if (i > 0) {
+        const prevPoint = { lat: coords[i-1][1], lng: coords[i-1][0] };
+        accumulatedDistanceMeters += this.snapToTrailService.calculateHaversineDistance(prevPoint, currentPoint);
+      }
+      
+      const currentKm = accumulatedDistanceMeters / 1000; 
       
       for (const poi of pois) {
         if (!usedPOIs.has(poi.name)) {
           const dist = this.snapToTrailService.calculateHaversineDistance(currentPoint, poi);
+          
           if (dist <= thresholdMeters) {
-            matched.push({ name: poi.name, km: currentKm });
-            usedPOIs.add(poi.name);
+            // Filtro anti-spam: Deben pasar al menos 250m desde el último POI listado
+            if (currentKm - lastPoiKm >= 0.25) {
+              matched.push({ name: poi.name, km: currentKm });
+              usedPOIs.add(poi.name);
+              lastPoiKm = currentKm;
+            }
           }
         }
       }
     }
+
+    // Como máximo, mostramos solo los 8 puntos de interés más relevantes
+    if (matched.length > 8) {
+        matched = matched.slice(0, 8);
+    }
+
     return matched;
   }
 
@@ -154,28 +174,25 @@ export class SmartRouteBuilderService {
     return [minLat, minLng, maxLat, maxLng]; 
   }
 
-  private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: number, maxLng: number): Promise<any[]> {
-    // Consulta ampliada: Naturaleza + Entorno Urbano
+private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: number, maxLng: number): Promise<any[]> {
+    // Consulta restringida a lugares de interés importantes (sin placas ni fuentes pequeñas)
     const query = `
       [out:json][timeout:10];
       (
-        // Elementos de naturaleza y montaña
-        node["natural"="peak"](${minLat},${minLng},${maxLat},${maxLng});
-        node["natural"="saddle"](${minLat},${minLng},${maxLat},${maxLng});
-        node["natural"="spring"](${minLat},${minLng},${maxLat},${maxLng});
+        // Naturaleza y montaña
+        nwr["natural"="peak"](${minLat},${minLng},${maxLat},${maxLng});
         
-        // Zonas verdes y miradores
-        node["leisure"="park"](${minLat},${minLng},${maxLat},${maxLng});
-        node["tourism"="viewpoint"](${minLat},${minLng},${maxLat},${maxLng});
+        // Parques grandes y miradores
+        nwr["leisure"="park"](${minLat},${minLng},${maxLat},${maxLng});
+        nwr["tourism"="viewpoint"](${minLat},${minLng},${maxLat},${maxLng});
         
-        // Elementos urbanos, históricos y culturales
-        node["historic"="monument"](${minLat},${minLng},${maxLat},${maxLng});
-        node["tourism"="museum"](${minLat},${minLng},${maxLat},${maxLng});
-        node["tourism"="attraction"](${minLat},${minLng},${maxLat},${maxLng});
-        node["place"="square"](${minLat},${minLng},${maxLat},${maxLng});
-        node["amenity"="marketplace"](${minLat},${minLng},${maxLat},${maxLng});
+        // Museos, castillos, monumentos mayores y centros culturales
+        nwr["tourism"="museum"](${minLat},${minLng},${maxLat},${maxLng});
+        nwr["historic"="monument"](${minLat},${minLng},${maxLat},${maxLng});
+        nwr["historic"="castle"](${minLat},${minLng},${maxLat},${maxLng});
+        nwr["amenity"="arts_centre"](${minLat},${minLng},${maxLat},${maxLng});
       );
-      out body;
+      out center; // Obligatorio para devolver el centro geográfico de las áreas
     `;
     
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
@@ -187,18 +204,18 @@ export class SmartRouteBuilderService {
       return result.elements
         .filter((e: any) => e.tags && e.tags.name)
         .map((e: any) => ({
-          lat: e.lat, 
-          lng: e.lon, 
+          lat: e.type === 'node' ? e.lat : e.center?.lat, 
+          lng: e.type === 'node' ? e.lon : e.center?.lon, 
           name: e.tags.name, 
-          // Capturamos el tipo de POI dinámicamente según la etiqueta que hizo match
-          type: e.tags.natural || e.tags.leisure || e.tags.tourism || e.tags.historic || e.tags.place || e.tags.amenity || 'poi'
-        }));
+          type: e.tags.natural || e.tags.leisure || e.tags.tourism || 'poi'
+        }))
+        .filter((e: any) => e.lat && e.lng);
     } catch (error) {
       console.warn('Error fetching POIs from Overpass', error);
-      return []; // Devolvemos un array vacío para que no rompa el flujo de generación de textos
+      return []; 
     }
   }
-
+  
   private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18`;

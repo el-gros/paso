@@ -172,7 +172,8 @@
     "URBAN_LINEAR_ROUTE": "Itinéraire dans {{city}} : de {{start}} à {{end}}",
     "SURROUNDINGS": "les environs",
     "PASSING_BY_CIRCULAR": "Parcours circulaire de {{start}} à {{target}}, en passant par :",
-    "PASSING_BY_LINEAR": "Parcours linéaire de {{start}} à {{end}}, en passant par :"
+    "PASSING_BY_LINEAR": "Parcours linéaire de {{start}} à {{end}}, en passant par :",
+    "ANALYZING_ROUTE": "Analyse de l'itinéraire et recherche de lieux d'intérêt..."
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -262,5 +263,13 @@
     "SHARE_ROUTE_TITLE": "Photo de mon itinéraire : {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Photo de mon itinéraire avec PasoApp ⛰️",
     "SHARE_DIALOG": "Partager la photo"
+  },
+  "EXPORT": {
+    "OPTIONS": "Sélectionner une ou plusieurs options",
+    "HTML": "Informations (.HTML)",
+    "GPX": "Fichier .GPX",
+    "KMZ": "Fichier .KMZ",
+    "PHOTOS": "Photos",
+    "KMZ_PHOTOS": "KMZ avec photos"
   }
 }

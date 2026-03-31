@@ -172,7 +172,8 @@
     "URBAN_LINEAR_ROUTE": "穿越 {{city}} 的路线：从 {{start}} 到 {{end}}",
     "SURROUNDINGS": "周边地区",
     "PASSING_BY_CIRCULAR": "从 {{start}} 到 {{target}} 的环形路线，途经：",
-    "PASSING_BY_LINEAR": "从 {{start}} 到 {{end}} 的线性路线，途经："
+    "PASSING_BY_LINEAR": "从 {{start}} 到 {{end}} 的线性路线，途经：",
+    "ANALYZING_ROUTE": "正在分析路线并搜索兴趣点..."
   },
   "COLORS": {
     "crimson": "深红色",
@@ -262,5 +263,13 @@
     "SHARE_ROUTE_TITLE": "我的路线照片: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "使用 PasoApp 拍摄的路线照片 ⛰️",
     "SHARE_DIALOG": "分享照片"
+  },
+  "EXPORT": {
+    "OPTIONS": "选择一个或多个选项",
+    "HTML": "信息 (.HTML)",
+    "GPX": ".GPX 文件",
+    "KMZ": ".KMZ 文件",
+    "PHOTOS": "照片",
+    "KMZ_PHOTOS": "带照片的 KMZ"
   }
 }

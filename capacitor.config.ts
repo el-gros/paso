@@ -29,9 +29,9 @@ const config: CapacitorConfig = {
       electronLinuxLocation: "Databases"
     },
     SplashScreen: {
-      launchShowDuration: 1000,
-      launchAutoHide: true,
-      launchFadeOutDuration: 1000,
+      launchShowDuration: 5000, // 👈 Ponle 5000 (5 seg) como red de seguridad
+      launchAutoHide: false,    // 👈 🔴 CAMBIA A FALSE (Tú decides cuándo se oculta)
+      launchFadeOutDuration: 1000, // Mantiene el efecto de desvanecimiento suave
       backgroundColor: "#ffffffff",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
