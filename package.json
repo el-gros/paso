@@ -91,6 +91,8 @@
   "description": "Tracking app for Android",
   "overrides": {
     "minimatch": "^5.0.0",
-    "tar": "^7.5.11"
+    "tar": "^7.5.11",
+    "@xmldom/xmldom": "^0.8.12",
+    "vite": "^7.3.2"
   }
 }
