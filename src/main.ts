@@ -1,4 +1,8 @@
-import { enableProdMode, importProvidersFrom } from '@angular/core';
+import {
+  enableProdMode,
+  importProvidersFrom,
+  provideZoneChangeDetection,
+} from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter } from '@angular/router';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
@@ -6,7 +10,10 @@ import { IonicStorageModule } from '@ionic/storage-angular';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 import { environment } from './environments/environment';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
 import { TranslateLoader } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
@@ -26,6 +33,7 @@ if (environment.production) {
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideZoneChangeDetection(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
 
     importProvidersFrom(IonicModule.forRoot({})),
@@ -40,11 +48,11 @@ bootstrapApplication(AppComponent, {
         loader: {
           provide: TranslateLoader,
           deps: [HttpClient],
-          useFactory: httpTranslateLoader
-        }
+          useFactory: httpTranslateLoader,
+        },
       })
     ),
 
-    provideRouter(routes)
+    provideRouter(routes),
   ],
-}).catch(err => console.error(err));
+}).catch((err) => console.error(err));

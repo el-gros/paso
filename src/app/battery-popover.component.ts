@@ -1,12 +1,12 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { PopoverController, IonicModule } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
+
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-battery-popover',
   standalone: true,
-  imports: [IonicModule, CommonModule, TranslateModule],
+  imports: [IonicModule, TranslateModule],
   template: `
     <ion-content scrollY="false">
       <div class="popover-island">
@@ -19,17 +19,20 @@ import { TranslateModule } from '@ngx-translate/core';
             <span class="brand-tag">{{ brand }}</span>
           </div>
         </div>
-        
+
         <p class="message">
           {{ 'BATTERY.GENERIC_MSG' | translate }}
         </p>
-        
+
         <div class="steps-container">
           @for (step of steps; track $index) {
-            <div class="step-item">
-              <ion-icon name="chevron-forward-circle-sharp" color="primary"></ion-icon>
-              <p>{{ step | translate }}</p>
-            </div>
+          <div class="step-item">
+            <ion-icon
+              name="chevron-forward-circle-sharp"
+              color="primary"
+            ></ion-icon>
+            <p>{{ step | translate }}</p>
+          </div>
           }
         </div>
 
@@ -47,116 +50,136 @@ import { TranslateModule } from '@ngx-translate/core';
       </div>
     </ion-content>
   `,
-  styles: [`
-    ion-content { --background: transparent; }
-
-    .popover-island {
-      --glass-bg: rgba(255, 255, 255, 0.96);
-      --glass-blur: 16px;
-      --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-      margin: 10px;
-      padding: 24px 20px;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 18px;
-    }
-
-    .icon-circle {
-      background: rgba(235, 68, 90, 0.1);
-      padding: 10px;
-      border-radius: 15px;
-      ion-icon { font-size: 32px; display: block; }
-    }
-
-    .header-text {
-      h4 { 
-        margin: 0; 
-        font-weight: 800; 
-        font-size: 1.1rem; 
-        color: #1a1a1a;
-        text-transform: uppercase;
+  styles: [
+    `
+      ion-content {
+        --background: transparent;
       }
-      .brand-tag {
-        font-size: 0.7rem;
+
+      .popover-island {
+        --glass-bg: rgba(255, 255, 255, 0.96);
+        --glass-blur: 16px;
+        --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        margin: 10px;
+        padding: 24px 20px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 18px;
+      }
+
+      .icon-circle {
+        background: rgba(235, 68, 90, 0.1);
+        padding: 10px;
+        border-radius: 15px;
+        ion-icon {
+          font-size: 32px;
+          display: block;
+        }
+      }
+
+      .header-text {
+        h4 {
+          margin: 0;
+          font-weight: 800;
+          font-size: 1.1rem;
+          color: #1a1a1a;
+          text-transform: uppercase;
+        }
+        .brand-tag {
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: var(--ion-color-medium);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+      }
+
+      .message {
+        font-size: 0.9rem;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+
+      .steps-container {
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 20px;
+        padding: 15px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(0, 0, 0, 0.02);
+      }
+
+      .step-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        ion-icon {
+          font-size: 18px;
+          margin-top: 2px;
+        }
+        p {
+          margin: 0;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #333;
+        }
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* 🚀 Añadido relative y overflow hidden para que el Ripple funcione bien */
+      .btn-main {
+        position: relative;
+        overflow: hidden;
+        background: var(--ion-color-primary);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 18px;
         font-weight: 700;
-        color: var(--ion-color-medium);
         text-transform: uppercase;
-        letter-spacing: 1px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(var(--ion-color-primary-rgb), 0.3);
+        &:active {
+          transform: scale(0.96);
+        }
       }
-    }
 
-    .message {
-      font-size: 0.9rem;
-      color: #555;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
-
-    .steps-container {
-      background: rgba(0, 0, 0, 0.03);
-      border-radius: 20px;
-      padding: 15px;
-      margin-bottom: 24px;
-      border: 1px solid rgba(0, 0, 0, 0.02);
-    }
-
-    .step-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 12px;
-      &:last-child { margin-bottom: 0; }
-      
-      ion-icon { font-size: 18px; margin-top: 2px; }
-      p { margin: 0; font-size: 0.85rem; font-weight: 600; color: #333; }
-    }
-
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    /* 🚀 Añadido relative y overflow hidden para que el Ripple funcione bien */
-    .btn-main {
-      position: relative;
-      overflow: hidden;
-      background: var(--ion-color-primary);
-      color: white;
-      border: none;
-      padding: 16px;
-      border-radius: 18px;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 15px rgba(var(--ion-color-primary-rgb), 0.3);
-      &:active { transform: scale(0.96); }
-    }
-
-    .btn-cancel {
-      position: relative;
-      overflow: hidden;
-      background: transparent;
-      color: var(--ion-color-medium);
-      border: none;
-      padding: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      &:active { opacity: 0.6; }
-    }
-  `]
+      .btn-cancel {
+        position: relative;
+        overflow: hidden;
+        background: transparent;
+        color: var(--ion-color-medium);
+        border: none;
+        padding: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        &:active {
+          opacity: 0.6;
+        }
+      }
+    `,
+  ],
 })
 export class BatteryPopoverComponent implements OnInit {
-
   // ==========================================================================
   // 1. INPUTS Y PROPIEDADES
   // ==========================================================================
@@ -188,7 +211,10 @@ export class BatteryPopoverComponent implements OnInit {
       case 'redmi':
       case 'poco':
         this.title = 'BATTERY.BRANDS.XIAOMI';
-        this.steps = ['BATTERY.STEPS.AUTO_START', 'BATTERY.STEPS.NO_RESTRICTIONS'];
+        this.steps = [
+          'BATTERY.STEPS.AUTO_START',
+          'BATTERY.STEPS.NO_RESTRICTIONS',
+        ];
         break;
       case 'samsung':
         this.title = 'BATTERY.BRANDS.SAMSUNG';
@@ -197,7 +223,11 @@ export class BatteryPopoverComponent implements OnInit {
       case 'huawei':
       case 'honor':
         this.title = 'BATTERY.BRANDS.HUAWEI';
-        this.steps = ['BATTERY.STEPS.HUAWEI_MANAGE', 'BATTERY.STEPS.HUAWEI_AUTO', 'BATTERY.STEPS.BACKGROUND'];
+        this.steps = [
+          'BATTERY.STEPS.HUAWEI_MANAGE',
+          'BATTERY.STEPS.HUAWEI_AUTO',
+          'BATTERY.STEPS.BACKGROUND',
+        ];
         break;
       case 'oneplus':
       case 'oppo':
@@ -214,7 +244,10 @@ export class BatteryPopoverComponent implements OnInit {
         break;
       default:
         this.title = 'BATTERY.BRANDS.DEFAULT';
-        this.steps = ['BATTERY.STEPS.GENERIC_UNRESTRICTED', 'BATTERY.STEPS.BACKGROUND'];
+        this.steps = [
+          'BATTERY.STEPS.GENERIC_UNRESTRICTED',
+          'BATTERY.STEPS.BACKGROUND',
+        ];
         break;
     }
   }

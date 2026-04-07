@@ -9,7 +9,7 @@
 @import "@ionic/angular/css/normalize.css";
 @import "@ionic/angular/css/structure.css";
 @import "@ionic/angular/css/typography.css";
-@import '@ionic/angular/css/display.css';
+@import "@ionic/angular/css/display.css";
 
 /** Optional CSS utils */
 @import "@ionic/angular/css/padding.css";
@@ -19,7 +19,7 @@
 @import "@ionic/angular/css/flex-utils.css";
 
 /** OpenLayers Styles */
-@import "~ol/ol.css";
+@import "ol/ol.css";
 
 // ==========================================================================
 // 2. DESIGN SYSTEM (Variables & ADN Visual)
@@ -27,7 +27,7 @@
 
 :root {
   /** Centralización de valores para el efecto Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.92); 
+  --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-blur: 12px;
   --glass-radius: 28px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -35,14 +35,15 @@
 }
 
 /** Regla Maestra para paneles con efecto de cristal */
-.glass-panel, .popover-island {
+.glass-panel,
+.popover-island {
   background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
   backdrop-filter: blur(var(--glass-blur, 12px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
   border-radius: var(--glass-radius, 28px);
   border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
   box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.15));
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 // ==========================================================================
@@ -54,8 +55,8 @@
   display: block !important;
   z-index: 10000 !important;
   position: absolute !important;
-  bottom: 25px !important; 
-  left: 50px !important; 
+  bottom: 25px !important;
+  left: 50px !important;
   background: transparent !important;
   pointer-events: none;
   transform: rotate(-90deg) !important;
@@ -68,8 +69,8 @@
   color: #000 !important;
   background: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid #ccc !important;
-  border-bottom: 4px solid #3880ff !important; 
-  border-radius: 4px 4px 0 0 !important; 
+  border-bottom: 4px solid #3880ff !important;
+  border-radius: 4px 4px 0 0 !important;
   padding: 4px 10px !important;
   font-size: 11px !important;
   font-weight: bold;
@@ -77,7 +78,7 @@
   display: flex !important;
   align-items: center;
   justify-content: center;
-  min-width: 60px !important; 
+  min-width: 60px !important;
 }
 
 // B. Controles Nativos (Zoom & Rotate)
@@ -86,7 +87,7 @@
   left: 1em;
 }
 .ol-rotate {
-  top: 25px !important; 
+  top: 25px !important;
   right: 1em;
 }
 
@@ -117,14 +118,14 @@
   height: 46px !important;
   min-width: 46px !important;
   max-width: 46px !important;
-  box-sizing: border-box !important; 
+  box-sizing: border-box !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
   background-color: white !important;
   border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -157,7 +158,7 @@
   transition: all 0.2s ease;
   pointer-events: auto !important;
   cursor: pointer;
-  position: relative !important; 
+  position: relative !important;
   overflow: visible !important;
 
   ion-icon {
@@ -166,7 +167,8 @@
     margin-bottom: 4px;
   }
 
-  span, p {
+  span,
+  p {
     margin: 0;
     font-size: 9px;
     font-weight: 800;
@@ -191,18 +193,31 @@
   justify-content: center;
   cursor: pointer;
   transition: transform 0.1s;
-  
-  ion-icon { font-size: 32px; margin-bottom: 4px; }
-  p { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  
-  &:active { transform: scale(0.9); }
-  
+
+  ion-icon {
+    font-size: 32px;
+    margin-bottom: 4px;
+  }
+  p {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+
   &:disabled {
-    opacity: 0.25 !important;    
-    filter: grayscale(1);       
+    opacity: 0.25 !important;
+    filter: grayscale(1);
     cursor: not-allowed;
-    pointer-events: none;       
-    ion-icon, p { color: #888 !important; }
+    pointer-events: none;
+    ion-icon,
+    p {
+      color: #888 !important;
+    }
   }
 }
 
@@ -210,19 +225,29 @@
 .red-pill {
   background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid rgba(235, 68, 90, 0.4) !important;
-  ion-icon, span, p { color: var(--ion-color-danger, #eb445a) !important; }
+  ion-icon,
+  span,
+  p {
+    color: var(--ion-color-danger, #eb445a) !important;
+  }
 }
 
 .green-pill {
   background: rgba(255, 255, 255, 0.95) !important;
-  ion-icon, span, p { color: var(--ion-color-success, #2dd36f) !important; }
+  ion-icon,
+  span,
+  p {
+    color: var(--ion-color-success, #2dd36f) !important;
+  }
 }
-.blue-icon { color: var(--ion-color-primary) !important; }
+.blue-icon {
+  color: var(--ion-color-primary) !important;
+}
 
 /** Utilidades de estado */
 .button-disabled {
   opacity: 0.5;
-  pointer-events: none; 
+  pointer-events: none;
   transition: opacity 0.2s;
 }
 
@@ -230,7 +255,10 @@
 // 5. ANIMACIONES E INDICADORES VISUALES
 // ==========================================================================
 
-.record-button.with-indicator { position: relative !important; overflow: visible !important; }
+.record-button.with-indicator {
+  position: relative !important;
+  overflow: visible !important;
+}
 
 /** Punto de Compartir (Esquina derecha) */
 .sharing-dot {
@@ -250,9 +278,9 @@
 /** Punto de control / Grabación (Centro arriba) */
 .tracking-dot {
   position: absolute;
-  top: 4px;            
-  left: 50%;           
-  transform: translateX(-50%); 
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 10px;
   height: 10px;
   background-color: #2dd36f !important;
@@ -264,15 +292,33 @@
 }
 
 @keyframes sharing-pulse {
-  0% { transform: scale(0.9); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
-  100% { transform: scale(0.9); opacity: 1; }
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
 }
 
 @keyframes tracking-pulse-centered {
-  0% { transform: translateX(-50%) scale(0.9); opacity: 1; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; }
-  100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+  0% {
+    transform: translateX(-50%) scale(0.9);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.3);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(-50%) scale(0.9);
+    opacity: 1;
+  }
 }
 
 // ==========================================================================
@@ -282,39 +328,48 @@
 ion-fab {
   pointer-events: none;
   z-index: 1000;
-  ion-row, .record-button, ion-fab-button { pointer-events: auto; }
+  ion-row,
+  .record-button,
+  ion-fab-button {
+    pointer-events: auto;
+  }
 }
 
-.top-safe, .bottom-safe {
-  position: fixed; 
+.top-safe,
+.bottom-safe {
+  position: fixed;
   z-index: 999;
-  pointer-events: none; 
+  pointer-events: none;
   width: 100%;
   display: flex;
   justify-content: center;
 
   ion-row {
-    @extend .glass-panel; 
-    padding: 8px 16px;    
-    pointer-events: auto; 
+    @extend .glass-panel;
+    padding: 8px 16px;
+    pointer-events: auto;
     gap: 12px;
   }
 }
 
-.top-safe { 
+.top-safe {
   top: env(safe-area-inset-top, 20px);
-  margin-top: 10px; 
+  margin-top: 10px;
 }
-.bottom-safe { bottom: calc(15px + var(--ion-safe-area-bottom, 0px)); }
+.bottom-safe {
+  bottom: calc(15px + var(--ion-safe-area-bottom, 0px));
+}
 
 .bottom-safe-gray {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   height: var(--ion-safe-area-bottom, 0px);
-  background-color: #f4f4f7; 
+  background-color: #f4f4f7;
   z-index: 10;
-  border-top: 1px solid rgba(0,0,0,0.05); 
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 // ==========================================================================
@@ -322,7 +377,8 @@ ion-fab {
 // ==========================================================================
 
 // A. Estructura Popovers Base
-.floating-popover, .confirm-popover {
+.floating-popover,
+.confirm-popover {
   --background: transparent;
   --box-shadow: none;
   --width: var(--popover-width, 95%);
@@ -334,8 +390,8 @@ ion-fab {
   --background: transparent !important;
   --box-shadow: none !important;
   /* 🚀 FIX: Dejamos que Ionic calcule el alto, solo limitamos el ancho */
-  --width: 90% !important; 
-  
+  --width: 90% !important;
+
   &::part(content) {
     position: fixed !important;
     top: 50% !important;
@@ -353,13 +409,15 @@ ion-fab {
 .top-glass-island-wrapper {
   --background: transparent !important;
   --box-shadow: none !important;
-  --width: 90% !important; 
-  
+  --width: 90% !important;
+
   &::part(content) {
     position: fixed !important;
     top: 8vh !important; /* 🚀 Lo pegamos al 8% superior de la pantalla */
     left: 50% !important;
-    transform: translateX(-50%) !important; /* 🚀 Solo lo centramos horizontalmente */
+    transform: translateX(
+      -50%
+    ) !important; /* 🚀 Solo lo centramos horizontalmente */
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
@@ -371,19 +429,21 @@ ion-fab {
 ion-popover.top-search-popover {
   &::part(content) {
     position: absolute !important;
-    top: 5vh !important;           
-    bottom: auto !important;       
-    transform: none !important;    
-    width: 94vw !important;        
-    left: 3vw !important;          
-    max-width: 420px !important;   
-    
+    top: 5vh !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 94vw !important;
+    left: 3vw !important;
+    max-width: 420px !important;
+
     /* 1. PRIMERO LAS PROPIEDADES DIRECTAS */
-    max-height: 45vh !important;   
+    max-height: 45vh !important;
     border-radius: var(--glass-radius, 28px) !important;
 
     /* 2. POR ÚLTIMO LAS ANIDACIONES O MEDIA QUERIES */
-    @media (min-width: 450px) { left: calc(50% - 210px) !important; }
+    @media (min-width: 450px) {
+      left: calc(50% - 210px) !important;
+    }
   }
 }
 
@@ -391,7 +451,7 @@ ion-popover.top-search-popover {
 .confirm-popover {
   --width: 260px;
   --border-radius: 16px;
-  
+
   .popover-island.confirm-box {
     padding: 24px 16px;
     text-align: center;
@@ -417,34 +477,71 @@ ion-popover.top-search-popover {
 
 /** Backdrop y Popup para Share Location */
 .share-backdrop {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.35); z-index: 9998; display: none; 
-  &.active { display: block; }
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 9998;
+  display: none;
+  &.active {
+    display: block;
+  }
 }
 
 .share-popup {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 9999; display: none; pointer-events: auto;
-  &.active { display: block; }
-  .popover-island { min-width: 260px; padding: 24px 16px; }
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: none;
+  pointer-events: auto;
+  &.active {
+    display: block;
+  }
+  .popover-island {
+    min-width: 260px;
+    padding: 24px 16px;
+  }
 }
 
 .share-action-btn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 75px; height: 75px; border: none; border-radius: 15px; font-weight: 600; color: white; transition: transform 0.1s;
-  img { width: 26px; height: 26px; margin-bottom: 6px; }
-  &:active { transform: scale(0.92); }
-  &.btn-yes { background: #2dd36f; }
-  &.btn-no { background: #eb445a; }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 75px;
+  height: 75px;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  color: white;
+  transition: transform 0.1s;
+  img {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 6px;
+  }
+  &:active {
+    transform: scale(0.92);
+  }
+  &.btn-yes {
+    background: #2dd36f;
+  }
+  &.btn-no {
+    background: #eb445a;
+  }
 }
 
 /** Popover Centrado con Efecto de Cristal */
 .centered-glass-popover {
   --width: 280px; /* Ancho fijo elegante */
-  --max-height: 80vh; 
+  --max-height: 80vh;
   --box-shadow: none; /* Quitamos la sombra de Ionic porque se la hemos puesto a nuestra 'island' */
   --background: transparent; /* Fondo transparente para que se vea el cristal */
-  
+
   &::part(content) {
     top: 50% !important;
     left: 50% !important;
@@ -454,22 +551,34 @@ ion-popover.top-search-popover {
 
 /** Estilo para Alertas nativas tipo Cristal */
 .glass-island-alert {
-  --background: transparent; 
+  --background: transparent;
   --backdrop-opacity: 0.4;
 
   .alert-wrapper {
-    background: rgba(30, 30, 30, 0.65) !important; 
+    background: rgba(30, 30, 30, 0.65) !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important; 
-    border-radius: 32px !important; 
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 32px !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
   }
-  .alert-title { color: #ffffff !important; font-weight: 700 !important; }
-  .alert-message { color: rgba(255, 255, 255, 0.8) !important; }
-  .alert-button-group { border-top: 1px solid rgba(255, 255, 255, 0.1); }
-  .alert-button.alert-button-role-cancel { color: #ff4961 !important; }
-  .alert-button { color: #3880ff !important; font-weight: bold !important; }
+  .alert-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+  .alert-message {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+  .alert-button-group {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .alert-button.alert-button-role-cancel {
+    color: #ff4961 !important;
+  }
+  .alert-button {
+    color: #3880ff !important;
+    font-weight: bold !important;
+  }
 }
 
 // ==========================================================================
@@ -483,8 +592,8 @@ ion-popover.top-search-popover {
   font-size: 16px;
   font-weight: 500;
   --border-radius: 8px;
-  --box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
   button {
     font-weight: 800 !important;
     text-transform: uppercase;
@@ -492,26 +601,59 @@ ion-popover.top-search-popover {
   }
 }
 
-.toast-success { @extend .toast; --background: #2dd36f; --color: #ffffff; --button-color: #ffffff; }
-.toast-error   { @extend .toast; --background: #eb445a; --color: #ffffff; --button-color: #ffffff; }
-.toast-warning { @extend .toast; --background: #ffc409; --color: #000000; --button-color: #000000; }
+.toast-success {
+  @extend .toast;
+  --background: #2dd36f;
+  --color: #ffffff;
+  --button-color: #ffffff;
+}
+.toast-error {
+  @extend .toast;
+  --background: #eb445a;
+  --color: #ffffff;
+  --button-color: #ffffff;
+}
+.toast-warning {
+  @extend .toast;
+  --background: #ffc409;
+  --color: #000000;
+  --button-color: #000000;
+}
 
 // B. Toast Flotante Personalizado (Semáforo de Ruta)
 .custom-toast {
-  --top: 100px;         
-  --end: 15px;          
-  --width: auto;        
-  --max-width: 250px;   
+  --top: 100px;
+  --end: 15px;
+  --width: auto;
+  --max-width: 250px;
   --border-radius: 12px;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  
-  &::part(message) { font-weight: 600; padding-inline-start: 10px; }
-  &::part(button) { --color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
+
+  &::part(message) {
+    font-weight: 600;
+    padding-inline-start: 10px;
+  }
+  &::part(button) {
+    --color: #ffffff;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8em;
+  }
 }
 
-.green-toast { --background: var(--ion-color-success); --color: #ffffff; }
-.red-toast { --background: var(--ion-color-danger); --color: #ffffff; }
-.unknown-toast, .black-toast { --background: #333333; --color: #ffffff; }
+.green-toast {
+  --background: var(--ion-color-success);
+  --color: #ffffff;
+}
+.red-toast {
+  --background: var(--ion-color-danger);
+  --color: #ffffff;
+}
+.unknown-toast,
+.black-toast {
+  --background: #333333;
+  --color: #ffffff;
+}
 
 // C. Loading Controller (Glass Style)
 .glass-loading-overlay {
@@ -519,7 +661,7 @@ ion-popover.top-search-popover {
   --spinner-color: var(--ion-color-primary, #3880ff);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  
+
   .loading-wrapper {
     border-radius: 20px !important;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
@@ -537,25 +679,25 @@ ion-popover.top-search-popover {
    ========================================= */
 .glass-island-alert {
   /* Hacemos transparente el fondo base de Ionic para controlar el nuestro */
-  --background: transparent; 
+  --background: transparent;
   --backdrop-opacity: 0.4; /* Oscurece un poco la pantalla de fondo */
 
   .alert-wrapper {
     /* Fondo semitransparente (Aquí es oscuro, estilo iOS Dark Mode) */
-    background: rgba(30, 30, 30, 0.65) !important; 
-    
+    background: rgba(30, 30, 30, 0.65) !important;
+
     /* El desenfoque mágico del cristal */
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
-    
+
     /* Borde sutil brillante para dar volumen */
-    border: 1px solid rgba(255, 255, 255, 0.15) !important; 
-    
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+
     /* Curvas muy pronunciadas (Estilo isla) */
-    border-radius: 32px !important; 
-    
+    border-radius: 32px !important;
+
     /* Sombra suave para que flote */
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
   }
 
   /* Textos en blanco para que contrasten bien con el cristal oscuro */

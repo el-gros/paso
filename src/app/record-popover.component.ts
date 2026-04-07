@@ -1,7 +1,17 @@
-import { Component, ChangeDetectorRef, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import {
+  Component,
+  ChangeDetectorRef,
+  inject,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, PopoverController, LoadingController } from '@ionic/angular';
+import {
+  IonicModule,
+  PopoverController,
+  LoadingController,
+} from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 
@@ -23,40 +33,51 @@ import { GeoMathService } from './services/geo-math.service';
 import { SmartRouteBuilderService } from './services/smart-route-builder.service';
 
 // Opcional pero recomendado: Inyectar el motor que creamos ayer para apagarlo correctamente
-// import { TrackingEngineService } from './services/tracking-engine.service'; 
+// import { TrackingEngineService } from './services/tracking-engine.service';
 
 @Component({
   standalone: true,
   selector: 'app-record-popover',
-  imports: [IonicModule, CommonModule, FormsModule, TranslateModule],
+  imports: [IonicModule, FormsModule, TranslateModule],
   providers: [DecimalPipe, DatePipe],
   template: `
-    <ion-popover 
-      [isOpen]="present.isRecordPopoverOpen" 
+    <ion-popover
+      [isOpen]="present.isRecordPopoverOpen"
       (didDismiss)="present.isRecordPopoverOpen = false"
       backdropDismiss="false"
-      class="floating-popover">
+      class="floating-popover"
+    >
       <ng-template>
         <div class="popover-island">
           <div class="button-grid">
-              <button class="nav-item-btn enabled" (click)="setTrackDetails(); present.isRecordPopoverOpen = false">
-                <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
-                <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
-              </button>
+            <button
+              class="nav-item-btn enabled"
+              (click)="setTrackDetails(); present.isRecordPopoverOpen = false"
+            >
+              <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
+            </button>
 
-              <button class="nav-item-btn" (click)="present.isConfirmDeletionOpen = true; present.isRecordPopoverOpen = false">
-                <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
-                <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
-              </button>
+            <button
+              class="nav-item-btn"
+              (click)="
+                present.isConfirmDeletionOpen = true;
+                present.isRecordPopoverOpen = false
+              "
+            >
+              <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
+              <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
+            </button>
           </div>
         </div>
       </ng-template>
     </ion-popover>
 
-    <ion-popover 
-      [isOpen]="present.isConfirmStopOpen" 
-      (didDismiss)="cancelStop()" 
-      class="confirm-popover">
+    <ion-popover
+      [isOpen]="present.isConfirmStopOpen"
+      (didDismiss)="cancelStop()"
+      class="confirm-popover"
+    >
       <ng-template>
         <div class="popover-island confirm-box">
           <p class="confirm-title">{{ 'RECORD.CONFIRM_STOP' | translate }}</p>
@@ -74,13 +95,16 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
       </ng-template>
     </ion-popover>
 
-    <ion-popover 
-      [isOpen]="present.isConfirmDeletionOpen" 
-      (didDismiss)="cancelDelete()" 
-      class="confirm-popover">
+    <ion-popover
+      [isOpen]="present.isConfirmDeletionOpen"
+      (didDismiss)="cancelDelete()"
+      class="confirm-popover"
+    >
       <ng-template>
         <div class="popover-island confirm-box">
-          <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
+          <p class="confirm-title">
+            {{ 'RECORD.CONFIRM_DELETION' | translate }}
+          </p>
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" (click)="confirmDelete()">
               <ion-icon name="checkmark-sharp"></ion-icon>
@@ -95,22 +119,42 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
       </ng-template>
     </ion-popover>
   `,
-  styles: [`
-    .popover-island { padding: 16px 10px; }
-    .button-grid { display: flex; justify-content: space-around; align-items: center; gap: 5px; }
-    .button-grid.horizontal { justify-content: center; gap: 40px; }
-    .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
-    .enabled ion-icon { animation: pulse 2s infinite; }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
-    }
-  `]
+  styles: [
+    `
+      .popover-island {
+        padding: 16px 10px;
+      }
+      .button-grid {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        gap: 5px;
+      }
+      .button-grid.horizontal {
+        justify-content: center;
+        gap: 40px;
+      }
+      .primary-icon {
+        color: var(--ion-color-primary, #3880ff) !important;
+      }
+      .enabled ion-icon {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    `,
+  ],
 })
-
-export class RecordPopoverComponent implements OnInit, OnDestroy { 
-
+export class RecordPopoverComponent implements OnInit, OnDestroy {
   // ==========================================================================
   // 1. PROPIEDADES E INYECCIONES
   // ==========================================================================
@@ -133,7 +177,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   public loading = false;
   private subscription?: Subscription;
-  
+
   private isProcessingStop = false;
   private isProcessingDelete = false;
 
@@ -142,9 +186,9 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // ==========================================================================
 
   ngOnInit() {}
-  
-  ngOnDestroy() { 
-    this.subscription?.unsubscribe(); 
+
+  ngOnDestroy() {
+    this.subscription?.unsubscribe();
   }
 
   // ==========================================================================
@@ -164,9 +208,9 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   async confirmStop() {
     this.isProcessingStop = true; // 1. Ponemos el candado
     this.present.isConfirmStopOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
-    
+
     try {
-      await this.stopTracking(); 
+      await this.stopTracking();
     } catch (error) {
       console.error('Error al detener track:', error);
     }
@@ -175,13 +219,13 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   cancelStop() {
     if (this.isProcessingStop) {
-      // Entra aquí si se cerró porque pulsamos SÍ. 
+      // Entra aquí si se cerró porque pulsamos SÍ.
       // Liberamos el candado y NO hacemos nada más.
-      this.isProcessingStop = false; 
-      return; 
+      this.isProcessingStop = false;
+      return;
     }
     // Entra aquí si pulsamos NO o clicamos fuera del popover.
-    this.present.isConfirmStopOpen = false; 
+    this.present.isConfirmStopOpen = false;
   }
 
   // --------------------------------------------------------------------------
@@ -191,7 +235,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   async confirmDelete() {
     this.isProcessingDelete = true; // 1. Ponemos el candado
     this.present.isConfirmDeletionOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
-    
+
     try {
       await this.deleteTrack();
     } catch (error) {
@@ -202,16 +246,16 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   cancelDelete() {
     if (this.isProcessingDelete) {
-      // Entra aquí si se cerró porque pulsamos SÍ. 
+      // Entra aquí si se cerró porque pulsamos SÍ.
       // Liberamos el candado y NO REABRIMOS el menú anterior.
-      this.isProcessingDelete = false; 
-      return; 
+      this.isProcessingDelete = false;
+      return;
     }
-    
+
     // Entra aquí si pulsamos NO o clicamos fuera del popover.
     // Solo entonces reabrimos el popover principal.
-    this.present.isConfirmDeletionOpen = false; 
-    this.present.isRecordPopoverOpen = true; 
+    this.present.isConfirmDeletionOpen = false;
+    this.present.isRecordPopoverOpen = true;
   }
 
   // ==========================================================================
@@ -221,41 +265,50 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   async deleteTrack() {
     this.location.state = 'inactive';
     // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
-    
+
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
     await this.photo.discardSessionPhotos();
-    this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
+    this.fs.displayToast(
+      this.translate.instant('MAP.CURRENT_TRACK_DELETED'),
+      'success'
+    );
   }
 
   /**
-   * Finaliza la grabación, actualiza los pines en el mapa y 
+   * Finaliza la grabación, actualiza los pines en el mapa y
    * dispara el flujo de guardado de detalles.
    */
   async stopTracking(): Promise<void> {
     this.location.state = 'stopped';
     // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
-    
+
     this.subscription?.unsubscribe();
     const source = this.geography.currentLayer?.getSource();
-    
+
     if (!source || !this.present.currentTrack || !this.geography.map) return;
 
     // 🚀 Corregido: Limpiamos la duplicidad de validación
-    const coordinates = this.present.currentTrack.features?.[0]?.geometry?.coordinates;
+    const coordinates =
+      this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length === 0) {
-      this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'), 'warning');
+      this.fs.displayToast(
+        this.translate.instant('MAP.TRACK_EMPTY'),
+        'warning'
+      );
       return;
     }
 
     const features = source.getFeatures();
-    const routeLine = features.find(f => f.get('type') === 'route_line');
-    const startPin = features.find(f => f.get('type') === 'start_pin');
-    const endPin = features.find(f => f.get('type') === 'end_pin');
+    const routeLine = features.find((f) => f.get('type') === 'route_line');
+    const startPin = features.find((f) => f.get('type') === 'start_pin');
+    const endPin = features.find((f) => f.get('type') === 'end_pin');
 
     if (routeLine) {
       routeLine.setGeometry(new LineString(coordinates));
-      routeLine.setStyle(this.stylerService.setStrokeStyle(this.present.currentColor));
+      routeLine.setStyle(
+        this.stylerService.setStrokeStyle(this.present.currentColor)
+      );
     }
     if (startPin) {
       startPin.setGeometry(new Point(coordinates[0]));
@@ -268,7 +321,10 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     }
 
     await this.geography.setMapView(this.present.currentTrack);
-    this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
+    this.fs.displayToast(
+      this.translate.instant('MAP.TRACK_FINISHED'),
+      'success'
+    );
     await this.location.sendReferenceToPlugin();
 
     await this.setTrackDetails();
@@ -279,7 +335,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // ==========================================================================
 
   /**
-   * Orquesta el análisis inteligente de la ruta y abre el popover para 
+   * Orquesta el análisis inteligente de la ruta y abre el popover para
    * que el usuario introduzca nombre y descripción antes de guardar.
    */
   async setTrackDetails(ev?: any) {
@@ -288,21 +344,21 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
     // 1. Si hay un track válido, autogeneramos los textos mostrando un Loading Alert
     if (track && track.features && track.features[0]) {
-      
       // Creamos el alert de carga con la variable de traducción
       const loadingOverlay = await this.loadingCtrl.create({
         message: this.translate.instant('RECORD.ANALYZING_ROUTE'), // <-- Nueva variable
         spinner: 'crescent',
-        backdropDismiss: false // Evita que el usuario lo cierre tocando fuera
+        backdropDismiss: false, // Evita que el usuario lo cierre tocando fuera
       });
       await loadingOverlay.present();
 
       try {
         const feature = track.features[0];
-        const autoTexts = await this.smartRouteBuilder.generateWikilocStyleTexts(feature);
-        proposedTexts = { 
-          name: autoTexts.title, 
-          description: autoTexts.description 
+        const autoTexts =
+          await this.smartRouteBuilder.generateWikilocStyleTexts(feature);
+        proposedTexts = {
+          name: autoTexts.title,
+          description: autoTexts.description,
         };
       } catch (err) {
         console.warn('No se pudo autogenerar el texto de la ruta', err);
@@ -318,23 +374,24 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       componentProps: { modalEdit: proposedTexts },
       cssClass: 'top-glass-island-wrapper',
       translucent: true,
-      backdropDismiss: true
+      backdropDismiss: true,
     });
-    
+
     await popover.present();
-    
+
     // 3. Esperamos a que el usuario confirme o edite
     const { data, role } = await popover.onDidDismiss();
-    
+
     if (role === 'cancel' || role === 'backdrop') {
       if (this.location.state === 'stopped') {
         this.present.isRecordPopoverOpen = true;
       }
-      return; 
+      return;
     }
-    
+
     if (data?.action === 'ok') {
-      const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+      const finalName =
+        data.name || this.translate.instant('RECORD.DEFAULT_NAME');
       // Llamamos al guardado (el Toast de éxito ya lo tienes al final de saveFile!)
       await this.saveFile(finalName, data.description);
     }
@@ -347,22 +404,33 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
-    
+
     this.loading = true;
     try {
       // 1. Clonamos el track original crudo
       let trackToProcess = JSON.parse(JSON.stringify(track));
 
       // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
-      const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({ lng: c[0], lat: c[1] }));
-      const snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(trackToProcess, trailReference);
-      const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(snappedTrack, 0); 
+      const trailReference =
+        trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
+          lng: c[0],
+          lat: c[1],
+        }));
+      const snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(
+        trackToProcess,
+        trailReference
+      );
+      const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(
+        snappedTrack,
+        0
+      );
       // --- FIN DEL PIPELINE ---
 
       // 🛡️ SAFETY CHECK: Si el pipeline falla y vacía las coordenadas, usamos el track original
-      const finalTrack = optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0 
-        ? optimizedTrack 
-        : trackToProcess;
+      const finalTrack =
+        optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
+          ? optimizedTrack
+          : trackToProcess;
 
       const feature = finalTrack.features[0];
       const saveDate = new Date();
@@ -384,7 +452,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
       // 3. Guardamos el archivo optimizado en el Storage con su dateKey
       await this.fs.storeSet(dateKey, finalTrack);
-      
+
       // 4. Creamos el ítem para la lista (Metadata)
       const newItem = {
         name,
@@ -394,30 +462,29 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
         isChecked: false,
         photos: routePhotos,
         file: dateKey, // 👈 CRITICAL FIX: The foreign key linking to the track file
-        
+
         // Optional: If your list UI relies on these properties to show stats before opening the map
         distance: feature.properties.distance || 0,
-        duration: feature.properties.duration || 0 
+        duration: feature.properties.duration || 0,
       };
 
       this.fs.collection.unshift(newItem);
-      
+
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.collection = [...this.fs.collection];
-      
+
       await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
-      
+
       this.location.state = 'inactive';
       this.present.currentTrack = undefined;
       this.geography.currentLayer?.getSource()?.clear();
-      this.closeAllPopovers(); 
+      this.closeAllPopovers();
     } catch (e) {
-      console.error("Save failed", e);
+      console.error('Save failed', e);
     } finally {
       this.loading = false;
       this.cd.detectChanges();
     }
   }
-
 }

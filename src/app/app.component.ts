@@ -1,5 +1,5 @@
 import { Component, NgZone, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { IonicModule, Platform } from '@ionic/angular';
 import { TranslateModule } from '@ngx-translate/core';
@@ -26,12 +26,7 @@ useGeographic();
   standalone: true,
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  imports: [
-    IonicModule,
-    CommonModule,
-    FormsModule,
-    TranslateModule
-  ],
+  imports: [IonicModule, FormsModule, TranslateModule],
 })
 export class AppComponent implements OnDestroy {
   private appUrlListener?: PluginListenerHandle;
@@ -48,15 +43,15 @@ export class AppComponent implements OnDestroy {
     this.initializeApp();
   }
 
-// 1. INITIALIZE APP
+  // 1. INITIALIZE APP
   async initializeApp() {
     await this.platform.ready();
     await this.fs.init();
     await this.language.initLanguage();
-    
+
     // Delegamos la carga de mapas MBTiles al servicio correspondiente
-    await this.mbTilesService.initializeOfflineMaps(); 
-    
+    await this.mbTilesService.initializeOfflineMaps();
+
     // 2. Damos un pequeño margen y refrescamos el estilo del mapa
     setTimeout(() => {
       this.mapService.refreshOfflineStyle();
@@ -88,14 +83,19 @@ export class AppComponent implements OnDestroy {
 
   // 2. SETUP FILE LISTENER
   private async setupFileListener() {
-    this.appUrlListener = await App.addListener('appUrlOpen', (data: URLOpenListenerEvent) => {
-      this.zone.run(async () => {
-        const track = await this.trackImportService.processImportUrl(data.url);
-        if (track) {
-          this.mapService.pendingTrack$.next(track);
-          this.fs.gotoPage('tab1');
-        }
-      });
-    });
+    this.appUrlListener = await App.addListener(
+      'appUrlOpen',
+      (data: URLOpenListenerEvent) => {
+        this.zone.run(async () => {
+          const track = await this.trackImportService.processImportUrl(
+            data.url
+          );
+          if (track) {
+            this.mapService.pendingTrack$.next(track);
+            this.fs.gotoPage('tab1');
+          }
+        });
+      }
+    );
   }
 }

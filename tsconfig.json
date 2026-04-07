@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -15,17 +16,9 @@
     "importHelpers": true,
     "target": "es2022",
     "module": "es2022",
-    "lib": [
-      "es2022",
-      "dom"
-    ],
     "useDefineForClassFields": false,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "typeRoots": [
-      "node_modules/@types",
-      "./src/types" 
-    ]
+    "typeRoots": ["node_modules/@types", "./src/types"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
