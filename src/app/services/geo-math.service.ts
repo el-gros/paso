@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Track, Data, Bounds, PartialSpeed } from 'src/globald';
-import { GeoidService } from './geoid.service';
+import { Track, Data } from '../../globald';
+import * as egm96 from 'egm96-universal';
 
 const DEG_TO_RAD = Math.PI / 180;
 const EARTH_RADIUS_KM = 6371;
@@ -10,25 +10,51 @@ const EARTH_RADIUS_KM = 6371;
 })
 export class GeoMathService {
 
-  // --- ESTADÍSTICAS VOLÁTILES ---
+  // ==========================================================================
+  // 1. ESTADO INTERNO Y CACHÉ
+  // ==========================================================================
+
+  /** Velocidad media total calculada para el track actual. */
   public averageSpeed: number = 0;
+  /** Velocidad media en movimiento calculada para el track actual. */
   public averageMotionSpeed: number = 0;
+  /** Última altitud estable utilizada para el cálculo de desniveles. */
   public lastStableAlt: number = 0;
 
-  // --- ESTADO DEL FILTRO DE KALMAN ---
+  /** Parámetro de ruido del proceso para el filtro de Kalman. */
   private k_q = 0.1; 
+  /** Parámetro de ruido de la medición para el filtro de Kalman. */
   private k_r = 1.5; 
+  /** Estimación de la covarianza del error para el filtro de Kalman. */
   private k_p = 1.0; 
+  /** Valor estimado actual (velocidad filtrada) para el filtro de Kalman. */
   private k_v = 0.0; 
 
-  constructor(
-        private geoidService: GeoidService
-  ) {}
+  constructor() {}
+
+  // ==========================================================================
+  // 0. CORRECCIÓN DE ALTITUD (GEOIDE)
+  // ==========================================================================
+
+  /**
+   * Convierte altitud elipsoidal (WGS84) a ortométrica (MSL) usando EGM96.
+   * @returns Altitud corregida en metros (2 decimales).
+   */
+  public getCorrectedAltitude(lat: number, lon: number, rawAltitude: number): number {
+    // Convierte directamente del elipsoide al geoide (MSL)
+    const correctedAlt = egm96.ellipsoidToEgm96(lat, lon, rawAltitude);
+    return parseFloat(correctedAlt.toFixed(2));
+  }
 
   // ==========================================================================
   // 1. FILTRADO Y SUAVIZADO (Kalman & Altitud)
   // ==========================================================================
 
+  /**
+   * Aplica un filtro de Kalman simple para suavizar una serie de mediciones.
+   * @param measurement La nueva medición a filtrar.
+   * @returns El valor filtrado.
+   */
   private applyKalman(measurement: number): number {
     this.k_p = this.k_p + this.k_q;
     const k_gain = this.k_p / (this.k_p + this.k_r);
@@ -38,12 +64,11 @@ export class GeoMathService {
   }
 
   /**
-   * Filtra velocidad y altitud, aplica corrección del geoide y calcula desniveles.
-   * @param track El objeto Track a procesar
-   * @param initial Índice desde el cual empezar el filtrado
-   */
-  /**
-   * Filtra velocidad y altitud, aplica corrección del geoide y calcula desniveles.
+   * Procesa los puntos de un track aplicando filtrado de Kalman para la velocidad,
+   * corrección de altitud con el geoide y cálculo de desniveles.
+   * @param track El objeto `Track` a procesar.
+   * @param initial El índice del punto desde el cual iniciar el procesamiento (0 para un track nuevo).
+   * @returns Una promesa que resuelve con el objeto `Track` actualizado.
    */
   async filterSpeedAndAltitude(track: Track, initial: number): Promise<Track> {
     const feature = track.features[0];
@@ -74,7 +99,7 @@ export class GeoMathService {
       if (firstPoint.geoidApplied === false || firstPoint.isMSL === false) {
         const lon = coords[0][0];
         const lat = coords[0][1];
-        firstPoint.altitude = this.geoidService.getCorrectedAltitude(lat, lon, firstPoint.altitude);
+        firstPoint.altitude = this.getCorrectedAltitude(lat, lon, firstPoint.altitude);
       }
       // Lo marcamos siempre como true para que si se repasa el array, no se vuelva a calcular
       firstPoint.geoidApplied = true;
@@ -109,7 +134,7 @@ export class GeoMathService {
         const lon = coords[i][0];
         const lat = coords[i][1];
         console.log(`[GeoMath] Punto ${i} -> Corrigiendo altitud. Original: ${curr.altitude}, geoidApplied: ${curr.geoidApplied}`);
-        curr.altitude = this.geoidService.getCorrectedAltitude(lat, lon, curr.altitude);
+        curr.altitude = this.getCorrectedAltitude(lat, lon, curr.altitude);
       }
       curr.geoidApplied = true;
 
@@ -153,6 +178,15 @@ export class GeoMathService {
   // 2. MATEMÁTICAS GEOMÉTRICAS BÁSICAS (Distancias y BBox)
   // ==========================================================================
 
+  /**
+   * Calcula la distancia Haversine entre dos puntos geográficos en kilómetros.
+   * @param lon1 Longitud del primer punto.
+   * @param lat1 Latitud del primer punto.
+   * @param lon2 Longitud del segundo punto.
+   * @param lat2 Latitud del segundo punto.
+   * @returns La distancia entre los dos puntos en kilómetros.
+   */
+
   computeDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     const dLat = (lat2 - lat1) * DEG_TO_RAD;
     const dLon = (lon2 - lon1) * DEG_TO_RAD;
@@ -160,10 +194,23 @@ export class GeoMathService {
     return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  /**
+   * Alias para `computeDistance`, útil para mantener la compatibilidad o por preferencia.
+   * @param lon1 Longitud del primer punto.
+   * @param lat1 Latitud del primer punto.
+   * @param lon2 Longitud del segundo punto.
+   * @param lat2 Latitud del segundo punto.
+   * @returns La distancia entre los dos puntos en kilómetros.
+   */
   quickDistance(lon1: number, lat1: number, lon2: number, lat2: number): number {
     return this.computeDistance(lon1, lat1, lon2, lat2);
   }
 
+  /**
+   * Actualiza un Bounding Box (bbox) con una nueva coordenada.
+   * @param bbox El array del Bounding Box en formato [minLon, minLat, maxLon, maxLat].
+   * @param coord La coordenada a incluir en formato [lon, lat].
+   */
   private updateBBox(bbox: [number, number, number, number], coord: number[]): void {
     bbox[0] = Math.min(bbox[0], coord[0]); // Min Lon
     bbox[1] = Math.min(bbox[1], coord[1]); // Min Lat
@@ -175,6 +222,12 @@ export class GeoMathService {
   // 3. CÁLCULO DE DISTANCIAS ACUMULADAS (Las que faltaban)
   // ==========================================================================
 
+  /**
+   * Calcula las distancias acumuladas para cada punto de un track y actualiza su Bounding Box.
+   * @param track El objeto `Track` a procesar.
+   * @param startIndex El índice del punto desde el cual iniciar el cálculo de distancias.
+   * @returns Una promesa que resuelve con el objeto `Track` actualizado.
+   */
   public async accumulatedDistances(track: Track, startIndex: number): Promise<Track> {
     const feature = track.features[0];
     const coords = feature.geometry.coordinates;
@@ -200,6 +253,11 @@ export class GeoMathService {
     return track;
   }
 
+  /**
+   * Calcula las distancias acumuladas entre una serie de coordenadas.
+   * @param coords Un array de coordenadas en formato `[lon, lat]`.
+   * @returns Un array de números representando la distancia acumulada en kilómetros para cada punto.
+   */
   computeCumulativeDistances(coords: [number, number][]): number[] {
     if (coords.length === 0) return [];
     const dists = [0];
@@ -211,56 +269,18 @@ export class GeoMathService {
   }
 
   // ==========================================================================
-  // 4. GENERACIÓN DE ESTADÍSTICAS Y PARCIALES
-  // ==========================================================================
-
-  computePartialSpeeds(track: Track): PartialSpeed[] {
-    const data: Data[] = track?.features?.[0]?.geometry?.properties?.data || [];
-    if (!data.length) return [];
-    
-    const results: PartialSpeed[] = [];
-    let kmIndex = 1;
-    let startTime = data[0].time;
-
-    for (let i = 1; i < data.length; i++) {
-      if (data[i].distance >= kmIndex && data[i].distance > data[i-1].distance) {
-        const ratio = (kmIndex - data[i-1].distance) / (data[i].distance - data[i-1].distance);
-        const crossingTime = data[i-1].time + ratio * (data[i].time - data[i-1].time);
-        
-        const durS = (crossingTime - startTime) / 1000;
-        
-        if (durS > 0) {
-          const kmh = Number((3600 / durS).toFixed(2));
-          const s = Math.floor(durS);
-          const formattedTime = [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-            .map(v => v.toString().padStart(2, '0')).join(':');
-            
-          results.push([`${kmIndex-1}-${kmIndex} km`, formattedTime, kmh]);
-        }
-        
-        startTime = crossingTime;
-        kmIndex++;
-      }
-    }
-    return results;
-  }
-
-  computeMinMaxProperty(data: Data[], propertyName: keyof Data): Bounds {
-    let min = Infinity, max = -Infinity;
-    data.forEach(d => {
-      const val = d[propertyName] as number;
-      if (Number.isFinite(val)) { 
-        min = Math.min(min, val); 
-        max = Math.max(max, val); 
-      }
-    });
-    return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
-  }
-
-  // ==========================================================================
   // 5. UTILIDADES DE INTERPOLACIÓN (Rutas externas / Simulación)
   // ==========================================================================
 
+  /**
+   * Crea un array de objetos `Data` a partir de arrays de distancias, altitudes y tiempos,
+   * asignando una velocidad constante.
+   * @param distances Array de distancias.
+   * @param altitudes Array de altitudes.
+   * @param times Array de tiempos.
+   * @param speed Velocidad constante a asignar.
+   * @returns Un array de objetos `Data`.
+   */
   fillProperties(distances: number[], altitudes: number[], times: number[], speed: number): Data[] {
     return distances.map((d, i) => ({ 
       altitude: altitudes[i], 
@@ -272,6 +292,14 @@ export class GeoMathService {
     }));
   }
 
+  /**
+   * Genera un array de marcas de tiempo interpoladas basándose en la duración total
+   * y la distancia de un track.
+   * @param data Objeto de respuesta que contiene la duración total (ej. de OpenRouteService).
+   * @param date La fecha de inicio del track.
+   * @param distances Array de distancias acumuladas.
+   * @returns Un array de marcas de tiempo en milisegundos.
+   */
   createTimes(data: any, date: Date, distances: number[]): number[] {
     const summary = data.response?.features?.[0]?.properties?.summary;
     if (!summary) return distances.map(() => date.getTime());
@@ -282,6 +310,14 @@ export class GeoMathService {
     return distances.map(d => Math.round(startTime + (d / totalDist) * (summary.duration * 1000)));
   }
 
+  /**
+   * Ajusta las coordenadas y propiedades de un track interpolando puntos
+   * si la distancia entre dos puntos consecutivos excede un `maxDistance`.
+   * @param coordinates Array de coordenadas `[lon, lat]`.
+   * @param properties Array de objetos `Data` asociados a las coordenadas.
+   * @param maxDistance La distancia máxima permitida entre puntos antes de interpolar.
+   * @returns Un objeto con los nuevos arrays de coordenadas y propiedades interpoladas.
+   */
   adjustCoordinatesAndProperties(coordinates: [number, number][], properties: Data[], maxDistance: number) {
     const newCoordinates: [number, number][] = [];
     const newProperties: Data[] = [];

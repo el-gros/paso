@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. ISLA DEL POPOVER (Contenedor Principal)
+   1. POPOVER CONTENEDOR (Estilo Base)
    ========================================================================== */
 .popover-island {
   padding: 16px 12px; 
@@ -10,7 +10,7 @@
 }
 
 /* ==========================================================================
-   2. INPUTS DE BÚSQUEDA (Estilo Píldora)
+   2. CAMPOS DE BÚSQUEDA (Inputs y Acciones)
    ========================================================================== */
 .search-input-wrapper, .input-stack {
   display: flex; 
@@ -29,19 +29,20 @@
   }
 
   /* Estado cuando ya se ha seleccionado un origen/destino */
-  &.confirmed { 
+  &.confirmed { // Indica que el campo ha sido rellenado con una selección válida
     background: rgba(45, 211, 111, 0.08); 
     border: 1px solid rgba(45, 211, 111, 0.3); 
   }
 }
 
 /* Iconos dentro del Input */
-.inner-icon { 
+.inner-icon { // Icono de lupa estático
   font-size: 20px; 
   color: #888; 
 }
 
 .input-actions-row { 
+  // Contenedor de los iconos de acción (micrófono, borrar, localizar)
   display: flex; 
   align-items: center; 
   gap: 12px; 
@@ -49,29 +50,30 @@
 }
 
 .mic-icon { 
+  // Icono del micrófono para dictado de voz
   font-size: 20px; 
   color: #888; 
   padding: 4px;
   margin: -4px; /* Aumenta el área de toque sin mover el icono */
 }
 
-.mic-active { 
+.mic-active { // Estilo para el micrófono cuando está activo (grabando)
   color: var(--ion-color-danger) !important; /* Rojo suele ser mejor para indicar grabación */
   animation: pulse-mic 1.2s infinite; 
 }
 
-.action-icon { 
+.action-icon { // Icono de localización (usar ubicación actual)
   font-size: 20px; 
   color: var(--ion-color-primary); 
 }
 
-.clear-icon { 
+.clear-icon { // Icono de borrar texto
   font-size: 18px; 
   color: #eb445a; 
 }
 
 /* ==========================================================================
-   3. SELECTOR DE TRANSPORTE
+   3. SELECCIÓN DE MEDIO DE TRANSPORTE (Chips)
    ========================================================================== */
 .transport-selection { 
   display: flex; 
@@ -80,7 +82,7 @@
   margin: 12px 0 16px 0; 
 }
 
-.mode-chip { 
+.mode-chip { // Cada chip individual de modo de transporte
   width: 42px; 
   height: 42px; 
   border-radius: 50%; 
@@ -93,7 +95,7 @@
   
   ion-icon { font-size: 22px; }
 
-  &.active { 
+  &.active { // Estilo para el chip activo (seleccionado)
     background: var(--ion-color-primary); 
     color: white; 
     transform: scale(1.05);
@@ -102,7 +104,7 @@
 }
 
 /* ==========================================================================
-   4. BOTONES DE ACCIÓN
+   4. BOTONES (Reutilizables y Específicos)
    ========================================================================== */
 .button-grid { 
   display: flex; 
@@ -110,7 +112,7 @@
   gap: 12px;
 }
 
-.main-action-btn {
+.main-action-btn { // Botón principal de acción (Buscar lugar, Obtener ruta)
   width: 100%; 
   background: var(--ion-color-primary); 
   color: white;
@@ -132,12 +134,12 @@
   }
 }
 
-.primary-icon { 
+.primary-icon { // Clase de utilidad para iconos primarios
   color: var(--ion-color-primary) !important; 
 }
 
 /* ==========================================================================
-   5. CONTENEDOR DE RESULTADOS
+   5. LISTA DE RESULTADOS DE BÚSQUEDA
    ========================================================================== */
 .results-container { 
   max-height: 50vh; 
@@ -154,16 +156,15 @@
   background-repeat: no-repeat;
   background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
   background-attachment: local, local, scroll, scroll;
-
+  
   ion-item {
     --padding-start: 8px;
     --inner-padding-end: 8px;
     h2 { font-weight: 600; color: #444; font-size: 14px; }
   }
 }
-
 /* ==========================================================================
-   6. ANIMACIONES
+   6. ANIMACIONES Y EFECTOS
    ========================================================================== */
 @keyframes pulse-mic { 
   0% { opacity: 1; transform: scale(1); } 

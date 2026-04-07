@@ -156,19 +156,31 @@ import { TranslateModule } from '@ngx-translate/core';
   `]
 })
 export class BatteryPopoverComponent implements OnInit {
-  @Input() brand: string = 'generic';
 
-  title: string = '';
-  // CUIDADO: Faltaba inicializar el steps, lo dejo vacío
-  steps: string[] = [];
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
+  @Input() brand: string = 'generic';
+  public title: string = '';
+  public steps: string[] = [];
 
   private popoverCtrl = inject(PopoverController);
+
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
 
   ngOnInit() {
     this.configureContent();
   }
 
-  configureContent() {
+  // ==========================================================================
+  // 3. LÓGICA DE CONFIGURACIÓN (INTERNA)
+  // ==========================================================================
+
+  /** Define el contenido visual según el fabricante detectado */
+  private configureContent() {
     const brandNorm = (this.brand || 'generic').toLowerCase().trim();
 
     switch (brandNorm) {
@@ -207,11 +219,15 @@ export class BatteryPopoverComponent implements OnInit {
     }
   }
 
-  confirmar() {
+  // ==========================================================================
+  // 4. ACCIONES (API PÚBLICA)
+  // ==========================================================================
+
+  public confirmar() {
     this.popoverCtrl.dismiss({ action: 'settings' });
   }
 
-  cerrar() {
+  public cerrar() {
     this.popoverCtrl.dismiss({ action: 'cancel' });
   }
 }

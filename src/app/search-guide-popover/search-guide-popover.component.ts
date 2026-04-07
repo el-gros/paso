@@ -8,28 +8,18 @@ import { Keyboard } from '@capacitor/keyboard';
 import { Subscription, Subject } from 'rxjs'; // 🚀 AÑADIDO: Subject
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators'; // 🚀 AÑADIDO: Operadores
 
-// --- OPENLAYERS ---
-import { GeoJSON } from 'ol/format';
-import { Feature } from 'ol';
-import { Point } from 'ol/geom';
-import { FeatureLike } from 'ol/Feature';
-import { Fill, Stroke, Style } from 'ol/style';
-import { Coordinate } from 'ol/coordinate';
-
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
 import { GeographyService } from '../services/geography.service';
 import { ReferenceService } from '../services/reference.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { LanguageService } from '../services/language.service';
-import { StylerService } from '../services/styler.service';
 import { WikiService, WikiSummary } from '../services/wiki.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
 import { SearchService } from '../services/search.service';
-import { GeoMathService } from '../services/geo-math.service';
 
 // --- INTERFACES ---
-import { LocationResult, Track, WikiWeatherResult } from 'src/globald';
+import { LocationResult, Track, WikiWeatherResult } from '../../globald';
 
 interface SpeechListener { remove: () => Promise<void>; }
 
@@ -51,7 +41,6 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private location = inject(LocationManagerService); 
   public fs = inject(FunctionsService);
   private languageService = inject(LanguageService);
-  private styler = inject(StylerService);
   private platform = inject(Platform);
   private translate = inject(TranslateService);
   private cdr = inject(ChangeDetectorRef);
@@ -59,7 +48,6 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private wikiService = inject(WikiService);
   private weatherService = inject(WeatherService);
   private searchService = inject(SearchService);
-  private geoMath = inject(GeoMathService);
 
   private backButtonSub?: Subscription;
   private searchSubscription?: Subscription; // 🚀 NUEVO
@@ -201,23 +189,9 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     if (!location?.boundingbox || !location?.geojson) return;
     if (this.platform.is('capacitor')) await Keyboard.hide(); // 🚀 Ocultar teclado al seleccionar
     
-    const source = this.geography.searchLayer?.getSource();
-    if (!source) return;
-
-    source.clear();
-    const geojsonFormat = new GeoJSON();
-    const features = geojsonFormat.readFeatures(location.geojson);
-    if (features.some(f => f.getGeometry()?.getType().includes('Polygon'))) {
-      features.push(new Feature(new Point([location.lon, location.lat])));
-    }
-
-    source.addFeatures(features);
-    this.geography.searchLayer?.setStyle((f) => this.applySearchStyle(f));
+    this.geography.showLocationOnMap(location);
     this.reference.foundPlace = true;
 
-    const extent = [location.boundingbox[2], location.boundingbox[0], location.boundingbox[3], location.boundingbox[1]];
-    this.geography.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
-    
     await this.searchWiki(location);
   }
 
@@ -240,8 +214,13 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
       );
 
       if (responseData?.features?.length > 0) {
-        this.reference.isGuidePopoverOpen = false;
-        await this.handleRouteResponse(responseData);
+        const newTrack = this.searchService.processRouteResponse(
+          responseData, 
+          this.query2, 
+          this.query3, 
+          this.selectedTransport
+        );
+        await this.displayRouteOnMap(newTrack);
       }
     } catch (error: any) {
       this.fs.displayToast(error.message || 'SEARCH.ROUTING_ERROR', 'error');
@@ -251,54 +230,9 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     }
   }
 
-  async handleRouteResponse(geoJsonData: any) {
-    const routeFeature = geoJsonData.features[0];
-    const stats = routeFeature.properties.summary;
-    const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
-
-    let accumulatedDistance = 0;
-    const trackData = routeCoordinates.map((c, index) => {
-      if (index > 0) {
-        const prev = routeCoordinates[index - 1];
-        accumulatedDistance += this.geoMath.quickDistance(prev[0], prev[1], c[0], c[1]);
-      }
-      return {
-        altitude: c[2] || 0,
-        speed: 0,
-        time: 0,
-        compAltitude: c[2] || 0,
-        compSpeed: 0,
-        distance: accumulatedDistance
-      };
-    });
-
-    const newTrack: Track = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: {
-          name: `${this.query2} ➔ ${this.query3}`,
-          place: this.query3,
-          date: new Date(),
-          description: this.translate.instant(`TRANSPORT.${this.selectedTransport.toUpperCase().replace('-', '_')}`),
-          totalDistance: stats.distance / 1000,
-          totalTime: Math.round(stats.duration * 1000),
-          inMotion: Math.round(stats.duration * 1000), 
-          totalElevationGain: Math.round(routeFeature.properties.ascent || 0),
-          totalElevationLoss: Math.round(routeFeature.properties.descent || 0),
-          totalNumber: routeCoordinates.length,
-          currentSpeed: 0, 
-          currentAltitude: 0
-        },
-        geometry: {
-          type: 'LineString',
-          coordinates: routeCoordinates as [number, number][],
-          properties: { data: trackData }
-        }
-      }]
-    };
-
-    this.reference.archivedTrack = newTrack;
+  private async displayRouteOnMap(track: Track) {
+    this.reference.isGuidePopoverOpen = false;
+    this.reference.archivedTrack = track;
     this.reference.foundRoute = true;
     await this.location.sendReferenceToPlugin();
     await this.reference.displayArchivedTrack();
@@ -330,18 +264,6 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         }
       });
     } finally { this.loading = false; this.cdr.detectChanges(); }
-  }
-
-  // ==========================================
-  // UI Y UTILIDADES
-  // ==========================================
-  private applySearchStyle(feature: FeatureLike): Style | Style[] {
-    const type = feature.getGeometry()?.getType();
-    if (type === 'Point') return this.styler.createPinStyle('black');
-    return new Style({
-      stroke: new Stroke({ color: '#000', width: 2.5 }),
-      fill: new Fill({ color: 'rgba(0, 0, 0, 0.15)' }),
-    });
   }
 
   selectRoutePoint(result: LocationResult) {

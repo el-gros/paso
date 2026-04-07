@@ -19,15 +19,21 @@ interface OfflineMap {
 
 @Injectable({ providedIn: 'root' })
 export class OfflineMapService {
+
+  // ==========================================
+  // 1. ESTADO REACTIVO
+  // ==========================================
   public missingMaps$ = new BehaviorSubject<string[]>([]);
   public availableMaps$ = new BehaviorSubject<string[]>([]);
   public isDownloading$ = new BehaviorSubject<boolean>(false);
+  public displayMaps$ = new BehaviorSubject<string[]>(['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN']);
+  
+  /** Notifica que el mapa base debe recargarse tras un cambio en los archivos */
+  public mapNeedsRefresh$ = new Subject<void>();
   
   private downloadLoading: HTMLIonLoadingElement | null = null;
   private progressSub?: Subscription;
   private readonly ONLINE_MAPS = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
-  public displayMaps$ = new BehaviorSubject<string[]>(this.ONLINE_MAPS);
-  public mapNeedsRefresh$ = new Subject<void>();
 
   constructor(
     private server: ServerService,
@@ -38,6 +44,13 @@ export class OfflineMapService {
     private loadingCtrl: LoadingController
   ) {}
 
+  // ==========================================================================
+  // 2. ORQUESTACIÓN DE ARCHIVOS
+  // ==========================================================================
+
+  /**
+   * Escanea el directorio de datos para actualizar la lista de mapas disponibles y faltantes.
+   */
 async refreshMapsList() {
     const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
     
@@ -80,6 +93,9 @@ async refreshMapsList() {
     }
 }
 
+  /**
+   * Inicia la descarga de un mapa MBTiles desde el servidor configurado.
+   */
   async downloadMap(displayName: string) {
     const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
     const match = offlineMapsDef.find(item => 
@@ -122,6 +138,9 @@ async refreshMapsList() {
     }
   }
 
+  /**
+   * Cierra la conexión y elimina físicamente el archivo del mapa.
+   */
   async removeMap(displayName: string) {
     const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
     const match = offlineMapsDef.find(item => 
@@ -143,6 +162,10 @@ async refreshMapsList() {
       this.fs.displayToast(this.translate.instant('SETTINGS.FAILED_REMOVEMAP'), 'error');
     }
   }
+
+  // ==========================================================================
+  // 3. HELPERS
+  // ==========================================================================
 
   private async postActionCleanup(success: boolean) {
     this.progressSub?.unsubscribe();

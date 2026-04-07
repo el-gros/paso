@@ -138,18 +138,30 @@ import { LocationManagerService } from './services/location-manager.service';
   `]
 })
 export class SaveTrackPopover implements OnInit { 
+
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
   @Input() modalEdit: any;
 
-  // Inyecciones
   public location = inject(LocationManagerService);
   public present = inject(PresentService);
   private popoverCtrl = inject(PopoverController);
   private translate = inject(TranslateService); 
   
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
+
   ngOnInit() {
     // Simplemente aseguramos que el objeto exista y lo copiamos para editarlo
     this.modalEdit = { name: '', description: '', ...this.modalEdit };
   }
+
+  // ==========================================================================
+  // 3. ACCIONES (API PÚBLICA)
+  // ==========================================================================
 
   public cancel() { 
     this.popoverCtrl.dismiss(null, 'cancel'); 

@@ -1,20 +1,59 @@
-import { Map } from '../globald';
+import { StyleJSON } from '../globald';
+// ==========================================================================
+// INTERFACES DE CONFIGURACIÓN
+// ==========================================================================
 
-export var global: any = {
-  mapTilerKey: 'VndVluazDWO8Aijuzfpp' as string,
-  mapbox_public: '' as string,
-  ors_key: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23' as string,
-  weather_key: 'e39530f127b7c58745ddeb78f71e2019' as string,
+/** Define la estructura de un mapa offline descargable. */
+interface OfflineMapConfig {
+  name: string;
+  filename: string;
+  url: string;
+  size: number; // Size in MB
+}
 
-  // Dynamic getter for the cancel button
+/** Define la estructura completa del objeto de configuración global. */
+interface GlobalConfig {
+  mapTilerKey: string;
+  mapbox_public: string;
+  ors_key: string;
+  weather_key: string;
+  okButton: { text: string; role: string; cssClass: string; };
+  offlineMaps: OfflineMapConfig[];
+  maptiler_terrain_modified?: StyleJSON;
+}
+
+/**
+ * Variables de configuración global para la aplicación en entorno de desarrollo.
+ * Estos valores pueden ser sobrescritos por el entorno de producción (environment.prod.ts).
+ */
+export var global: GlobalConfig = {
+  // ==========================================================================
+  // 1. API KEYS & EXTERNAL SERVICE CONFIGURATIONS
+  // ==========================================================================
+  mapTilerKey: 'VndVluazDWO8Aijuzfpp',
+  mapbox_public: '', // Reemplazar con tu clave pública de Mapbox si la usas
+  ors_key: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23',
+  weather_key: 'e39530f127b7c58745ddeb78f71e2019',
+
+  // ==========================================================================
+  // 2. UI CONFIGURATION & DYNAMIC GETTERS
+  // ==========================================================================
+  /**
+   * Define las propiedades para un botón de confirmación "OK",
+   * frecuentemente usado en alertas o diálogos.
+   */
   get okButton() {
     return {
-      text: 'OK', // Dynamically fetch the text
+      text: 'OK',
       role: 'confirm',
       cssClass: 'alert-ok-button',
     };
   },
 
+  // ==========================================================================
+  // 3. OFFLINE MAPS DATA
+  //    (Lista de mapas descargables, ordenada alfabéticamente por 'name')
+  // =================
   offlineMaps: [
     {
       "name": "Catalunya",
@@ -70,5 +109,3 @@ export var global: any = {
 export const environment = {
   production: false,
 };
-
-

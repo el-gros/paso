@@ -110,6 +110,11 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
 })
 
 export class RecordPopoverComponent implements OnInit, OnDestroy { 
+
+  // ==========================================================================
+  // 1. PROPIEDADES E INYECCIONES
+  // ==========================================================================
+
   public fs = inject(FunctionsService);
   public geography = inject(GeographyService);
   public location = inject(LocationManagerService);
@@ -126,11 +131,15 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private loadingCtrl = inject(LoadingController);
   // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
-  loading = false;
-  subscription?: Subscription;
+  public loading = false;
+  private subscription?: Subscription;
   
   private isProcessingStop = false;
   private isProcessingDelete = false;
+
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
 
   ngOnInit() {}
   
@@ -138,15 +147,20 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.subscription?.unsubscribe(); 
   }
 
+  // ==========================================================================
+  // 3. FLUJO DE CONTROL DE POPOVERS (UI)
+  // ==========================================================================
+
   closeAllPopovers() {
     this.present.isRecordPopoverOpen = false;
     this.present.isConfirmStopOpen = false;
     this.present.isConfirmDeletionOpen = false;
   }
 
-  // ==========================================
-  // FLUJO DE PARADA (STOP)
-  // ==========================================
+  // --------------------------------------------------------------------------
+  // A. Gestión de parada (Stop)
+  // --------------------------------------------------------------------------
+
   async confirmStop() {
     this.isProcessingStop = true; // 1. Ponemos el candado
     this.present.isConfirmStopOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
@@ -170,9 +184,10 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.present.isConfirmStopOpen = false; 
   }
 
-  // ==========================================
-  // FLUJO DE BORRADO (DELETE)
-  // ==========================================
+  // --------------------------------------------------------------------------
+  // B. Gestión de borrado (Delete)
+  // --------------------------------------------------------------------------
+
   async confirmDelete() {
     this.isProcessingDelete = true; // 1. Ponemos el candado
     this.present.isConfirmDeletionOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
@@ -198,9 +213,11 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.present.isConfirmDeletionOpen = false; 
     this.present.isRecordPopoverOpen = true; 
   }
-  // ==========================================
-  // ACCIONES DEL TRACK
-  // ==========================================
+
+  // ==========================================================================
+  // 4. ACCIONES DE GRABACIÓN (Core)
+  // ==========================================================================
+
   async deleteTrack() {
     this.location.state = 'inactive';
     // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
@@ -211,6 +228,10 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
   }
 
+  /**
+   * Finaliza la grabación, actualiza los pines en el mapa y 
+   * dispara el flujo de guardado de detalles.
+   */
   async stopTracking(): Promise<void> {
     this.location.state = 'stopped';
     // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
@@ -253,7 +274,15 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     await this.setTrackDetails();
   }
 
-async setTrackDetails(ev?: any) {
+  // ==========================================================================
+  // 5. PERSISTENCIA Y DETALLES DEL TRACK
+  // ==========================================================================
+
+  /**
+   * Orquesta el análisis inteligente de la ruta y abre el popover para 
+   * que el usuario introduzca nombre y descripción antes de guardar.
+   */
+  async setTrackDetails(ev?: any) {
     const track = this.present.currentTrack;
     let proposedTexts = { name: '', description: '' };
 
@@ -311,6 +340,10 @@ async setTrackDetails(ev?: any) {
     }
   }
 
+  /**
+   * Realiza el procesado final del archivo (Snap-to-trail, optimización)
+   * y lo persiste en el almacenamiento local.
+   */
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;

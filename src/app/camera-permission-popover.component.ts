@@ -119,7 +119,16 @@ import { TranslateModule } from '@ngx-translate/core';
   `]
 })
 export class CameraPermissionPopoverComponent {
+
+  // ==========================================================================
+  // 1. PROPIEDADES E INYECCIONES
+  // ==========================================================================
+
   private popoverCtrl = inject(PopoverController);
+
+  // ==========================================================================
+  // 2. ACCIONES (API PÚBLICA)
+  // ==========================================================================
 
   public confirm() {
     this.popoverCtrl.dismiss(true);

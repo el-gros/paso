@@ -1,15 +1,22 @@
-/* --- CONTENEDOR DE SLIDES --- */
+// ==========================================================================
+// 1. CONTENEDOR PRINCIPAL Y SLIDES (Swiper)
+// ==========================================================================
+
 .slide-wrapper {
   display: block;
   width: 100%;
   height: 100%;
   overflow-y: auto;
   padding-top: 10px;
+  /* Espacio extra para la barra de navegación inferior */
   padding-bottom: 140px; 
   background: #f4f4f4;
 }
 
-/* --- TARJETA UNIFICADA (Glassmorphism sutil) --- */
+// ==========================================================================
+// 2. ESTILO DE TARJETAS (Glassmorphism sutil)
+// ==========================================================================
+
 .card {
   background: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(12px);
@@ -21,10 +28,13 @@
   padding: 24px;
   display: block;
 
-  &:last-child { margin-bottom: 0; }
+  &:last-child { margin-bottom: 0; } // Asegura que la última tarjeta no tenga margen inferior
 }
 
-/* --- TEXTOS --- */
+// ==========================================================================
+// 3. TIPOGRAFÍA Y TEXTOS
+// ==========================================================================
+
 .table-title {
   font-weight: 800;
   text-transform: uppercase;
@@ -43,7 +53,10 @@
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-/* --- GRID DE DATOS (ICONOS) --- */
+// ==========================================================================
+// 4. GRID DE DATOS Y ESTILOS DE ICONOS
+// ==========================================================================
+
 .data-row {
   display: flex;
   justify-content: space-between;
@@ -51,7 +64,7 @@
   padding: 4px 0; /* Antes 10px. Reduce drásticamente la altura de la fila */
   /* border-bottom: 1px solid rgba(0, 0, 0, 0.03); <- ELIMINADO */
 
-  .label-group {
+  .label-group { // Contenedor del icono y el texto
     display: flex;
     align-items: center;
     gap: 10px; /* Un pelín más juntos (antes 12px) */
@@ -59,7 +72,7 @@
     color: #666;
 
     ion-icon {
-      font-size: 1.1rem; /* Icono un poco más sutil (antes 1.2rem) */
+      font-size: 1.1rem;
       padding: 5px;      /* Menos relleno interior (antes 6px) */
       border-radius: 8px;
     }
@@ -68,7 +81,7 @@
   .value {
     font-weight: 700;
     font-size: 0.9rem; /* Ajustado para que encaje con la nueva altura */
-    font-family: 'Roboto Mono', monospace;
+    font-family: 'Roboto Mono', monospace; // Fuente monoespaciada para valores numéricos
     
     span { 
       font-size: 0.65rem; 
@@ -78,7 +91,7 @@
   }
 }
 
-/* --- COLORES DE ICONOS --- */
+// Colores específicos para cada tipo de icono de dato
 .icon-dist { color: #3880ff; background: rgba(56, 128, 255, 0.1); }
 .icon-time { color: #2dd36f; background: rgba(45, 211, 111, 0.1); }
 .icon-motion { color: #10dc60; background: rgba(16, 220, 96, 0.1); }
@@ -89,75 +102,16 @@
 .icon-avg { color: #92949c; background: rgba(146, 148, 156, 0.1); }
 .icon-movavg { color: #ff4961; background: rgba(255, 73, 97, 0.1); }
 
-/* --- PARCIALES --- */
-.partials-header {
-  display: flex;
-  padding: 4px 6px; /* Reducido de 10px a 4px para alinear con data-row */
-  gap: 10px; 
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #bbb;
-  text-transform: uppercase;
+// ==========================================================================
+// 5. ESTADO VACÍO (Empty State)
+// ==========================================================================
 
-  span:nth-child(1) { flex: 0 0 calc(25% - 7px); text-align: center; } 
-  span:nth-child(2) { flex: 0 0 calc(40% - 7px); text-align: right; }  
-  span:nth-child(3) { flex: 0 0 calc(35% - 7px); text-align: right; }  
-}
-
-.partial-row {
-  display: flex;
-  align-items: center;
-  padding: 4px 6px; /* Reducido drásticamente de 12px a 4px, igual que .data-row */
-  gap: 10px; 
-  width: 100%;
-  box-sizing: border-box;
-
-  .km-badge {
-    flex: 0 0 calc(25% - 7px); 
-    background: rgba(var(--ion-color-primary-rgb), 0.1);
-    color: var(--ion-color-primary);
-    font-weight: 800;
-    height: 24px; /* Reducido de 30px a 24px para que no empuje la fila hacia abajo */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    font-size: 0.8rem;
-  }
-
-  .pace-value {
-    flex: 0 0 calc(40% - 7px); 
-    text-align: right; 
-    font-family: 'Roboto Mono', monospace;
-    font-weight: 500;
-    color: #444;
-    font-size: 0.9rem;
-    word-break: break-word; 
-  }
-
-  .speed-value {
-    flex: 0 0 calc(35% - 7px); 
-    text-align: right;
-    font-weight: 700;
-    color: var(--ion-color-secondary);
-    font-family: 'Roboto Mono', monospace;
-    font-size: 0.9rem;
-    
-    span {
-      font-size: 0.7rem;
-      font-weight: 400;
-      opacity: 0.8;
-    }
-  }
-}
-
-/* --- EMPTY STATE --- */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 70vh;
+  height: 70vh; // Ocupa gran parte de la pantalla para centrar el mensaje
   text-align: center;
   padding: 20px;
 
@@ -165,30 +119,38 @@
     width: 80px; height: 80px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 20px; // Espacio entre el icono y el texto
     ion-icon { font-size: 2.5rem; color: white; }
     &.current { background: linear-gradient(135deg, #ffd700, #ff8c00); }
     &.archived { background: linear-gradient(135deg, #00bfff, #007ace); }
   }
 }
 
+// ==========================================================================
+// 6. ESTILOS ESPECÍFICOS DE SWIPER
+// ==========================================================================
+
 swiper-slide {
   width: 85%; /* Deja un 7.5% de hueco a cada lado para que se vean los vecinos */
-  /* Opcional: Para dar profundidad */
-  transform: scale(0.95);
+  transform: scale(0.95); // Efecto de profundidad para slides inactivos
   transition: transform 0.3s;
   
   &.swiper-slide-active {
-    transform: scale(1); /* El del centro se ve un poco más grande */
+    transform: scale(1); // El slide activo se ve a tamaño completo
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); // Sombra sutil para el slide activo
   }
 }
+
+// ==========================================================================
+// 7. PAGINACIÓN SUPERIOR (Indicadores de Slide)
+// ==========================================================================
 
 .top-pagination {
   display: flex;
   justify-content: center;
   align-items: stretch;
   
-  /* 🚀 FIX: Sumamos la zona segura del móvil (o 30px) + tus 10px de margen original */
+  /* Sumamos la zona segura del móvil (o 30px) + tus 10px de margen original */
   padding: calc(var(--ion-safe-area-top, 30px) + 10px) 15px 10px 15px; 
   
   gap: 8px; 
@@ -198,7 +160,7 @@ swiper-slide {
   z-index: 10;
 
   .dot {
-    /* Estilo base (inactivo) */
+    /* Estilo base para los indicadores inactivos */
     background-color: #e0e0e0;
     border-radius: 8px; 
     color: #666;
@@ -210,14 +172,14 @@ swiper-slide {
     justify-content: center;
     align-items: center;
     text-align: center;
-    
-    /* Dimensiones */
+
+    /* Dimensiones y ocultamiento del texto por defecto */
     height: auto;       
     min-height: 36px;   
     width: 40px;        
     padding: 4px;       
 
-    span {
+    span { // El texto está oculto en el estado inactivo
       display: none; 
       font-size: 0.7rem;
       font-weight: 600;
@@ -225,13 +187,13 @@ swiper-slide {
       width: 100%;      
     }
 
-    /* ESTADO ACTIVO */
+    /* Estilo para el indicador activo */
     &.active {
       background-color: var(--ion-color-primary);
       color: white;
       width: auto;         
       min-width: 100px;    
-      max-width: 140px;    
+      max-width: 140px;    // Limita el ancho máximo para que no ocupe demasiado
       padding: 6px 12px;   
       
       span { 
@@ -247,15 +209,12 @@ swiper-slide {
     &:active {
       transform: scale(0.97);
     }
-  }
-}
+  } // Fin .dot
+} // Fin .top-pagination
 
-// Ajuste para que el primer slide no se pegue demasiado a la paginación
-.slide-wrapper {
-  padding-top: 10px; 
-}
-
-/* PHOTO ALBUM */
+// ==========================================================================
+// 8. PREVISUALIZACIÓN DE ÁLBUM DE FOTOS
+// ==========================================================================
 
 .photo-album-preview {
   display: flex;
@@ -275,7 +234,7 @@ swiper-slide {
     position: relative;
     width: 45%; /* Tu sugerencia de ancho reducido */
     min-width: 140px; /* Para que no se vea enano en móviles estrechos */
-    max-width: 250px;
+    max-width: 250px; // Limita el tamaño máximo de la portada
     border-radius: 16px; /* Borde suave para seguir tu ADN visual */
     overflow: hidden;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Sombra para que flote */
@@ -315,10 +274,13 @@ swiper-slide {
   }
 }
 
-/* PARTIALS */
+// ==========================================================================
+// 9. TABLA DE PARCIALES DE VELOCIDAD
+// ==========================================================================
 
-/* Contenedor principal de los parciales */
 .partials-container {
+  // Contenedor principal de los parciales
+  // Se encuentra dentro de una .card
   margin-top: 15px;
   display: flex;
   flex-direction: column;
@@ -326,7 +288,7 @@ swiper-slide {
 }
 
 /* Cabecera de la tabla (3 columnas) */
-.partials-header-grid {
+.partials-header-grid { // Cabecera de la tabla de parciales
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   font-size: 11px;
@@ -339,7 +301,7 @@ swiper-slide {
 }
 
 /* Fila de cada parcial (3 columnas) */
-.partial-row-grid {
+.partial-row-grid { // Cada fila de datos de un parcial
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
@@ -348,13 +310,13 @@ swiper-slide {
 }
 
 /* Alineación a la derecha para ritmo y velocidad */
-.align-right {
+.align-right { // Clase de utilidad para alinear texto a la derecha
   text-align: right;
   justify-self: end;
 }
 
 /* Estilo del "badge" para el número de kilómetro */
-.km-badge {
+.km-badge { // El "badge" que muestra el número de kilómetro
   background: var(--ion-color-primary, #3880ff);
   color: white;
   padding: 2px 8px;
@@ -366,19 +328,19 @@ swiper-slide {
 }
 
 /* Estilos de los valores */
-.pace-value {
+.pace-value { // Valor del ritmo
   font-size: 14px;
   font-weight: 600;
   color: #333;
 }
 
-.speed-value {
+.speed-value { // Valor de la velocidad
   font-size: 14px;
   font-weight: 700;
   color: #333;
 }
 
-.speed-value span {
+.speed-value span { // Unidad de la velocidad (km/h)
   font-size: 10px;
   font-weight: normal;
   color: #888;

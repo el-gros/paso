@@ -1,18 +1,10 @@
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import JSZip from 'jszip';
-import { jsPDF } from 'jspdf';
-import { Filesystem, Directory } from '@capacitor/filesystem'; 
-import * as htmlToImage from 'html-to-image';
-
-import { Map, View } from 'ol';
-import { GeoJSON } from 'ol/format';
-import { Vector as VectorSource, OSM } from 'ol/source';
-import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
-import { Style, Stroke } from 'ol/style';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'; 
 
 import { FunctionsService } from './functions.service';
-import { GeographyService } from './geography.service'; 
 import { TrackFeature, TrackDefinition, Track } from '../../globald';
 
 @Injectable({
@@ -22,237 +14,77 @@ export class TrackExportService {
 
   constructor(
     private translate: TranslateService,
-    private fs: FunctionsService,
-    private geography: GeographyService 
+    private fs: FunctionsService
   ) {}
 
-  public async generateAndSaveMapImage(map: Map): Promise<boolean> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      this.geography.currentLayer?.setVisible(false); 
-      
-      const mapWrapper = document.getElementById('map-wrapper');
-      if (mapWrapper) mapWrapper.style.transform = `scale(1)`; 
+  // ==========================================================================
+  // 1. ORQUESTADOR (API PÚBLICA)
+  // ==========================================================================
 
-      await this.waitForMapRender(map);
+  /**
+   * Orquesta la generación de archivos (GPX, KMZ, HTML, Fotos) y abre el menú de compartir.
+   */
+  public async exportAndShareTrack(item: TrackDefinition, config: any): Promise<void> {
+    const storageKey = new Date(item.date!).toISOString();
+    const trackData = await this.fs.storeGet(storageKey) as Track;
 
-      const size = map.getSize() || [window.innerWidth, window.innerHeight];
-      const mapCanvas = document.createElement('canvas');
-      mapCanvas.width = size[0];
-      mapCanvas.height = size[1];
-      const ctx = mapCanvas.getContext('2d');
-      
-      if (!ctx) {
-        this.geography.currentLayer?.setVisible(true);
-        return false;
-      }
+    if (!trackData) throw new Error("TRACK_NOT_FOUND");
 
-      document.querySelectorAll<HTMLCanvasElement>('.ol-layer canvas').forEach((canvas) => {
-        if (canvas.width > 0) {
-          const opacity = (canvas.parentNode as HTMLElement)?.style.opacity || '1';
-          ctx.globalAlpha = Number(opacity);
-          const tr = canvas.style.transform;
-          
-          if (tr && tr.startsWith('matrix')) {
-            const m = tr.match(/^matrix\(([^)]+)\)$/)?.[1].split(',').map(Number);
-            if (m) ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
-          } else {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-          }
-          ctx.drawImage(canvas, 0, 0);
-        }
+    const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
+    if (!featureToExport.properties) featureToExport.properties = {};
+    featureToExport.properties.name = item.name || featureToExport.properties.name || 'Track';
+    featureToExport.properties.description = item.description || featureToExport.properties.description || '';
+
+    const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const filesToShare: string[] = [];
+
+    // -- Generación de formatos solicitados --
+    if (config.html) {
+      const htmlText = this.generateStandaloneHtml(trackData, item.name);
+      const saved = await Filesystem.writeFile({ path: `${safeName}.html`, data: htmlText, directory: Directory.Cache, encoding: Encoding.UTF8 });
+      filesToShare.push(saved.uri);
+    }
+    
+    if (config.gpx) {
+      const gpxText = await this.geoJsonToGpx(featureToExport);
+      const saved = await Filesystem.writeFile({ path: `${safeName}.gpx`, data: gpxText, directory: Directory.Cache, encoding: Encoding.UTF8 });
+      filesToShare.push(saved.uri);
+    }
+    
+    if (config.kmz) {
+      const kmzBase64 = await this.geoJsonToKmz(featureToExport);
+      const saved = await Filesystem.writeFile({ path: `${safeName}.kmz`, data: kmzBase64, directory: Directory.Cache });
+      filesToShare.push(saved.uri);
+    }
+
+    if (config.photos && item.photos && item.photos.length > 0) {
+      item.photos.forEach(p => filesToShare.push(p.startsWith('file://') ? p : `file://${p}`));
+    }
+
+    if (config.kmzPhotos) {
+      const kmzPhotosBase64 = await this.geoJsonToKmzWithPhotos(featureToExport);
+      const saved = await Filesystem.writeFile({ path: `${safeName}_completo.kmz`, data: kmzPhotosBase64, directory: Directory.Cache });
+      filesToShare.push(saved.uri);
+    }
+
+    if (filesToShare.length > 0) {
+      await Share.share({
+        title: `${this.translate.instant('SEARCH.ROUTE')}: ${item.name}`,
+        files: filesToShare,
+        dialogTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
       });
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const dataUrl = mapCanvas.toDataURL('image/jpeg', 0.8);
-
-      await Filesystem.writeFile({
-        path: 'map.jpg',
-        data: dataUrl.split(',')[1],
-        directory: Directory.ExternalCache,
-      });
-
-      this.geography.currentLayer?.setVisible(true);
-      return true;
-
-    } catch (err) {
-      console.error('[TrackExportService] Error capturando imagen:', err);
-      this.geography.currentLayer?.setVisible(true); 
-      return false;
+    } else {
+      throw new Error("NO_FILES_SELECTED");
     }
   }
 
-  public async generateAndSaveDataImage(elementId: string): Promise<boolean> {
-    try {
-      const exportArea = document.getElementById(elementId);
-      if (!exportArea) return false;
-      
-      await document.fonts.ready;
-      const dataUrl = await htmlToImage.toPng(exportArea, { backgroundColor: '#ffffff' });
-      
-      await Filesystem.writeFile({
-        path: 'data.png',
-        data: dataUrl.split(',')[1],
-        directory: Directory.ExternalCache,
-      });
-      
-      return true;
-    } catch (err) {
-      console.error('[TrackExportService] Error exportando gráfica:', err);
-      return false;
-    }
-  }
-
-  public async geoJsonToKmz(feature: TrackFeature): Promise<string> {
-    try {
-      const trackName = this.escapeXml(feature.properties?.name || "Track");
-
-      let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>${trackName}</name>
-    <Style id="lineStyle">
-      <LineStyle>
-        <color>ff0000ff</color>
-        <width>4</width>
-      </LineStyle>
-    </Style>`;
-
-      if (feature.waypoints && feature.waypoints.length > 0) {
-        feature.waypoints.forEach((wp) => {
-          const altitude = wp.altitude || 0;
-          const name = wp.name || '';
-          const comment = wp.comment || '';
-          
-          kmlText += `
-    <Placemark>
-      <name><![CDATA[${name}]]></name>
-      <description><![CDATA[${comment}]]></description>
-      <Point>
-        <coordinates>${wp.longitude},${wp.latitude},${altitude}</coordinates>
-      </Point>
-    </Placemark>`;
-        });
-      }
-
-      kmlText += `
-    <Placemark>
-      <name>${trackName}</name>
-      <styleUrl>#lineStyle</styleUrl>
-      <ExtendedData>
-        <Data name="times">
-          <value>${feature.geometry.properties?.data?.map(d => d.time || 0).join(',')}</value>
-        </Data>
-        <Data name="totalDistance">
-          <value>${feature.properties?.totalDistance || 0}</value>
-        </Data>
-      </ExtendedData>
-      <LineString>
-        <tessellate>1</tessellate>
-        <altitudeMode>clampToGround</altitudeMode>
-        <coordinates>`;
-
-      feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
-        const altitude = feature.geometry.properties?.data?.[index]?.altitude || 0;
-        kmlText += `${coordinate[0]},${coordinate[1]},${altitude} `;
-      });
-
-      kmlText += `</coordinates>
-      </LineString>
-    </Placemark>
-  </Document>
-</kml>`;
-
-      const zip = new JSZip();
-      zip.file("doc.kml", kmlText);
-
-      return await zip.generateAsync({
-        type: "base64",
-        compression: "DEFLATE",
-        compressionOptions: { level: 9 }
-      });
-
-    } catch (error) {
-      console.error('[TrackExportService] Error generando KMZ:', error);
-      throw error;
-    }
-  }
-
-  public async geoJsonToKmzWithPhotos(feature: TrackFeature): Promise<string> {
-    try {
-      const zip = new JSZip();
-      const trackName = this.escapeXml(feature.properties?.name || "Track");
-
-      let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>${trackName}</name>
-    <Style id="lineStyle"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>`;
-
-      if (feature.waypoints && feature.waypoints.length > 0) {
-        for (const wp of feature.waypoints) {
-          const altitude = wp.altitude || 0;
-          const name = this.escapeXml(wp.name || '');
-          const comment = this.escapeXml(wp.comment || '');
-          let description = comment;
-
-          if (wp.photos && wp.photos.length > 0) {
-            for (const photoUri of wp.photos) {
-              try {
-                const fileName = photoUri.split('/').pop() || `img_${Date.now()}.jpg`;
-                const file = await Filesystem.readFile({ path: photoUri });
-                if (file.data) {
-                  // Guardamos las imágenes en una carpeta interna para orden
-                  zip.file(`images/${fileName}`, file.data, { base64: true });
-                  description += `<br/><img src="images/${fileName}" width="300"/>`;
-                }
-              } catch (e) {
-                console.warn("No se pudo adjuntar foto al KMZ:", photoUri);
-              }
-            }
-          }
-
-          kmlText += `
-    <Placemark>
-      <name><![CDATA[${name}]]></name>
-      <description><![CDATA[${description}]]></description>
-      <Point><coordinates>${wp.longitude},${wp.latitude},${altitude}</coordinates></Point>
-    </Placemark>`;
-        }
-      }
-
-      kmlText += `
-    <Placemark>
-      <name>${trackName}</name>
-      <styleUrl>#lineStyle</styleUrl>
-      <ExtendedData>
-        <Data name="times">
-          <value>${feature.geometry.properties?.data?.map(d => d.time || 0).join(',')}</value>
-        </Data>
-        <Data name="totalDistance">
-          <value>${feature.properties?.totalDistance || 0}</value>
-        </Data>
-      </ExtendedData>
-      <LineString><tessellate>1</tessellate>
-    <coordinates>`;
-      feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
-        const altitude = feature.geometry.properties?.data?.[index]?.altitude || 0;
-        kmlText += `${coordinate[0]},${coordinate[1]},${altitude} `;
-      });
-      kmlText += `</coordinates></LineString></Placemark></Document></kml>`;
-
-      zip.file("doc.kml", kmlText);
-      return await zip.generateAsync({ type: "base64", compression: "DEFLATE", compressionOptions: { level: 6 } });
-    } catch (error) {
-      console.error('[TrackExportService] Error generando KMZ con fotos:', error);
-      throw error;
-    }
-  }
+  // ==========================================================================
+  // 2. GENERACIÓN GPX
+  // ==========================================================================
 
   public async geoJsonToGpx(feature: TrackFeature): Promise<string> {
     try {
       const trackName = this.escapeXml(feature.properties?.name || 'Track');
-      // 1. Capturamos y escapamos la descripción
       const trackDesc = this.escapeXml(feature.properties?.description || ''); 
 
       let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -276,14 +108,8 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         });
       }
 
-      // 2. Añadimos el nombre
       gpxText += `\n  <trk>\n    <name>${trackName}</name>`;
-      
-      // 3. Añadimos la descripción si existe, justo antes del <trkseg>
-      if (trackDesc) {
-        gpxText += `\n    <desc>${trackDesc}</desc>`;
-      }
-      
+      if (trackDesc) gpxText += `\n    <desc>${trackDesc}</desc>`;
       gpxText += `\n    <trkseg>`;
 
       feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
@@ -292,9 +118,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         const altitude = dataPoint?.altitude;
 
         gpxText += `\n      <trkpt lat="${coordinate[1]}" lon="${coordinate[0]}">`;
-        if (altitude !== undefined && altitude !== null) {
-          gpxText += `\n        <ele>${altitude}</ele>`;
-        }
+        if (altitude !== undefined && altitude !== null) gpxText += `\n        <ele>${altitude}</ele>`;
         gpxText += `\n        <time>${new Date(time).toISOString()}</time>`;
         gpxText += `\n      </trkpt>`;
       });
@@ -309,24 +133,35 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
   }
 
   // ==========================================================================
-  // 5. MÉTODOS PRIVADOS (Helpers)
+  // 3. GENERACIÓN KMZ/KML
   // ==========================================================================
 
-  private escapeXml(unsafe: string | undefined): string {
-    return (unsafe ?? '').replace(/[<>&'"]/g, c => ({
-      '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
-    }[c] as string));
+  public async geoJsonToKmz(feature: TrackFeature): Promise<string> {
+    try {
+      const zip = new JSZip();
+      const kmlText = await this.buildKmlContent(feature);
+      zip.file("doc.kml", kmlText);
+      return await zip.generateAsync({ type: "base64", compression: "DEFLATE", compressionOptions: { level: 9 } });
+    } catch (error) {
+      console.error('[TrackExportService] Error generando KMZ:', error);
+      throw error;
+    }
   }
 
-  private waitForMapRender(map: Map): Promise<void> {
-    return new Promise((r) => {
-      map.once('rendercomplete', () => setTimeout(() => r(), 300));
-      map.renderSync();
-    });
+  public async geoJsonToKmzWithPhotos(feature: TrackFeature): Promise<string> {
+    try {
+      const zip = new JSZip();
+      const kmlText = await this.buildKmlContent(feature, zip);
+      zip.file("doc.kml", kmlText);
+      return await zip.generateAsync({ type: "base64", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    } catch (error) {
+      console.error('[TrackExportService] Error generando KMZ con fotos:', error);
+      throw error;
+    }
   }
 
   // ==========================================================================
-  // 6. GENERADOR HTML (OpenLayers + Tarjeta Flotante + Gráfica Perfil)
+  // 4. GENERACIÓN REPORTE HTML (OpenLayers + Tarjeta + Gráfica)
   // ==========================================================================
 
   public generateStandaloneHtml(trackData: Track, routeName: string = 'Ruta Exportada'): string {
@@ -506,6 +341,74 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
       console.error('[TrackExportService] Error generando HTML:', error);
       throw error;
     }
+  }
+
+  // ==========================================================================
+  // 5. HELPERS PRIVADOS
+  // ==========================================================================
+
+  /**
+   * Generador interno unificado de KML para evitar duplicidad de código.
+   */
+  private async buildKmlContent(feature: TrackFeature, zip?: JSZip): Promise<string> {
+    const trackName = this.escapeXml(feature.properties?.name || "Track");
+    let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
+      <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+      <name>${trackName}</name>
+      <Style id="lineStyle"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>`;
+
+      if (feature.waypoints && feature.waypoints.length > 0) {
+        for (const wp of feature.waypoints) {
+          const altitude = wp.altitude || 0;
+          const name = this.escapeXml(wp.name || '');
+          const comment = this.escapeXml(wp.comment || '');
+          let description = comment;
+
+          if (zip && wp.photos && wp.photos.length > 0) {
+            for (const photoUri of wp.photos) {
+              try {
+                const fileName = photoUri.split('/').pop() || `img_${Date.now()}.jpg`;
+                const file = await Filesystem.readFile({ path: photoUri });
+                if (file.data) {
+                  zip.file(`images/${fileName}`, file.data, { base64: true });
+                  description += `<br/><img src="images/${fileName}" width="300"/>`;
+                }
+              } catch (e) {
+                console.warn("No se pudo adjuntar foto al KMZ:", photoUri);
+              }
+            }
+          }
+
+          kmlText += `
+    <Placemark>
+      <name><![CDATA[${name}]]></name>
+      <description><![CDATA[${description}]]></description>
+      <Point><coordinates>${wp.longitude},${wp.latitude},${altitude}</coordinates></Point>
+    </Placemark>`;
+        }
+      }
+
+      kmlText += `
+    <Placemark><name>${trackName}</name><styleUrl>#lineStyle</styleUrl>
+    <ExtendedData>
+      <Data name="times"><value>${feature.geometry.properties?.data?.map(d => d.time || 0).join(',')}</value></Data>
+      <Data name="totalDistance"><value>${feature.properties?.totalDistance || 0}</value></Data>
+    </ExtendedData>
+    <LineString><tessellate>1</tessellate><altitudeMode>clampToGround</altitudeMode>
+    <coordinates>`;
+
+      feature.geometry.coordinates.forEach((coordinate: number[], index: number) => {
+        const altitude = feature.geometry.properties?.data?.[index]?.altitude || 0;
+        kmlText += `${coordinate[0]},${coordinate[1]},${altitude} `;
+      });
+
+      return kmlText + `</coordinates></LineString></Placemark></Document></kml>`;
+  }
+
+  private escapeXml(unsafe: string | undefined): string {
+    return (unsafe ?? '').replace(/[<>&'"]/g, c => ({
+      '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+    }[c] as string));
   }
 
 }

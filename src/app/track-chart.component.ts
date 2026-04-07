@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Track, Data } from '../globald'; 
 import { GeoMathService } from './services/geo-math.service';
+import { TrackAnalyticsService } from './services/track-analytics.service';
 
 @Component({
   selector: 'app-track-chart',
@@ -70,6 +71,11 @@ import { GeoMathService } from './services/geo-math.service';
   `]
 })
 export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy {
+
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
   @Input() track!: Track | null | undefined;
   @Input() property!: keyof Data; // 'compAltitude' o 'compSpeed'
   @Input() title!: string;
@@ -85,7 +91,14 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
   private resizeObserver!: ResizeObserver;
   private readonly margin: number = 25;
 
-  constructor(private geoMath: GeoMathService) {}
+  constructor(
+    private geoMath: GeoMathService,
+    private analytics: TrackAnalyticsService
+  ) {}
+
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
 
   ngAfterViewInit() {
     this.resizeObserver = new ResizeObserver(() => this.draw());
@@ -100,9 +113,11 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
     if (this.resizeObserver) this.resizeObserver.disconnect();
   }
 
-  // ==========================================
-  // MATEMÁTICAS PURAS Y DIBUJO
-  // ==========================================
+  // ==========================================================================
+  // 3. LÓGICA DE RENDERIZADO (Canvas)
+  // ==========================================================================
+
+  /** Dibuja el gráfico completo: cuadrícula, áreas sombreadas y línea de datos */
   private async draw() {
     if (!this.track || !this.canvasRef || !this.containerRef) return;
 
@@ -153,7 +168,7 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
 
     if (xTot <= 0.0001) xTot = 0.0001;
 
-    const bounds = await this.geoMath.computeMinMaxProperty(data, this.property);
+    const bounds = this.analytics.computeMinMaxProperty(data, this.property);
     if (bounds.max === bounds.min) { bounds.max += 2; bounds.min -= 2; }
 
     const availSize = size - 2 * this.margin;
@@ -234,6 +249,10 @@ export class TrackChartComponent implements OnChanges, AfterViewInit, OnDestroy 
       }
     }
   }
+
+  // ==========================================================================
+  // 4. CÁLCULOS MATEMÁTICOS Y AUXILIARES
+  // ==========================================================================
 
   private ensureDistancesCalculated(track: Track, data: Data[]) {
     const num = data.length;

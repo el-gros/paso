@@ -8,7 +8,7 @@ import { LocationManagerService } from './location-manager.service';
 import { PhotoService } from './photo.service';
 import { SearchService } from './search.service';
 import { FunctionsService } from './functions.service';
-import { Waypoint } from 'src/globald';
+import { Waypoint } from '../../globald';
 
 @Injectable({ providedIn: 'root' })
 export class PhotoWaypointService {
@@ -22,6 +22,16 @@ export class PhotoWaypointService {
     private translate: TranslateService
   ) {}
 
+  // ==========================================================================
+  // 1. ACCIONES PÚBLICAS
+  // ==========================================================================
+
+  /**
+   * Orquesta la creación de un Waypoint con foto:
+   * 1. Captura la imagen.
+   * 2. Obtiene el nombre del lugar vía Geocoding Inverso.
+   * 3. Inserta el Waypoint en el track actual con altitud y coordenadas.
+   */
   public async addPhotoWaypoint(): Promise<void> {
     const coordsArray = this.present.currentTrack?.features?.[0]?.geometry?.coordinates;
 

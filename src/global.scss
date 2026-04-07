@@ -1,32 +1,32 @@
-/* ==========================================================================
-   ======================= GLOBAL STYLES & IONIC CORE =======================
-   ========================================================================== */
+// ==========================================================================
+// 1. IONIC CORE & EXTERNAL IMPORTS
+// ==========================================================================
 
-/* Core CSS required for Ionic components to work properly */
+/** Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
 
-/* Basic CSS for apps built with Ionic */
+/** Basic CSS for apps built with Ionic */
 @import "@ionic/angular/css/normalize.css";
 @import "@ionic/angular/css/structure.css";
 @import "@ionic/angular/css/typography.css";
 @import '@ionic/angular/css/display.css';
 
-/* Optional CSS utils */
+/** Optional CSS utils */
 @import "@ionic/angular/css/padding.css";
 @import "@ionic/angular/css/float-elements.css";
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
-/* Open layer styles */
+/** OpenLayers Styles */
 @import "~ol/ol.css";
 
-/* ==========================================================================
-   ================= 1. VARIABLES & ADN VISUAL (THEMING) ====================
-   ========================================================================== */
+// ==========================================================================
+// 2. DESIGN SYSTEM (Variables & ADN Visual)
+// ==========================================================================
 
 :root {
-  // Centralizamos los valores para poder cambiarlos en toda la app de un golpe
+  /** Centralización de valores para el efecto Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.92); 
   --glass-blur: 12px;
   --glass-radius: 28px;
@@ -34,7 +34,7 @@
   --glass-border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* Regla Maestra (Diseño visual común Glass-morphism) */
+/** Regla Maestra para paneles con efecto de cristal */
 .glass-panel, .popover-island {
   background: var(--glass-bg, rgba(255, 255, 255, 0.9)) !important;
   backdrop-filter: blur(var(--glass-blur, 12px));
@@ -45,12 +45,11 @@
   overflow: hidden; 
 }
 
+// ==========================================================================
+// 3. OPENLAYERS OVERLAYS (Mapa y Controles)
+// ==========================================================================
 
-/* ==========================================================================
-   ================== 2. OPENLAYERS (MAPA Y CONTROLES) ======================
-   ========================================================================== */
-
-/* --- Scale Line (Regla vertical) --- */
+// A. Scale Line (Regla vertical)
 .ol-scale-line.vertical-scale {
   display: block !important;
   z-index: 10000 !important;
@@ -81,18 +80,17 @@
   min-width: 60px !important; 
 }
 
-/* --- Controles Nativos (Zoom & Rotate) --- */
+// B. Controles Nativos (Zoom & Rotate)
 .ol-zoom {
   top: 25px !important;
   left: 1em;
 }
-
 .ol-rotate {
   top: 25px !important; 
   right: 1em;
 }
 
-/* --- Contenedores de Controles Personalizados (Posicionamiento) --- */
+// C. Contenedores de Controles Personalizados
 .ol-control.location-button-control {
   bottom: 25px !important;
   right: 15px !important;
@@ -102,7 +100,6 @@
   z-index: 5000 !important;
   pointer-events: none !important;
 }
-
 .ol-control.share-control {
   bottom: 30px !important;
   right: 15px !important;
@@ -113,7 +110,7 @@
   pointer-events: none !important;
 }
 
-/* --- Estética de los botones flotantes del mapa (Idénticos y Reactivos) --- */
+/** Estética de los botones flotantes del mapa (Idénticos y Reactivos) */
 .ol-control.location-button-control button,
 .ol-control.share-control button {
   width: 46px !important;
@@ -138,12 +135,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+// ==========================================================================
+// 4. UI COMPONENTS (Botones y Navegación)
+// ==========================================================================
 
-/* ==========================================================================
-   ================== 3. UI BASE: BOTONES E INDICADORES =====================
-   ========================================================================== */
-
-/* --- Botón Universal de Acción --- */
+/** Botón Universal de Acción (PasoApp Style) */
 .record-button {
   background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(12px);
@@ -185,7 +181,7 @@
   }
 }
 
-/* --- Nav Items (Para Popovers y Grids) --- */
+/** Nav Items (Para Popovers y Grids) */
 .nav-item-btn {
   background: transparent;
   border: none;
@@ -210,7 +206,7 @@
   }
 }
 
-/* --- Estados Globales (Pills & Colors) --- */
+/** Estados Globales (Pills & Colors) */
 .red-pill {
   background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid rgba(235, 68, 90, 0.4) !important;
@@ -221,29 +217,22 @@
   background: rgba(255, 255, 255, 0.95) !important;
   ion-icon, span, p { color: var(--ion-color-success, #2dd36f) !important; }
 }
+.blue-icon { color: var(--ion-color-primary) !important; }
 
-.blue-icon { 
-  color: var(--ion-color-primary) !important; 
-}
-
-/* --- Utilidades --- */
+/** Utilidades de estado */
 .button-disabled {
   opacity: 0.5;
   pointer-events: none; 
   transition: opacity 0.2s;
 }
 
-/* ==========================================================================
-   ================= 4. ANIMACIONES E INDICADORES (DOTS) ====================
-   ========================================================================== */
+// ==========================================================================
+// 5. ANIMACIONES E INDICADORES VISUALES
+// ==========================================================================
 
-/* Contenedor que necesite mostrar puntos */
-.record-button.with-indicator {
-  position: relative !important;
-  overflow: visible !important;
-}
+.record-button.with-indicator { position: relative !important; overflow: visible !important; }
 
-/* Punto de Compartir (Esquina derecha) */
+/** Punto de Compartir (Esquina derecha) */
 .sharing-dot {
   position: absolute;
   top: 6px;
@@ -258,7 +247,7 @@
   pointer-events: none;
 }
 
-/* Punto de control (Centro arriba) */
+/** Punto de control / Grabación (Centro arriba) */
 .tracking-dot {
   position: absolute;
   top: 4px;            
@@ -286,19 +275,16 @@
   100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
 }
 
+// ==========================================================================
+// 6. LAYOUTS & ÁREAS SEGURAS (Multi-dispositivo)
+// ==========================================================================
 
-/* ==========================================================================
-   ================== 5. LAYOUTS FLOTANTES & ÁREAS SEGURAS ==================
-   ========================================================================== */
-
-/* Ajustes de Interactividad para FABs */
 ion-fab {
   pointer-events: none;
   z-index: 1000;
   ion-row, .record-button, ion-fab-button { pointer-events: auto; }
 }
 
-/* Zonas Seguras Superior e Inferior */
 .top-safe, .bottom-safe {
   position: fixed; 
   z-index: 999;
@@ -315,25 +301,27 @@ ion-fab {
   }
 }
 
-.top-safe { margin-top: 30px; }
-.bottom-safe { bottom: 50px; }
+.top-safe { 
+  top: env(safe-area-inset-top, 20px);
+  margin-top: 10px; 
+}
+.bottom-safe { bottom: calc(15px + var(--ion-safe-area-bottom, 0px)); }
 
 .bottom-safe-gray {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   width: 100%;
-  height: 50px;
-  background-color: #f4f4f4; 
+  height: var(--ion-safe-area-bottom, 0px);
+  background-color: #f4f4f7; 
   z-index: 10;
   border-top: 1px solid rgba(0,0,0,0.05); 
 }
 
+// ==========================================================================
+// 7. MODALS, POPOVERS & ALERTS (Isla de Cristal)
+// ==========================================================================
 
-/* ==========================================================================
-   ================= 6. COMPONENTES: POPOVERS & MODALES =====================
-   ========================================================================== */
-
-/* --- Estructura Popovers Base --- */
+// A. Estructura Popovers Base
 .floating-popover, .confirm-popover {
   --background: transparent;
   --box-shadow: none;
@@ -341,7 +329,7 @@ ion-fab {
   --max-width: var(--popover-max-width, 420px);
 }
 
-/* --- Clase Reutilizable Tipo "Isla" Centrada --- */
+/** Clase Reutilizable Tipo "Isla" Centrada */
 .glass-island-wrapper {
   --background: transparent !important;
   --box-shadow: none !important;
@@ -361,7 +349,7 @@ ion-fab {
   }
 }
 
-/* --- Popover anclado arriba (Para evitar el teclado) --- */
+/** Popover anclado arriba (Para evitar el teclado) */
 .top-glass-island-wrapper {
   --background: transparent !important;
   --box-shadow: none !important;
@@ -379,7 +367,7 @@ ion-fab {
   }
 }
 
-/* --- Popovers Superiores (Búsqueda/Teclado Seguro) --- */
+/** Popovers Superiores (Búsqueda / UI de Mapa) */
 ion-popover.top-search-popover {
   &::part(content) {
     position: absolute !important;
@@ -399,7 +387,7 @@ ion-popover.top-search-popover {
   }
 }
 
-/* --- Popover de Confirmación Específico --- */
+/** Popover de Confirmación Estándar */
 .confirm-popover {
   --width: 260px;
   --border-radius: 16px;
@@ -427,7 +415,7 @@ ion-popover.top-search-popover {
   }
 }
 
-/* --- Plugin Share Location (Antiguo CSS mantenido) --- */
+/** Backdrop y Popup para Share Location */
 .share-backdrop {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(0,0,0,0.35); z-index: 9998; display: none; 
@@ -450,7 +438,7 @@ ion-popover.top-search-popover {
   &.btn-no { background: #eb445a; }
 }
 
-/* --- Popover Centrado con Efecto de Cristal --- */
+/** Popover Centrado con Efecto de Cristal */
 .centered-glass-popover {
   --width: 280px; /* Ancho fijo elegante */
   --max-height: 80vh; 
@@ -464,12 +452,33 @@ ion-popover.top-search-popover {
   }
 }
 
-/* ==========================================================================
-   ================= 7. COMPONENTES: TOASTS & LOADING =======================
-   ========================================================================== */
+/** Estilo para Alertas nativas tipo Cristal */
+.glass-island-alert {
+  --background: transparent; 
+  --backdrop-opacity: 0.4;
 
-/* --- Toasts Nativos (Standard) --- */
+  .alert-wrapper {
+    background: rgba(30, 30, 30, 0.65) !important; 
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important; 
+    border-radius: 32px !important; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important; 
+  }
+  .alert-title { color: #ffffff !important; font-weight: 700 !important; }
+  .alert-message { color: rgba(255, 255, 255, 0.8) !important; }
+  .alert-button-group { border-top: 1px solid rgba(255, 255, 255, 0.1); }
+  .alert-button.alert-button-role-cancel { color: #ff4961 !important; }
+  .alert-button { color: #3880ff !important; font-weight: bold !important; }
+}
+
+// ==========================================================================
+// 8. NOTIFICATIONS (Toasts & Loading)
+// ==========================================================================
+
+// A. Toasts Nativos (Standard)
 .toast {
+  --top: calc(10px + var(--ion-safe-area-top, 0px));
   text-align: center;
   font-size: 16px;
   font-weight: 500;
@@ -487,7 +496,7 @@ ion-popover.top-search-popover {
 .toast-error   { @extend .toast; --background: #eb445a; --color: #ffffff; --button-color: #ffffff; }
 .toast-warning { @extend .toast; --background: #ffc409; --color: #000000; --button-color: #000000; }
 
-/* --- Toast Flotante Personalizado (Estado de Ruta) --- */
+// B. Toast Flotante Personalizado (Semáforo de Ruta)
 .custom-toast {
   --top: 100px;         
   --end: 15px;          
@@ -504,7 +513,7 @@ ion-popover.top-search-popover {
 .red-toast { --background: var(--ion-color-danger); --color: #ffffff; }
 .unknown-toast, .black-toast { --background: #333333; --color: #ffffff; }
 
-/* --- Loading Controller --- */
+// C. Loading Controller (Glass Style)
 .glass-loading-overlay {
   --background: rgba(255, 255, 255, 0.95);
   --spinner-color: var(--ion-color-primary, #3880ff);

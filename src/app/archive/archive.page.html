@@ -5,11 +5,19 @@
 </ion-header>
 
 <ion-content class="custom-content">
+
+  <!-- ======================================================================
+       1. LISTA DE TRACKS (Visibles y sus opciones deslizantes)
+       ====================================================================== -->
+
   <div class="ion-content-scroll-host">
+    
+    <!-- Bucle para cada track en la colección -->
     <ion-list lines="full">
       @for (item of fs.collection; track item; let i = $index) {
         <ion-item-sliding #slidingItem>
           
+          <!-- Opciones deslizantes izquierdas (Mostrar/Ocultar, Exportar) -->
           <ion-item-options side="start">
             <ion-item-option 
               [color]="isTrackVisible(item) ? 'medium' : 'primary'" 
@@ -23,10 +31,13 @@
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
           </ion-item-options>
-
+          
+          <!-- Contenido del item del track -->
           <ion-item>
-            <ion-icon name="chevron-forward-sharp" slot="start" class="compact-chevron start"></ion-icon> 
+            <!-- Indicador visual si el track está activo como referencia -->
+            <ion-icon name="chevron-forward-sharp" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
             
+            <!-- Miniatura de foto si está disponible -->
             @if (item.photos && item.photos.length > 0) {
               <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
                 <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
@@ -35,6 +46,7 @@
             }
 
             <ion-label>
+              <!-- Nombre del track y estado de visibilidad -->
               <div class="item-content">
                 <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
                 <div class="date-and-status">
@@ -46,9 +58,11 @@
               </div>
             </ion-label>
               
-            <ion-icon name="chevron-back-sharp" slot="end" class="compact-chevron end"></ion-icon>
+            <!-- Icono decorativo de Ionic -->
+            <ion-icon name="chevron-back-sharp" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
           </ion-item>
 
+          <!-- Opciones deslizantes derechas (Editar, Eliminar) -->
           <ion-item-options side="end">
             <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
               <ion-icon slot="top" name="create-sharp"></ion-icon>
@@ -64,10 +78,16 @@
       }
     </ion-list> 
     
+    <!-- Espaciador para la barra de navegación inferior -->
     <div class="list-spacer"></div>
   </div>
 </ion-content>
 
+<!-- ======================================================================
+     2. POPOVERS DE CONFIRMACIÓN Y EXPORTACIÓN
+     ====================================================================== -->
+
+<!-- Popover de Confirmación de Borrado -->
 <div class="bottom-safe-gray"></div>
 
 <ion-popover
@@ -91,6 +111,7 @@
   </ng-template>
 </ion-popover>
 
+<!-- Popover de Menú de Exportación -->
 <ion-popover
   [isOpen]="isExportMenuOpen"
   (didDismiss)="isExportMenuOpen = false"
@@ -98,6 +119,7 @@
   <ng-template>
     <div class="popover-island backup-box">
       <p class="confirm-title">{{ 'EXPORT.OPTIONS' | translate }}</p>
+      <hr class="separator"/>
       
       <ion-list lines="none" class="backup-options-list">
         <ion-item>
@@ -141,27 +163,36 @@
   </ng-template>
 </ion-popover>
 
+<!-- ======================================================================
+     3. CONTROLES FLOTANTES (FABs)
+     ====================================================================== -->
+
+<!-- Botón flotante para mostrar/ocultar todos los tracks -->
 <ion-fab slot="fixed" horizontal="end" vertical="top" class="top-safe-archive">
   <div class="record-button" 
        [class.red-pill]="mapService.visibleAll"
        (click)="displayAllTracks(!mapService.visibleAll)">
     <ion-icon 
       [name]="mapService.visibleAll ? 'eye-off-sharp' : 'eye-sharp'" 
-      [class.blue-icon]="!mapService.visibleAll">
+      [class.blue-icon]="!mapService.visibleAll"> <!-- blue-icon para el estado "eye-sharp" -->
     </ion-icon>
-    <span>{{ 'ARCHIVE.ALL' | translate }}</span>
+    <p>{{ 'ARCHIVE.ALL' | translate }}</p> <!-- Usamos <p> para consistencia con global.scss -->
   </div>
 </ion-fab>
+
+<!-- ======================================================================
+     4. NAVEGACIÓN PRINCIPAL (Bottom Bar)
+     ====================================================================== -->
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
-      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
       <ion-icon name="bar-chart-sharp"></ion-icon>
-      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
       <ion-icon name="settings-sharp"></ion-icon>
@@ -169,6 +200,10 @@
     </div>
   </ion-row>
 </ion-fab>
+
+<!-- ======================================================================
+     5. CONTENEDORES OCULTOS (Para la exportación de imágenes del mapa)
+     ====================================================================== -->
 
 <div id="export-container" class="hidden-map-container">
   <div id="map-export"></div>

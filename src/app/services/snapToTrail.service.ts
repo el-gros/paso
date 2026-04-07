@@ -5,11 +5,27 @@ import { ElevationService } from './elevation.service';
   providedIn: 'root'
 })
 export class SnapToTrailService {
-  private readonly CONFIDENCE_THRESHOLD_METERS = 10;
+
+  // ==========================================================================
+  // 1. ESTADO Y CONFIGURACIÓN
+  // ==========================================================================
+
+  /** Umbral de distancia (metros) para considerar que un punto debe "pegarse" al sendero */
+  private readonly CONFIDENCE_THRESHOLD_METERS = 10; 
+  
   private loadedTrails: any[] = [];
 
   constructor(private elevationService: ElevationService) {}
 
+  // ==========================================================================
+  // 2. ORQUESTADOR PRINCIPAL (Public API)
+  // ==========================================================================
+
+  /**
+   * Ajusta la ruta del usuario a senderos conocidos y enriquece los datos con altitudes precisas.
+   * @param track Objeto Track a procesar.
+   * @param trails Opcional: segmentos de senderos externos.
+   */
   async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
     const segments = trails || this.loadedTrails;
 
@@ -68,7 +84,7 @@ export class SnapToTrailService {
   }
 
   // ==========================================================================
-  // MÉTODOS PRIVADOS DE PROCESAMIENTO
+  // 3. LÓGICA DE PROCESAMIENTO (Helpers)
   // ==========================================================================
 
   /**
@@ -92,6 +108,15 @@ export class SnapToTrailService {
     return smoothed;
   }
 
+  // ==========================================================================
+  // 4. HELPERS GEOMÉTRICOS
+  // ==========================================================================
+
+  /**
+   * Busca el punto de "snap" (atracción) más cercano entre el usuario y los senderos.
+   * @param userPoint Coordenadas del usuario.
+   * @param trailSegments Lista de coordenadas que forman el sendero.
+   */
   private findNearestSnap(userPoint: any, trailSegments: any[]) {
     let bestSnap = { point: userPoint, distance: Infinity };
 
@@ -109,6 +134,9 @@ export class SnapToTrailService {
     return bestSnap;
   }
 
+  /**
+   * Proyecta un punto sobre un segmento de línea definido por A y B.
+   */
   private findNearestPointOnSegment(P: any, A: any, B: any) {
     const dx = B.lng - A.lng;
     const dy = B.lat - A.lat;
@@ -124,6 +152,9 @@ export class SnapToTrailService {
     };
   }
 
+  /**
+   * Calcula la distancia real entre dos coordenadas usando la fórmula de Haversine.
+   */
   public calculateHaversineDistance(p1: any, p2: any): number {
     const R = 6371e3; 
     const dLat = (p2.lat - p1.lat) * Math.PI / 180;

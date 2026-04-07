@@ -41,6 +41,10 @@ register();
 })
 export class Tab1Page implements OnInit, OnDestroy {
 
+  // ==========================================================================
+  // 1. ESTADO Y PROPIEDADES
+  // ==========================================================================
+
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
@@ -48,11 +52,15 @@ export class Tab1Page implements OnInit, OnDestroy {
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
 
+  /** Comprueba si hay contenido visual en la capa de referencia (archived) */
   get hasReferenceContent(): boolean {
     const source = this.geography.archivedLayer?.getSource();
-    const hasLayerContent = source ? source.getFeatures().length > 0 : false;
-    return hasLayerContent
+    return source ? source.getFeatures().length > 0 : false;
   }
+
+  // ==========================================================================
+  // 2. CICLO DE VIDA (Lifecycle)
+  // ==========================================================================
 
   constructor(
     public fs: FunctionsService,
@@ -76,6 +84,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
+    console.log("📍 [Tab1] Inicializando componente...");
     await this.platform.ready();
 
     // 🔔 1. Escuchar repintados (Clicks y GPS)
@@ -110,6 +119,10 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.initStatus$.next(true);
   }
 
+  /**
+   * Se ejecuta cada vez que la vista vuelve a estar activa.
+   * Gestiona tracks pendientes de importación y repintados forzados.
+   */
   async ionViewDidEnter() {
     this.initStatus$.pipe(
       filter(ready => ready === true),
@@ -155,7 +168,14 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.trackingEngine.stopEngine(); // Detiene el motor si se destruye la vista
   }
 
-  async initializeVariables() {
+  // ==========================================================================
+  // 3. INICIALIZACIÓN DE DATOS Y EVENTOS (Privado)
+  // ==========================================================================
+
+  /**
+   * Carga las preferencias del usuario y sincroniza variables locales con el Storage.
+   */
+  private async initializeVariables() {
     this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
     this.fs.collection = await this.fs.storeGet('collection') || [];
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
@@ -164,7 +184,10 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
-  async initializeEvents() {
+  /**
+   * Configura los listeners globales necesarios para la interacción con el mapa y el sistema.
+   */
+  private async initializeEvents() {
     if (this.eventsInitialized) return; 
 
     this.appState.onEnterForeground$

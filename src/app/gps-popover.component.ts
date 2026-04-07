@@ -109,8 +109,17 @@ import { TranslateModule } from '@ngx-translate/core';
   `]
 })
 export class GpsPopoverComponent {
+
+  // ==========================================================================
+  // 1. PROPIEDADES E INYECCIONES
+  // ==========================================================================
+
   private popoverCtrl = inject(PopoverController);
   
+  // ==========================================================================
+  // 2. ACCIONES (API PÚBLICA)
+  // ==========================================================================
+
   public dismiss() { 
     this.popoverCtrl.dismiss(); 
   }

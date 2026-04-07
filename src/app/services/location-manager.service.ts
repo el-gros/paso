@@ -3,14 +3,14 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { filter, timeout } from 'rxjs/operators';
 import { PopoverController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
-import { GeoidService } from './geoid.service';
 
 // --- PLUGIN & INTERFACES ---
-import MyService, { Location } from 'src/plugins/MyServicePlugin';
-import { Track } from 'src/globald';
+import MyService, { Location } from '../../plugins/MyServicePlugin';
+import { Track } from '../../globald';
 
 // --- SERVICES & COMPONENTS ---
 import { ReferenceService } from '../services/reference.service';
+import { GeoMathService } from './geo-math.service';
 import { FunctionsService } from '../services/functions.service';
 import { GpsPopoverComponent } from '../gps-popover.component'; // Ajustado path (..// a ../)
 
@@ -22,13 +22,13 @@ export class LocationManagerService {
   // ==========================================================================
   // 1. CONFIGURACIÓN
   // ==========================================================================
-  public threshold: number = 40;
-  public altitudeThreshold: number = 40;
-  public threshDist: number = 0.0000002;
-  private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; // 10 minutos
+  public threshold: number = 40;         // Umbral de precisión horizontal (m)
+  public altitudeThreshold: number = 40; // Umbral de precisión vertical (m)
+  public threshDist: number = 0.0000002; // Sensibilidad de distancia
+  private readonly ALERT_COOLDOWN_MS: number = 10 * 60 * 1000; 
 
   // ==========================================================================
-  // 2. ESTADO GENERAL (State)
+  // 2. API REACTIVA (Estado y Ubicación)
   // ==========================================================================
   private _stateSubject = new BehaviorSubject<string>('inactive');
   public state$ = this._stateSubject.asObservable();
@@ -43,8 +43,12 @@ export class LocationManagerService {
     }
   }
 
+  private latestLocationSubject = new BehaviorSubject<Location | null>(null);
+  /** Flujo de la última ubicación válida procesada */
+  public latestLocation$ = this.latestLocationSubject.asObservable();
+
   // ==========================================================================
-  // 3. DATOS DE SEGUIMIENTO (Públicos para Tab1 y otros componentes)
+  // 3. PROPIEDADES SÍNCRONAS (Telemetría)
   // ==========================================================================
   public currentPoint: number = 0;
   public averagedSpeed: number = 0;
@@ -57,13 +61,7 @@ export class LocationManagerService {
   public foreground: boolean = true;
 
   // ==========================================================================
-  // 4. API REACTIVA DE UBICACIÓN
-  // ==========================================================================
-  private latestLocationSubject = new BehaviorSubject<Location | null>(null);
-  public latestLocation$ = this.latestLocationSubject.asObservable();
-
-  // ==========================================================================
-  // 5. VARIABLES INTERNAS (Privadas)
+  // 4. VARIABLES INTERNAS (Control)
   // ==========================================================================
   private invalidLocationCount: number = 0;
   private lastAlertTime: number = 0;
@@ -73,15 +71,16 @@ export class LocationManagerService {
     private fs: FunctionsService,
     private translate: TranslateService,
     private popoverController: PopoverController,
-    private geoidService: GeoidService
+    private geoMath: GeoMathService
   ) { }
 
   // ==========================================================================
-  // MÉTODOS PÚBLICOS
+  // 5. LÓGICA DE PROCESAMIENTO (Core)
   // ==========================================================================
 
   /**
-   * Recibe y evalúa un punto GPS en bruto desde el plugin nativo.
+   * Evalúa la calidad de un punto GPS y aplica correcciones de geoide si es necesario.
+   * @returns true si el punto es válido y se ha emitido al flujo.
    */
   public processRawLocation(raw: Location): boolean {
     const isBadQuality = (
@@ -96,19 +95,11 @@ export class LocationManagerService {
         return false;
     }
 
-    // --- CHIVATO DE DEPURACIÓN ---
-    const altOriginal = raw.altitude;
-    let origenDato = raw.isMSL ? "🤖 NATIVO ANDROID 15" : "🔴 ELIPSOIDE CRUDO";
-
     if (!raw.isMSL && this.foreground) {
-      raw.altitude = this.geoidService.getCorrectedAltitude(raw.latitude, raw.longitude, raw.altitude);
-      origenDato = "🧮 CORREGIDO POR TS (10 Grados)";
+      // Si el SO no da altitud ortométrica, la calculamos nosotros
+      raw.altitude = this.geoMath.getCorrectedAltitude(raw.latitude, raw.longitude, raw.altitude);
       raw.isMSL = true; 
     }
-
-    // Imprimimos por consola de Chrome Inspect exactamente qué pasa
-    //console.log(`📍 GPS: ${origenDato} | Alt Original: ${altOriginal.toFixed(2)}m -> Alt Final: ${raw.altitude.toFixed(2)}m | Precisión GPS: ${raw.accuracy.toFixed(1)}m`);
-    // -----------------------------
 
     this.invalidLocationCount = 0;
     this.latestLocationSubject.next(raw);
@@ -116,7 +107,7 @@ export class LocationManagerService {
   }
 
   /**
-   * Intenta obtener la posición actual de forma síncrona/esperando un instante.
+   * Obtiene la posición actual esperando un máximo de 2 segundos si no hay datos en caché.
    */
   public async getCurrentPosition(): Promise<[number, number] | null> {
     // 1. Valor inmediato
@@ -141,7 +132,7 @@ export class LocationManagerService {
   }
 
   /**
-   * Añade el punto procesado al Track GeoJSON y recalcula el Bounding Box.
+   * Inserta un punto en la estructura GeoJSON y actualiza el marco delimitador (bbox).
    */
   public async fillGeojson(track: Track | undefined, location: Location): Promise<Track | undefined> {
     if (!track) return undefined;
@@ -174,7 +165,7 @@ export class LocationManagerService {
   }
   
   /**
-   * Envía las coordenadas de la ruta cargada al plugin nativo para comparar desvíos.
+   * Sincroniza la ruta de referencia con el servicio nativo para alertas de desvío.
    */
   public async sendReferenceToPlugin(): Promise<void> {
     const shouldSend = this.state === 'tracking' && this.fs.alert === 'on' && !!this.reference.archivedTrack;
@@ -189,7 +180,7 @@ export class LocationManagerService {
   }
 
   // ==========================================================================
-  // MÉTODOS PRIVADOS
+  // 6. HELPERS PRIVADOS
   // ==========================================================================
 
   private async checkAndShowGpsWarning(): Promise<void> {

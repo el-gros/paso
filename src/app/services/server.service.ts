@@ -7,14 +7,28 @@ import { BehaviorSubject, Observable } from 'rxjs';
 })
 export class ServerService {
   
+  // ==========================================================================
+  // 1. ESTADO Y OBSERVABLES
+  // ==========================================================================
   private downloadProgress$ = new BehaviorSubject<number>(0);
 
   constructor() {}
 
+  /** Obtiene el flujo de progreso de descarga actual (0-100) */
   getDownloadProgress(): Observable<number> {
     return this.downloadProgress$.asObservable();
   }
 
+  // ==========================================================================
+  // 2. ACCIONES DE RED Y ARCHIVOS (Public)
+  // ==========================================================================
+
+  /**
+   * Descarga un archivo binario (ej: MBTiles) de forma optimizada.
+   * Divide la descarga en dos fases: Red (0-50%) y Escritura en disco (50-100%).
+   * @param url URL del recurso.
+   * @param filePath Nombre del archivo en el directorio local.
+   */
   async downloadBinaryFile(url: string, filePath: string, onProgress?: (progress: number) => void): Promise<void> {
     try {
       await Filesystem.deleteFile({ path: filePath, directory: Directory.Data });
@@ -78,6 +92,25 @@ export class ServerService {
   }
 
   /**
+   * Escanea el directorio de datos buscando archivos de mapas (.mbtiles).
+   */
+  async listFilesInDataDirectory(): Promise<string[]> {
+    try {
+      const result = await Filesystem.readdir({ path: '', directory: Directory.Data });
+      return result.files
+        .map(file => typeof file === 'string' ? file : file.name)
+        .filter(name => name.toLowerCase().endsWith('.mbtiles'));
+    } catch (error) { 
+      console.error('Error listando archivos:', error);
+      return []; 
+    }
+  }
+
+  // ==========================================================================
+  // 3. HELPERS PRIVADOS
+  // ==========================================================================
+
+  /**
    * Conversión altamente optimizada para evitar colapsos de memoria
    */
   private uint8ArrayToBase64(uint8: Uint8Array): string {
@@ -96,17 +129,5 @@ export class ServerService {
   private updateProgress(value: number, callback?: (p: number) => void) {
     this.downloadProgress$.next(value);
     if (callback) callback(value);
-  }
-
-  async listFilesInDataDirectory(): Promise<string[]> {
-    try {
-      const result = await Filesystem.readdir({ path: '', directory: Directory.Data });
-      return result.files
-        .map(file => typeof file === 'string' ? file : file.name)
-        .filter(name => name.toLowerCase().endsWith('.mbtiles'));
-    } catch (error) { 
-      console.error('Error listando archivos:', error);
-      return []; 
-    }
   }
 }

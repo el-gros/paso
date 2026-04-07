@@ -8,11 +8,18 @@ import { PluginListenerHandle } from '@capacitor/core';
   providedIn: 'root'
 })
 export class AppStateService implements OnDestroy {
-  
+
+  // ==========================================
+  // 1. ESTADO INTERNO Y LISTENERS
+  // ==========================================
   private foreground$ = new BehaviorSubject<boolean>(true);
   private listenerHandle?: PluginListenerHandle;
 
-  // 🚀 Mejor práctica: Exponer los flujos como propiedades readonly
+  // ==========================================
+  // 2. API REACTIVA (Observables)
+  // ==========================================
+  
+  /** Estado actual de la aplicación (true = primer plano) */
   public readonly isForeground$: Observable<boolean> = this.foreground$
     .asObservable()
     .pipe(distinctUntilChanged());
@@ -23,15 +30,26 @@ export class AppStateService implements OnDestroy {
   public readonly onEnterBackground$: Observable<boolean> = this.isForeground$
     .pipe(filter(isActive => isActive === false));
 
+  // ==========================================
+  // 3. CICLO DE VIDA
+  // ==========================================
+
   constructor(private zone: NgZone) {
     this.initAppState();
   }
 
-  // Getter síncrono útil para comprobaciones puntuales sin suscribirse
+  ngOnDestroy(): void {
+    if (this.listenerHandle) {
+      this.listenerHandle.remove();
+    }
+  }
+
+  /** Getter síncrono útil para comprobaciones puntuales sin suscribirse */
   get currentForegroundValue(): boolean {
     return this.foreground$.value;
   }
 
+  /** Inicializa el listener nativo de Capacitor para el estado de la app */
   private async initAppState(): Promise<void> {
     try {
       // 1. Estado inicial
@@ -51,9 +69,4 @@ export class AppStateService implements OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    if (this.listenerHandle) {
-      this.listenerHandle.remove();
-    }
-  }
 }

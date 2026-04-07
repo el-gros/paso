@@ -1,10 +1,14 @@
 <ion-content>
   
+  <!-- ======================================================================
+       1. AJUSTES GENERALES (Idioma y Mapa base)
+       ====================================================================== -->
   <ion-list inset="true">
     <ion-list-header>
       <ion-label>{{ 'SETTINGS.GENERAL_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
+    <!-- Selección de Idioma -->
     <ion-item lines="full">
       <ion-icon name="language-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
@@ -15,7 +19,9 @@
       </ion-select>
     </ion-item>
 
+    <!-- Selección de Mapa Base -->
     <ion-item lines="full">
+      <ion-icon name="map-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
       <ion-select [value]="geography.mapProvider" 
                   (ionChange)="onMapChange($event.detail.value)" 
@@ -27,11 +33,15 @@
     </ion-item>
   </ion-list>
 
+  <!-- ======================================================================
+       2. PERSONALIZACIÓN VISUAL (Colores de Track)
+       ====================================================================== -->
   <ion-list inset="true">
     <ion-list-header>
       <ion-label>{{ 'SETTINGS.STYLE' | translate }}</ion-label>
     </ion-list-header>
 
+    <!-- Color Track Actual -->
     <ion-item lines="full">
       <ion-icon name="git-commit-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
@@ -44,6 +54,7 @@
       </ion-button>
     </ion-item>
 
+    <!-- Color Track de Referencia -->
     <ion-item lines="none">
       <ion-icon name="trail-sign-sharp" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
@@ -57,11 +68,15 @@
     </ion-item>
   </ion-list>
 
+  <!-- ======================================================================
+       3. SISTEMA Y NOTIFICACIONES
+       ====================================================================== -->
   <ion-list inset="true">
     <ion-list-header>
       <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
+    <!-- Alertas de navegación -->
     <ion-item lines="none"> 
       <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
@@ -69,6 +84,9 @@
     </ion-item>
   </ion-list>
 
+  <!-- ======================================================================
+       4. GESTIÓN DE MAPAS OFFLINE
+       ====================================================================== -->
   <ion-list inset="true">
     <ion-list-header>
       <ion-label>{{ 'SETTINGS.OFFLINE_MAPS_GROUP' | translate }}</ion-label>
@@ -80,6 +98,7 @@
       available: (offlineMapService.availableMaps$ | async)
     }; as state) {
 
+      <!-- Descarga de nuevos mapas -->
       @if (!state.isDownloading && state.missing && state.missing.length > 0) {
         <ion-item [lines]="state.available && state.available.length > 0 ? 'full' : 'none'">
           <ion-icon name="cloud-download-sharp" slot="start" color="primary"></ion-icon>
@@ -94,6 +113,7 @@
         </ion-item>
       }
 
+      <!-- Eliminación de mapas descargados -->
       @if (state.available && state.available.length > 0) {
         <ion-item lines="none">
           <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
@@ -108,6 +128,7 @@
         </ion-item>
       }
 
+      <!-- Estado: Todo descargado -->
       @if (!state.isDownloading && state.missing?.length === 0 && state.available?.length === 0) {
         <ion-item lines="none">
           <ion-icon name="checkmark-circle-sharp" slot="start" color="medium"></ion-icon>
@@ -119,11 +140,15 @@
     }
   </ion-list>
 
+  <!-- ======================================================================
+       5. DATOS Y COPIAS DE SEGURIDAD
+       ====================================================================== -->
   <ion-list inset="true">
     <ion-list-header>
       <ion-label>{{ 'SETTINGS.DATA_GROUP' | translate }}</ion-label> 
     </ion-list-header>
 
+    <!-- Exportar Backup -->
     <ion-item lines="full" button (click)="doExport()">
       <ion-icon name="push-sharp" slot="start" color="success"></ion-icon>
       <ion-label>
@@ -132,6 +157,7 @@
       </ion-label>
     </ion-item>
 
+    <!-- Importar Backup -->
     <ion-item lines="none" button (click)="doImport()">
       <ion-icon name="download-sharp" slot="start" color="primary"></ion-icon>
       <ion-label>
@@ -141,24 +167,28 @@
     </ion-item>
   </ion-list>
 
+  <!-- Espaciado para evitar colisión con el FAB -->
   <div style="height: 120px;"></div>
 </ion-content>
 
+<!-- ======================================================================
+     6. NAVEGACIÓN PRINCIPAL (Bottom Bar)
+     ====================================================================== -->
 <div class="bottom-safe-gray"></div>
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row class="button-container">
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
-      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
       <ion-icon name="bar-chart-sharp"></ion-icon>
-      <span>{{ 'MAP.DATA_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
       <ion-icon name="library-sharp"></ion-icon>
-      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
     </div>
   </ion-row>
 </ion-fab>

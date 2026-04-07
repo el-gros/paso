@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { ServerService } from './server.service';
 
 @Injectable({
   providedIn: 'root',
@@ -8,14 +9,27 @@ import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacito
 export class MbTilesService {
   private sqlite: SQLiteConnection;
   // 🚀 Guardamos múltiples conexiones usando el nombre del archivo como llave
+  
+  // ==========================================
+  // 1. ESTADO INTERNO
+  // ==========================================
+  /** Guardamos múltiples conexiones usando el nombre del archivo como llave. */
   private dbs: Map<string, SQLiteDBConnection> = new Map();
   private isInitialized = false;
   public currentMbTiles: string = '';
 
-  constructor() {
+  // ==========================================
+  // 2. INYECCIONES
+  // ==========================================
+  constructor(private server: ServerService) {
     this.sqlite = new SQLiteConnection(CapacitorSQLite);
   }
 
+  // ==========================================
+  // 3. INICIALIZACIÓN
+  // ==========================================
+
+  /** Prepara el plugin nativo de SQLite */
   async initializePlugin() {
     if (this.isInitialized) return;
     try {
@@ -26,7 +40,38 @@ export class MbTilesService {
     }
   }
 
+  /**
+   * Busca mapas descargados en el disco y los abre para que estén listos en caché.
+   */
+  async initializeOfflineMaps() {
+    try {
+      await this.initializePlugin();
+      const filesInDataDirectory = await this.server.listFilesInDataDirectory();
+      const downloadedMaps = filesInDataDirectory.filter(file => file.endsWith('.mbtiles'));
+
+      if (downloadedMaps.length === 0) {
+        console.log('🗺️ No hay mapas offline descargados.');
+        return;
+      }
+
+      console.log(`🗺️ Preparando ${downloadedMaps.length} mapa(s) offline...`);
+
+      for (const fileName of downloadedMaps) {
+        const success = await this.open(fileName);
+        if (success) {
+          console.log(`✅ Mapa offline listo y en caché: ${fileName}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error crítico inicializando mapas:', error);
+    }
+  }
+
   // 🚀 Abre la conexión y la registra en el diccionario
+  // ==========================================
+  // 4. GESTIÓN DE CONEXIONES
+  // ==========================================
+  /** Abre la conexión a un archivo MBTiles y la registra en el diccionario. */
   async open(mbtilesFile: string): Promise<boolean> {
     // Guardamos el archivo actual para que el sistema antiguo (OpenLayers) sepa cuál usar por defecto
     this.currentMbTiles = mbtilesFile; 
@@ -64,17 +109,20 @@ export class MbTilesService {
     }
   }
   
-  // =========================================================================
-  // 🚀 SOBRECARGA DE FUNCIONES PARA RETROCOMPATIBILIDAD
-  // =========================================================================
-  
+  // ==========================================================================
+  // 5. ACCESO A DATOS (Tiles)
+  // ==========================================================================
+
   // Firma 1: La que espera OpenLayers (3 parámetros)
   async getVectorTile(zoom: number, x: number, y: number): Promise<ArrayBuffer | null>;
   
   // Firma 2: La nueva que espera MapLibre (4 parámetros)
   async getVectorTile(mbtilesFile: string, zoom: number, x: number, y: number): Promise<ArrayBuffer | null>;
   
-  // Implementación real que decide qué hacer según los argumentos recibidos
+  /**
+   * Recupera el Blob de una tesela desde la base de datos SQLite.
+   * Implementa lógica de "TMS" para la coordenada Y y "Lazy Loading" para la apertura del archivo.
+   */
   async getVectorTile(arg1: string | number, arg2: number, arg3: number, arg4?: number): Promise<ArrayBuffer | null> {
     
     let mbtilesFile: string;
@@ -144,11 +192,18 @@ export class MbTilesService {
     return null;
   }
 
+  /**
+   * Obtiene una lista de los nombres de archivos MBTiles que están actualmente abiertos.
+   */
   getOpenedFiles(): string[] {
     // Retorna los nombres de los archivos que están en el Map de dbs
     return Array.from(this.dbs.keys());
   }
 
+  /**
+   * Cierra la conexión a un archivo MBTiles y lo elimina del diccionario.
+   * @param mbtilesFile El nombre del archivo MBTiles a cerrar.
+   */
   async close(mbtilesFile: string): Promise<boolean> {
     const db = this.dbs.get(mbtilesFile);
     

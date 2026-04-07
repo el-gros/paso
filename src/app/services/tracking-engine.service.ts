@@ -12,10 +12,17 @@ import MyService, { Location as PluginLocation } from '../../plugins/MyServicePl
 @Injectable({ providedIn: 'root' })
 export class TrackingEngineService {
   
-  // "Timbre" para que Tab1Page sepa que hay que hacer detectChanges()
+  // ==========================================================================
+  // 1. ESTADO Y EVENTOS
+  // ==========================================================================
+
+  /** Notifica a los componentes que los datos del track han cambiado (para ChangeDetection) */
   public readonly onTrackUpdated$ = new Subject<void>();
   public firstPointReceived = false;
 
+  // ==========================================================================
+  // 2. HANDLERS NATIVOS
+  // ==========================================================================
   private locListener: any;
   private routeListener: any;
 
@@ -28,10 +35,38 @@ export class TrackingEngineService {
     private location: LocationManagerService
   ) {}
 
-  public async startEngine() {
-    await MyService.removeAllListeners();
+  // ==========================================================================
+  // 3. CICLO DE VIDA DEL MOTOR
+  // ==========================================================================
 
-    // 1. LISTENER DE UBICACIÓN
+  /**
+   * Inicializa los listeners y arranca el servicio nativo de seguimiento.
+   */
+  public async startEngine() {
+    this.firstPointReceived = false;
+    await MyService.removeAllListeners();
+    
+    await this.setupLocationListener();
+    await this.setupRouteListener();
+
+    try {
+      await MyService.startService();
+    } catch (err) {
+      console.error("❌ Error al iniciar el servicio nativo:", err);
+    }
+  }
+
+  public stopEngine() {
+    if (this.locListener) this.locListener.remove();
+    if (this.routeListener) this.routeListener.remove();
+  }
+
+  // ==========================================================================
+  // 4. CONFIGURACIÓN DE LISTENERS
+  // ==========================================================================
+
+  /** Configura la recepción de puntos GPS desde el plugin nativo */
+  private async setupLocationListener() {
     this.locListener = await MyService.addListener('location', (location: PluginLocation) => {
       this.zone.run(async () => {
         if (!location) return;
@@ -53,7 +88,7 @@ export class TrackingEngineService {
         const success = this.location.processRawLocation(cleanLocation);
         
         if (success) {
-          if (!this.firstPointReceived) {
+          if (!this.firstPointReceived && this.geography.map) {
             console.log("🎯 Primer punto detectado. Centrando mapa...");
             this.geography.map?.getView().animate({
               center: [cleanLocation.longitude, cleanLocation.latitude],
@@ -72,10 +107,12 @@ export class TrackingEngineService {
         }
       }); 
     });
+  }
 
-    // 2. LISTENER DE RUTAS
+  /** Configura las actualizaciones de estado de navegación (dentro/fuera de ruta) */
+  private async setupRouteListener() {
     this.routeListener = await MyService.addListener('routeStatusUpdate', (data) => {
-      this.zone.run(() => { 
+      this.zone.run(() => {
         this.fs.routeStatus = data.status;
         this.fs.matchIndex = data.matchIndex;
 
@@ -88,17 +125,5 @@ export class TrackingEngineService {
         }
       });
     });
-
-    // 3. ARRANQUE
-    try {
-      await MyService.startService();
-    } catch (err) {
-      console.error("❌ Error al iniciar el servicio nativo:", err);
-    }
-  }
-
-  public stopEngine() {
-    if (this.locListener) this.locListener.remove();
-    if (this.routeListener) this.routeListener.remove();
   }
 }

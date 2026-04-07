@@ -18,6 +18,11 @@ export class FileParserService {
   // ==========================================================================
   // 1. PARSER GPX
   // ==========================================================================
+
+  /**
+   * Procesa el contenido de un archivo XML en formato GPX.
+   * Extrae tanto Waypoints como el primer TrackSegment encontrado.
+   */
   async parseGpxXml(gpxText: string): Promise<ParsedRouteData> {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = [];
@@ -77,6 +82,11 @@ export class FileParserService {
   // ==========================================================================
   // 2. PARSER KML
   // ==========================================================================
+
+  /**
+   * Procesa un Documento XML en formato KML.
+   * @param photoMap Opcional: Mapa de referencias para vincular fotos locales extraídas del ZIP.
+   */
   async parseKmlXml(xmlDoc: Document, photoMap?: Map<string, string>): Promise<ParsedRouteData> {
     let waypoints: Waypoint[] = [];
     let trackPoints: ParsedPoint[] = []; 

@@ -140,6 +140,11 @@ import { TranslateModule } from '@ngx-translate/core';
   `]
 })
 export class WikiCardComponent implements OnChanges {
+
+  // ==========================================================================
+  // 1. INPUTS Y EVENTOS
+  // ==========================================================================
+
   @Input() data: any;
   @Output() onClose = new EventEmitter<void>();
 
@@ -147,11 +152,19 @@ export class WikiCardComponent implements OnChanges {
   private startY: number = 0;
   private scrollTop: number = 0; // 🚀 Controla si el texto está scrolleado
 
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data'] && this.data) {
       this.cdr.detectChanges(); // Fuerza a la UI a pintar el clima
     }
   }
+
+  // ==========================================================================
+  // 3. ACCIONES DE USUARIO (API PÚBLICA)
+  // ==========================================================================
 
   public close() { 
     this.onClose.emit(); 
@@ -162,7 +175,10 @@ export class WikiCardComponent implements OnChanges {
     this.scrollTop = event.target.scrollTop;
   }
 
-  // 🚀 Hemos movido los eventos Touch al contenedor principal
+  // ==========================================================================
+  // 4. GESTIÓN TÁCTIL (Touch Handling)
+  // ==========================================================================
+
   public onTouchStart(event: TouchEvent) {
     this.startY = event.touches[0].clientY;
   }

@@ -104,10 +104,19 @@ import { TranslateModule } from '@ngx-translate/core';
   `]
 })
 export class ColorPopoverComponent {
+
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
   @Input() colors: string[] = [];
   @Input() currentColor!: string;
   
   private popoverCtrl = inject(PopoverController);
+
+  // ==========================================================================
+  // 2. ACCIONES (API PÚBLICA)
+  // ==========================================================================
 
   public selectColor(color: string) {
     this.popoverCtrl.dismiss({ selectedColor: color });

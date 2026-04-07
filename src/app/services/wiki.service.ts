@@ -20,30 +20,28 @@ export class WikiService {
   private langService = inject(LanguageService);
 
   // ==========================================
-  // OBTENCIÓN DE DATOS DE WIKIPEDIA
+  // 1. API PÚBLICA (Orquestador)
   // ==========================================
 
+  /**
+   * Obtiene un resumen de Wikipedia basado en el nombre del lugar.
+   * Si la búsqueda directa falla, intenta localizar el artículo más cercano por coordenadas.
+   */
   async getWikiData(location: { name: string; short_name?: string; lat: number; lon: number }): Promise<WikiSummary | null> {
-    
-    // 1. Gestión de idioma
     const langCode = (this.langService.currentLangValue || 'es').split('-')[0]; 
     const searchTerm = this.cleanSearchTerm(location.short_name || location.name);
 
     try {
-      // 2. Intento 1: Búsqueda directa por nombre (REST API)
       let resp = await fetch(`https://${langCode}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
       
-      // 3. Intento 2: Si falla el nombre, buscamos por coordenadas (Action API)
       if (!resp.ok) {
         const closestTitle = await this.getNearbyTitle(location.lat, location.lon, langCode);
-        
         if (closestTitle) {
           resp = await fetch(`https://${langCode}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(closestTitle)}`);
         }
       }
 
       return resp.ok ? await resp.json() : null;
-
     } catch (err) {
       console.error("[WikiService] Error obteniendo datos:", err);
       return null;
@@ -51,7 +49,7 @@ export class WikiService {
   }
 
   // ==========================================
-  // MÉTODOS PRIVADOS DE APOYO
+  // 2. MÉTODOS DE APOYO (Lógica Interna)
   // ==========================================
 
   /**

@@ -11,15 +11,18 @@ const PENDING_PHOTOS_KEY = 'pending_photos_queue';
   providedIn: 'root'
 })
 export class PhotoService {
-  
-  // --- ESTADO INTERNO ---
-  // Guarda los nombres de los archivos temporales de la ruta actual
+
+  // ==========================================================================
+  // 1. ESTADO INTERNO
+  // ==========================================================================
+
+  /** Guarda los nombres de los archivos temporales de la sesión de grabación actual */
   private sessionFiles: string[] = []; 
 
   constructor(private popoverController: PopoverController) { }
 
   // ==========================================================================
-  // 1. MANTENIMIENTO Y ARRANQUE (Lifecycle)
+  // 2. MANTENIMIENTO Y ARRANQUE (Lifecycle)
   // ==========================================================================
 
   /**
@@ -50,12 +53,12 @@ export class PhotoService {
   }
 
   // ==========================================================================
-  // 2. ACCIONES PRINCIPALES (Public API)
+  // 3. ACCIONES PRINCIPALES (Public API)
   // ==========================================================================
 
   /**
    * Abre la cámara, toma la foto, la guarda en el sistema de archivos
-   * y la registra en la cola de la sesión actual.
+   * y la registra en la cola temporal para evitar archivos huérfanos.
    */
   public async takeAndSavePhoto(): Promise<string | null> {
     try {
@@ -129,7 +132,7 @@ export class PhotoService {
   }
 
   // ==========================================================================
-  // 3. MÉTODOS PRIVADOS (Helpers)
+  // 4. MÉTODOS PRIVADOS (Helpers)
   // ==========================================================================
 
   /**

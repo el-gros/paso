@@ -9,6 +9,9 @@ export class SmartRouteBuilderService {
   private translate = inject(TranslateService);
   private snapToTrailService = inject(SnapToTrailService);
 
+  // ==========================================
+  // 1. ACCIONES PÚBLICAS
+  // ==========================================
 
   /**
    * Genera un título y descripción inteligente basados en los puntos geográficos de la ruta.
@@ -100,11 +103,13 @@ export class SmartRouteBuilderService {
     return { title, description };
   }
 
-  // ==========================================
-  // MÉTODOS PRIVADOS DEL MOTOR
-  // ==========================================
+  // ==========================================================================
+  // 2. LÓGICA GEOMÉTRICA (Private)
+  // ==========================================================================
 
-  // NUEVO: Encuentra el punto más alejado del inicio para rutas circulares
+  /**
+   * Encuentra el punto más alejado del inicio para rutas circulares.
+   */
   private getFurthestPoint(coords: [number, number][], startCoord: [number, number]): [number, number] {
     let maxDist = 0;
     let furthest = coords[0];
@@ -121,6 +126,28 @@ export class SmartRouteBuilderService {
     return furthest;
   }
 
+  /**
+   * Calcula el marco delimitador (Bounding Box) de una serie de coordenadas.
+   */
+  private getBoundingBox(coords: [number, number][]): number[] {
+    let minLat = Infinity, minLng = Infinity, maxLat = -Infinity, maxLng = -Infinity;
+    coords.forEach(c => {
+      const lng = c[0], lat = c[1];
+      if (lat < minLat) minLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lat > maxLat) maxLat = lat;
+      if (lng > maxLng) maxLng = lng;
+    });
+    return [minLat, minLng, maxLat, maxLng]; 
+  }
+
+  // ==========================================================================
+  // 3. INTERSECCIÓN CON PUNTOS DE INTERÉS (POIs)
+  // ==========================================================================
+
+  /**
+   * Cruza la ruta con una lista de POIs y devuelve los que están dentro del umbral.
+   */
 private intersectRouteWithPOIs(coords: [number, number][], dataArray: any[], pois: any[], thresholdMeters: number): any[] {
     let matched = [];
     const usedPOIs = new Set(); 
@@ -162,18 +189,10 @@ private intersectRouteWithPOIs(coords: [number, number][], dataArray: any[], poi
     return matched;
   }
 
-  private getBoundingBox(coords: [number, number][]): number[] {
-    let minLat = Infinity, minLng = Infinity, maxLat = -Infinity, maxLng = -Infinity;
-    coords.forEach(c => {
-      const lng = c[0], lat = c[1];
-      if (lat < minLat) minLat = lat;
-      if (lng < minLng) minLng = lng;
-      if (lat > maxLat) maxLat = lat;
-      if (lng > maxLng) maxLng = lng;
-    });
-    return [minLat, minLng, maxLat, maxLng]; 
-  }
-
+  /**
+   * Consulta la API de Overpass para obtener lugares de interés (montañas, parques, museos)
+   * dentro de un área rectangular.
+   */
 private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: number, maxLng: number): Promise<any[]> {
     // Consulta restringida a lugares de interés importantes (sin placas ni fuentes pequeñas)
     const query = `
@@ -216,6 +235,13 @@ private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: numb
     }
   }
   
+  // ==========================================================================
+  // 4. INFORMACIÓN DEL LUGAR (Nominatim)
+  // ==========================================================================
+
+  /**
+   * Obtiene información detallada del lugar (barrio, ciudad) usando Geocoding Inverso.
+   */
   private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18`;

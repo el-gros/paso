@@ -4,8 +4,8 @@ import { Feature } from 'ol';
 import { LineString, Point } from 'ol/geom';
 
 // --- INTERNAL IMPORTS ---
-import { Track } from 'src/globald';
-import { Location } from 'src/plugins/MyServicePlugin';
+import { Track } from '../../globald';
+import { Location } from '../../plugins/MyServicePlugin';
 import { StylerService } from './styler.service';
 import { GeographyService } from './geography.service';
 import { FunctionsService } from './functions.service';
@@ -18,7 +18,7 @@ import { LocationManagerService } from './location-manager.service';
 export class PresentService {
   
   // ==========================================================================
-  // 1. ESTADO DEL TRACK ACTUAL (Reactivo)
+  // 1. ESTADO REACTIVO (Core)
   // ==========================================================================
   private readonly _currentTrack = new BehaviorSubject<Track | undefined>(undefined);
   public readonly currentTrack$ = this._currentTrack.asObservable(); 
@@ -36,7 +36,7 @@ export class PresentService {
   public currentColor: string = 'orange';
   public filtered: number = 0;
   public computedDistances: number = 0;
-  
+
   // UI State (Popovers y Vistas)
   public isRecordPopoverOpen: boolean = false;
   public isConfirmStopOpen: boolean = false;
@@ -66,6 +66,10 @@ export class PresentService {
   // 4. CICLO DE VIDA DEL TRACK
   // ==========================================================================
 
+  /**
+   * Punto de entrada principal para procesar nuevos puntos GPS en el track activo.
+   * Decide si inicializar una ruta nueva o añadir el punto a la existente.
+   */
   public async updateTrack(location: Location): Promise<boolean> {
     if (!this.geography.map || !this.geography.currentLayer) return false;
 
@@ -78,6 +82,10 @@ export class PresentService {
     }
   }
 
+  /**
+   * Tarea pesada que se ejecuta solo cuando la app está en primer plano.
+   * Procesa matemáticas de filtrado y actualiza el dibujo del mapa.
+   */
   public async foregroundTask(track: Track): Promise<Track | undefined> {
     if (!track) return undefined;
     
@@ -95,6 +103,10 @@ export class PresentService {
   // 5. MOTOR DE RENDERIZADO (OpenLayers)
   // ==========================================================================
 
+  /**
+   * Actualiza las geometrías de OpenLayers en la capa actual.
+   * Utiliza caché de features para evitar búsquedas costosas en el motor de mapas.
+   */
   public async displayCurrentTrack(track: Track): Promise<void> {
     const source = this.geography.currentLayer?.getSource();
     if (!source || !track) return;
@@ -127,6 +139,7 @@ export class PresentService {
   // 6. MÉTODOS PRIVADOS (Helpers)
   // ==========================================================================
 
+  /** Centra la cámara automáticamente en el primer punto válido recibido */
   private handleInitialAutoCenter(location: Location): void {
     if (!this.hasCenteredInitial && location.longitude && location.latitude) {
       this.geography.map?.getView().animate({
@@ -138,6 +151,7 @@ export class PresentService {
     }
   }
 
+  /** Crea la estructura GeoJSON inicial y los marcadores de mapa para una nueva ruta */
   private initNewTrack(location: Location): boolean {
     this.resetTrackingState();
     
@@ -185,6 +199,10 @@ export class PresentService {
     return true;
   }
 
+  /** 
+   * Inserta un punto en el GeoJSON y gestiona la lógica de suavizado de altitud 
+   * si se detectan saltos bruscos.
+   */
   private async appendExistingTrack(track: Track, location: Location): Promise<boolean> {
     const dataArray = track.features[0].geometry.properties.data;
     const lastData = dataArray[dataArray.length - 1];

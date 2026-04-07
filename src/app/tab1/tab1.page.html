@@ -1,5 +1,10 @@
 <ion-content [fullscreen]="true">
   
+  <!-- ======================================================================
+       1. CONTROLES FLOTANTES SUPERIORES (Acciones rápidas)
+       ====================================================================== -->
+
+  <!-- Botón para limpiar capa de referencia (solo si hay contenido) -->
   @if (hasReferenceContent) {
     <ion-fab slot="fixed" vertical="top" horizontal="start" class="clear-reference-fab" (click)="clearReferenceLayer()">
       <div class="map-control-btn">
@@ -9,13 +14,19 @@
     </ion-fab>
   }
 
-  <div id="map-wrapper">
-    <div id="map"></div>
-  </div>
-  <div class="safe-area"></div>
+  <!-- Botón de Cámara (solo durante la grabación activa) -->
+  @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
+    <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
+      <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
+        <ion-icon name="camera-sharp"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  }
 
+  <!-- Isla de control central: Grabar, Buscar y Zoom -->
   <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
     <ion-row>
+      <!-- Botón dinámico: Iniciar / Detener grabación -->
       @if (location.state === 'tracking') {
         <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
           <ion-icon name="stop-circle-sharp" class="primary-icon"></ion-icon>
@@ -29,16 +40,32 @@
         </div>
       }
 
+      <!-- Búsqueda y Guía -->
       <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = true;">
         <ion-icon name="search-circle-sharp"></ion-icon>
         <p>{{ 'SEARCH.BUTTON' | translate }}</p> </div>
 
+      <!-- Ciclo de Zoom -->
       <div class="record-button" (click)="mapService.cycleZoom()">
         <ion-icon name="expand-sharp"></ion-icon>
         <p>{{ 'MAP.ZOOM_BUTTON' | translate }}</p> </div>
     </ion-row>
   </ion-fab>
 
+  <!-- ======================================================================
+       2. MOTOR DE MAPA (Capa base)
+       ====================================================================== -->
+
+  <div id="map-wrapper">
+    <div id="map"></div>
+  </div>
+  <div class="safe-area"></div>
+
+  <!-- ======================================================================
+       3. INDICADORES Y SOBRECAPAS (Overlays)
+       ====================================================================== -->
+
+  <!-- Indicador LED de estado de ruta (Dentro/Fuera de ruta) -->
   @if (present.currentTrack && reference.archivedTrack) { 
     <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
       <div class="status-indicator-container">
@@ -49,13 +76,17 @@
     </ion-fab>
   }
 
-  @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
-    <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
-      <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
-        <ion-icon name="camera-sharp"></ion-icon>
-      </ion-fab-button>
-    </ion-fab>
+  <!-- Tarjeta de información de Wikipedia / Clima -->
+  @if (wikiData) {
+    <app-wiki-card 
+      [data]="wikiData" 
+      (onClose)="wikiData = null">
+    </app-wiki-card>
   }
+
+  <!-- ======================================================================
+       4. NAVEGACIÓN PRINCIPAL (Bottom Bar)
+       ====================================================================== -->
 
   <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
     <ion-row>
@@ -71,18 +102,17 @@
     </ion-row>
   </ion-fab>
 
+  <!-- ======================================================================
+       5. COMPONENTES LÓGICOS Y POPOVERS
+       ====================================================================== -->
+
+  <!-- Control de grabación y confirmaciones -->
   <app-record-popover></app-record-popover>
   
+  <!-- Buscador y Guía de rutas -->
   <app-search-guide-popover 
     (onWikiResult)="handleWikiResult($event)"
     (onClearResult)="wikiData = null">
   </app-search-guide-popover>
-
-  @if (wikiData) {
-    <app-wiki-card 
-      [data]="wikiData" 
-      (onClose)="wikiData = null">
-    </app-wiki-card>
-  }
 
 </ion-content>

@@ -1,11 +1,14 @@
-/* --- FONDO Y CABECERAS --- */
+// ==========================================================================
+// 1. CONFIGURACIÓN BASE Y CABECERAS
+// ==========================================================================
+
 ion-content {
   --background: #f4f4f7; 
 }
 
 ion-list-header {
-  padding-left: 16px; /* 🚀 Alinea el texto con el borde de la lista */
-  margin-bottom: 4px; /* Un poco de respiro antes del primer ítem */
+  padding-left: 16px;
+  margin-bottom: 4px;
   
   ion-label {
     color: var(--ion-color-primary) !important;
@@ -16,7 +19,10 @@ ion-list-header {
   }
 }
 
-/* --- LISTAS ESTILO GLASS --- */
+// ==========================================================================
+// 2. ESTRUCTURA DE LISTAS (Glass Style)
+// ==========================================================================
+
 ion-list[inset="true"] {
   background: var(--glass-bg) !important;
   backdrop-filter: blur(var(--glass-blur));
@@ -28,7 +34,10 @@ ion-list[inset="true"] {
   overflow: hidden; 
 }
 
-/* --- ITEMS --- */
+// ==========================================================================
+// 3. ELEMENTOS DE LISTA (Items e Iconos)
+// ==========================================================================
+
 ion-item {
   --background: transparent;
   --min-height: 56px;
@@ -43,16 +52,21 @@ ion-item {
   }
 }
 
-/* --- CONTROLES ESPECÍFICOS --- */
+// ==========================================================================
+// 4. CONTROLES DE FORMULARIO
+// ==========================================================================
+
 ion-select {
   font-weight: 600;
   color: var(--ion-color-primary);
-  /* Asegura que el texto del select no se corte en móviles pequeños */
   width: 100%;
   max-width: 140px; 
 }
 
-/* --- BOTÓN DE COLOR CUSTOM --- */
+// ==========================================================================
+// 5. COMPONENTES PERSONALIZADOS
+// ==========================================================================
+
 ion-button {
   margin: 0;
   --padding-start: 0;
@@ -75,7 +89,7 @@ ion-button {
   .color-sample {
     width: 24px;
     height: 24px;
-    border-radius: 6px; /* 🚀 Cuadradito redondeado suele verse más elegante que un círculo aquí */
+    border-radius: 6px;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
   }
   
@@ -84,7 +98,6 @@ ion-button {
   }
 }
 
-/* --- BARRA DE DESCARGA (Mapas Offline) --- */
 .download-progress-item {
   --background: rgba(var(--ion-color-success-rgb), 0.05);
   ion-progress-bar { 

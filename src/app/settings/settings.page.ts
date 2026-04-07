@@ -35,23 +35,32 @@ import { LanguageOption } from '../../globald';
 })
 export class SettingsPage implements OnDestroy, ViewWillEnter {
   
+  // ==========================================================================
+  // 1. ESTADO Y PROPIEDADES
+  // ==========================================================================
+
   private destroy$ = new Subject<void>(); 
 
-  // --- Mapas Online ---
+  /** Lista de proveedores de mapas online disponibles */
   public onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
   
-  // Subjects para manejar el debounce de la UI
   private mapUploadSubject = new Subject<string>();
   private mapRemoveSubject = new Subject<string>();
 
-  // --- Preferencias UI ---
+  /** Opciones de idioma soportadas */
   public languages: LanguageOption[] = [
     { name: 'Català', code: 'ca' }, { name: 'Español', code: 'es' },
     { name: 'English', code: 'en' }, { name: 'Français', code: 'fr' },
     { name: 'Русский', code: 'ru' }, { name: '中文', code: 'zh' },
   ];
   public selectedLanguage: LanguageOption = { name: 'English', code: 'en' };
+  
+  /** Paleta de colores para la personalización de tracks */
   public colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue'];
+
+  // ==========================================================================
+  // 2. CICLO DE VIDA (Lifecycle)
+  // ==========================================================================
 
   constructor(
     public fs: FunctionsService,
@@ -72,10 +81,9 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   }
 
   async ionViewWillEnter() {
-    // 1. El servicio se encarga de todo lo relacionado con mapas
+    // Sincronizamos mapas y el lenguaje guardado al entrar en la vista
     await this.offlineMapService.refreshMapsList();
     
-    // 2. El lenguaje es lo único que el componente gestiona directamente
     this.selectedLanguage = this.languages.find(
       lang => lang.code === this.languageService.currentLangValue
     ) || { name: 'English', code: 'en' };
@@ -87,9 +95,10 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   }
 
   // ==========================================================================
-  // GESTIÓN DE MAPAS (Conexión con el Servicio)
+  // 3. GESTIÓN DE MAPAS (Online / Offline)
   // ==========================================================================
 
+  /** Configura las suscripciones con debounce para la descarga/borrado de mapas */
   private setupMapActions() {
     this.mapUploadSubject.pipe(debounceTime(500), takeUntil(this.destroy$))
       .subscribe(name => this.offlineMapService.downloadMap(name));
@@ -98,15 +107,16 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       .subscribe(name => this.offlineMapService.removeMap(name));
   }
 
-  onMapUploadChange(mapName: string) {
+  public onMapUploadChange(mapName: string) {
     if (mapName) this.mapUploadSubject.next(mapName);
   }
 
-  onMapRemoveChange(mapName: string) {
+  public onMapRemoveChange(mapName: string) {
     if (mapName) this.mapRemoveSubject.next(mapName);
   }
 
-  async onMapChange(map: string) {
+  /** Cambia el proveedor de mapas activo y recarga el motor de mapas */
+  public async onMapChange(map: string) {
     this.geography.mapProvider = map;
     await this.fs.storeSet('mapProvider', map);
     try {
@@ -118,22 +128,24 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   }
 
   // ==========================================================================
-  // OTROS AJUSTES (Lenguaje, Color, Alertas)
+  // 4. OTROS AJUSTES (Idioma, Color, Alertas)
   // ==========================================================================
 
-  async onLanguageChange(code: string) {
+  public async onLanguageChange(code: string) {
     await this.languageService.setLanguage(code);
     const found = this.languages.find((l) => l.code === code);
     if (found) this.selectedLanguage = found;
   }
 
-  async onAlertChange(value: boolean) {
+  /** Activa o desactiva las alertas sonoras/visuales de desvío de ruta */
+  public async onAlertChange(value: boolean) {
     this.fs.alert = value ? 'on' : 'off'; 
     await this.fs.storeSet('alert', this.fs.alert);
     await this.location.sendReferenceToPlugin();
   }
 
-  async openColorPopover(ev: Event, type: 'current' | 'archived') {
+  /** Abre el selector de color para el track activo o el de referencia */
+  public async openColorPopover(ev: Event, type: 'current' | 'archived') {
     const popover = await this.popoverController.create({
       component: ColorPopoverComponent,
       componentProps: {
@@ -160,10 +172,11 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   }
 
   // ==========================================================================
-  // BACKUP (Export / Import) - REFACTORED
+  // 5. BACKUP (Copia de Seguridad)
   // ==========================================================================
 
-  async doExport() {
+  /** Inicia el proceso de empaquetado y exportación de datos (.paso) */
+  public async doExport() {
     const loading = await this.loadingCtrl.create({ 
       message: this.translate.instant('SETTINGS.BACKUP_PACKING'),
       spinner: 'crescent'
@@ -186,7 +199,8 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     }
   }
 
-  async doImport() {
+  /** Abre el selector de archivos para restaurar una copia de seguridad */
+  public async doImport() {
     try {
       const result = await FilePicker.pickFiles({
         types: ['application/zip', 'application/octet-stream', '.paso', '.zip'] 

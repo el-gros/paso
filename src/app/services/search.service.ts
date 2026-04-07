@@ -1,20 +1,23 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { CapacitorHttp } from '@capacitor/core';
+import { TranslateService } from '@ngx-translate/core';
 import { global } from '../../environments/environment';
-import { LocationResult } from 'src/globald';
+import { LocationResult, Track } from '../../globald';
+import { GeoMathService } from './geo-math.service';
+import { Coordinate } from 'ol/coordinate';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SearchService {
 
-  // =========================================================
-  // 🚀 CONFIGURACIÓN DE PROVEEDORES
-  // Cambia 'photon' por 'nominatim' o 'mapbox' para alternar
-  // =========================================================
+  // ==========================================================================
+  // 1. CONFIGURACIÓN DE PROVEEDORES Y ENDPOINTS
+  // ==========================================================================
+
   private readonly SEARCH_PROVIDER: 'photon' | 'nominatim' | 'mapbox' = 'photon';
   private readonly MAPBOX_TOKEN = 'TU_TOKEN_DE_MAPBOX_AQUI'; // Solo necesario si usas 'mapbox'
 
@@ -22,15 +25,25 @@ export class SearchService {
   private readonly NOMINATIM_LOOKUP_URL = 'https://nominatim.openstreetmap.org/lookup';
   private readonly ORS_BASE_URL = 'https://api.openrouteservice.org/v2/directions';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private geoMath: GeoMathService,
+    private translate: TranslateService
+  ) {}
   
+  // ==========================================================================
+  // 2. BÚSQUEDA DE LUGARES (Places API)
+  // ==========================================================================
+
   /**
-   * Busca lugares con sistema de FALLBACK (Si uno falla, intenta con el siguiente)
+   * Busca lugares por texto con una estrategia de reintento (failover) entre proveedores.
+   * @param query Texto a buscar.
+   * @param limit Máximo de resultados deseados.
    */
   async searchPlaces(query: string, limit: number = 12): Promise<LocationResult[]> {
     if (!query.trim()) return [];
 
-    // Definimos el orden de prioridad según el proveedor seleccionado
+    // Definimos el orden de prioridad según el proveedor seleccionado por defecto
     let providersOrder: ('photon' | 'nominatim' | 'mapbox')[] = [];
     
     if (this.SEARCH_PROVIDER === 'photon') {
@@ -41,39 +54,171 @@ export class SearchService {
       providersOrder = ['mapbox', 'photon', 'nominatim'];
     }
 
-    // Intentamos buscar iterando por la lista de proveedores
+    // Intentamos buscar iterando por la lista de proveedores hasta obtener éxito
     for (const provider of providersOrder) {
       try {
-        // Si toca mapbox pero no has puesto token, lo saltamos para que no falle a propósito
+        // Si es mapbox y no hay token, saltamos al siguiente
         if (provider === 'mapbox' && this.MAPBOX_TOKEN === 'TU_TOKEN_DE_MAPBOX_AQUI') {
           continue;
         }
 
         // Ejecutamos la búsqueda real
-        const results = await this.executeSearch(provider, query, limit);
-        
-        // Si llegamos aquí sin que haya "saltado" un error al catch, devolvemos los resultados
-        return results;
+        return await this.executeSearch(provider, query, limit);
 
       } catch (error) {
-        // Si el servidor falla (caída, timeout, error 500), lo capturamos y el bucle sigue al siguiente
-        console.warn(`[SearchService] ⚠️ El proveedor '${provider}' falló o está caído. Intentando con el siguiente...`);
+        // Si el servidor falla (caída, timeout, error 500), capturamos y seguimos al siguiente
+        console.warn(`[SearchService] ⚠️ El proveedor '${provider}' falló. Intentando con el siguiente...`);
       }
     }
 
-    // Si el bucle termina y todos han fallado:
-    console.error('[SearchService] ❌ Todos los proveedores de búsqueda están caídos.');
+    console.error('[SearchService] ❌ Todos los proveedores de búsqueda están fuera de servicio.');
     return [];
   }
 
+  // ==========================================================================
+  // 3. ENRUTAMIENTO (Routing API)
+  // ==========================================================================
+
   /**
-   * Lógica interna que ejecuta la petición HTTP según el proveedor
+   * Solicita una ruta entre dos puntos geográficos a OpenRouteService.
+   */
+  async getRoute(origin: [number, number], destination: [number, number], transport: string): Promise<any> {
+    const url = `${this.ORS_BASE_URL}/${transport}/geojson`;
+    const body = { coordinates: [origin, destination], elevation: true, units: 'm', geometry: true };
+
+    try {
+      const resp = await CapacitorHttp.post({
+        url,
+        headers: { 
+          'Accept': 'application/json, application/geo+json; charset=utf-8', 
+          'Content-Type': 'application/json; charset=utf-8', 
+          'Authorization': global.ors_key 
+        },
+        data: body
+      });
+
+      if (resp.status !== 200) {
+        throw new Error(resp.data?.error?.message || `Error ORS: ${resp.status}`);
+      }
+
+      return typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+    } catch (error) {
+      console.error("[SearchService] Error en petición de enrutamiento:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Procesa la respuesta de OpenRouteService y genera un objeto Track.
+   * Calcula distancias acumuladas y prepara los datos para el gráfico de perfil.
+   */
+  processRouteResponse(geoJsonData: any, originName: string, destName: string, transport: string): Track {
+    const routeFeature = geoJsonData.features[0];
+    const stats = routeFeature.properties.summary;
+    const routeCoordinates: Coordinate[] = routeFeature.geometry.coordinates;
+
+    let accumulatedDistance = 0;
+    const trackData = routeCoordinates.map((c, index) => {
+      if (index > 0) {
+        const prev = routeCoordinates[index - 1];
+        accumulatedDistance += this.geoMath.quickDistance(prev[0], prev[1], c[0], c[1]);
+      }
+      return {
+        altitude: c[2] || 0,
+        speed: 0,
+        time: 0,
+        compAltitude: c[2] || 0,
+        compSpeed: 0,
+        distance: accumulatedDistance
+      };
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {
+          name: `${originName} ➔ ${destName}`,
+          place: destName,
+          date: new Date(),
+          description: this.translate.instant(`TRANSPORT.${transport.toUpperCase().replace('-', '_')}`),
+          totalDistance: stats.distance / 1000,
+          totalTime: Math.round(stats.duration * 1000),
+          inMotion: Math.round(stats.duration * 1000), 
+          totalElevationGain: Math.round(routeFeature.properties.ascent || 0),
+          totalElevationLoss: Math.round(routeFeature.properties.descent || 0),
+          totalNumber: routeCoordinates.length,
+          currentSpeed: 0, 
+          currentAltitude: 0
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: routeCoordinates as [number, number][],
+          properties: { data: trackData }
+        }
+      }]
+    } as Track;
+  }
+  
+  // ==========================================================================
+  // 4. GEOCODIFICACIÓN INVERSA (Reverse Geocoding)
+  // ==========================================================================
+
+  /**
+   * Obtiene información detallada de un lugar dadas sus coordenadas.
+   * Utiliza el API de Geocoding de MapTiler.
+   */
+  reverseGeocode(lat: number, lon: number): Observable<LocationResult | null> {
+    if (
+      typeof lat !== 'number' || typeof lon !== 'number' ||
+      isNaN(lat) || isNaN(lon) ||
+      lat < -90 || lat > 90 ||
+      lon < -180 || lon > 180
+    ) {
+      return throwError(() => new Error('Invalid coordinates'));
+    }
+    const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
+    
+    return this.http.get<any>(url).pipe(
+      map((response: any) => {
+        const f = response?.features?.[0];
+        if (!f) return null;
+        
+        const [featureLon, featureLat] = f.geometry.coordinates;
+        const bbox = f.bbox ? f.bbox : [featureLon, featureLat, featureLon, featureLat];
+        
+        const result: LocationResult = {
+          lat: featureLat,
+          lon: featureLon,
+          name: f.text ?? '(no name)',
+          display_name: f.place_name ?? f.text ?? '(no name)',
+          short_name: this.buildMapTilerShortName(f),
+          type: f.place_type?.[0] ?? 'unknown',
+          place_id: f.id ?? undefined,
+          boundingbox: bbox,
+          geojson: f.geometry
+        };
+        return result;
+      }),
+      catchError((error) => {
+        console.error('Reverse geocoding error:', error);
+        return of(null);
+      })
+    );
+  }
+
+  // ==========================================================================
+  // 5. MÉTODOS PRIVADOS Y HELPERS
+  // ==========================================================================
+
+  /**
+   * Lógica interna que ejecuta la petición HTTP según el proveedor seleccionado.
    */
   private async executeSearch(provider: string, query: string, limit: number): Promise<LocationResult[]> {
     switch (provider) {
       
       // --------------------------------------------------
-      // 1. PHOTON (Híbrido)
+      // A. PHOTON (Híbrido - basado en Komoot)
       // --------------------------------------------------
       case 'photon': {
         const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${limit}`;
@@ -114,7 +259,7 @@ export class SearchService {
       }
 
       // --------------------------------------------------
-      // 2. MAPBOX
+      // B. MAPBOX (Requiere token)
       // --------------------------------------------------
       case 'mapbox': {
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${this.MAPBOX_TOKEN}&limit=${limit}`;
@@ -136,7 +281,7 @@ export class SearchService {
       }
 
       // --------------------------------------------------
-      // 3. NOMINATIM
+      // C. NOMINATIM (OpenStreetMap)
       // --------------------------------------------------
       case 'nominatim':
       default: {
@@ -164,7 +309,7 @@ export class SearchService {
   }
 
   /**
-   * Petición auxiliar a Nominatim para obtener la geometría (Polígono)
+   * Petición auxiliar a Nominatim para obtener la geometría detallada (Polígono).
    */
   private async fetchNominatimGeoJSON(osmType: string, osmId: number): Promise<any | null> {
     const typeMap: { [key: string]: string } = { 'N': 'N', 'W': 'W', 'R': 'R' };
@@ -175,7 +320,6 @@ export class SearchService {
       const response = await CapacitorHttp.get({
         url, headers: { 'Accept': 'application/json', 'User-Agent': 'PasoApp/1.0' }
       });
-      // Si Nominatim falla en la sub-consulta, no rompemos todo, simplemente devolvemos null
       if (response.status !== 200) return null; 
 
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
@@ -188,77 +332,8 @@ export class SearchService {
   }
 
   /**
-   * Calcula una ruta entre dos puntos con OpenRouteService
+   * Construye un nombre corto legible para los resultados de MapTiler.
    */
-  async getRoute(origin: [number, number], destination: [number, number], transport: string): Promise<any> {
-    const url = `${this.ORS_BASE_URL}/${transport}/geojson`;
-    const body = { coordinates: [origin, destination], elevation: true, units: 'm', geometry: true };
-
-    try {
-      const resp = await CapacitorHttp.post({
-        url,
-        headers: { 
-          'Accept': 'application/json, application/geo+json; charset=utf-8', 
-          'Content-Type': 'application/json; charset=utf-8', 
-          'Authorization': global.ors_key 
-        },
-        data: body
-      });
-
-      if (resp.status !== 200) {
-        throw new Error(resp.data?.error?.message || `Error ORS: ${resp.status}`);
-      }
-
-      return typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
-    } catch (error) {
-      console.error("[SearchService] Error en enrutamiento:", error);
-      throw error;
-    }
-  }
-
-  // =========================================================
-  // MÉTODOS MUDADOS DESDE MAP.SERVICE (MapTiler Reverse Geocoding)
-  // =========================================================
-
-  reverseGeocode(lat: number, lon: number): Observable<LocationResult | null> {
-    if (
-      typeof lat !== 'number' || typeof lon !== 'number' ||
-      isNaN(lat) || isNaN(lon) ||
-      lat < -90 || lat > 90 ||
-      lon < -180 || lon > 180
-    ) {
-      return throwError(() => new Error('Invalid coordinates'));
-    }
-    const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
-    
-    return this.http.get<any>(url).pipe(
-      map((response: any) => {
-        const f = response?.features?.[0];
-        if (!f) return null;
-        
-        const [featureLon, featureLat] = f.geometry.coordinates;
-        const bbox = f.bbox ? f.bbox : [featureLon, featureLat, featureLon, featureLat];
-        
-        const result: LocationResult = {
-          lat: featureLat,
-          lon: featureLon,
-          name: f.text ?? '(no name)',
-          display_name: f.place_name ?? f.text ?? '(no name)',
-          short_name: this.buildMapTilerShortName(f),
-          type: f.place_type?.[0] ?? 'unknown',
-          place_id: f.id ?? undefined,
-          boundingbox: bbox,
-          geojson: f.geometry
-        };
-        return result;
-      }),
-      catchError((error) => {
-        console.error('Reverse geocoding error:', error);
-        return of(null);
-      })
-    );
-  }
-
   private buildMapTilerShortName(f: any): string {
     if (!f) return '(no name)';
     const main = f.text ?? '(no name)';

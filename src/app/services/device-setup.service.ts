@@ -16,8 +16,10 @@ export class DeviceSetupService {
   constructor(private popoverController: PopoverController) {}
 
   // ==========================================================================
-  // 1. GESTIÓN DE NOTIFICACIONES (Requisito para Foreground Service)
+  // 1. PERMISOS
   // ==========================================================================
+
+  /** Verifica y solicita permisos para notificaciones (requerido para el servicio en primer plano) */
   public async checkAndRequestNotifications(): Promise<boolean> {
     try {
       const permNotif = await LocalNotifications.checkPermissions();
@@ -32,9 +34,7 @@ export class DeviceSetupService {
     }
   }
 
-  // ==========================================================================
-  // 2. GESTIÓN DE GPS
-  // ==========================================================================
+  /** Verifica y solicita permisos de ubicación precisa */
   public async checkGpsPermissions(): Promise<boolean> {
     try {
       let check = await Geolocation.checkPermissions();
@@ -50,8 +50,10 @@ export class DeviceSetupService {
   }
 
   // ==========================================================================
-  // 3. OPTIMIZACIÓN DE BATERÍA (Fabricantes Agresivos)
+  // 2. CONFIGURACIÓN DEL SISTEMA
   // ==========================================================================
+
+  /** Gestiona la desactivación del ahorro de batería en marcas con políticas agresivas */
   public async checkBatteryOptimizations(evento?: Event): Promise<void> {
     try {
       const { value: isAlreadyIgnored } = await MyService.isIgnoringBatteryOptimizations();

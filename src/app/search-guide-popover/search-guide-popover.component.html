@@ -1,3 +1,6 @@
+<!-- ======================================================================
+     1. POPOVER PRINCIPAL (Selección de tipo de búsqueda)
+     ====================================================================== -->
 <ion-popover
   [isOpen]="reference.isSearchGuidePopoverOpen"
   (didDismiss)="reference.isSearchGuidePopoverOpen = false"
@@ -11,7 +14,8 @@
           <ion-icon [name]="reference.foundPlace ? 'trash-sharp' : 'location-sharp'" [class.primary-icon]="!reference.foundPlace"></ion-icon>
           <p>{{ 'SEARCH.LOCATION' | translate }}</p>
         </button>
-
+        
+        <!-- Botón para iniciar/limpiar búsqueda de RUTA -->
         <button class="nav-item-btn" 
           [class.red-pill]="reference.foundRoute"
           (click)="reference.foundRoute ? clearSearchRoute() : openRouteSearch()">
@@ -22,15 +26,19 @@
     </div>
   </ng-template>
 </ion-popover>
+<!-- Fin Popover Principal -->
 
 
+<!-- ======================================================================
+     2. POPOVER DE BÚSQUEDA DE LUGAR (Search Place)
+     ====================================================================== -->
 <ion-popover
   [isOpen]="reference.isSearchPopoverOpen"
   (didDismiss)="reference.isSearchPopoverOpen = false"
   class="floating-popover top-search-popover">
   <ng-template>
     <div class="popover-island glass-form">
-      
+      <!-- Campo de entrada de búsqueda con iconos de acción -->
       <div class="search-input-wrapper">
         <ion-icon name="search-sharp" class="inner-icon"></ion-icon>
         
@@ -53,7 +61,8 @@
           </ion-icon>
         </div>
       </div>
-
+      
+      <!-- Botón principal para activar la búsqueda o selección -->
       <button class="main-action-btn" (click)="openList()" [disabled]="loading">
         @if (loading) {
           <ion-spinner name="crescent"></ion-spinner>
@@ -63,6 +72,7 @@
         }
       </button>
 
+      <!-- Contenedor de resultados de búsqueda -->
       @if (results.length > 0) {
         <div class="results-container">
           <ion-list lines="none">
@@ -77,8 +87,12 @@
     </div>
   </ng-template>
 </ion-popover>
+<!-- Fin Popover de Búsqueda de Lugar -->
 
 
+<!-- ======================================================================
+     3. POPOVER DE BÚSQUEDA DE RUTA (Route Guide)
+     ====================================================================== -->
 <ion-popover
   [isOpen]="reference.isGuidePopoverOpen"
   (didDismiss)="reference.isGuidePopoverOpen = false"
@@ -86,6 +100,7 @@
   <ng-template>
     <div class="popover-island glass-form">
       
+      <!-- Campo de entrada "Desde" con acciones -->
       <div class="input-stack" [class.confirmed]="originCoords">
         
         <ion-input 
@@ -106,6 +121,7 @@
         </div>
       </div>
 
+      <!-- Campo de entrada "Hasta" con acciones -->
       <div class="input-stack" [class.confirmed]="destinationCoords">
         
         <ion-input 
@@ -126,6 +142,7 @@
         </div>
       </div>
       
+      <!-- Selección del medio de transporte -->
       <div class="transport-selection">
         @for (mode of transportMeans; track mode.id) {
           <div class="mode-chip" [class.active]="selectedTransport === mode.id" (click)="selectedTransport = mode.id">
@@ -134,6 +151,7 @@
         }
       </div>
 
+      <!-- Botón principal para obtener la ruta -->
       <button class="main-action-btn" (click)="onRouteButtonClick()" [disabled]="loading">
         @if (loading) {
           <ion-spinner name="crescent"></ion-spinner>
@@ -148,6 +166,7 @@
         }
       </button>
 
+      <!-- Contenedor de resultados de búsqueda para la ruta -->
       @if (results.length > 0) {
         <div class="results-container">
            <ion-list lines="none">
@@ -162,3 +181,4 @@
     </div>
   </ng-template>
 </ion-popover>
+<!-- Fin Popover de Búsqueda de Ruta -->

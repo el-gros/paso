@@ -4,7 +4,7 @@ import { FeatureLike } from 'ol/Feature';
 
 // --- INTERNAL IMPORTS ---
 import { global } from '../../environments/environment';
-import { StyleJSON } from 'src/globald';
+import { StyleJSON } from '../../globald';
 
 @Injectable({ 
   providedIn: 'root'
@@ -26,6 +26,10 @@ export class StylerService {
     });
   }
 
+  /**
+   * Genera un estilo de pin (marcador) coloreado dinámicamente.
+   * @param color Nombre del color para el SVG interno.
+   */
   public createPinStyle(color: string): Style {
     return new Style({
       image: new Icon({
@@ -36,6 +40,21 @@ export class StylerService {
     });
   }
 
+  /**
+   * Genera el estilo para los resultados de búsqueda (puntos o polígonos).
+   */
+  public getSearchStyle(feature: FeatureLike): Style | Style[] {
+    const type = feature.getGeometry()?.getType();
+    if (type === 'Point') return this.createPinStyle('black');
+    return new Style({
+      stroke: new Stroke({ color: '#000', width: 2.5 }),
+      fill: new Fill({ color: 'rgba(0, 0, 0, 0.15)' }),
+    });
+  }
+
+  /**
+   * Genera el Data URI de un SVG de pin coloreado mediante btoa.
+   */
   private getColoredPin(color: string): string {
     const svgTemplate = `
       <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 293.334 293.334">
@@ -57,9 +76,17 @@ export class StylerService {
   }
 
   // ==========================================================================
-  // 2. MOTOR DE RENDERIZADO DE VECTOR TILES (StyleJSON)
+  // 2. MOTOR DE RENDERIZADO VECTORIAL (Mapbox Style Spec)
   // ==========================================================================
 
+  /**
+   * Función principal de estilo para Vector Tiles.
+   * Traduce un objeto JSON de estilo Mapbox a objetos de estilo nativos de OpenLayers.
+   * Soporta filtros, interpolación de grosores y zooms mínimos dinámicos.
+   * 
+   * @param feature Feature vectorial de la tesela.
+   * @param resolution Resolución actual del mapa.
+   */
   public styleFunction = (feature: FeatureLike, resolution: number): Style | Style[] => {
     const sourceLayer = feature.get('_layer') || feature.get('layer') || feature.get('source-layer');
     const styleJSON: StyleJSON | undefined = global && typeof global.maptiler_terrain_modified === 'object'
@@ -158,9 +185,10 @@ export class StylerService {
   };
 
   // ==========================================================================
-  // 3. HELPERS MATEMÁTICOS Y DE FILTROS (Mapbox Style Specs)
+  // 3. HELPERS MATEMÁTICOS Y FILTROS
   // ==========================================================================
 
+  /** Convierte la resolución de OpenLayers en nivel de Zoom (0-22) */
   private getZoomFromResolution(resolution: number): number {
     if (typeof resolution !== 'number' || resolution <= 0) {
       throw new Error('Invalid resolution value');
@@ -168,6 +196,9 @@ export class StylerService {
     return Math.log2(156543.03 / resolution);
   }
 
+  /**
+   * Evalúa si una feature cumple con los criterios de filtrado del estilo.
+   */
   private evaluateFilter(filter: any[], feature: FeatureLike): boolean {
     if (!Array.isArray(filter) || filter.length === 0) return true; 
     if (!["all", "any", "none"].includes(filter[0]) && typeof filter[0] !== "string") return true; 
@@ -207,6 +238,9 @@ export class StylerService {
     return paint?.[key] ?? fallback;
   }
 
+  /**
+   * Extrae los puntos de parada (stops) de una expresión de interpolación.
+   */
   private extractStops(expression: any[]): [number, number][] {
     if (Array.isArray(expression) && expression.length > 4 && expression[0] === "interpolate") {
       const stops: [number, number][] = [];
@@ -223,6 +257,9 @@ export class StylerService {
     return [];
   }
 
+  /**
+   * Realiza una interpolación lineal entre dos valores basada en el nivel de zoom.
+   */
   private interpolateStops(stops: [number, number][], zoom: number): number {
     if (!Array.isArray(stops) || stops.length === 0) return 1; 
     

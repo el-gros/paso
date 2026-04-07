@@ -13,14 +13,14 @@ import { ReferenceService } from './reference.service';
 import { FunctionsService } from './functions.service';
 import { MapService } from './map.service';
 import { LocationManagerService } from './location-manager.service';
-import { Waypoint } from 'src/globald';
+import { Waypoint } from '../../globald';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapInteractionService {
 
-  // "Timbre" para avisar a Tab1Page de que hay cambios visuales y debe renderizar
+  /** Notifica que el mapa debe redibujarse (usado por Tab1Page) */
   public readonly mapNeedsUpdate$ = new Subject<void>();
 
   constructor(
@@ -35,6 +35,9 @@ export class MapInteractionService {
   // 1. INICIALIZACIÓN DEL LISTENER
   // ==========================================================================
   
+  /**
+   * Configura el escuchador de eventos de clic en el mapa de OpenLayers.
+   */
   public initClickHandling(): void {
     const map = this.geography.map;
     if (!map) {
@@ -51,6 +54,9 @@ export class MapInteractionService {
   // 2. ENRUTADOR PRINCIPAL DE CLICKS
   // ==========================================================================
 
+  /**
+   * Captura el píxel clicado y determina qué feature ha sido seleccionada.
+   */
   private handleMapClick = async (event: MapBrowserEvent<any>) => {
     const map = this.geography.map;
     if (!map || !this.geography.archivedLayer?.getSource()) return;
@@ -80,6 +86,9 @@ export class MapInteractionService {
   // 3. LÓGICA ESPECÍFICA DE CLICKS
   // ==========================================================================
 
+  /**
+   * Gestiona interacciones cuando hay una ruta de referencia activa (Waypoints o Edición).
+   */
   private async handleArchivedTrackClick(type: string, feature: any, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
     // --- CASO 1: CLICK EN UN WAYPOINT (Editar nombre/comentario/foto) ---
     if (type === 'archived_waypoints') {
@@ -142,6 +151,9 @@ export class MapInteractionService {
     }
   }
 
+  /**
+   * Gestiona interacciones generales (Cargar un track al tocar su línea o marcador).
+   */
   private async handleGeneralMapClick(type: string, feature: Feature, geometry: SimpleGeometry, event: MapBrowserEvent<any>) {
     // --- CASO 1: Click en Puntos (Waypoints o Clusters) ---
     if (type === 'archived_points') {
@@ -205,6 +217,9 @@ export class MapInteractionService {
   // 4. HELPERS MATEMÁTICOS
   // ==========================================================================
 
+  /**
+   * Busca el índice del punto más cercano a una coordenada dada dentro de un margen de error.
+   */
   private findClosestIndex(coords: Coordinate[], target: Coordinate): number {
     const eps = 0.000001;
     return coords.findIndex(c => Math.abs(c[0] - target[0]) < eps && Math.abs(c[1] - target[1]) < eps);

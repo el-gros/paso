@@ -1,5 +1,8 @@
 <ion-content class="custom-content">
 
+  <!-- ======================================================================
+       1. PAGINACIÓN SUPERIOR (Indicadores de Slide)
+       ====================================================================== -->
   <div class="top-pagination">
     <div class="dot" [class.active]="activeIndex === 0" (click)="moveToSlide(0)">
       <span>{{ 'CANVAS.PAG1' | translate }}</span>
@@ -12,9 +15,15 @@
     </div>
   </div>
 
+  <!-- ======================================================================
+       2. CONTENEDOR PRINCIPAL DE SLIDES (Swiper)
+       ====================================================================== -->
   @if (canRenderSwiper) {
   <swiper-container #swiperRef init="false" (swiperslidechange)="onSlideChange($event)">
     
+    <!-- ==================================================================
+         2.1. SLIDE 1: DATOS DEL TRACK ACTUAL
+         ================================================================== -->
     <swiper-slide>
       <div class="slide-wrapper">
         @if (present.currentTrack) {
@@ -128,6 +137,9 @@
       </div>
     </swiper-slide>
 
+    <!-- ==================================================================
+         2.2. SLIDE 2: DATOS DEL TRACK DE REFERENCIA
+         ================================================================== -->
     <swiper-slide>
       <div class="slide-wrapper">
         @if (reference.archivedTrack) {
@@ -199,6 +211,9 @@
       </div>
     </swiper-slide>
 
+    <!-- ==================================================================
+         2.3. SLIDE 3: PARCIALES DE VELOCIDAD
+         ================================================================== -->
     <swiper-slide>
       <div class="slide-wrapper">
         @if (reference.archivedTrack) {
@@ -248,20 +263,23 @@
   }
 </ion-content>
 
+<!-- ======================================================================
+     3. NAVEGACIÓN PRINCIPAL (Bottom Bar)
+     ====================================================================== -->
 <div class="bottom-safe-gray"></div>
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
       <ion-icon name="earth-sharp"></ion-icon>
-      <span>{{ 'MAP.MAP_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
       <ion-icon name="library-sharp"></ion-icon>
-      <span>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
       <ion-icon name="settings-sharp"></ion-icon>
-      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+      <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p>
     </div>
   </ion-row>
 </ion-fab>

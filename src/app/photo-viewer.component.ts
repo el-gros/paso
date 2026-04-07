@@ -130,21 +130,28 @@ import { TranslateService } from '@ngx-translate/core';
   `]
 })
 export class PhotoViewerComponent {
+
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
   @Input() photos: string[] = [];
   @Input() routeName: string = '';
 
   private modalCtrl = inject(ModalController);
   private translate = inject(TranslateService);
 
-  public getWebUrl(uri: string): string {
-    return uri ? Capacitor.convertFileSrc(uri) : '';
-  }
+  // ==========================================================================
+  // 2. ACCIONES (API PÚBLICA)
+  // ==========================================================================
 
   public dismiss() {
     this.modalCtrl.dismiss();
   }
 
-  // 🚀 Lógica de compartir
+  /**
+   * Abre el menú nativo para compartir la fotografía seleccionada.
+   */
   public async sharePhoto(photoUri: string) {
     try {
       const canShare = await Share.canShare();
@@ -171,4 +178,13 @@ export class PhotoViewerComponent {
       }
     }
   }
+
+  // ==========================================================================
+  // 3. HELPERS
+  // ==========================================================================
+
+  public getWebUrl(uri: string): string {
+    return uri ? Capacitor.convertFileSrc(uri) : '';
+  }
+
 }

@@ -14,21 +14,21 @@ export interface WeatherData {
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
 
-  // --- CONSTANTES ---
+  // ==========================================
+  // 1. CONFIGURACIÓN Y CONSTANTES
+  // ==========================================
+
   private readonly BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
   private readonly ICON_BASE_URL = 'https://openweathermap.org/img/wn';
 
   constructor() {}
 
   // ==========================================
-  // OBTENCIÓN DE DATOS METEOROLÓGICOS
+  // 2. API PÚBLICA
   // ==========================================
 
   /**
    * Obtiene el clima actual para unas coordenadas dadas usando OpenWeatherMap.
-   * @param lat Latitud
-   * @param lon Longitud
-   * @param lang Idioma para la descripción (por defecto 'es')
    */
   async getWeather(lat: number, lon: number, lang: string = 'es'): Promise<WeatherData | null> {
     const url = `${this.BASE_URL}?lat=${lat}&lon=${lon}&appid=${global.weather_key}&units=metric&lang=${lang}`;
@@ -48,7 +48,6 @@ export class WeatherService {
         };
       }
       
-      // Si la API responde con un 404 o 401, lo registramos para facilitar el debug
       console.warn(`[WeatherService] API respondió con estado: ${response.status}`);
       return null;
 

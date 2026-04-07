@@ -1,11 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { IonicModule, LoadingController, IonItemSliding, ModalController } from '@ionic/angular';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
-import { Share } from '@capacitor/share'; // 👈 IMPORTANTE: El nuevo import
 
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
@@ -14,8 +12,6 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
-import { SnapToTrailService } from '../services/snapToTrail.service';
-import { GeoMathService } from '../services/geo-math.service';
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track } from '../../globald';
@@ -53,9 +49,6 @@ export class ArchivePage implements OnInit {
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
     private modalCtrl: ModalController,
-    private snapToTrailService: SnapToTrailService,
-    private geoMath: GeoMathService
-    // ELIMINADO: private socialSharing: SocialSharing
   ) { }
 
   ngOnInit() { }
@@ -137,22 +130,16 @@ export class ArchivePage implements OnInit {
   async deleteSpecificTrack(index: number, slidingItem?: IonItemSliding) {
     if (slidingItem) slidingItem.close();
     
-    const trackToRemove = this.fs.collection[index];
-    if (trackToRemove && trackToRemove.date) {
-        const key = new Date(trackToRemove.date).toISOString();
-        
-        const isCurrentlyVisible = this.isTrackVisible(trackToRemove);
-
-        if (key) await this.fs.storeRem(key);
+    const item = this.fs.collection[index];
+    if (item) {
+        const isCurrentlyVisible = this.isTrackVisible(item);
+        await this.fs.removeTrackFromCollection(index);
 
         if (isCurrentlyVisible) {
            this.reference.clearArchivedTrack();
            await this.location.sendReferenceToPlugin();
         }
     }
-    
-    this.fs.collection.splice(index, 1);
-    await this.fs.storeSet('collection', this.fs.collection);
   }
 
   async editSpecificTrack(index: number, slidingItem?: IonItemSliding) {
@@ -186,7 +173,6 @@ export class ArchivePage implements OnInit {
   // ==========================================================================
   // 3. EXPORTACIÓN DE ARCHIVOS (HTML, GPX, KMZ)
   // ==========================================================================
-  // 3. Ejecuta la exportación según las opciones seleccionadas
   async executeExport() {
     this.isExportMenuOpen = false;
     const item = this.selectedTrackForExport;
@@ -202,83 +188,9 @@ export class ArchivePage implements OnInit {
     });
     await loading.present();
 
-    const filesToShare: string[] = []; 
-
     try {
-      // 2. Obtener el track completo de la base de datos
-      const storageKey = new Date(item.date).toISOString();
-      const trackData = await this.fs.storeGet(storageKey);
-
-      if (!trackData) {
-        throw new Error("No se pudo cargar la ruta desde el almacenamiento.");
-      }
-
-      const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
-
-      if (!featureToExport.properties) featureToExport.properties = {};
-      featureToExport.properties.name = item.name || featureToExport.properties.name || 'Track';
-      featureToExport.properties.description = item.description || featureToExport.properties.description || '';
-
-      const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-
-      // 3. Generar dinámicamente según la configuración
-      
-      // -- HTML --
-      if (this.exportConfig.html) {
-        const htmlText = this.exportService.generateStandaloneHtml(trackData, item.name);
-        const savedHtml = await this.writeFile(`${safeName}.html`, htmlText, Encoding.UTF8);
-        filesToShare.push(savedHtml.uri);
-      }
-      
-      // -- GPX --
-      if (this.exportConfig.gpx) {
-        const gpxText = await this.exportService.geoJsonToGpx(featureToExport);
-        const savedGpx = await this.writeFile(`${safeName}.gpx`, gpxText, Encoding.UTF8);
-        filesToShare.push(savedGpx.uri);
-      }
-      
-      // -- KMZ (Solo ruta) --
-      if (this.exportConfig.kmz) {
-        const kmzBase64 = await this.exportService.geoJsonToKmz(featureToExport);
-        const savedKmz = await Filesystem.writeFile({ path: `${safeName}.kmz`, data: kmzBase64, directory: Directory.Cache });
-        filesToShare.push(savedKmz.uri);
-      }
-
-      // -- FOTOS SUELTAS --
-      if (this.exportConfig.photos && item.photos && item.photos.length > 0) {
-        // Recorremos el array de fotos de la ruta
-        for (const photoPath of item.photos) {
-          // El plugin Share de Capacitor necesita que los archivos locales
-          // empiecen por "file://". Normalmente, tu app ya las guarda así.
-          // Si por algún motivo no tienen ese prefijo, se lo ponemos por seguridad:
-          const finalPath = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
-          filesToShare.push(finalPath);
-        }
-      }
-
-      // -- KMZ CON FOTOS --
-      if (this.exportConfig.kmzPhotos) {
-        const kmzPhotosBase64 = await this.exportService.geoJsonToKmzWithPhotos(featureToExport);
-        const savedKmzPhotos = await Filesystem.writeFile({ path: `${safeName}_completo.kmz`, data: kmzPhotosBase64, directory: Directory.Cache });
-        filesToShare.push(savedKmzPhotos.uri);
-      }
-
-      // 4. Compartir usando Capacitor
-      if (filesToShare.length > 0) {
-        const shareSubject = `${this.translate.instant('SEARCH.ROUTE')}: ${item.name}`;
-
-        await Share.share({
-          title: shareSubject,
-          files: filesToShare,
-          dialogTitle: this.translate.instant('ARCHIVE.DIALOG_TITLE')
-        });
-
-        // Mostrar Toast de éxito
-        this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success');
-      } else {
-        this.fs.displayToast('No se seleccionó ningún archivo para exportar', 'warning');
-      }
-
+      await this.exportService.exportAndShareTrack(item, this.exportConfig);
+      this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success');
     } catch (error) {
       console.error("Error al exportar:", error);
       // Ignoramos el error si el usuario simplemente cerró la ventana de compartir del sistema operativo
@@ -289,16 +201,6 @@ export class ArchivePage implements OnInit {
       // 5. Ocultar la pantalla de carga
       await loading.dismiss();
     }
-  }
-
-  private async writeFile(path: string, data: string, encoding?: Encoding) {
-    return Filesystem.writeFile({ path, data, directory: Directory.Cache, encoding });
-  }
-
-  private cleanupFiles(paths: string[]) {
-      for (const path of paths) {
-        Filesystem.deleteFile({ path, directory: Directory.Cache }).catch(e => console.log('Cleanup error', e));
-      }
   }
 
   // ==========================================================================

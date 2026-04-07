@@ -1,4 +1,7 @@
-/* --- CONTENEDOR DEL MAPA --- */
+// ==========================================================================
+// 1. CONTENEDOR DEL MOTOR DE MAPA
+// ==========================================================================
+
 #map-wrapper {
   position: absolute;
   top: 0;
@@ -13,26 +16,104 @@
   height: 100%;
 }
 
-/* --- FIX DE INTERACTIVIDAD PARA TODOS LOS FAB --- */
+// ==========================================================================
+// 2. GESTIÓN DE INTERACTIVIDAD (Z-Index y Pointer Events)
+// ==========================================================================
+
 ion-fab {
-  pointer-events: none; /* El contenedor FAB no bloquea el mapa */
+  pointer-events: none; // El contenedor FAB no bloquea el mapa
   
   ion-row {
-    pointer-events: auto; /* Permite interactuar con los botones de la fila */
+    pointer-events: auto;
     display: flex;
     justify-content: center;
-    gap: 12px; /* 🚀 Un pelín más de separación entre botones de la fila */
+    gap: 12px;
   }
 
   ion-fab-button {
-    pointer-events: auto; /* Permite pulsar el botón de cámara */
+    pointer-events: auto;
   }
 }
 
-/* --- INDICADOR DE ESTADO DE RUTA (SEMÁFORO) --- */
+// ==========================================================================
+// 3. CONTROLES SUPERIORES (Isla Central y Búsqueda)
+// ==========================================================================
+ 
+/* Nota: .top-safe y .record-button ahora se heredan de global.scss */
+
+.record-button {
+  // Punto rojo parpadeante durante la grabación
+  &.with-indicator {
+    position: relative;
+    .tracking-dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background-color: var(--ion-color-danger, #eb445a);
+      border-radius: 50%;
+      animation: blink 1.2s infinite;
+    }
+  }
+}
+
+// ==========================================================================
+// 4. SOBRECAPAS LATERALES (Cámara, Semáforo, Limpiar Ref)
+// ==========================================================================
+
+// A. Botón Limpiar Referencia (Arriba Izquierda)
+.clear-reference-fab {
+  top: env(safe-area-inset-top, 10px);
+  margin-top: -10px; 
+  left: 10px;
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+
+  .map-control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--ion-background-color, #ffffff);
+    padding: 4px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+
+    .danger-icon {
+      color: var(--ion-color-danger, #eb445a);
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    span {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--ion-text-color, #333);
+      text-align: center;
+      line-height: 1;
+    }
+  }
+}
+
+// B. Botón de Cámara (Abajo Izquierda del semáforo)
+.camera-fab {
+  top: 90px !important;
+  left: 15px !important;
+  margin: 0 !important;
+  
+  ion-fab-button {
+    --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    width: 48px;
+    height: 48px;
+    ion-icon { font-size: 24px; }
+  }
+}
+
+// C. Indicador de Estado de Ruta (Semáforo - Arriba Derecha)
 .route-indicator-fab {
   position: fixed !important;
-  top: 95px !important; /* 🚀 Lo bajo un poco para que no choque con el menú superior si hay notch */
+  top: 95px !important;
   right: 15px !important;
   z-index: 9999 !important;      
   pointer-events: auto !important; 
@@ -51,7 +132,7 @@ ion-fab {
 }
 
 .led-button {
-  width: 28px;  /* 🚀 Ligeramente más grande para que se vea bien el icono */
+  width: 28px;
   height: 28px;
   border-radius: 50%;
   display: flex;
@@ -83,62 +164,12 @@ ion-fab {
   }
 }
 
+// ==========================================================================
+// 6. ANIMACIONES
+// ==========================================================================
+
 @keyframes blink {
   0% { opacity: 1; }
   50% { opacity: 0.5; }
   100% { opacity: 1; }
-}
-
-/* --- BOTÓN DE CÁMARA --- */
-.camera-fab {
-  top: 90px !important; /* 🚀 Lo alineamos con la altura del semáforo para simetría */
-  left: 15px !important;
-  margin: 0 !important;
-  
-  ion-fab-button {
-    --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-    width: 48px;
-    height: 48px;
-    
-    ion-icon {
-      font-size: 24px;
-    }
-  }
-}
-
-.clear-reference-fab {
-  top: env(safe-area-inset-top, 10px);
-  margin-top: -10px; 
-  left: 10px;
-  z-index: 9999 !important; /* 👈 Nos aseguramos de que esté arriba del todo */
-  pointer-events: auto !important; /* 👈 Obligamos a que reciba el toque del dedo */
-
-  .map-control-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: var(--ion-background-color, #ffffff);
-    padding: 4px 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    cursor: pointer;
-    pointer-events: auto !important; /* 👈 Por si acaso, se lo ponemos también al div */
-
-    /* ... el resto de tu CSS (icon y span) se queda igual ... */
-    .danger-icon {
-      color: var(--ion-color-danger, #eb445a);
-      font-size: 24px; /* Icono un poco más grande */
-      margin-bottom: 4px; /* Separación con el texto */
-      margin-right: 0; /* Quitamos el margen derecho que teníamos antes */
-    }
-
-    span {
-      font-size: 11px; /* Texto más pequeño para que quepa bien */
-      font-weight: bold;
-      color: var(--ion-text-color, #333);
-      text-align: center;
-      line-height: 1;
-    }
-  }
 }

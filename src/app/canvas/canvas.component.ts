@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
 import { PartialSpeed } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { GeoMathService } from '../services/geo-math.service';
+import { TrackAnalyticsService } from '../services/track-analytics.service';
 import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
@@ -59,8 +60,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   get trackPhotos(): string[] {
     const waypoints = this.activeTrack?.features?.[0]?.waypoints;
-    // 🚀 JS Moderno: flatMap extrae y aplana todas las fotos en un solo array de golpe
-    return waypoints?.flatMap(wp => wp.photos || []) || [];
+    return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
   }
 
   // ====================================================================
@@ -74,6 +74,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private modalCtrl: ModalController,
     public geoMath: GeoMathService,
+    private analytics: TrackAnalyticsService,
     private appState: AppStateService,
     private location: LocationManagerService,
     private zone: NgZone,
@@ -141,7 +142,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     if (!this.activeTrack) return;
     
     this.chartUpdateTrigger++; 
-    this.partialSpeeds = await this.geoMath.computePartialSpeeds(this.activeTrack);
+    this.partialSpeeds = this.analytics.computePartialSpeeds(this.activeTrack);
     
     this.zone.run(() => this.cdr.detectChanges());
   }

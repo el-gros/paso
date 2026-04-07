@@ -1,10 +1,14 @@
+// ==========================================================================
+// 1. CORE DATA MODELS (Datos fundamentales del track)
+// ==========================================================================
+
 export interface Data {
-  altitude: number,
-  speed: number,
-  time: number,
-  compSpeed: number,
-  compAltitude: number  
-  distance: number,
+  altitude: number;
+  speed: number;
+  time: number;
+  compSpeed: number;
+  compAltitude: number;
+  distance: number;
   geoidApplied?: boolean;
   isMSL?: boolean;
 }
@@ -18,16 +22,29 @@ export interface Waypoint {
   photos?: string[];
 }
 
-export interface Bounds {
-  min: number,
-  max: number,
+export interface ParsedPoint {
+  lat: number;
+  lon: number;
+  ele?: number;
+  time?: number;
 }
 
+// ==========================================================================
+// 2. TRACK DATA STRUCTURES (Estructuras completas de la ruta)
+// ==========================================================================
+
+export interface Bounds {
+  min: number;
+  max: number;
+}
+
+/** Representa una colección de Features GeoJSON que forman una ruta completa. */
 export interface Track {
   type: 'FeatureCollection'; 
   features: TrackFeature[];
 }
 
+/** Define las propiedades y la geometría de un segmento de ruta individual. */
 export interface TrackFeature {
   type: 'Feature';
   properties: {

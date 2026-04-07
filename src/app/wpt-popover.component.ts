@@ -3,7 +3,7 @@ import { PopoverController, ModalController, IonicModule } from '@ionic/angular'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
-import { Waypoint } from 'src/globald';
+import { Waypoint } from '../globald';
 import { Capacitor } from '@capacitor/core';
 import { PhotoViewerComponent } from './photo-viewer.component';
 
@@ -209,6 +209,11 @@ import { PhotoViewerComponent } from './photo-viewer.component';
   `]
 })
 export class WptPopoverComponent implements OnInit {
+
+  // ==========================================================================
+  // 1. INPUTS Y PROPIEDADES
+  // ==========================================================================
+
   @Input() wptEdit!: Waypoint;
   @Input() edit: boolean = false;
   @Input() showAltitude: boolean = false;
@@ -218,14 +223,19 @@ export class WptPopoverComponent implements OnInit {
   private popoverCtrl = inject(PopoverController);
   private modalCtrl = inject(ModalController); 
 
+  // ==========================================================================
+  // 2. CICLO DE VIDA
+  // ==========================================================================
+
   ngOnInit() {
     this.editableWpt = { ...this.wptEdit };
   }
 
-  public getWebUrl(path: string): string {
-    return path ? Capacitor.convertFileSrc(path) : '';
-  }
+  // ==========================================================================
+  // 3. ACCIONES (API PÚBLICA)
+  // ==========================================================================
 
+  /** Abre el visor de fotos a pantalla completa */
   public async openPhotoViewer() {
     if (!this.editableWpt.photos || this.editableWpt.photos.length === 0) return;
 
@@ -251,4 +261,13 @@ export class WptPopoverComponent implements OnInit {
       ...this.editableWpt 
     });
   }
+
+  // ==========================================================================
+  // 4. HELPERS VISUALES
+  // ==========================================================================
+
+  public getWebUrl(path: string): string {
+    return path ? Capacitor.convertFileSrc(path) : '';
+  }
+
 }

@@ -5,7 +5,7 @@ import { Style } from 'ol/style';
 import { PopoverController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
 
-import { Track, Waypoint } from 'src/globald';
+import { Track, Waypoint } from '../../globald';
 import { StylerService } from './styler.service';
 import { GeographyService } from './geography.service';
 import { FunctionsService } from '../services/functions.service';
@@ -16,11 +16,15 @@ import { SaveTrackPopover } from '../save-track-popover.component';
 })
 export class ReferenceService {
   
-  // --- ESTADO PRINCIPAL ---
+  // ==========================================
+  // 1. ESTADO PRINCIPAL (Data)
+  // ==========================================
   public archivedTrack: Track | undefined = undefined;
   public archivedColor: string = 'green';
   
-  // --- ESTADO DE INTERFAZ (UI) ---
+  // ==========================================
+  // 2. ESTADO DE INTERFAZ (UI)
+  // ==========================================
   public isSearchGuidePopoverOpen = false;
   public isSearchPopoverOpen = false;
   public isGuidePopoverOpen = false;
@@ -36,7 +40,7 @@ export class ReferenceService {
   ) {}
 
   // ==========================================================================
-  // 1. RENDERIZADO (OpenLayers)
+  // 3. MOTOR DE RENDERIZADO (OpenLayers)
   // ==========================================================================
 
   /**
@@ -99,7 +103,7 @@ export class ReferenceService {
   }
 
   // ==========================================================================
-  // 2. GESTIÓN Y EDICIÓN DE RUTAS
+  // 4. GESTIÓN Y EDICIÓN DE RUTAS
   // ==========================================================================
 
   /**
@@ -157,9 +161,10 @@ export class ReferenceService {
   } 
 
   // ==========================================================================
-  // 3. MÉTODOS PRIVADOS (Helpers)
+  // 5. MÉTODOS PRIVADOS (Helpers)
   // ==========================================================================
 
+  /** Aplica un estilo a una feature asegurando el orden visual mediante zIndex */
   private applyStyle(feature: Feature, style: Style | Style[], zIndex: number): void {
     if (Array.isArray(style)) {
       style.forEach(s => s.setZIndex(zIndex));
@@ -169,6 +174,10 @@ export class ReferenceService {
     feature.setStyle(style);
   }
 
+  /** 
+   * Crea una entrada nueva en la colección a partir de una ruta que 
+   * no estaba guardada (ej: una ruta importada o generada por el buscador).
+   */
   private async saveNewDraft(data: any): Promise<void> {
     if (!this.archivedTrack?.features?.[0]) return;
     
@@ -200,6 +209,7 @@ export class ReferenceService {
     this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_SAVED'), 'success');
   }
 
+  /** Actualiza los metadatos (nombre/descripción) de una ruta ya existente en el disco */
   private async updateExistingTrack(index: number, data: any): Promise<void> {
     // 1. Actualizar la colección ligera
     this.fs.collection[index].name = data.name;

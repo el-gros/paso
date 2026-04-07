@@ -1,30 +1,71 @@
 import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+import { GeoJSON } from 'ol/format';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Track } from 'src/globald';
+import { Track, LocationResult } from '../../globald';
 import { boundingExtent } from 'ol/extent';
+import { StylerService } from './styler.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GeographyService {
   
-  // --- STATE PROPERTIES ---
+  // ==========================================================================
+  // 1. ESTADO DEL MAPA
+  // ==========================================================================
+
+  /** Instancia principal del mapa OpenLayers. */
   public map?: Map;
+  /** Proveedor de mapas actualmente seleccionado (ej. 'MapTiler_outdoor'). */
   public mapProvider: string = 'MapTiler_outdoor';
+  /** Coordenadas de la ubicación actual del usuario. */
   public userLocation: [number, number] | null = null;
 
-  // --- LAYERS ---
+  // ==========================================================================
+  // 2. CAPAS DEL MAPA
+  // ==========================================================================
+
+  /** Capa vectorial para mostrar tracks archivados o de referencia. */
   public archivedLayer?: VectorLayer<VectorSource>;
+  /** Capa vectorial para mostrar el track que se está grabando actualmente. */
   public currentLayer?: VectorLayer<VectorSource>;
+  /** Capa vectorial para mostrar los resultados de búsqueda. */
   public searchLayer?: VectorLayer<VectorSource>;
+  /** Capa vectorial para mostrar la ubicación actual del usuario (flecha GPS). */
   public locationLayer?: VectorLayer<VectorSource>;
 
-  constructor() { }
+  constructor(private styler: StylerService) { }
+  /**
+   * Muestra un resultado de búsqueda en el mapa, ajustando la vista y el estilo.
+   */
+  public showLocationOnMap(location: LocationResult): void {
+    const source = this.searchLayer?.getSource();
+    if (!source) return;
 
-  // 1. SET MAP VIEW //////////////////////////////////////////
+    source.clear();
+    const geojsonFormat = new GeoJSON();
+    const features = geojsonFormat.readFeatures(location.geojson);
+    
+    if (features.some(f => f.getGeometry()?.getType().includes('Polygon'))) {
+      features.push(new Feature(new Point([location.lon, location.lat])));
+    }
+
+    source.addFeatures(features);
+    this.searchLayer?.setStyle((f) => this.styler.getSearchStyle(f));
+
+    const extent = [location.boundingbox[2], location.boundingbox[0], location.boundingbox[3], location.boundingbox[1]];
+    this.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
+  }
   async setMapView(track: Track): Promise<void> {
+  /**
+   * Ajusta la vista del mapa para encuadrar un track completo.
+   * Calcula el Bounding Box si no está definido y aplica un padding.
+   * @param track El objeto `Track` a encuadrar en la vista.
+   */
     return new Promise((resolve) => {
       if (!this.map) return resolve();
       
@@ -81,14 +122,19 @@ export class GeographyService {
     });
   }
 
-  // 2. CLEAR LAYERS //////////////////////////////////////////
+  /**
+   * Limpia todas las capas vectoriales del mapa (track actual, archivado y búsqueda).
+   */
   clearLayers(): void {
     this.currentLayer?.getSource()?.clear();
     this.archivedLayer?.getSource()?.clear();
     this.searchLayer?.getSource()?.clear();
   }
 
-  // 3. UPDATE SIZE ///////////////////////////////////////////
+  /**
+   * Fuerza una actualización del tamaño del mapa.
+   * Útil cuando el contenedor del mapa cambia de dimensiones (ej. rotación de pantalla, cambio de pestaña).
+   */
   updateSize(): void {
     if (this.map) {
       // setTimeout es necesario para esperar a que el DOM repinte el contenedor

@@ -8,11 +8,15 @@ import { FunctionsService } from './functions.service';
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
   
-  // --- CONFIGURACIÓN ---
+  // ==========================================
+  // 1. CONFIGURACIÓN
+  // ==========================================
   private readonly SUPPORTED_LANGS = ['en', 'es', 'ca', 'fr', 'ru', 'zh']; 
   private readonly DEFAULT_LANG = 'en';
 
-  // --- ESTADO REACTIVO ---
+  // ==========================================
+  // 2. ESTADO REACTIVO
+  // ==========================================
   private _currentLang = new BehaviorSubject<string>(this.DEFAULT_LANG);
   
   /**
@@ -27,6 +31,10 @@ export class LanguageService {
     // Establecemos el fallback por si falta alguna llave en los JSON secundarios
     this.translate.setDefaultLang(this.DEFAULT_LANG);
   }
+
+  // ==========================================
+  // 3. CICLO DE VIDA E INICIALIZACIÓN
+  // ==========================================
 
   /**
    * INICIALIZACIÓN: Llama a esto desde app.component.ts
@@ -52,12 +60,16 @@ export class LanguageService {
     }
   }
 
-  /**
+  /** 
    * Getter síncrono para obtener el código de idioma actual
    */
   get currentLangValue(): string {
     return this._currentLang.value;
   }
+
+  // ==========================================
+  // 4. ACCIONES Y DETECCIÓN
+  // ==========================================
 
   /**
    * CAMBIAR IDIOMA: Limpia el código, lo guarda y carga el JSON de traducción.

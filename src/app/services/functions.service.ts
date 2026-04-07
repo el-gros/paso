@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import DOMPurify from 'dompurify';
 
 // --- INTERNAL IMPORTS ---
-import { Track, Data, Waypoint, TrackDefinition } from 'src/globald';
+import { Track, Data, Waypoint, TrackDefinition } from '../../globald';
 
 @Injectable({
   providedIn: 'root'
@@ -49,14 +49,20 @@ export class FunctionsService {
     private translate: TranslateService,
   ) {}
 
+  /** Inicializa la instancia del storage */
   public async init(): Promise<void> {
     this._storage = await this.storage.create();
   }
 
   // ==========================================================================
-  // 4. ALMACENAMIENTO (STORAGE)
+  // 4. PERSISTENCIA (Storage)
   // ==========================================================================
 
+  /** 
+   * Guarda un objeto en el almacenamiento persistente.
+   * @param key Identificador único (usualmente el ISOString de la fecha).
+   * @param object Datos a guardar (Track, Colección, etc).
+   */
   public async storeSet(key: string, object: any): Promise<void> { 
     await this._storage?.set(key, object); 
   }
@@ -65,13 +71,26 @@ export class FunctionsService {
     return await this._storage?.get(key) || null; 
   }
 
+  /**
+   * Elimina un track del almacenamiento físico y de la colección en memoria.
+   */
+  public async removeTrackFromCollection(index: number): Promise<void> {
+    const trackToRemove = this.collection[index];
+    if (trackToRemove && trackToRemove.date) {
+      const key = new Date(trackToRemove.date).toISOString();
+      await this.storeRem(key);
+    }
+    this.collection.splice(index, 1);
+    await this.storeSet('collection', this.collection);
+  }
+
+  /** Elimina un objeto del storage por su clave */
   public async storeRem(key: string): Promise<void> { 
     await this._storage?.remove(key); 
   }
 
   /**
-   * Comprueba si existe un valor en Storage. Si no existe, devuelve el valor
-   * por defecto y lo GUARDA en el Storage para futuras lecturas.
+   * Recupera un valor o inicializa el storage con un valor por defecto si no existe.
    */
   public async check<T>(defaultValue: T, key: string): Promise<T> {
     const res = await this.storeGet<T>(key);
@@ -85,6 +104,7 @@ export class FunctionsService {
     }
   }
 
+  /** Recupera el track de la memoria basado en la propiedad 'key' actual */
   public async retrieveTrack(): Promise<Track | undefined> {
     if (!this.key) return undefined;
     return await this.storeGet<Track>(this.key) || undefined;
@@ -94,11 +114,19 @@ export class FunctionsService {
   // 5. UTILIDADES DE TEXTO Y FORMATO
   // ==========================================================================
 
+  /** 
+   * Limpia strings de etiquetas CDATA y convierte saltos de línea en HTML.
+   * Utiliza DOMPurify para evitar inyecciones de código.
+   */
   public sanitize(input: string): string {
     const clean = (input || '').replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").replace(/\n/g, '<br>');
     return DOMPurify.sanitize(clean, { ALLOWED_TAGS: ['br'] }).trim();
   }
 
+  /**
+   * Convierte milisegundos en formato legible HH:mm:ss.
+   * @param ms Tiempo en milisegundos.
+   */
   public formatMillisecondsToUTC(ms: number): string {
     // 🚀 Salvavidas: Si ms es NaN o negativo, devolvemos 0 para no romper la interfaz
     if (isNaN(ms) || ms < 0) return '00:00:00'; 
@@ -119,6 +147,12 @@ export class FunctionsService {
   // 6. INTERFAZ DE USUARIO (UI & NAVEGACIÓN)
   // ==========================================================================
 
+  /**
+   * Lanza el popover para editar o ver los detalles de un Waypoint (PDI).
+   * @param waypoint Objeto Waypoint a editar.
+   * @param showAltitude Define si se muestra el campo de altitud.
+   * @param edit Define si el formulario es editable o solo lectura.
+   */
   public async editWaypoint(waypoint: Waypoint, showAltitude: boolean, edit: boolean): Promise<{ action: string; name?: string; comment?: string } | undefined> {
     const { WptPopoverComponent } = await import('../wpt-popover.component'); 
 
@@ -144,6 +178,11 @@ export class FunctionsService {
     return data;
   }
 
+  /**
+   * Muestra un mensaje temporal en la parte inferior de la pantalla.
+   * @param message Clave de traducción o texto plano.
+   * @param css Clase de estilo (success, error, warning).
+   */
   public async displayToast(message: string, css: string): Promise<void> {
       const finalMessage = this.translate.instant(message);
 
@@ -160,6 +199,10 @@ export class FunctionsService {
       await toast.present();
   }
 
+  /**
+   * Navega a una ruta con un pequeño debouncing para evitar navegación doble.
+   * @param path Ruta de destino (ej: 'tab1').
+   */
   public gotoPage(path: string): void {
     if (this.isNavigating) return;
 

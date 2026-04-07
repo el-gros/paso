@@ -16,9 +16,59 @@ export class BackupService {
     private translate: TranslateService
   ) { }
 
+  // ==========================================================================
+  // 1. ORQUESTADORES PÚBLICOS (High-level API)
+  // ==========================================================================
+
+  /** 
+   * Ejecuta el proceso completo de exportación: recopila datos y genera el archivo .paso 
+   */
+  async runFullExport() {
+    // 1. Preparar Payload
+    const payload: any = { collection: this.fs.collection };
+    const keys = this.fs.collection
+      .filter((item: any) => item?.date)
+      .map((item: any) => {
+        const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date);
+        return dateObj.toISOString();
+      });
+
+    const tracksData = await Promise.all(keys.map(key => this.fs.storeGet(key)));
+    keys.forEach((key, index) => {
+      if (tracksData[index]) payload[key] = tracksData[index];
+    });
+
+    // 2. Llamar a la función que genera el ZIP
+    return await this.exportBackup(payload); 
+  }
+
+  /** 
+   * Ejecuta el proceso completo de importación y guarda los datos en el Storage 
+   */
+  async runFullImport(filePath: string) {
+    const backupData = await this.importBackup(filePath);
+    
+    if (backupData && backupData.collection) {
+      this.fs.collection = backupData.collection;
+      await this.fs.storeSet('collection', this.fs.collection);
+
+      const keys = Object.keys(backupData);
+      for (const key of keys) {
+        if (key !== 'collection' && key !== 'settings') {
+          await this.fs.storeSet(key, backupData[key]);
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // ==========================================================================
+  // 2. LÓGICA DE EXPORTACIÓN (Core)
+  // ==========================================================================
+
   /**
    * Genera un archivo de copia de seguridad (.paso) y abre el menú para compartirlo.
-   * @param databaseData El objeto JSON completo con tus rutas y waypoints
    */
   public async exportBackup(databaseData: any): Promise<boolean> {
     try {
@@ -114,33 +164,24 @@ export class BackupService {
     }
   }
 
+  // ==========================================================================
+  // 3. LÓGICA DE IMPORTACIÓN (Core)
+  // ==========================================================================
+
   /**
-   * Extrae las rutas de fotos desde el nuevo formato de "Súper Objeto".
+   * Se usa desde la pantalla de Ajustes cuando el usuario elige un archivo manualmente.
    */
-  private extractAllPhotoPaths(data: any): string[] {
-    let paths: string[] = [];
-    
-    // 1. Obtenemos todos los valores del objeto (Tracks y Collection)
-    const items = Object.values(data);
+  public async importBackup(backupFileUri: string): Promise<any | null> {
+    try {
+      const webPath = Capacitor.convertFileSrc(backupFileUri);
+      const response = await fetch(webPath);
+      const base64Text = await response.text(); 
 
-    for (const item of items) {
-      const track = item as any;
-
-      // 2. Comprobamos si el item tiene la estructura de un Track (FeatureCollection)
-      // Buscamos dentro de features[0] que es donde guardas los waypoints
-      if (track?.features?.[0]?.waypoints && Array.isArray(track.features[0].waypoints)) {
-        
-        for (const wpt of track.features[0].waypoints) {
-          // 3. Si el waypoint tiene fotos, las añadimos al saco
-          if (wpt.photos && Array.isArray(wpt.photos)) {
-            paths = [...paths, ...wpt.photos];
-          }
-        }
-      }
+      return await this.importPasoFile(base64Text);
+    } catch (error) {
+      console.error('[BackupService] Error leyendo la URI desde Ajustes:', error);
+      return null;
     }
-    
-    // 4. Limpiamos duplicados y rutas vacías
-    return [...new Set(paths)].filter(p => !!p);
   }
 
    /**
@@ -213,9 +254,12 @@ export class BackupService {
     }
   }
 
+  // ==========================================================================
+  // 4. HELPERS PRIVADOS
+  // ==========================================================================
+
   /**
-   * Rastrea el objeto y sustituye los textos de las fotos antiguas 
-   * por las nuevas URIs locales. (A prueba de fallos silenciosos)
+   * Sustituye las rutas de fotos antiguas por las nuevas URIs generadas en el dispositivo
    */
   private relinkPhotoPaths(data: any, newPathsMap: Map<string, string>): void {
     try {
@@ -252,63 +296,23 @@ export class BackupService {
   }
 
   /**
-   * Se usa desde la pantalla de Ajustes (Settings) cuando el usuario elige un archivo manualmente.
+   * Extrae todas las rutas de fotos de la base de datos para incluirlas en el ZIP
    */
-  public async importBackup(backupFileUri: string): Promise<any | null> {
-    try {
-      console.log('🔄 Convirtiendo ruta para lectura optimizada...');
-      const webPath = Capacitor.convertFileSrc(backupFileUri);
+  private extractAllPhotoPaths(data: any): string[] {
+    let paths: string[] = [];
+    const items = Object.values(data);
 
-      // Usamos fetch, pero extraemos TEXTO porque el backup está guardado como Base64
-      const response = await fetch(webPath);
-      const base64Text = await response.text(); 
-
-      // Se lo pasamos como string a importPasoFile (que activará el modo base64: true de JSZip)
-      return await this.importPasoFile(base64Text);
-
-    } catch (error) {
-      console.error('[BackupService] Error leyendo la URI desde Ajustes:', error);
-      return null;
-    }
-  }
-
-  async runFullExport() {
-    // 1. Preparar Payload
-    const payload: any = { collection: this.fs.collection };
-    const keys = this.fs.collection
-      .filter((item: any) => item?.date)
-      .map((item: any) => {
-        const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date);
-        return dateObj.toISOString();
-      });
-
-    const tracksData = await Promise.all(keys.map(key => this.fs.storeGet(key)));
-    keys.forEach((key, index) => {
-      if (tracksData[index]) payload[key] = tracksData[index];
-    });
-
-    // 2. Llamar a la función que genera el ZIP (la que ya tenías)
-    return await this.exportBackup(payload); 
-  }
-
-  async runFullImport(filePath: string) {
-    const backupData = await this.importBackup(filePath);
-    
-    if (backupData && backupData.collection) {
-      // Guardar colección
-      this.fs.collection = backupData.collection;
-      await this.fs.storeSet('collection', this.fs.collection);
-
-      // Guardar tracks individuales
-      const keys = Object.keys(backupData);
-      for (const key of keys) {
-        if (key !== 'collection' && key !== 'settings') {
-          await this.fs.storeSet(key, backupData[key]);
+    for (const item of items) {
+      const track = item as any;
+      if (track?.features?.[0]?.waypoints && Array.isArray(track.features[0].waypoints)) {
+        for (const wpt of track.features[0].waypoints) {
+          if (wpt.photos && Array.isArray(wpt.photos)) {
+            paths = [...paths, ...wpt.photos];
+          }
         }
       }
-      return true;
     }
-    return false;
+    
+    return [...new Set(paths)].filter(p => !!p);
   }
-
 }

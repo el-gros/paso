@@ -7,12 +7,21 @@ import { SearchService } from '../../services/search.service';
 import { Subscription, firstValueFrom } from 'rxjs';
 
 export class LocationButtonControl extends Control {
-  private subscription: Subscription;
+
+  // ==========================================================================
+  // 1. PROPIEDADES Y ESTADO
+  // ==========================================================================
+
+  private subscription!: Subscription;
   private button: HTMLButtonElement;
   private svgPath: SVGPathElement;
   private labelElement: HTMLDivElement;
   private labelOverlay: Overlay; 
   private labelTimeout: any;
+
+  // ==========================================================================
+  // 2. CONSTRUCTOR Y CONFIGURACIÓN INICIAL
+  // ==========================================================================
 
   constructor(
     private trackingService: TrackingControlService,
@@ -23,7 +32,7 @@ export class LocationButtonControl extends Control {
     element.className = 'ol-control location-button-control';
     super({ element: element });
 
-    // 1. CONFIGURACIÓN DEL BOTÓN
+    // A. CONFIGURACIÓN DEL BOTÓN (Icono de la flecha)
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.title = this.translate.instant('MAP.TRACKING_BTN') !== 'MAP.TRACKING_BTN' 
@@ -39,7 +48,7 @@ export class LocationButtonControl extends Control {
     this.svgPath = this.button.querySelector('path') as SVGPathElement;
     element.appendChild(this.button);
 
-    // 2. CONFIGURACIÓN DEL RÓTULO
+    // B. CONFIGURACIÓN DEL RÓTULO (Bubble informativo)
     this.labelElement = document.createElement('div');
     Object.assign(this.labelElement.style, {
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -58,7 +67,7 @@ export class LocationButtonControl extends Control {
       transition: 'opacity 0.3s ease-in-out',
     });
 
-    // 3. CREACIÓN DEL OVERLAY DE OPENLAYERS
+    // C. CREACIÓN DEL OVERLAY DE OPENLAYERS
     this.labelOverlay = new Overlay({
       element: this.labelElement,
       positioning: 'bottom-center',
@@ -66,7 +75,7 @@ export class LocationButtonControl extends Control {
       stopEvent: false
     });
 
-    // 4. EVENTOS Y SUSCRIPCIONES
+    // D. GESTIÓN DE EVENTOS Y SUSCRIPCIONES
     this.subscription = this.trackingService.isRunning$.subscribe(running => {
       this.updateUI(running);
     });
@@ -90,21 +99,13 @@ export class LocationButtonControl extends Control {
     }, { passive: false });
   }
 
-  // 🚀 NUEVO: Método seguro para obtener traducciones asíncronas
-  private async getSafeTranslation(key: string, fallback: string): Promise<string> {
-    try {
-      const translation = await firstValueFrom(this.translate.get(key));
-      // Si devuelve la misma clave, significa que no existe en el JSON
-      if (translation === key || !translation) {
-        return fallback;
-      }
-      return translation;
-    } catch (e) {
-      return fallback;
-    }
-  }
+  // ==========================================================================
+  // 3. LÓGICA DE INTERFAZ (UI)
+  // ==========================================================================
 
-  // ACTUALIZACIÓN QUIRÚRGICA DE UI
+  /**
+   * Actualiza quirúrgicamente el color y la forma del icono del botón.
+   */
   private updateUI(isRunning: boolean) {
     const color = isRunning ? "#3880ff" : "#999999";
     const pathData = this.trackingService.arrowPath || "M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z";
@@ -114,10 +115,13 @@ export class LocationButtonControl extends Control {
     this.button.style.opacity = isRunning ? "1" : "0.6";
   }
 
-  // ==========================================
-  // MOTOR DEL RÓTULO (ANCLADO AL MAPA)
-  // ==========================================
+  // ==========================================================================
+  // 4. MOTOR DEL RÓTULO (Labels)
+  // ==========================================================================
 
+  /**
+   * Gestiona el ciclo de vida del rótulo flotante: búsqueda, posicionamiento y timeout.
+   */
   private async showLocationLabel() {
     const map = this.getMap();
     if (!map) return;
@@ -151,6 +155,9 @@ export class LocationButtonControl extends Control {
     }, 4000);
   }
 
+  /**
+   * Obtiene el nombre del lugar basado en coordenadas vía Geocoding Inverso.
+   */
   private async fetchPlaceName(lat: number, lon: number): Promise<string> {
     try {
       const result = await firstValueFrom(this.searchService.reverseGeocode(lat, lon));
@@ -166,10 +173,14 @@ export class LocationButtonControl extends Control {
     }
   }
 
-  // ==========================================
-  // INYECCIÓN Y LIMPIEZA DEL CONTROL EN EL MAPA
-  // ==========================================
+  // ==========================================================================
+  // 5. CICLO DE VIDA Y LIMPIEZA (setMap)
+  // ==========================================================================
   
+  /**
+   * Orquesta la inyección del control y su overlay en el mapa.
+   * Se encarga de la limpieza de suscripciones cuando el mapa se destruye.
+   */
   override setMap(map: Map | null) {
     const oldMap = this.getMap();
     if (oldMap) {
@@ -183,6 +194,25 @@ export class LocationButtonControl extends Control {
     } else {
       if (this.subscription) this.subscription.unsubscribe();
       if (this.labelTimeout) clearTimeout(this.labelTimeout);
+    }
+  }
+
+  // ==========================================================================
+  // 6. HELPERS PRIVADOS
+  // ==========================================================================
+
+  /**
+   * Obtiene una traducción de forma segura gestionando fallbacks.
+   */
+  private async getSafeTranslation(key: string, fallback: string): Promise<string> {
+    try {
+      const translation = await firstValueFrom(this.translate.get(key));
+      if (translation === key || !translation) {
+        return fallback;
+      }
+      return translation;
+    } catch (e) {
+      return fallback;
     }
   }
 }

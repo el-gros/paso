@@ -7,7 +7,7 @@ import { Style, Icon } from 'ol/style';
 // --- INTERNAL IMPORTS ---
 import { LocationManagerService } from './location-manager.service';
 import { GeographyService } from './geography.service';
-import { Location } from 'src/plugins/MyServicePlugin'; // Para tipar el payload del GPS
+import { Location } from '../../plugins/MyServicePlugin'; // Para tipar el payload del GPS
 
 @Injectable({ 
   providedIn: 'root' 
@@ -17,6 +17,7 @@ export class TrackingControlService {
   // ==========================================================================
   // 1. ESTADO Y CONTROL
   // ==========================================================================
+
   private isRunning = new BehaviorSubject<boolean>(false);
   public readonly isRunning$ = this.isRunning.asObservable();
 
@@ -26,10 +27,11 @@ export class TrackingControlService {
   // ==========================================================================
   // 2. OPENLAYERS (Caché y Marcadores)
   // ==========================================================================
-  private locationFeature: Feature<Point> | null = null;
-  private cachedStyle: Style | null = null; // 🚀 Novedad: Caché del estilo para ahorrar CPU
 
-  // 🔹 Path compartido para que el botón y el marcador sean idénticos
+  private locationFeature: Feature<Point> | null = null;
+  private cachedStyle: Style | null = null; 
+
+  /** Path compartido para que el botón y el marcador sean idénticos */
   public readonly arrowPath = "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"; 
   private readonly markerColor = "#3880ff"; 
 
@@ -42,6 +44,9 @@ export class TrackingControlService {
   // 3. API PÚBLICA (Start / Stop)
   // ==========================================================================
 
+  /**
+   * Inicia la suscripción al flujo de GPS y crea/muestra el marcador de posición en el mapa.
+   */
   public async start(): Promise<void> {
     if (this.isRunning.value) return;
     
@@ -49,7 +54,6 @@ export class TrackingControlService {
     this.shouldCenterOnNextUpdate = true;
     this.ensureMarkerCreated();
 
-    // 🚀 Tipamos 'loc' con la interfaz Location en lugar de 'any'
     this.subscription = this.location.latestLocation$.subscribe((loc: Location | null) => {
       if (!loc || !this.locationFeature) return;
       
@@ -69,28 +73,25 @@ export class TrackingControlService {
     });
   }
 
+  /**
+   * Detiene la suscripción al GPS y elimina el marcador de posición del mapa.
+   */
   public stop(): void {
     this.isRunning.next(false);
     
-    // 1. Cortar la escucha del GPS
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
     }
 
-    // 2. Eliminar físicamente la flecha azul del mapa
     if (this.locationFeature) {
       this.geography.locationLayer?.getSource()?.removeFeature(this.locationFeature);
       this.locationFeature = null; 
     }
   }
 
-  public getIsRunning(): boolean {
-    return this.isRunning.value;
-  }
-
   // ==========================================================================
-  // 4. MÉTODOS PRIVADOS (Helpers de OpenLayers)
+  // 4. LÓGICA INTERNA DE RENDERIZADO (Helpers)
   // ==========================================================================
 
   /**
@@ -113,7 +114,6 @@ export class TrackingControlService {
   private updateMarkerRotation(bearing: number): void {
     if (!this.locationFeature) return;
 
-    // Si el estilo no existe en caché, lo creamos UNA SOLA VEZ
     if (!this.cachedStyle) {
       const markerSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="${this.markerColor}" d="${this.arrowPath}"></path></svg>`;
       const svgUrl = 'data:image/svg+xml;base64,' + window.btoa(markerSvg);
@@ -129,11 +129,13 @@ export class TrackingControlService {
       });
     }
 
-    // Aplicamos la rotación matemática al icono ya existente
     const radians = bearing * (Math.PI / 180);
     this.cachedStyle.getImage()?.setRotation(radians);
     
-    // Le decimos a OpenLayers que use este estilo
     this.locationFeature.setStyle(this.cachedStyle);
+  }
+
+  public getIsRunning(): boolean {
+    return this.isRunning.value;
   }
 }

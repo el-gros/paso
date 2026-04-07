@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. LAYOUTS ESPECÍFICOS (FABs & MAPA OCULTO)
+   1. LAYOUTS ESPECÍFICOS (FABs, Mapa Oculto y Espaciadores)
    ========================================================================== */
 
 /* FAB superior derecha en Archivo */
@@ -35,7 +35,7 @@
 }
 
 /* Espacio inferior para no quedar tapado por el menú FAB principal */
-.list-spacer {
+.list-spacer { // Espaciador para la barra de navegación inferior
   height: 120px;
 }
 
@@ -46,6 +46,7 @@
 ion-item {
   --padding-start: 16px;
   --background: transparent;
+  --border-color: rgba(0, 0, 0, 0.05); // Separador sutil entre ítems
   --min-height: 60px;
   
   strong {
@@ -60,6 +61,7 @@ ion-item {
   .active-text {
     color: var(--ion-color-primary) !important;
     font-weight: 800 !important;
+    transition: color 0.2s ease; // Transición suave al activar/desactivar
   }
 }
 
@@ -88,6 +90,11 @@ ion-item {
   letter-spacing: 0.5px;
 }
 
+.active-chevron {
+  color: var(--ion-color-primary) !important;
+  transition: color 0.2s ease;
+}
+
 .compact-chevron {
   font-size: 12px !important;
   color: #bbb;
@@ -113,7 +120,7 @@ ion-thumbnail.photo-thumbnail {
   position: relative;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  z-index: 10;
+  z-index: 10; // Asegura que la miniatura esté por encima de otros elementos
   overflow: visible;
 
   img {
@@ -121,7 +128,7 @@ ion-thumbnail.photo-thumbnail {
     object-fit: cover;
     width: 100%;
     height: 100%;
-    background: #f0f0f0;
+    background: #f0f0f0; // Color de fondo mientras carga la imagen
   }
 
   .mini-badge {
@@ -136,7 +143,7 @@ ion-thumbnail.photo-thumbnail {
     align-items: center;
     justify-content: center;
     z-index: 11;
-    border: 1.5px solid white;
+    border: 1.5px solid white; // Borde blanco para destacar
 
     ion-icon {
       font-size: 11px;
@@ -151,11 +158,11 @@ ion-thumbnail.photo-thumbnail {
 }
 
 /* ==========================================================================
-   4. POPOVER DE EXPORTACIÓN Y BACKUP
+   4. POPOVER DE EXPORTACIÓN
    ========================================================================== */
 
 /* 1. Sobrescribir el ancho del global.scss y forzar bordes */
-.custom-export-popover {
+.custom-export-popover { // Estilos específicos para el popover de exportación
   --width: 300px !important; /* Ensanchamos la "ventana" de Ionic */
   --border-radius: 16px !important;
 }
@@ -164,12 +171,12 @@ ion-thumbnail.photo-thumbnail {
   padding: 20px 16px;
   width: 100%; /* Ahora ocupa exactamente el 100% de la ventana, sin desbordar */
   box-sizing: border-box;
-  border-radius: 16px; 
+  border-radius: 16px; // Bordes redondeados para el popover
   overflow: hidden;
 }
 
 /* 2. Alineación perfecta de los cuadraditos */
-.backup-options-list {
+.backup-options-list { // Lista de opciones de exportación
   background: transparent;
   margin: 15px 0;
   
@@ -181,7 +188,7 @@ ion-thumbnail.photo-thumbnail {
     font-size: 14px;
     
     ion-checkbox {
-      --size: 22px;
+      --size: 22px; // Tamaño del checkbox
       --checkbox-background-checked: var(--ion-color-primary);
       --border-color-checked: var(--ion-color-primary);
       font-weight: 500;
@@ -197,7 +204,7 @@ ion-thumbnail.photo-thumbnail {
 }
 
 .top-margin {
-  margin-top: 20px;
+  margin-top: 20px; // Margen superior para separar elementos
 }
 
 /* 3. Botones exactamente del mismo ancho y centrados */
@@ -207,7 +214,7 @@ ion-thumbnail.photo-thumbnail {
   gap: 12px;
   width: 100%;
   padding: 0;
-  
+  // Los botones se distribuyen equitativamente
   button {
     flex: 1 1 0px; 
     margin: 0 !important; 

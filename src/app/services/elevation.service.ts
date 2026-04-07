@@ -5,13 +5,19 @@ import { Injectable } from '@angular/core';
 })
 export class ElevationService {
   
-  // Endpoint de la API pública y gratuita
+  // ==========================================
+  // 1. CONFIGURACIÓN
+  // ==========================================
   private readonly API_URL = 'https://api.open-elevation.com/api/v1/lookup';
+
+  // ==========================================
+  // 2. MÉTODOS PÚBLICOS
+  // ==========================================
 
   /**
    * Obtiene la altitud de múltiples coordenadas en una sola llamada HTTP.
-   * @param points Array de objetos con {lat, lng}
-   * @returns Array de altitudes (números) en el mismo orden que se enviaron.
+   * @param points Lista de objetos con {lat, lng}.
+   * @returns Promesa con un array de altitudes (metros) en el mismo orden de entrada.
    */
   async getBulkAltitude(points: {lat: number, lng: number}[]): Promise<number[]> {
     if (!points || points.length === 0) return [];

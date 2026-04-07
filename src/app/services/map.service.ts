@@ -31,6 +31,7 @@ import pako from 'pako';
 import { global } from '../../environments/environment';
 
 // --- SERVICES & INTERFACES ---
+import { MapStyleService } from './map-style.service';
 import { FunctionsService } from './functions.service';
 import { GeographyService } from './geography.service';
 import { StylerService } from './styler.service';
@@ -75,19 +76,19 @@ export class MapService {
   
   constructor(
     public fs: FunctionsService,
-    private location: LocationManagerService,
+    private locationManager: LocationManagerService,
     private translate: TranslateService,
     private stylerService: StylerService,
     private geography: GeographyService,
     private reference: ReferenceService,
     private present: PresentService,
     private trackingService: TrackingControlService,
-    private locationManager: LocationManagerService,
     private mbTiles: MbTilesService,
     private offlineMapService: OfflineMapService,
     private zone: NgZone,
     private appState: AppStateService,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private mapStyle: MapStyleService
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
 
@@ -141,22 +142,13 @@ export class MapService {
 
   }
 
-  // 1. CENTER ALL TRACKS ///////////////////////////////////
-  async centerAllTracks(): Promise<void> {
-    const currentPosition = await this.location.getCurrentPosition();
-    if (currentPosition && currentPosition.length === 2 && this.geography.map) {
-      const view = this.geography.map.getView();
-      view.animate({
-        center: currentPosition,
-        zoom: 8,        
-        duration: 1000   
-      });
-    } else {
-      console.warn("No se pudo obtener la ubicación para centrar el mapa.");
-    }
-  }
+  // ==========================================================================
+  // 1. INICIALIZACIÓN Y CARGA DEL MAPA
+  // ==========================================================================
 
-  // 2. LOAD MAP //////////////////////////////////////
+  /**
+   * Configura el mapa desde cero o actualiza el proveedor actual (Online/Offline).
+   */
   async loadMap(): Promise<void> {
     // Si la lista está vacía, forzamos la lectura antes de tomar decisiones.
     if (this.offlineMapService.availableMaps$.value.length === 0) {
@@ -243,7 +235,10 @@ export class MapService {
     this.mapWrapperElement = document.getElementById('map-wrapper');
   }
 
-  // 3. CREATE MAP LAYER //////////////////////////////////
+  /**
+   * Crea la capa base según el proveedor seleccionado.
+   * Incluye la lógica de "fallback" automático a offline si no hay red.
+   */
   async createMapLayer(): Promise<{ olLayer: BaseLayer | null, credits: string }> {
     // --- PUNTO 5: LIMPIEZA SUAVE ---
     // En lugar de destruir el motor (remove), simplemente reseteamos la referencia.
@@ -340,7 +335,7 @@ export class MapService {
       default: {
         if (hasOfflineFiles) {
           credits = 'Offline Maps Data';
-          const dynamicStyle = this.generateDynamicStyle();
+          const dynamicStyle = this.mapStyle.generateDynamicStyle();
           this.offlineLayer = new MapLibreLayer({
             mapLibreOptions: { style: dynamicStyle }
           });
@@ -355,7 +350,30 @@ export class MapService {
     return { olLayer, credits };
   }
 
-  // 4. DISPLAY ALL TRACKS ////////////////////////////////
+  // ==========================================================================
+  // 2. VISUALIZACIÓN DE TRAYECTOS (Tracks)
+  // ==========================================================================
+
+  /**
+   * Centra la vista del mapa en la posición actual del usuario con un zoom global.
+   */
+  async centerAllTracks(): Promise<void> {
+    const currentPosition = await this.locationManager.getCurrentPosition();
+    if (currentPosition && currentPosition.length === 2 && this.geography.map) {
+      const view = this.geography.map.getView();
+      view.animate({
+        center: currentPosition,
+        zoom: 8,        
+        duration: 1000   
+      });
+    } else {
+      console.warn("No se pudo obtener la ubicación para centrar el mapa.");
+    }
+  }
+
+  /**
+   * Carga y dibuja TODOS los tracks de la colección en el mapa (modo vista general).
+   */
   async displayAllTracks() {
     if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) {
       console.warn("MapService: Faltan elementos críticos para mostrar los trayectos.");
@@ -431,7 +449,34 @@ export class MapService {
     }
   }
 
-  // 5. CREATE SOURCE //////////////////////////////
+  /**
+   * Actualiza el color de los tracks dibujados sin necesidad de recargar todo el mapa.
+   */
+  async updateColors() {
+    const updateLayer = (layer: VectorLayer<VectorSource> | undefined, color: string) => {
+      const features = layer?.getSource()?.getFeatures();
+      features?.forEach((f: Feature) => {
+        const geom = f.getGeometry();
+        if (geom && geom.getType() === 'LineString') {
+          f.setStyle(this.stylerService.setStrokeStyle(color));
+        }
+      });
+      layer?.changed();
+    };
+    updateLayer(this.geography.currentLayer, this.present.currentColor);
+    updateLayer(this.geography.archivedLayer, this.reference.archivedColor);
+    this.geography.map?.render();
+    this.fs.reDraw = false;
+  }
+
+  // ==========================================================================
+  // 3. MOTOR DE VECTOR TILES (Offline Engine)
+  // ==========================================================================
+
+  /**
+   * Crea una fuente de teselas vectoriales (MVT) para OpenLayers.
+   * Se usa para el sistema de renderizado híbrido.
+   */
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
       const epsg3857Extent = [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244];
@@ -482,7 +527,10 @@ export class MapService {
     }
   }
 
-  // 6. CYCLE ZOOM //////////////////////////////
+  /**
+   * Cambia la escala visual del mapa (transform scale) para simular
+   * mayor o menor densidad de información en pantalla.
+   */
   async cycleZoom(): Promise<void> {
     if (!this.mapWrapperElement) {
       console.warn('Map wrapper element not found');
@@ -493,31 +541,17 @@ export class MapService {
     this.mapWrapperElement.style.transform = `scale(${scale})`;
   }
 
-  // 7. CREATE LAYER ///////////////////////////////////////
+  /** Helper para inicializar capas vectoriales vacías */
   async createLayer(layer?: VectorLayer<VectorSource>): Promise<VectorLayer<VectorSource>> {
     if (!layer) layer = new VectorLayer();
     if (!layer.getSource()) layer.setSource(new VectorSource());
     return layer;
   }
 
-  // 8. UPDATE COLORS /////////////////////////////////////////
-  async updateColors() {
-    const updateLayer = (layer: VectorLayer<VectorSource> | undefined, color: string) => {
-      const features = layer?.getSource()?.getFeatures();
-      features?.forEach((f: Feature) => {
-        const geom = f.getGeometry();
-        if (geom && geom.getType() === 'LineString') {
-          f.setStyle(this.stylerService.setStrokeStyle(color));
-        }
-      });
-      layer?.changed();
-    };
-    updateLayer(this.geography.currentLayer, this.present.currentColor);
-    updateLayer(this.geography.archivedLayer, this.reference.archivedColor);
-    this.geography.map?.render();
-    this.fs.reDraw = false;
-  }
-
+  /**
+   * Genera el objeto de estilo JSON (Mapbox Style Spec) para el motor MapLibre.
+   * Define colores de agua, bosques, carreteras y etiquetas para el modo offline.
+   */
   private generateDynamicStyle() {
     const openedFiles = this.mbTiles.getOpenedFiles();
 
@@ -710,6 +744,9 @@ export class MapService {
     return style;
   }
 
+  /**
+   * Notifica al motor MapLibre de que debe refrescar su estilo (vía diffing).
+   */
   public refreshOfflineStyle() {
     if (!this.offlineLayer) return;
 
@@ -730,13 +767,15 @@ export class MapService {
     }
   }
 
-  /**
-     * Maneja la lógica de conmutación de mapas basada en red y visibilidad de la app
-     * @param online Estado actual de la red
-     * @param immediate Si es true, ignora el delay de cortesía (útil al volver a foreground)
-     */
-  // En MapService.ts
+  // ==========================================================================
+  // 4. GESTIÓN DE CONECTIVIDAD
+  // ==========================================================================
 
+  /**
+   * Controla el cambio automático entre mapas online y offline.
+   * @param online - Estado de red detectado.
+   * @param immediate - Si es true, no espera el tiempo de cortesía (ej: al abrir la app).
+   */
   private async handleConnectionChange(online: boolean, immediate: boolean = false) {
     if (this.connectionTimeout) {
       clearTimeout(this.connectionTimeout);
