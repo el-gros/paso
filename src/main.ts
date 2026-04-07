@@ -14,18 +14,14 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { TranslateModule } from '@ngx-translate/core';
-import { TranslateLoader } from '@ngx-translate/core';
-import { HttpClient } from '@angular/common/http';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+
+// 1. Import the new standalone translation providers
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+
 //import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
 //import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 //import { File } from '@awesome-cordova-plugins/file/ngx';
-
-// Standalone loader factory
-export function httpTranslateLoader(http: HttpClient) {
-  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
-}
 
 if (environment.production) {
   enableProdMode();
@@ -42,16 +38,13 @@ bootstrapApplication(AppComponent, {
     // Correct HttpClient provider for standalone (required)
     provideHttpClient(withInterceptorsFromDi()),
 
-    // ❗ Correct translate module with factory IN standalone mode
-    importProvidersFrom(
-      TranslateModule.forRoot({
-        loader: {
-          provide: TranslateLoader,
-          deps: [HttpClient],
-          useFactory: httpTranslateLoader,
-        },
+    // 2. Use the new v17 provider functions instead of the factory
+    provideTranslateService({
+      loader: provideTranslateHttpLoader({
+        prefix: './assets/i18n/',
+        suffix: '.json'
       })
-    ),
+    }),
 
     provideRouter(routes),
   ],
