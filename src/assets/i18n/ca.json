@@ -50,7 +50,8 @@
     "SERVICES": "Serveis",
     "SERVICES_FOUND": "S'han trobat {{count}} serveis",
     "NO_SERVICES_FOUND": "No s'han trobat serveis en aquesta zona",
-    "SERVICES_ERROR": "Error en cercar serveis"
+    "SERVICES_ERROR": "Error en cercar serveis",
+    "REDUCED_AREA": "L'àrea de cerca s'ha reduït per millorar el rendiment"
   },
 "ARCHIVE": {
   "TRACKS": "Trajectes",
@@ -202,7 +203,9 @@
     "PARKING": "Aparcament",
     "TRANSPORT": "Transport",
     "SUPERMARKET": "Supermercat",
-    "FOOD": "Restauració"
+    "FOOD": "Restauració",
+    "FUEL": "Benzinera",
+    "POLICE": "Policia"
   },
   "BATTERY": {
     "GENERIC_MSG": "Per assegurar que el seguiment GPS no s'aturi, ajusta la configuració de la bateria:",

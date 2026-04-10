@@ -437,8 +437,9 @@ ion-popover.top-search-popover {
     max-width: 420px !important;
 
     /* 1. PRIMERO LAS PROPIEDADES DIRECTAS */
-    max-height: 45vh !important;
+    max-height: 70vh !important; /* 👈 Pasamos de 45vh a 70vh */
     border-radius: var(--glass-radius, 28px) !important;
+    overflow-y: auto !important; /* 👈 Garantizamos que haya scroll si hace falta */
 
     /* 2. POR ÚLTIMO LAS ANIDACIONES O MEDIA QUERIES */
     @media (min-width: 450px) {

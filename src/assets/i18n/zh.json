@@ -50,7 +50,8 @@
     "SERVICES": "服务",
     "SERVICES_FOUND": "找到 {{count}} 个服务",
     "NO_SERVICES_FOUND": "该区域未找到任何服务",
-    "SERVICES_ERROR": "搜索服务时出错"
+    "SERVICES_ERROR": "搜索服务时出错",
+    "REDUCED_AREA": "搜索区域已缩小以提高性能"
   },
   "ARCHIVE": {
     "TRACKS": "轨迹",
@@ -202,7 +203,9 @@
     "PARKING": "停车场",
     "TRANSPORT": "交通",
     "SUPERMARKET": "超市",
-    "FOOD": "美食"
+    "FOOD": "美食",
+    "FUEL": "加油站",
+    "POLICE": "警察局"
   },
   "BATTERY": {
     "GENERIC_MSG": "为确保 GPS 跟踪不中断，请调整电池设置：",

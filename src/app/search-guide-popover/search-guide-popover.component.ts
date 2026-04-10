@@ -98,12 +98,14 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     { id: 'pharmacy', icon: 'medical-sharp', label: 'SERVICES.PHARMACY', color: 'red' },
     { id: 'hospital', icon: 'heart-sharp', label: 'SERVICES.HOSPITAL', color: 'red' },
     // Grupo Azul: Transporte y Energía
+    { id: 'police', icon: 'shield-sharp', label: 'SERVICES.POLICE', color: 'blue' },
     { id: 'ev_charging', icon: 'flash-sharp', label: 'SERVICES.EV_CHARGING', color: 'blue' },
+    { id: 'fuel', icon: 'flame-sharp', label: 'SERVICES.FUEL', color: 'blue' },
     { id: 'parking', icon: 'car-sharp', label: 'SERVICES.PARKING', color: 'blue' },
     { id: 'transport', icon: 'bus-sharp', label: 'SERVICES.TRANSPORT', color: 'blue' },
     // Grupo Verde: Otros servicios
     { id: 'atm', icon: 'card-sharp', label: 'SERVICES.ATM', color: 'green' },
-    { id: 'accommodation', icon: 'bed-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
+    { id: 'accommodation', icon: 'cart-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
     { id: 'supermarket', icon: 'basket-sharp', label: 'SERVICES.SUPERMARKET', color: 'green' },
     { id: 'food', icon: 'restaurant-sharp', label: 'SERVICES.FOOD', color: 'green' }
   ];
@@ -479,7 +481,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
           center[1] + delta  // maxLat
         ];
         
-        this.fs.displayToast(this.translate.instant('SEARCH.REDUCED_AREA'), 'info');
+        this.fs.displayToast(this.translate.instant('SEARCH.REDUCED_AREA'), 'warning');
       }
 
       /**

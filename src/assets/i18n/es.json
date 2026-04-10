@@ -50,7 +50,8 @@
     "SERVICES": "Servicios",
     "SERVICES_FOUND": "Se han encontrado {{count}} servicios",
     "NO_SERVICES_FOUND": "No se han encontrado servicios en esta zona",
-    "SERVICES_ERROR": "Error al buscar servicios"
+    "SERVICES_ERROR": "Error al buscar servicios",
+    "RERDUCED_AREA": "El área de búsqueda se ha reducido para mejorar el rendimiento"
   },
   "ARCHIVE": {
     "TRACKS": "Trayectos",
@@ -202,7 +203,9 @@
     "PARKING": "Aparcamiento",
     "TRANSPORT": "Transporte",
     "SUPERMARKET": "Supermercado",
-    "FOOD": "Restauración"
+    "FOOD": "Restauración",
+    "FUEL": "Gasolinera",
+    "POLICE": "Policía"
   },
   "BATTERY": {
     "GENERIC_MSG": "Para asegurar que el seguimiento GPS no se detenga, ajusta la configuración de batería:",
