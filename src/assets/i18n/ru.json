@@ -23,6 +23,7 @@
     "TOIMAGE_FAILED": "Не удалось создать изображение",
     "CONFIRM_SHARING": "Вы уверены, что хотите поделиться своим местоположением?",
     "YES": "Да",
+    "NO_MAP_AVAILABLE": "Карта недоступна",
     "REMOVE_REFERENCE": "Справ."
   },
   "SEARCH": {
@@ -45,7 +46,11 @@
     "DRIVE": "Автомобиль",
     "NO_SPEECHRECOGNITION": "Распознавание речи недоступно",
     "NO_DESCRIPTION": "Описание недоступно",
-    "CHECK_WIKIPEDIA": "Проверить Википедию"
+    "CHECK_WIKIPEDIA": "Проверить Википедию",
+    "SERVICES": "Сервисы",
+    "SERVICES_FOUND": "Найдено сервисов: {{count}}",
+    "NO_SERVICES_FOUND": "В этой области сервисы не найдены",
+    "SERVICES_ERROR": "Ошибка при поиске сервисов"
   },
   "ARCHIVE": {
     "TRACKS": "Треки",
@@ -187,6 +192,17 @@
     "green": "Зеленый",
     "cyan": "Голубой",
     "blue": "Синий"
+  },
+  "SERVICES": {
+    "PHARMACY": "Аптека",
+    "HOSPITAL": "Больница",
+    "ATM": "Банкомат",
+    "ACCOMMODATION": "Жилье",
+    "EV_CHARGING": "Зарядка электромобилей",
+    "PARKING": "Парковка",
+    "TRANSPORT": "Транспорт",
+    "SUPERMARKET": "Супермаркет",
+    "FOOD": "Еда"
   },
   "BATTERY": {
     "GENERIC_MSG": "Чтобы GPS-отслеживание не прерывалось, настройте параметры батареи:",

@@ -23,6 +23,7 @@
     "TOIMAGE_FAILED": "Impossible de générer l'image",
     "CONFIRM_SHARING": "Voulez-vous vraiment partager votre position avec une autre personne ?",
     "YES": "Oui",
+    "NO_MAP_AVAILABLE": "Carte non disponible",
     "REMOVE_REFERENCE": "Réf."
   },
   "SEARCH": {
@@ -45,7 +46,11 @@
     "DRIVE": "Voiture",
     "NO_SPEECHRECOGNITION": "Reconnaissance vocale non disponible",
     "NO_DESCRIPTION": "Aucune description disponible",
-    "CHECK_WIKIPEDIA": "Consulter Wikipedia"
+    "CHECK_WIKIPEDIA": "Consulter Wikipedia",
+    "SERVICES": "Services",
+    "SERVICES_FOUND": "{{count}} services trouvés",
+    "NO_SERVICES_FOUND": "Aucun service trouvé dans cette zone",
+    "SERVICES_ERROR": "Erreur lors de la recherche de services"
   },
   "ARCHIVE": {
     "TRACKS": "Parcours",
@@ -187,6 +192,17 @@
     "green": "Vert",
     "cyan": "Cyan",
     "blue": "Bleu"
+  },
+  "SERVICES": {
+    "PHARMACY": "Pharmacie",
+    "HOSPITAL": "Hôpital",
+    "ATM": "Distributeur",
+    "ACCOMMODATION": "Hébergement",
+    "EV_CHARGING": "Recharge VE",
+    "PARKING": "Parking",
+    "TRANSPORT": "Transport",
+    "SUPERMARKET": "Supermarché",
+    "FOOD": "Restauration"
   },
   "BATTERY": {
     "GENERIC_MSG": "Pour garantir que le suivi GPS ne s'arrête pas, ajustez les paramètres de la batterie :",

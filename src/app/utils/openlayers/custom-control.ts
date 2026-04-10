@@ -26,7 +26,7 @@ export class LocationButtonControl extends Control {
   constructor(
     private trackingService: TrackingControlService,
     private translate: TranslateService,
-    private searchService: SearchService
+    private searchService: SearchService,
   ) {
     const element = document.createElement('div');
     element.className = 'ol-control location-button-control';
@@ -160,10 +160,11 @@ export class LocationButtonControl extends Control {
    */
   private async fetchPlaceName(lat: number, lon: number): Promise<string> {
     try {
+      // const result = await firstValueFrom(this.searchService.reverseGeocode(lat, lon));
       const result = await firstValueFrom(this.searchService.reverseGeocode(lat, lon));
       if (result) {
-        const shortName: string = result.short_name ?? '';
-        const longName: string = result.name ?? '';
+        const shortName: string = result.short_name || '';
+        const longName: string = result.name || '';
         if (shortName !== '' && shortName !== '(no name)') return shortName;
         if (longName !== '') return longName;
       }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
+import { transformExtent } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { GeoJSON } from 'ol/format';
 import VectorLayer from 'ol/layer/Vector';
@@ -39,6 +40,14 @@ export class GeographyService {
   public locationLayer?: VectorLayer<VectorSource>;
 
   constructor(private styler: StylerService) { }
+
+  /**
+   * Transforma un extent (bounding box) entre dos sistemas de proyección.
+   */
+  public transformExtent(extent: number[], source: string, destination: string): number[] {
+    return transformExtent(extent, source, destination);
+  }
+
   /**
    * Muestra un resultado de búsqueda en el mapa, ajustando la vista y el estilo.
    */

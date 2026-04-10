@@ -22,6 +22,14 @@
           <ion-icon [name]="reference.foundRoute ? 'trash-sharp' : 'walk-sharp'" [class.primary-icon]="!reference.foundRoute"></ion-icon>
           <p>{{ 'SEARCH.ROUTE' | translate }}</p>
         </button>
+
+        <!-- Botón para búsqueda de SERVICIOS -->
+        <button class="nav-item-btn" 
+          [class.red-pill]="selectedServices.length > 0"
+          (click)="selectedServices.length > 0 ? clearServices() : openServicesSearch()">
+          <ion-icon [name]="selectedServices.length > 0 ? 'trash-sharp' : 'construct-sharp'" [class.primary-icon]="selectedServices.length === 0"></ion-icon>
+          <p>{{ 'SEARCH.SERVICES' | translate }}</p>
+        </button>
       </div>
     </div>
   </ng-template>
@@ -182,3 +190,35 @@
   </ng-template>
 </ion-popover>
 <!-- Fin Popover de Búsqueda de Ruta -->
+
+<!-- ======================================================================
+     4. POPOVER DE SELECCIÓN DE SERVICIOS
+     ====================================================================== -->
+<ion-popover 
+  [isOpen]="isServicesPopoverOpen" 
+  (didDismiss)="onServicesPopoverDismiss()" 
+  class="floating-popover top-search-popover">
+  <ng-template>
+    <div class="popover-island glass-form">
+      
+      <div class="services-grid">
+        @for (item of serviceItems; track item.id) {
+          <div class="service-chip" 
+            [class.active]="selectedServices.includes(item.id)" 
+            (click)="toggleService(item.id)"
+            [style.--service-color]="item.color">
+            <ion-icon [name]="item.icon"></ion-icon>
+            <span>{{ item.label | translate }}</span>
+          </div>
+        }
+      </div>
+
+      <button class="main-action-btn" 
+              (click)="isServicesPopoverOpen = false"
+              [disabled]="selectedServices.length === 0">
+        <span>{{ 'SEARCH.BUTTON' | translate }}</span>
+      </button>
+
+    </div>
+  </ng-template>
+</ion-popover>

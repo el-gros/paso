@@ -1,13 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { SnapToTrailService } from './snapToTrail.service';
+import { SearchService } from './search.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SmartRouteBuilderService {
   private translate = inject(TranslateService);
-  private snapToTrailService = inject(SnapToTrailService);
+  private searchService = inject(SearchService);
 
   // ==========================================
   // 1. ACCIONES PÚBLICAS
@@ -26,12 +27,8 @@ export class SmartRouteBuilderService {
     const endIndex = coords.length - 1;
     const startCoord = coords[startIndex];
     const endCoord = coords[endIndex];
-
-    const distanceStartEnd = this.snapToTrailService.calculateHaversineDistance(
-      { lat: startCoord[1], lng: startCoord[0] },
-      { lat: endCoord[1], lng: endCoord[0] }
-    );
-    const isCircular = distanceStartEnd < 200; 
+    
+    const isCircular = this.searchService.calculateHaversineDistance({ lat: startCoord[1], lng: startCoord[0] }, { lat: endCoord[1], lng: endCoord[0] }) < 200;
     
     // 1. Obtener la info del punto de inicio (Barrio y Ciudad) con el nuevo método
     const startInfo = await this.getPlaceInfo(startCoord[1], startCoord[0]);
@@ -114,10 +111,10 @@ export class SmartRouteBuilderService {
     let maxDist = 0;
     let furthest = coords[0];
     const p1 = { lat: startCoord[1], lng: startCoord[0] };
-
+    
     for (const c of coords) {
       const p2 = { lat: c[1], lng: c[0] };
-      const dist = this.snapToTrailService.calculateHaversineDistance(p1, p2);
+      const dist = this.searchService.calculateHaversineDistance(p1, p2);
       if (dist > maxDist) {
         maxDist = dist;
         furthest = c;
@@ -160,14 +157,14 @@ private intersectRouteWithPOIs(coords: [number, number][], dataArray: any[], poi
       // Calculamos la distancia acumulada sumando el tramo desde el punto anterior
       if (i > 0) {
         const prevPoint = { lat: coords[i-1][1], lng: coords[i-1][0] };
-        accumulatedDistanceMeters += this.snapToTrailService.calculateHaversineDistance(prevPoint, currentPoint);
+        accumulatedDistanceMeters += this.searchService.calculateHaversineDistance(prevPoint, currentPoint);
       }
       
-      const currentKm = accumulatedDistanceMeters / 1000; 
+      const currentKm = accumulatedDistanceMeters / 1000;
       
       for (const poi of pois) {
         if (!usedPOIs.has(poi.name)) {
-          const dist = this.snapToTrailService.calculateHaversineDistance(currentPoint, poi);
+          const dist = this.searchService.calculateHaversineDistance(currentPoint, poi);
           
           if (dist <= thresholdMeters) {
             // Filtro anti-spam: Deben pasar al menos 250m desde el último POI listado
@@ -242,23 +239,17 @@ private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: numb
   /**
    * Obtiene información detallada del lugar (barrio, ciudad) usando Geocoding Inverso.
    */
-  private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> {
+  private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> { // Removed misleading comment
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18`;
-      const response = await fetch(url, { headers: { 'Accept-Language': this.translate.currentLang || 'es' } });
-      const data = await response.json();
-      
-      if (data && data.address) {
-        const addr = data.address;
-        
-        // 1. Buscamos el nivel más local posible (Barrio puro)
-        const localName = addr.square || addr.neighbourhood || addr.quarter || addr.suburb || addr.city_district || addr.village || addr.town || this.translate.instant('RECORD.START_POINT');
-        
-        // 2. Buscamos la ciudad o municipio general
-        const cityName = addr.city || addr.town || addr.village || addr.county || '';
-
-        return { local: localName, city: cityName };
+      const result = await firstValueFrom(this.searchService.reverseGeocode(lat, lng));
+      if (result) {
+        const parts = result.display_name.split(',');
+        return { 
+          local: result.short_name || result.name || this.translate.instant('RECORD.START_POINT'),
+          city: parts.length > 1 ? parts[1].trim() : '' 
+        };
       }
+
       return { local: this.translate.instant('RECORD.UNKNOWN_PLACE'), city: '' };
     } catch (error) {
       return { local: this.translate.instant('RECORD.UNKNOWN_PLACE'), city: '' };

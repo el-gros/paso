@@ -411,7 +411,13 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       let trackToProcess = JSON.parse(JSON.stringify(track));
 
       // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
-      const trailReference =
+
+      // Limpiamos los rebotes del GPS usando el filtro de Triangulación + Velocidad
+      const rawCoords = trackToProcess.features[0].geometry.coordinates;
+      const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15); // 15 m/s (~54 km/h) por defecto
+      trackToProcess.features[0].geometry.coordinates = cleanedCoords;
+
+      const trailReference = // This is not used in the current version of prepareTrackWithTrails
         trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
           lng: c[0],
           lat: c[1],

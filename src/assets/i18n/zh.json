@@ -23,6 +23,7 @@
     "TOIMAGE_FAILED": "无法生成图像",
     "CONFIRM_SHARING": "您确定要与他人分享您的位置吗？",
     "YES": "是",
+    "NO_MAP_AVAILABLE": "地图不可用",
     "REMOVE_REFERENCE": "参考"
   },
   "SEARCH": {
@@ -45,7 +46,11 @@
     "DRIVE": "驾车",
     "NO_SPEECHRECOGNITION": "语音识别不可用",
     "NO_DESCRIPTION": "无可用描述",
-    "CHECK_WIKIPEDIA": "检查维基百科"
+    "CHECK_WIKIPEDIA": "检查维基百科",
+    "SERVICES": "服务",
+    "SERVICES_FOUND": "找到 {{count}} 个服务",
+    "NO_SERVICES_FOUND": "该区域未找到任何服务",
+    "SERVICES_ERROR": "搜索服务时出错"
   },
   "ARCHIVE": {
     "TRACKS": "轨迹",
@@ -187,6 +192,17 @@
     "green": "绿色",
     "cyan": "青色",
     "blue": "蓝色"
+  },
+  "SERVICES": {
+    "PHARMACY": "药店",
+    "HOSPITAL": "医院",
+    "ATM": "自动取款机",
+    "ACCOMMODATION": "住宿",
+    "EV_CHARGING": "电动车充电",
+    "PARKING": "停车场",
+    "TRANSPORT": "交通",
+    "SUPERMARKET": "超市",
+    "FOOD": "美食"
   },
   "BATTERY": {
     "GENERIC_MSG": "为确保 GPS 跟踪不中断，请调整电池设置：",

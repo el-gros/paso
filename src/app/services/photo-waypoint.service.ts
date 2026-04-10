@@ -60,7 +60,7 @@ export class PhotoWaypointService {
         const address: any = await Promise.race([addressPromise, timeoutPromise]);
         
         if (address) {
-          const foundName = address.short_name || address.name || address.display_name;
+          const foundName = address.short_name || address.name || address.display_name; // Use || for fallback
           if (foundName) placeName = `📷 ${foundName}`; 
         }
       } catch (geoError) {

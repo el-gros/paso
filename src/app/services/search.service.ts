@@ -18,12 +18,23 @@ export class SearchService {
   // 1. CONFIGURACIÓN DE PROVEEDORES Y ENDPOINTS
   // ==========================================================================
 
-  private readonly SEARCH_PROVIDER: 'photon' | 'nominatim' | 'mapbox' = 'photon';
-  private readonly MAPBOX_TOKEN = 'TU_TOKEN_DE_MAPBOX_AQUI'; // Solo necesario si usas 'mapbox'
-
   private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
   private readonly NOMINATIM_LOOKUP_URL = 'https://nominatim.openstreetmap.org/lookup';
   private readonly ORS_BASE_URL = 'https://api.openrouteservice.org/v2/directions';
+  private readonly OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
+
+  // Mapping for service IDs to Overpass tags
+  private readonly serviceTagMap: { [key: string]: string[] } = {
+    'pharmacy': ['amenity=pharmacy'],
+    'hospital': ['amenity=hospital', 'amenity=clinic', 'amenity=doctors'],
+    'atm': ['amenity=atm', 'amenity=bank', 'amenity=bureau_de_change'],
+    'accommodation': ['tourism=hotel', 'tourism=guest_house', 'tourism=hostel', 'tourism=motel', 'tourism=camp_site', 'tourism=alpine_hut'],
+    'ev_charging': ['amenity=charging_station'],
+    'parking': ['amenity=parking'],
+    'transport': ['amenity=bus_station', 'railway=station', 'public_transport=station', 'highway=bus_stop', 'amenity=taxi'],
+    'supermarket': ['shop=supermarket', 'shop=convenience', 'shop=bakery'],
+    'food': ['amenity=restaurant', 'amenity=cafe', 'amenity=fast_food'],
+  };
 
   constructor(
     private http: HttpClient,
@@ -43,28 +54,14 @@ export class SearchService {
   async searchPlaces(query: string, limit: number = 12): Promise<LocationResult[]> {
     if (!query.trim()) return [];
 
-    // Definimos el orden de prioridad según el proveedor seleccionado por defecto
-    let providersOrder: ('photon' | 'nominatim' | 'mapbox')[] = [];
-    
-    if (this.SEARCH_PROVIDER === 'photon') {
-      providersOrder = ['photon', 'nominatim', 'mapbox'];
-    } else if (this.SEARCH_PROVIDER === 'nominatim') {
-      providersOrder = ['nominatim', 'photon', 'mapbox'];
-    } else {
-      providersOrder = ['mapbox', 'photon', 'nominatim'];
-    }
+    // Intentamos Nominatim primero (OSM) y luego Mapbox como fallback
+    const providersOrder: ('nominatim')[] = ['nominatim'];
 
     // Intentamos buscar iterando por la lista de proveedores hasta obtener éxito
     for (const provider of providersOrder) {
       try {
-        // Si es mapbox y no hay token, saltamos al siguiente
-        if (provider === 'mapbox' && this.MAPBOX_TOKEN === 'TU_TOKEN_DE_MAPBOX_AQUI') {
-          continue;
-        }
-
         // Ejecutamos la búsqueda real
         return await this.executeSearch(provider, query, limit);
-
       } catch (error) {
         // Si el servidor falla (caída, timeout, error 500), capturamos y seguimos al siguiente
         console.warn(`[SearchService] ⚠️ El proveedor '${provider}' falló. Intentando con el siguiente...`);
@@ -160,6 +157,97 @@ export class SearchService {
     } as Track;
   }
   
+  /**
+   * Realiza una búsqueda de servicios específicos en OpenStreetMap usando Overpass API.
+   * @param serviceIds Categorías seleccionadas (ej: ['pharmacy', 'bus_stop'])
+   * @param bbox Área de búsqueda en formato [minLat, minLon, maxLat, maxLon]
+   */
+  async searchServices(serviceIds: string[], bbox: number[]): Promise<any[]> {
+    if (!serviceIds?.length || !bbox || bbox.length < 4) return [];
+
+    // 1. Extraemos las coordenadas (vienen reordenadas desde el componente)
+    const south = bbox[0];
+    const west  = bbox[1];
+    const north = bbox[2];
+    const east  = bbox[3];
+
+    // 2. Construimos los filtros de la Query
+    let filters = '';
+    serviceIds.forEach(id => {
+      const tags = this.serviceTagMap[id] || [];
+      tags.forEach(tag => {
+        // 🚀 CAMBIO 1: Sustituimos 'node' por 'nwr' (Node, Way, Relation)
+        filters += `nwr[${tag}](${south},${west},${north},${east});`;
+      });
+    });
+
+    // 🚀 CAMBIO 2: Cambiamos 'out body;' por 'out center;' para que nos dé el centro de los edificios
+    const query = `[out:json][timeout:15];(${filters});out center;`;
+    
+    // 3. Lista de servidores (Endpoints) para redundancia
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://lz4.overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.nchc.org.tw/api/interpreter'
+    ];
+
+    // 4. Bucle de ejecución SECUENCIAL
+    for (const baseUrl of endpoints) {
+      try {
+        console.log(`📡 [SearchService] Intentando servidor: ${baseUrl}`);
+        
+        const response = await CapacitorHttp.get({
+          url: `${baseUrl}?data=${encodeURIComponent(query)}`,
+          connectTimeout: 15000,
+          readTimeout: 15000
+        });
+
+        // Si el servidor responde correctamente (200 OK)
+        if (response.status === 200) {
+          const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+          
+          if (!data.elements || data.elements.length === 0) {
+            console.log(`ℹ️ [SearchService] Sin resultados en ${baseUrl}.`);
+            return []; // Si responde 200 pero vacío, es que realmente no hay nada
+          }
+
+          console.log(`✅ [SearchService] ¡Éxito en ${baseUrl}! Encontrados ${data.elements.length} resultados.`);
+
+          // Mapeamos los resultados al formato de nuestra App
+          return data.elements.map((e: any) => {
+            // Identificamos el serviceId original para el color del pin
+            const matchedId = serviceIds.find(id => 
+              (this.serviceTagMap[id] || []).some(t => {
+                const [k, v] = t.split('=');
+                return e.tags?.[k] === v;
+              })
+            );
+
+            // 🚀 CAMBIO 3: Overpass guarda las coordenadas de los 'ways' en e.center, y las de los 'nodes' en e.
+            const lat = e.center ? e.center.lat : e.lat;
+            const lon = e.center ? e.center.lon : e.lon;
+
+            return {
+              lat: lat,
+              lon: lon,
+              name: e.tags?.name || this.translate.instant(`SERVICES.${(e.tags?.amenity || e.tags?.tourism || 'POI').toUpperCase()}`),
+              serviceId: matchedId,
+              type: matchedId
+            };
+          });
+        }
+
+        console.warn(`⚠️ [SearchService] Servidor ${baseUrl} ocupado (Status ${response.status}). Reintentando con el siguiente...`);
+
+      } catch (err) {
+        console.error(`❌ [SearchService] Error de conexión con ${baseUrl}`);
+      }
+    }
+
+    console.error('🛑 [SearchService] Todos los servidores de Overpass han fallado.');
+    return [];
+  }
   // ==========================================================================
   // 4. GEOCODIFICACIÓN INVERSA (Reverse Geocoding)
   // ==========================================================================
@@ -190,8 +278,8 @@ export class SearchService {
         const result: LocationResult = {
           lat: featureLat,
           lon: featureLon,
-          name: f.text ?? '(no name)',
-          display_name: f.place_name ?? f.text ?? '(no name)',
+          name: f.text || '(no name)',
+          display_name: f.place_name || f.text || '(no name)',
           short_name: this.buildMapTilerShortName(f),
           type: f.place_type?.[0] ?? 'unknown',
           place_id: f.id ?? undefined,
@@ -217,69 +305,6 @@ export class SearchService {
   private async executeSearch(provider: string, query: string, limit: number): Promise<LocationResult[]> {
     switch (provider) {
       
-      // --------------------------------------------------
-      // A. PHOTON (Híbrido - basado en Komoot)
-      // --------------------------------------------------
-      case 'photon': {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${limit}`;
-        const response = await CapacitorHttp.get({ url });
-        
-        if (response.status !== 200) throw new Error('Photon API Error');
-        
-        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        if (!data.features) return [];
-
-        return await Promise.all(data.features.map(async (f: any) => {
-          const props = f.properties;
-          const [lon, lat] = f.geometry.coordinates;
-          const name = props.name || props.street || props.city || '(Sin nombre)';
-          
-          const displayParts = [name, props.city, props.state, props.country].filter(Boolean);
-          const display_name = [...new Set(displayParts)].join(', ');
-
-          let geojson = f.geometry;
-          let boundingbox = props.extent || [lon, lat, lon, lat];
-
-          if (props.osm_type && props.osm_id) {
-             const nominatimData = await this.fetchNominatimGeoJSON(props.osm_type, props.osm_id);
-             if (nominatimData) {
-                geojson = nominatimData.geojson || geojson;
-                boundingbox = nominatimData.boundingbox ? nominatimData.boundingbox.map(Number) : boundingbox;
-             }
-          }
-
-          return {
-            lat, lon, name,
-            short_name: displayParts.slice(0, 2).join(', '),
-            display_name, place_id: props.osm_id?.toString(),
-            type: props.osm_value || props.osm_key,
-            geojson, boundingbox
-          } as LocationResult;
-        }));
-      }
-
-      // --------------------------------------------------
-      // B. MAPBOX (Requiere token)
-      // --------------------------------------------------
-      case 'mapbox': {
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${this.MAPBOX_TOKEN}&limit=${limit}`;
-        const response = await CapacitorHttp.get({ url });
-        
-        if (response.status !== 200) throw new Error('Mapbox API Error');
-
-        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        if (!data.features) return [];
-
-        return data.features.map((f: any) => {
-          const [lon, lat] = f.center;
-          return {
-            lat, lon, name: f.text, short_name: f.text, display_name: f.place_name,
-            place_id: f.id, type: f.place_type?.[0] || 'unknown', geojson: f.geometry,
-            boundingbox: f.bbox || [lon, lat, lon, lat]
-          } as LocationResult;
-        });
-      }
-
       // --------------------------------------------------
       // C. NOMINATIM (OpenStreetMap)
       // --------------------------------------------------
@@ -341,5 +366,33 @@ export class SearchService {
       c.id.startsWith('place') || c.id.startsWith('locality')
     )?.text;
     return city ? `${main}, ${city}` : main;
+  }
+
+  /**
+   * Calcula la distancia real entre dos coordenadas usando la fórmula de Haversine.
+   */
+  public calculateHaversineDistance(p1: { lat: number, lng: number }, p2: { lat: number, lng: number }): number {
+    const R = 6371e3; 
+    const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+    const dLon = (p2.lng - p1.lng) * Math.PI / 180;
+    
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /**
+   * Proyecta un punto sobre un segmento de línea definido por A y B.
+   */
+  public findNearestPointOnSegment(P: { lat: number, lng: number }, A: { lat: number, lng: number }, B: { lat: number, lng: number }) {
+    const dx = B.lng - A.lng;
+    const dy = B.lat - A.lat;
+    if (dx === 0 && dy === 0) return A;
+    let t = ((P.lng - A.lng) * dx + (P.lat - A.lat) * dy) / (dx * dx + dy * dy);
+    t = Math.max(0, Math.min(1, t));
+    return { lat: A.lat + t * dy, lng: A.lng + t * dx };
   }
 }

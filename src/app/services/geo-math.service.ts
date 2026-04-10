@@ -360,5 +360,65 @@ export class GeoMathService {
     return { newCoordinates, newProperties };
   }
 
+  /**
+   * Filtro Híbrido GPS: Detecta picos midiendo la relación espacial (triangulación)
+   * Y verificando que el salto ocurrió a una velocidad físicamente irreal.
+   */
+  public removeGpsSpikesHybrid(coordinates: number[][], maxValidSpeedMps: number = 15): number[][] {
+    if (coordinates.length < 3) return coordinates;
+
+    const cleaned = [coordinates[0]];
+
+    for (let i = 1; i < coordinates.length - 1; i++) {
+      const prev = cleaned[cleaned.length - 1]; 
+      const curr = coordinates[i];
+      const next = coordinates[i + 1];
+
+      // 1. Cálculos de Distancia (Geometría)
+      // Usamos TU función computeDistance y multiplicamos por 1000 para trabajar en metros
+      const distIn = this.computeDistance(prev[0], prev[1], curr[0], curr[1]) * 1000; 
+      const distOut = this.computeDistance(curr[0], curr[1], next[0], next[1]) * 1000; 
+      const distBase = this.computeDistance(prev[0], prev[1], next[0], next[1]) * 1000; 
+
+      // 2. Cálculos de Tiempo y Velocidad (Física)
+      // Asumimos que el timestamp en milisegundos está en el índice 3: [lng, lat, alt, time]
+      const timeInSecs = (curr[3] - prev[3]) / 1000;
+      const timeOutSecs = (next[3] - curr[3]) / 1000;
+
+      const speedIn = timeInSecs > 0 ? distIn / timeInSecs : 0;
+      const speedOut = timeOutSecs > 0 ? distOut / timeOutSecs : 0;
+
+      // DEFINICIÓN FINAL DE UN PICO (SPIKE):
+      
+      // Condición A: Efecto Boomerang (La base es menos de un tercio de la ida + vuelta)
+      const isBoomerangEffect = distBase < (distIn + distOut) / 3; 
+
+      // Condición B: Velocidad imposible (La ida O la vuelta superan el límite humano razonable)
+      const isImpossibleSpeed = speedIn > maxValidSpeedMps || speedOut > maxValidSpeedMps;
+
+      // Condición C: Salto mínimo (evitamos filtrar micro-movimientos de 20 metros estando parados)
+      const isSignificantDistance = distIn > 20;
+
+      if (isBoomerangEffect && isImpossibleSpeed && isSignificantDistance) {
+        // OUTLIER CONFIRMADO: Es un pico GPS.
+        const midLng = (prev[0] + next[0]) / 2;
+        const midLat = (prev[1] + next[1]) / 2;
+        const midAlt = (prev[2] + next[2]) / 2;
+        const midTime = prev[3] + ((next[3] - prev[3]) / 2); 
+
+        // Reemplazamos por el punto medio
+        cleaned.push([midLng, midLat, midAlt, midTime]);
+        console.log(`Pico híbrido descartado. Velocidad: ${speedIn.toFixed(2)}m/s, Distancia: ${distIn.toFixed(0)}m`);
+      } else {
+        // PUNTO VÁLIDO: Puede ser un zig-zag lento o una ruta recta rápida.
+        cleaned.push(curr);
+      }
+    }
+
+    // Asegurarnos de meter el último punto
+    cleaned.push(coordinates[coordinates.length - 1]);
+    return cleaned;
+  }
+
 
 }

@@ -14,7 +14,6 @@ interface OfflineMapConfig {
 /** Define la estructura completa del objeto de configuración global. */
 interface GlobalConfig {
   mapTilerKey: string;
-  mapbox_public: string;
   ors_key: string;
   weather_key: string;
   okButton: { text: string; role: string; cssClass: string; };
@@ -31,7 +30,6 @@ export var global: GlobalConfig = {
   // 1. API KEYS & EXTERNAL SERVICE CONFIGURATIONS
   // ==========================================================================
   mapTilerKey: 'VndVluazDWO8Aijuzfpp',
-  mapbox_public: '', // Reemplazar con tu clave pública de Mapbox si la usas
   ors_key: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23',
   weather_key: 'e39530f127b7c58745ddeb78f71e2019',
 

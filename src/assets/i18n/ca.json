@@ -23,6 +23,7 @@
     "TOIMAGE_FAILED": "No s'ha pogut generar la imatge",
     "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
     "YES": "Sí",
+    "NO_MAP_AVAILABLE": "Mapa no disponible",
     "REMOVE_REFERENCE": "Ref."
   },
   "SEARCH": {
@@ -45,7 +46,11 @@
     "DRIVE": "Cotxe",
     "NO_SPEECHRECOGNITION": "Reconeixement de veu no disponible",
     "NO_DESCRIPTION": "La descripció no està disponible",
-    "CHECK_WIKIPEDIA": "Consulteu Wikipedia"
+    "CHECK_WIKIPEDIA": "Consulteu Wikipedia",
+    "SERVICES": "Serveis",
+    "SERVICES_FOUND": "S'han trobat {{count}} serveis",
+    "NO_SERVICES_FOUND": "No s'han trobat serveis en aquesta zona",
+    "SERVICES_ERROR": "Error en cercar serveis"
   },
 "ARCHIVE": {
   "TRACKS": "Trajectes",
@@ -187,6 +192,17 @@
     "green": "verd",
     "cyan": "cian",
     "blue": "blau"
+  },
+  "SERVICES": {
+    "PHARMACY": "Farmàcia",
+    "HOSPITAL": "Hospital",
+    "ATM": "Caixer automàtic",
+    "ACCOMMODATION": "Allotjament",
+    "EV_CHARGING": "Càrrega elèctrica",
+    "PARKING": "Aparcament",
+    "TRANSPORT": "Transport",
+    "SUPERMARKET": "Supermercat",
+    "FOOD": "Restauració"
   },
   "BATTERY": {
     "GENERIC_MSG": "Per assegurar que el seguiment GPS no s'aturi, ajusta la configuració de la bateria:",

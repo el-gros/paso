@@ -163,6 +163,7 @@
     h2 { font-weight: 600; color: #444; font-size: 14px; }
   }
 }
+
 /* ==========================================================================
    6. ANIMACIONES Y EFECTOS
    ========================================================================== */
@@ -170,4 +171,61 @@
   0% { opacity: 1; transform: scale(1); } 
   50% { opacity: 0.5; transform: scale(1.1); } 
   100% { opacity: 1; transform: scale(1); } 
+}
+
+/* ==========================================================================
+   7. SELECCIÓN DE SERVICIOS (Grid y Chips)
+   ========================================================================== */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.service-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 6px;
+  border-radius: 14px; /* Forma de cuadrado suavizado */
+  background: rgba(0, 0, 0, 0.03); /* Gris muy sutil por defecto */
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 26px;
+    color: var(--service-color); /* Mantiene su color original siempre */
+    margin-bottom: 8px;
+    transition: transform 0.2s ease;
+  }
+
+  span {
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase; /* Textos en mayúsculas */
+    letter-spacing: 0.3px;
+    color: #777; /* Gris oscuro por defecto */
+    line-height: 1.2;
+  }
+
+  /* --- ESTADO SELECCIONADO --- */
+  &.active {
+    /* Mezcla el color del servicio con transparente para crear un fondo del 15% de opacidad */
+    background: color-mix(in srgb, var(--service-color) 15%, transparent);
+    
+    /* Borde sutil del mismo color */
+    border: 1px solid color-mix(in srgb, var(--service-color) 40%, transparent);
+
+    ion-icon {
+      transform: scale(1.15); /* Efecto de latido al seleccionar */
+    }
+
+    span {
+      color: var(--service-color); /* El texto toma el color del icono */
+    }
+  }
 }

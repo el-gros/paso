@@ -23,6 +23,7 @@
     "TOIMAGE_FAILED": "Could not generate image",
     "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
     "YES": "Yes",
+    "NO_MAP_AVAILABLE": "Map not available",
     "REMOVE_REFERENCE": "Ref."
   },
   "SEARCH": {
@@ -45,7 +46,11 @@
     "DRIVE": "Drive",
     "NO_SPEECHRECOGNITION": "Speech recognition not available",
     "NO_DESCRIPTION": "No description available",
-    "CHECK_WIKIPEDIA": "Check Wikipedia"
+    "CHECK_WIKIPEDIA": "Check Wikipedia",
+    "SERVICES": "Services",
+    "SERVICES_FOUND": "Found {{count}} services",
+    "NO_SERVICES_FOUND": "No services found in this area",
+    "SERVICES_ERROR": "Error searching for services"
   },
   "ARCHIVE": {
     "TRACKS": "Tracks",
@@ -187,6 +192,17 @@
     "green": "Green",
     "cyan": "Cyan",
     "blue": "Blue"
+  },
+  "SERVICES": {
+    "PHARMACY": "Pharmacy",
+    "HOSPITAL": "Hospital",
+    "ATM": "ATM",
+    "ACCOMMODATION": "Accommodation",
+    "EV_CHARGING": "EV Charging",
+    "PARKING": "Parking",
+    "TRANSPORT": "Transport",
+    "SUPERMARKET": "Supermarket",
+    "FOOD": "Dining"
   },
   "BATTERY": {
     "GENERIC_MSG": "To ensure GPS tracking does not stop, please adjust your battery settings:",

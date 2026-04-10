@@ -17,6 +17,10 @@ import { Keyboard } from '@capacitor/keyboard';
 import { Subscription, Subject } from 'rxjs'; // 🚀 AÑADIDO: Subject
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators'; // 🚀 AÑADIDO: Operadores
 
+// --- OPENLAYERS ---
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
 import { GeographyService } from '../services/geography.service';
@@ -26,6 +30,7 @@ import { LanguageService } from '../services/language.service';
 import { WikiService, WikiSummary } from '../services/wiki.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
 import { SearchService } from '../services/search.service';
+import { StylerService } from '../services/styler.service'; // Added for styling POIs
 
 // --- INTERFACES ---
 import { LocationResult, Track, WikiWeatherResult } from '../../globald';
@@ -57,8 +62,9 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private zone = inject(NgZone);
   private wikiService = inject(WikiService);
   private weatherService = inject(WeatherService);
+  private stylerService = inject(StylerService); // Injected StylerService
   private searchService = inject(SearchService);
-
+    
   private backButtonSub?: Subscription;
   private searchSubscription?: Subscription; // 🚀 NUEVO
   public searchSubject = new Subject<string>(); // 🚀 NUEVO: Escuchador de tipeo
@@ -69,6 +75,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   public query3: string = '';
   public results: LocationResult[] = [];
   public loading: boolean = false;
+  public isServicesPopoverOpen: boolean = false;
+  public selectedServices: string[] = [];
   public activeRouteField: 'origin' | 'destination' = 'origin';
   public originCoords: [number, number] | null = null;
   public destinationCoords: [number, number] | null = null;
@@ -85,15 +93,31 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     { id: 'driving-car', icon: 'car-sharp', label: 'SEARCH.DRIVE' },
   ];
 
+  public serviceItems = [
+    // Grupo Rojo: Salud
+    { id: 'pharmacy', icon: 'medical-sharp', label: 'SERVICES.PHARMACY', color: 'red' },
+    { id: 'hospital', icon: 'heart-sharp', label: 'SERVICES.HOSPITAL', color: 'red' },
+    // Grupo Azul: Transporte y Energía
+    { id: 'ev_charging', icon: 'flash-sharp', label: 'SERVICES.EV_CHARGING', color: 'blue' },
+    { id: 'parking', icon: 'car-sharp', label: 'SERVICES.PARKING', color: 'blue' },
+    { id: 'transport', icon: 'bus-sharp', label: 'SERVICES.TRANSPORT', color: 'blue' },
+    // Grupo Verde: Otros servicios
+    { id: 'atm', icon: 'card-sharp', label: 'SERVICES.ATM', color: 'green' },
+    { id: 'accommodation', icon: 'bed-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
+    { id: 'supermarket', icon: 'basket-sharp', label: 'SERVICES.SUPERMARKET', color: 'green' },
+    { id: 'food', icon: 'restaurant-sharp', label: 'SERVICES.FOOD', color: 'green' }
+  ];
+
   constructor(private popoverController: PopoverController) {}
 
   ngOnInit() {
     this.backButtonSub = this.platform.backButton.subscribeWithPriority(
       10,
       () => {
-        this.reference.isSearchPopoverOpen = false;
+        this.reference.isSearchPopoverOpen = false; // This closes the place search popover
         this.reference.isGuidePopoverOpen = false;
         this.reference.isSearchGuidePopoverOpen = false;
+        this.isServicesPopoverOpen = false;
       }
     );
 
@@ -248,7 +272,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         this.selectedTransport
       );
 
-      if (responseData?.features?.length > 0) {
+      if (responseData?.routes?.length > 0) {
         const newTrack = this.searchService.processRouteResponse(
           responseData,
           this.query2,
@@ -257,6 +281,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         );
         await this.displayRouteOnMap(newTrack);
       }
+
     } catch (error: any) {
       this.fs.displayToast(error.message || 'SEARCH.ROUTING_ERROR', 'error');
     } finally {
@@ -381,4 +406,143 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
     this.reference.isGuidePopoverOpen = true;
     this.reference.isSearchGuidePopoverOpen = false;
   }
+
+  openServicesSearch() {
+    this.reference.isSearchGuidePopoverOpen = false; // Close main search guide popover
+    this.isServicesPopoverOpen = true;
+  }
+
+  toggleService(serviceId: string) {
+    const index = this.selectedServices.indexOf(serviceId);
+    if (index > -1) {
+      this.selectedServices.splice(index, 1);
+    } else {
+      this.selectedServices.push(serviceId);
+    }
+  }
+
+  clearServices() {
+    this.selectedServices = [];
+    this.geography.searchLayer?.getSource()?.clear(); // Clear services from map when clearing selection
+  }
+
+  // New method to handle dismissal of the services popover
+  async onServicesPopoverDismiss() {
+    this.isServicesPopoverOpen = false;
+    if (this.selectedServices.length > 0) {
+      await this.performServicesSearch();
+    } else {
+      // Clear previous service search results if no services are selected
+      this.geography.searchLayer?.getSource()?.clear();
+    }
+  }
+
+// Variable de control para evitar ráfagas de peticiones
+  private isSearching = false;
+
+  async performServicesSearch() {
+    // Si ya hay una búsqueda en marcha, no permitimos otra hasta que termine
+    if (this.isSearching) return;
+
+    this.isSearching = true;
+    this.loading = true;
+    this.cdr.detectChanges();
+
+    try {
+      const map = this.geography.map;
+      if (!map) {
+        this.fs.displayToast(this.translate.instant('MAP.NO_MAP_AVAILABLE'), 'error');
+        return;
+      }
+
+      const view = map.getView();
+      const size = map.getSize();
+      if (!size) throw new Error('Map size not available');
+
+      // 1. Obtenemos el centro y el extent actual (en grados por useGeographic)
+      const center = view.getCenter();
+      let extent = view.calculateExtent(size);
+
+      // 2. LÓGICA DE REDUCCIÓN AUTOMÁTICA (UX Inteligente)
+      // Si el mapa está muy lejos (> 0.05 grados o aprox 5km), centramos la búsqueda a un cuadro de ~3km
+      const latDiff = Math.abs(extent[3] - extent[1]);
+      const lonDiff = Math.abs(extent[2] - extent[0]);
+
+      if ((latDiff > 0.4 || lonDiff > 0.4) && center && center.length >= 2) {
+        console.log("📏 [PerformSearch] Área muy grande. Reduciendo a 3km para asegurar éxito.");
+        const delta = 0.015; 
+        
+        extent = [
+          center[0] - delta, // minLon
+          center[1] - delta, // minLat
+          center[0] + delta, // maxLon
+          center[1] + delta  // maxLat
+        ];
+        
+        this.fs.displayToast(this.translate.instant('SEARCH.REDUCED_AREA'), 'info');
+      }
+
+      /**
+       * 3. Formato para searchServices: [minLat, minLon, maxLat, maxLon]
+       * Importante: Reordenamos el extent de OL [minLon, minLat, maxLon, maxLat]
+       */
+      const bbox = [extent[1], extent[0], extent[3], extent[2]];
+
+      // Llamada al servicio con la query optimizada
+      const serviceResults = await this.searchService.searchServices(this.selectedServices, bbox);
+
+      // 4. GESTIÓN DE RESULTADOS EN EL MAPA
+      // Limpiamos siempre la capa de búsqueda antes de pintar
+      this.geography.searchLayer?.getSource()?.clear();
+
+      if (serviceResults && serviceResults.length > 0) {
+        const features = serviceResults.map((result: any) => {
+          const feature = new Feature({
+            geometry: new Point([result.lon, result.lat]),
+            name: result.name,
+            type: result.type,
+            serviceId: result.serviceId
+          });
+          
+          // 🚨 CHIVATO PARA LA CONSOLA:
+          // Esto te dirá exactamente qué ID está intentando buscar
+          console.log(`Buscando servicio ID: "${result.serviceId}" en serviceItems...`);
+
+          // Buscamos la configuración
+          const serviceConfig = this.serviceItems.find(s => s.id === result.serviceId);
+
+          if (!serviceConfig) {
+            console.error(`¡Fallo! No existe ningún item en serviceItems con el id: "${result.serviceId}"`);
+          }
+
+          // Si falla, en lugar de usar 'location-sharp' (que es un pin), 
+          // usaremos 'alert' y le pondremos un color rojo chillón para detectar el error en el mapa.
+          const pinColor = serviceConfig ? serviceConfig.color : '#ff0000';
+          const icon = serviceConfig ? serviceConfig.icon : 'alert'; // 👈 Cambiado para que deje de ser un pin
+
+          feature.setStyle(this.stylerService.createIconPinStyle(pinColor, icon));
+          return feature;
+        });
+
+        this.geography.searchLayer?.getSource()?.addFeatures(features);
+        
+        /* this.fs.displayToast(
+          this.translate.instant('SEARCH.SERVICES_FOUND', { count: serviceResults.length }), 
+          'success'
+        );*/
+      } else {
+        this.fs.displayToast(this.translate.instant('SEARCH.NO_SERVICES_FOUND'), 'warning');
+      }
+
+    } catch (error) {
+      console.error('❌ Error performing services search:', error);
+      this.fs.displayToast(this.translate.instant('SEARCH.SERVICES_ERROR'), 'error');
+    } finally {
+      // Liberamos el bloqueo para permitir futuras búsquedas
+      this.isSearching = false;
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
 }
