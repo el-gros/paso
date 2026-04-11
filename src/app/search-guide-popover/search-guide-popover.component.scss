@@ -228,4 +228,26 @@
       color: var(--service-color); /* El texto toma el color del icono */
     }
   }
+
+  .custom-ui-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 6px;
+    color: var(--service-color); /* fill="currentColor" coge esto automáticamente */
+    transition: transform 0.2s ease;
+  }
+
+  /* 2. Mantener la animación de tamaño cuando está seleccionado */
+  &.active {
+    background: color-mix(in srgb, var(--service-color) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--service-color) 40%, transparent);
+
+    .custom-ui-icon {
+      transform: scale(1.15); 
+    }
+
+    span {
+      color: var(--service-color); 
+    }
+  }
 }

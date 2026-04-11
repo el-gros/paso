@@ -237,16 +237,37 @@ private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: numb
   // ==========================================================================
 
   /**
-   * Obtiene información detallada del lugar (barrio, ciudad) usando Geocoding Inverso.
+   * Obtiene información detallada del lugar usando Geocoding Inverso.
+   * Filtra cadenas basura como correos, URLs o códigos postales largos.
    */
-  private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> { // Removed misleading comment
+  private async getPlaceInfo(lat: number, lng: number): Promise<{ local: string, city: string }> {
     try {
       const result = await firstValueFrom(this.searchService.reverseGeocode(lat, lng));
+      
       if (result) {
+        // Obtenemos el nombre base (ej: "Gràcia")
+        let localName = result.short_name || result.name || '';
+        
+        // Obtenemos la ciudad de los campos extra
         const parts = result.display_name.split(',');
+        let cityName = parts.length > 1 ? parts[1].trim() : '';
+
+        // 🛡️ LIMPIEZA DE BASURA
+        // Si el nombre contiene un email (@), una URL (http/www) o números raros largos, 
+        // lo desechamos y pasamos al siguiente fragmento útil.
+        if (this.isGarbageText(localName)) {
+           localName = parts.length > 0 && !this.isGarbageText(parts[0]) 
+                       ? parts[0].trim() 
+                       : this.translate.instant('RECORD.START_POINT');
+        }
+        
+        if (this.isGarbageText(cityName)) {
+           cityName = parts.length > 2 ? parts[2].trim() : '';
+        }
+
         return { 
-          local: result.short_name || result.name || this.translate.instant('RECORD.START_POINT'),
-          city: parts.length > 1 ? parts[1].trim() : '' 
+          local: localName || this.translate.instant('RECORD.START_POINT'),
+          city: cityName 
         };
       }
 
@@ -254,5 +275,24 @@ private async fetchPOIsFromOverpass(minLat: number, minLng: number, maxLat: numb
     } catch (error) {
       return { local: this.translate.instant('RECORD.UNKNOWN_PLACE'), city: '' };
     }
+  }
+
+  /**
+   * Helper para detectar si un texto de OpenStreetMap es basura (Email, Web, Código Postal).
+   */
+  private isGarbageText(text: string): boolean {
+    if (!text) return true;
+    
+    // Contiene email
+    if (text.includes('@')) return true;
+    
+    // Contiene web
+    if (text.includes('http') || text.includes('www.')) return true;
+    
+    // Contiene código postal/teléfono extraño (muchos números seguidos sin letras)
+    // Ej: "08002", "12345-678"
+    if (/^[\d\s\-+]+$/.test(text) && text.length > 4) return true;
+
+    return false;
   }
 }

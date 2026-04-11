@@ -30,7 +30,7 @@ import { LanguageService } from '../services/language.service';
 import { WikiService, WikiSummary } from '../services/wiki.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
 import { SearchService } from '../services/search.service';
-import { StylerService } from '../services/styler.service'; // Added for styling POIs
+import { StylerService } from '../services/styler.service'; 
 
 // --- INTERFACES ---
 import { LocationResult, Track, WikiWeatherResult } from '../../globald';
@@ -62,7 +62,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
   private zone = inject(NgZone);
   private wikiService = inject(WikiService);
   private weatherService = inject(WeatherService);
-  private stylerService = inject(StylerService); // Injected StylerService
+  public stylerService = inject(StylerService); // Injected StylerService
   private searchService = inject(SearchService);
     
   private backButtonSub?: Subscription;
@@ -95,18 +95,18 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
 
   public serviceItems = [
     // Grupo Rojo: Salud
-    { id: 'pharmacy', icon: 'medical-sharp', label: 'SERVICES.PHARMACY', color: 'red' },
-    { id: 'hospital', icon: 'heart-sharp', label: 'SERVICES.HOSPITAL', color: 'red' },
+    { id: 'pharmacy', icon: 'medkit-sharp', label: 'SERVICES.PHARMACY', color: 'red' },
+    { id: 'hospital', icon: 'hospital-sharp', label: 'SERVICES.HOSPITAL', color: 'red' },
     // Grupo Azul: Transporte y Energía
     { id: 'police', icon: 'shield-sharp', label: 'SERVICES.POLICE', color: 'blue' },
     { id: 'ev_charging', icon: 'flash-sharp', label: 'SERVICES.EV_CHARGING', color: 'blue' },
     { id: 'fuel', icon: 'flame-sharp', label: 'SERVICES.FUEL', color: 'blue' },
-    { id: 'parking', icon: 'car-sharp', label: 'SERVICES.PARKING', color: 'blue' },
+    { id: 'parking', icon: 'parking-sharp', label: 'SERVICES.PARKING', color: 'blue' },
     { id: 'transport', icon: 'bus-sharp', label: 'SERVICES.TRANSPORT', color: 'blue' },
     // Grupo Verde: Otros servicios
     { id: 'atm', icon: 'card-sharp', label: 'SERVICES.ATM', color: 'green' },
-    { id: 'accommodation', icon: 'cart-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
-    { id: 'supermarket', icon: 'basket-sharp', label: 'SERVICES.SUPERMARKET', color: 'green' },
+    { id: 'accommodation', icon: 'bed-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
+    { id: 'supermarket', icon: 'cart-sharp', label: 'SERVICES.SUPERMARKET', color: 'green' },
     { id: 'food', icon: 'restaurant-sharp', label: 'SERVICES.FOOD', color: 'green' }
   ];
 
@@ -520,7 +520,7 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
           // Si falla, en lugar de usar 'location-sharp' (que es un pin), 
           // usaremos 'alert' y le pondremos un color rojo chillón para detectar el error en el mapa.
           const pinColor = serviceConfig ? serviceConfig.color : '#ff0000';
-          const icon = serviceConfig ? serviceConfig.icon : 'alert'; // 👈 Cambiado para que deje de ser un pin
+          const icon = serviceConfig ? serviceConfig.icon : 'alert';
 
           feature.setStyle(this.stylerService.createIconPinStyle(pinColor, icon));
           return feature;

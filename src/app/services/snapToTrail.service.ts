@@ -80,6 +80,7 @@ export class SnapToTrailService {
         for (let j = 0; j < finalSmooth.length; j++) {
           const originalIndex = snappedIndices[j];
           data[originalIndex].altitude = finalSmooth[j]; 
+          data[originalIndex].isMSL = true;
         }
       } else {
         console.warn('[SnapService] La API falló o devolvió datos incompletos. Se mantiene la altitud original.');

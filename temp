@@ -398,7 +398,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Realiza el procesado final del archivo (Filtro 2D, Snap-to-trail + DEM, Kalman/EGM96, Estadísticas)
+   * Realiza el procesado final del archivo (Snap-to-trail, optimización)
    * y lo persiste en el almacenamiento local.
    */
   async saveFile(name: string, description: string) {
@@ -407,65 +407,37 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     try {
-      // 1. Clonamos el track original crudo de forma segura
+      // 1. Clonamos el track original crudo
       let trackToProcess = JSON.parse(JSON.stringify(track));
-      const rawCoords = trackToProcess.features[0].geometry.coordinates;
 
-      // ==========================================================
       // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
-      // ==========================================================
 
-      // PASO 1: FILTRO DE OUTLIERS (Rebotes GPS)
-      // Como usas useGeographic, rawCoords está en [lon, lat] (grados).
-      // Limpiamos saltos ilógicos usando Triangulación + Velocidad límite (15 m/s)
-      const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15);
+      // Limpiamos los rebotes del GPS usando el filtro de Triangulación + Velocidad
+      const rawCoords = trackToProcess.features[0].geometry.coordinates;
+      const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15); // 15 m/s (~54 km/h) por defecto
       trackToProcess.features[0].geometry.coordinates = cleanedCoords;
 
-      // PASO 2: SNAP TO TRAIL & CORRECCIÓN DEM (Filtro Gaussiano)
-      let snappedTrack;
-      try {
-        // 🚀 RESTAURADO: Creamos el array de referencia para engañar al sistema
-        // y que no aborte la función, permitiendo que llegue a la descarga del DEM.
-        const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
+      const trailReference = // This is not used in the current version of prepareTrackWithTrails
+        trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
           lng: c[0],
           lat: c[1],
         }));
-
-        snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(
-          trackToProcess,
-          trailReference // <-- Pasamos el array en lugar de []
-        );
-      } catch (err) {
-        console.warn('⚠️ Fallo en Snap-to-Trail o DEM. Se usará GPS puro con EGM96.', err);
-        snappedTrack = trackToProcess;
-      }
-
-      // 🛡️ SAFETY CHECK: Asegurar que el Snap no haya destruido la libreta de datos
-      // geoMath.filterSpeedAndAltitude necesita 'data' para leer isMSL y calcular desniveles
-      if (!snappedTrack.features[0].geometry.properties.data || 
-          snappedTrack.features[0].geometry.properties.data.length === 0) {
-        snappedTrack.features[0].geometry.properties.data = trackToProcess.features[0].geometry.properties.data;
-      }
-
-      // PASO 3: ESTADÍSTICAS FINALES (Y RED DE SEGURIDAD EGM96)
-      // Aplica Filtro de Kalman a la velocidad. Si un punto NO tiene isMSL=true (falló el DEM),
-      // le aplica la corrección EGM96 offline. Luego suma desniveles.
+      const snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(
+        trackToProcess,
+        trailReference
+      );
       const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(
         snappedTrack,
-        0 // initial = 0 procesará todo el track
+        0
       );
-
-      // ==========================================================
       // --- FIN DEL PIPELINE ---
-      // ==========================================================
 
-      // Validamos que el resultado final tenga coordenadas válidas. Si no, restauramos el original.
+      // 🛡️ SAFETY CHECK: Si el pipeline falla y vacía las coordenadas, usamos el track original
       const finalTrack =
         optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
           ? optimizedTrack
           : trackToProcess;
 
-      // 2. Preparación final de Metadata
       const feature = finalTrack.features[0];
       const saveDate = new Date();
       const dateKey = saveDate.toISOString();
@@ -484,10 +456,10 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 3. Guardamos el archivo optimizado en el Storage (IndexedDB/SQLite)
+      // 3. Guardamos el archivo optimizado en el Storage con su dateKey
       await this.fs.storeSet(dateKey, finalTrack);
 
-      // 4. Creamos y guardamos el ítem para la lista (Collection Metadata)
+      // 4. Creamos el ítem para la lista (Metadata)
       const newItem = {
         name,
         date: saveDate,
@@ -495,17 +467,18 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
         description,
         isChecked: false,
         photos: routePhotos,
-        file: dateKey, // Clave foránea al archivo del track
+        file: dateKey, // 👈 CRITICAL FIX: The foreign key linking to the track file
 
+        // Optional: If your list UI relies on these properties to show stats before opening the map
         distance: feature.properties.distance || 0,
         duration: feature.properties.duration || 0,
       };
 
       this.fs.collection.unshift(newItem);
+
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.collection = [...this.fs.collection];
 
-      // 5. Limpieza, interfaz visual y cierre de popovers
       await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
 
@@ -513,10 +486,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       this.present.currentTrack = undefined;
       this.geography.currentLayer?.getSource()?.clear();
       this.closeAllPopovers();
-
     } catch (e) {
-      console.error('❌ Error crítico al guardar el Track:', e);
-      this.fs.displayToast('Error al guardar la ruta', 'error');
+      console.error('Save failed', e);
     } finally {
       this.loading = false;
       this.cd.detectChanges();

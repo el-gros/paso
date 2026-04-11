@@ -201,13 +201,17 @@
   <ng-template>
     <div class="popover-island glass-form">
       
-      <div class="services-grid">
+    <div class="services-grid">
         @for (item of serviceItems; track item.id) {
           <div class="service-chip" 
             [class.active]="selectedServices.includes(item.id)" 
             (click)="toggleService(item.id)"
             [style.--service-color]="item.color">
-            <ion-icon [name]="item.icon"></ion-icon>
+            
+            <svg viewBox="0 0 24 24" class="custom-ui-icon">
+              <path [attr.d]="stylerService.getIconPath(item.icon)" fill="currentColor"></path>
+            </svg>
+            
             <span>{{ item.label | translate }}</span>
           </div>
         }
