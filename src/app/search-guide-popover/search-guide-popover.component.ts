@@ -274,7 +274,8 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
         this.selectedTransport
       );
 
-      if (responseData?.routes?.length > 0) {
+      if (responseData?.features?.length > 0 || responseData?.routes?.length > 0) {
+        
         const newTrack = this.searchService.processRouteResponse(
           responseData,
           this.query2,
@@ -282,6 +283,10 @@ export class SearchGuidePopoverComponent implements OnInit, OnDestroy {
           this.selectedTransport
         );
         await this.displayRouteOnMap(newTrack);
+        
+      } else {
+        // Añadimos un aviso visual por si la API responde bien pero no encuentra camino
+        this.fs.displayToast(this.translate.instant('SEARCH.NO_ROUTE_FOUND') || 'No se encontró un camino', 'warning');
       }
 
     } catch (error: any) {
