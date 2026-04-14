@@ -51,7 +51,10 @@
     "SERVICES_FOUND": "S'han trobat {{count}} serveis",
     "NO_SERVICES_FOUND": "No s'han trobat serveis en aquesta zona",
     "SERVICES_ERROR": "Error en cercar serveis",
-    "REDUCED_AREA": "L'àrea de cerca s'ha reduït per millorar el rendiment"
+    "REDUCED_AREA": "L'àrea de cerca s'ha reduït per millorar el rendiment",
+    "APPLY": "Aplicar",
+    "EDIT": "Editar",
+    "CLEAR_MAP": "Netejar mapa"
   },
 "ARCHIVE": {
   "TRACKS": "Trajectes",

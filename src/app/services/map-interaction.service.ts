@@ -23,6 +23,9 @@ export class MapInteractionService {
   /** Notifica que el mapa debe redibujarse (usado por Tab1Page) */
   public readonly mapNeedsUpdate$ = new Subject<void>();
 
+  public isMapPickerActive = false;
+  public onMapPointSelected = new Subject<[number, number]>();
+  
   constructor(
     private geography: GeographyService,
     private reference: ReferenceService,
@@ -58,6 +61,28 @@ export class MapInteractionService {
    * Captura el píxel clicado y determina qué feature ha sido seleccionada.
    */
   private handleMapClick = async (event: MapBrowserEvent<any>) => {
+    
+    // --- 🚀 NUEVO: INTERCEPTADOR DE SELECCIÓN EN MAPA ---
+    if (this.isMapPickerActive) {
+      // Como usamos useGeographic(), event.coordinate ya viene en formato [lon, lat]
+      const coords = event.coordinate as [number, number];
+      
+      this.isMapPickerActive = false; // Apagamos el modo captura
+      
+      // Restauramos el cursor normal en el mapa
+      if (this.geography.map) {
+        this.geography.map.getTargetElement().style.cursor = '';
+      }
+      
+      // Emitimos el punto hacia el SearchComponent
+      this.onMapPointSelected.next(coords);
+      
+      // 🛑 Retornamos inmediatamente para que el clic no seleccione otras líneas o waypoints
+      return; 
+    }
+    // ------------------------------------------------------
+
+    // Lógica original: Búsqueda de features si no estamos en modo "captura"
     const map = this.geography.map;
     if (!map || !this.geography.archivedLayer?.getSource()) return;
 

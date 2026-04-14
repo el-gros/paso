@@ -1,0 +1,146 @@
+<div class="search-container glass-effect">
+  
+  <div class="mode-tabs">
+    <div class="tab" [class.active]="mode === 'place'" (click)="setMode('place')">
+      <ion-icon name="location-outline"></ion-icon>
+      <span>{{ 'SEARCH.LOCATION' | translate }}</span>
+    </div>
+    <div class="tab" [class.active]="mode === 'route'" (click)="setMode('route')">
+      <ion-icon name="map-outline"></ion-icon>
+      <span>{{ 'SEARCH.ROUTE' | translate }}</span>
+    </div>
+    <div class="tab" [class.active]="mode === 'services'" (click)="setMode('services')">
+      <ion-icon name="apps-outline"></ion-icon>
+      <span>{{ 'SEARCH.SERVICES' | translate }}</span>
+    </div>
+    
+    <div class="close-btn" (click)="closePanel()">
+      <ion-icon name="close-outline"></ion-icon>
+    </div>
+  </div>
+
+  <div class="search-body">
+    
+    @if (mode === 'place' || (mode === 'route' && step < 3)) {
+      <div class="input-wrapper">
+        <ion-input 
+          [placeholder]="(mode === 'route' ? (step === 1 ? 'SEARCH.FROM' : 'SEARCH.TO') : 'SEARCH.SEARCH') | translate"
+          [(ngModel)]="query"
+          (ionInput)="onInput($event)"
+          class="main-input">
+        </ion-input>
+
+        <div class="quick-actions">
+          @if (mode === 'place' && (query.length > 0 || reference.foundPlace)) {
+            <ion-icon name="trash-outline" class="danger-icon" (click)="clearPlace()"></ion-icon>
+            <div class="divider"></div>
+          }
+          @if (mode === 'route' && (query.length > 0 || reference.foundRoute)) {
+            <ion-icon name="trash-outline" class="danger-icon" (click)="clearRoute()"></ion-icon>
+            <div class="divider"></div>
+          }
+          
+          <ion-icon 
+            [name]="isListening ? 'mic-sharp' : 'mic-outline'" 
+            [class.mic-active]="isListening"
+            (click)="startDictation()">
+          </ion-icon>
+          
+          <ion-icon name="locate-outline" (click)="useCurrentLocation()"></ion-icon>
+          
+          <ion-icon 
+            name="map-outline" 
+            [class.active-picker]="mapInteraction.isMapPickerActive"
+            (click)="pickFromMap($event)">
+          </ion-icon>
+        </div>
+
+      </div>
+
+      <div class="results-box" *ngIf="results.length > 0">
+        <div class="result-item" *ngFor="let res of results" (click)="handleSelection(res)">
+          <ion-icon name="pin-outline"></ion-icon>
+          <div class="text">
+            <strong>{{ res.short_name || res.name }}</strong>
+            <p>{{ res.display_name }}</p>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (mode === 'route' && step === 3) {
+      <div class="route-summary">
+        <div class="point"><strong>A:</strong> {{ routeData.origin.label }}</div>
+        <div class="point"><strong>B:</strong> {{ routeData.destination.label }}</div>
+        
+        <div class="transport-selector">
+          <div class="t-card" *ngFor="let t of transportMeans" 
+               [class.active]="routeData.transport === t.id"
+               (click)="routeData.transport = t.id">
+            <ion-icon [name]="t.icon"></ion-icon>
+          </div>
+        </div>
+
+        <ion-row class="action-buttons-row">
+          <ion-col size="8">
+            <ion-button expand="block" (click)="getRoute()" [disabled]="loading">
+              <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+              <span *ngIf="!loading">{{ 'SEARCH.GET_ROUTE' | translate }}</span>
+            </ion-button>
+          </ion-col>
+          <ion-col size="4">
+            <ion-button expand="block" color="danger" fill="outline" (click)="clearRoute()">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-col>
+        </ion-row>
+        
+        <div class="text-center mt-2">
+          <ion-button fill="clear" size="small" color="medium" (click)="step = 1">{{ 'SEARCH.EDIT' | translate }}</ion-button>
+        </div>
+      </div>
+    }
+
+    @if (mode === 'services') {
+      <div class="services-box">
+        <div class="grid">
+          
+          <div class="s-item" *ngFor="let s of serviceItems" 
+               [class.active]="selectedServices.includes(s.id)"
+               [style.--service-color]="s.color" 
+               (click)="toggleService(s.id)">
+            <div class="icon-circle" [style.background-color]="s.color">
+              <svg viewBox="0 0 24 24" class="custom-ui-icon">
+                <path [attr.d]="stylerService.getIconPath(s.icon)" fill="currentColor"></path>
+              </svg>
+            </div>
+            <span>{{ s.label | translate }}</span>
+          </div>
+
+          <div class="s-item clear-map-item" (click)="clearServicesMap()">
+            <div class="icon-circle">
+              <ion-icon name="trash-bin-outline"></ion-icon>
+            </div>
+            <span>{{ 'SEARCH.CLEAR_MAP' | translate }}</span>
+          </div>
+
+        </div>
+        
+        <ion-row class="action-buttons-row">
+          <ion-col size="8">
+            <ion-button expand="block" color="primary" (click)="applyServices()" [disabled]="selectedServices.length === 0 || isSearching">
+              <ion-spinner *ngIf="isSearching" name="dots"></ion-spinner>
+              <span *ngIf="!isSearching">{{ 'SEARCH.APPLY' | translate }}</span>
+            </ion-button>
+          </ion-col>
+          <ion-col size="4">
+            <ion-button expand="block" color="danger" fill="outline" (click)="clearServicesSelection()" [disabled]="selectedServices.length === 0">
+              <ion-icon name="close-circle-outline"></ion-icon>
+            </ion-button>
+          </ion-col>
+        </ion-row>
+      </div>
+    }
+
+  </div>
+</div>

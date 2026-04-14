@@ -51,7 +51,10 @@
     "SERVICES_FOUND": "Se han encontrado {{count}} servicios",
     "NO_SERVICES_FOUND": "No se han encontrado servicios en esta zona",
     "SERVICES_ERROR": "Error al buscar servicios",
-    "RERDUCED_AREA": "El área de búsqueda se ha reducido para mejorar el rendimiento"
+    "REDUCED_AREA": "El área de búsqueda se ha reducido para mejorar el rendimiento",
+    "APPLY": "Aplicar",
+    "EDIT": "Editar",
+    "CLEAR_MAP": "Limpiar mapa"
   },
   "ARCHIVE": {
     "TRACKS": "Trayectos",

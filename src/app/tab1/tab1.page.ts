@@ -15,7 +15,7 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { RecordPopoverComponent } from '../record-popover.component';
-import { SearchGuidePopoverComponent } from '../search-guide-popover/search-guide-popover.component';
+import { SearchComponent } from '../search/search.component';
 import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
 import { WikiCardComponent } from '../wiki-card.component';
 import { AppStateService } from '../services/appState.service'; 
@@ -35,7 +35,7 @@ register();
   styleUrls: ['tab1.page.scss'],
   imports: [
     IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
-    SearchGuidePopoverComponent, WikiCardComponent
+    SearchComponent, WikiCardComponent
   ],
   providers: [DecimalPipe, DatePipe],
 })

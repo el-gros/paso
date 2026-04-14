@@ -51,7 +51,10 @@
     "SERVICES_FOUND": "找到 {{count}} 个服务",
     "NO_SERVICES_FOUND": "该区域未找到任何服务",
     "SERVICES_ERROR": "搜索服务时出错",
-    "REDUCED_AREA": "搜索区域已缩小以提高性能"
+    "REDUCED_AREA": "搜索区域已缩小以提高性能",
+    "APPLY": "应用",
+    "EDIT": "编辑",
+    "CLEAR_MAP": "清除地图"
   },
   "ARCHIVE": {
     "TRACKS": "轨迹",

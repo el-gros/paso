@@ -1,0 +1,312 @@
+/* ==========================================================================
+   CONTENEDOR PRINCIPAL (FLOTANTE)
+   ========================================================================== */
+.search-container {
+  position: absolute;
+  /* Usamos safe-area para respetar el "notch" de los móviles, con 15px de respaldo */
+  top: env(safe-area-inset-top, 15px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  max-width: 450px;
+  
+  /* PROPIEDADES CRÍTICAS PARA QUE QUEDE POR ENCIMA Y SEA CLICABLE */
+  z-index: 99999 !important;
+  pointer-events: auto; 
+
+  /* Estética Glassmorphism */
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Soporte Safari/iOS */
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.4);
+
+  /* Animación de entrada */
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translate(-50%, -20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* ==========================================================================
+   TABS SUPERIORES (LUGARES / RUTAS / SERVICIOS)
+   ========================================================================== */
+.mode-tabs {
+  display: flex;
+  background: rgba(0,0,0,0.03);
+  padding: 5px;
+  
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 0.7rem;
+    color: #666;
+    transition: 0.3s;
+    cursor: pointer;
+    
+    ion-icon { 
+      font-size: 1.4rem; 
+      margin-bottom: 3px; 
+    }
+    
+    &.active {
+      color: var(--ion-color-primary);
+      font-weight: bold;
+    }
+  }
+}
+
+/* ==========================================================================
+   CUERPO DE BÚSQUEDA Y CAMPOS DE TEXTO
+   ========================================================================== */
+.search-body {
+  padding: 15px;
+  
+  .input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #f5f5f5;
+    border-radius: 12px;
+    padding: 0 10px;
+    
+    .main-input { 
+      --padding-start: 10px; 
+    }
+    
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      
+      ion-icon { 
+        font-size: 1.4rem; 
+        color: #888; 
+        cursor: pointer; 
+        transition: color 0.2s;
+        
+        &:active {
+          color: var(--ion-color-primary);
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   LISTA DE RESULTADOS
+   ========================================================================== */
+.results-box {
+  margin-top: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+  
+  .result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    
+    &:active {
+      background: #f9f9f9;
+    }
+    
+    ion-icon { 
+      color: #999; 
+    }
+    
+    .text {
+      strong { 
+        font-size: 0.9rem; 
+        color: #333; 
+      }
+      p { 
+        margin: 0; 
+        font-size: 0.75rem; 
+        color: #888; 
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   GRID DE SERVICIOS (MODO 3)
+   ========================================================================== */
+.services-box {
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .s-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 12px;
+    transition: 0.2s;
+    cursor: pointer;
+    
+    .icon-circle {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      margin-bottom: 5px;
+      
+      /* Aseguramos que el SVG encaje perfecto */
+      .custom-ui-icon {
+        width: 24px;
+        height: 24px;
+        display: block;
+      }
+    }
+    
+    span { 
+      font-size: 0.7rem; 
+      text-align: center; 
+    }
+    
+    /* Efecto dinámico de color al estar activo */
+    &.active { 
+      background: #fafafa; 
+      outline: 2px solid var(--service-color); 
+      box-shadow: 0 4px 12px var(--service-color);
+    }
+  }
+}
+
+/* ==========================================================================
+   SELECTOR DE TRANSPORTE (RUTAS - PASO 3)
+   ========================================================================== */
+.transport-selector {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 15px 0;
+  
+  .t-card {
+    padding: 15px;
+    border-radius: 15px;
+    background: #f5f5f5;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    ion-icon {
+      font-size: 1.5rem;
+    }
+    
+    &.active { 
+      background: var(--ion-color-primary); 
+      color: white; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+  }
+}
+
+/* --- NUEVOS ESTILOS PARA CIERRE Y BORRADO --- */
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  background: rgba(255, 50, 50, 0.1);
+  color: #ff4444;
+  cursor: pointer;
+  border-left: 1px solid rgba(0,0,0,0.05);
+  transition: all 0.2s;
+
+  ion-icon {
+    font-size: 1.6rem;
+  }
+
+  &:active {
+    background: rgba(255, 50, 50, 0.2);
+  }
+}
+
+.danger-icon {
+  color: #ff4444 !important;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: #ccc;
+  margin: 0 5px;
+}
+
+.action-buttons-row {
+  margin-top: 10px;
+  
+  ion-col {
+    padding: 0 5px; // Reduce el espaciado entre los botones
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+.mt-2 {
+  margin-top: 10px;
+}
+
+/* Estilo especial para el botón de Limpiar Mapa (Servicios) */
+.clear-map-item {
+  .icon-circle {
+    background-color: #ffffff !important;
+    color: #ff4444 !important;
+    border: 2px solid #ff4444;
+    
+    ion-icon {
+      font-size: 1.4rem !important;
+    }
+  }
+  
+  span {
+    color: #ff4444;
+    font-weight: 600;
+  }
+
+  &:active {
+    background: #fff0f0 !important;
+    .icon-circle {
+      background-color: #ff4444 !important;
+      color: #ffffff !important;
+    }
+  }
+}
+
+/* Animación para el micrófono activo */
+.mic-active {
+  color: #ff4444 !important;
+  animation: micPulse 1.2s infinite;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Indicador visual de que estamos seleccionando en el mapa */
+.active-picker {
+  color: var(--ion-color-primary) !important;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
