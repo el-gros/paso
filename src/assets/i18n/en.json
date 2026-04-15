@@ -54,7 +54,12 @@
     "REDUCED_AREA": "Search area has been reduced to improve performance",
     "APPLY": "Apply",
     "EDIT": "Edit",
-    "CLEAR_MAP": "Clear map"
+    "CLEAR_MAP": "Clear map",
+    "TOUCH_MAP_TO_SELECT": "Tap a point on the map to select it",
+    "MAP_SELECTION_CANCELED": "Map selection canceled",
+    "SEARCHING_SERVICES": "Searching for services...",
+    "PINS_REMOVED": "Service points removed from the map",
+    "MAP_POINT_SELECTED": "Point selected on map"
   },
   "ARCHIVE": {
     "TRACKS": "Tracks",

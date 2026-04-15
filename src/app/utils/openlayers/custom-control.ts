@@ -55,7 +55,7 @@ export class LocationButtonControl extends Control {
       padding: '8px 16px',
       borderRadius: '20px',
       boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      fontSize: '15px',
+      fontSize: '18px',
       fontWeight: '800',
       color: '#333',
       whiteSpace: 'normal',

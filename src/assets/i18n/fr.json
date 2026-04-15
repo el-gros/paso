@@ -54,7 +54,12 @@
     "REDUCED_AREA": "La zone de recherche a été réduite pour améliorer les performances",
     "APPLY": "Appliquer",
     "EDIT": "Modifier",
-    "CLEAR_MAP": "Effacer la carte"
+    "CLEAR_MAP": "Effacer la carte",
+    "TOUCH_MAP_TO_SELECT": "Touchez un point sur la carte pour le sélectionner",
+    "MAP_SELECTION_CANCELED": "Sélection sur la carte annulée",
+    "SEARCHING_SERVICES": "Recherche de services...",
+    "PINS_REMOVED": "Points de service supprimés de la carte",
+    "MAP_POINT_SELECTED": "Point sélectionné sur la carte"
   },
   "ARCHIVE": {
     "TRACKS": "Parcours",

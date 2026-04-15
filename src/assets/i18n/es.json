@@ -54,7 +54,12 @@
     "REDUCED_AREA": "El área de búsqueda se ha reducido para mejorar el rendimiento",
     "APPLY": "Aplicar",
     "EDIT": "Editar",
-    "CLEAR_MAP": "Limpiar mapa"
+    "CLEAR_MAP": "Limpiar mapa",
+    "TOUCH_MAP_TO_SELECT": "Toca un punto en el mapa para seleccionarlo",
+    "MAP_SELECTION_CANCELED": "Selección en mapa cancelada",
+    "SEARCHING_SERVICES": "Buscando servicios...",
+    "PINS_REMOVED": "Pines de servicio eliminados del mapa",
+    "MAP_POINT_SELECTED": "Punto seleccionado en mapa"
   },
   "ARCHIVE": {
     "TRACKS": "Trayectos",

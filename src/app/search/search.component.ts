@@ -12,13 +12,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule, Platform } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Keyboard } from '@capacitor/keyboard';
+import { Subject, Subscription, firstValueFrom } from 'rxjs';
 
 // --- OPENLAYERS ---
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
+import Overlay from 'ol/Overlay';
 
 // --- SERVICIOS GLOBALES ---
 import { SearchService } from '../services/search.service';
@@ -69,6 +70,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   private zone = inject(NgZone);
   public mapInteraction = inject(MapInteractionService);
   private mapPickerSub?: Subscription;
+  private mapLabelOverlay?: Overlay;
+  private mapLabelElement?: HTMLElement;
+  private labelTimeout?: any;
 
   // Estado UI
   public mode: SearchMode = 'place';
@@ -117,22 +121,101 @@ export class SearchComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit() {
+    // 1. Configuración de la búsqueda por texto
     this.searchSub = this.searchSubject.pipe(
       debounceTime(700),
       distinctUntilChanged()
     ).subscribe(term => this.performSearch(term));
 
-    // --- Escuchador del mapa ---
-    this.mapPickerSub = this.mapInteraction.onMapPointSelected.subscribe(coords => {
-      this.zone.run(() => {
-        const lon = coords[0];
-        const lat = coords[1];
+    // 2. Escuchador del mapa con Geocodificación Inversa y Rótulo Custom
+    this.mapPickerSub = this.mapInteraction.onMapPointSelected.subscribe(async (coords) => {
+      
+      const lon = coords[0];
+      const lat = coords[1];
+
+      // --- A. INICIALIZAR Y MOSTRAR EL RÓTULO (Estilos en línea a prueba de Angular) ---
+      if (!this.mapLabelOverlay) {
+        this.mapLabelElement = document.createElement('div');
         
-        // Creamos un resultado compatible con LocationResult
+        // Estilos inyectados directamente al HTML para que no se borren al cerrar el panel
+        Object.assign(this.mapLabelElement.style, {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          fontSize: '16px', // Tamaño aumentado a 16px
+          fontWeight: '800',
+          color: '#333',
+          whiteSpace: 'normal',
+          maxWidth: '80vw',
+          textAlign: 'center',
+          lineHeight: '1.4',
+          opacity: '0',
+          pointerEvents: 'none',
+          transition: 'opacity 0.3s ease-in-out',
+          position: 'relative'
+        });
+        
+        this.mapLabelOverlay = new Overlay({
+          element: this.mapLabelElement,
+          positioning: 'bottom-center',
+          stopEvent: false,
+          offset: [0, -25] // Elevación exacta de tu custom-control
+        });
+        this.geography.map?.addOverlay(this.mapLabelOverlay);
+      }
+
+      // Reiniciamos el timeout si el usuario hace clics rápidos
+      if (this.labelTimeout) clearTimeout(this.labelTimeout);
+
+      // Posicionamos en el mapa y mostramos "Buscando..."
+      if (this.mapLabelElement && this.mapLabelOverlay) {
+        this.mapLabelOverlay.setPosition([lon, lat]);
+        this.mapLabelElement.textContent = this.translate.instant('RECORD.SEARCHING_PLACE');
+        this.mapLabelElement.style.opacity = '1';
+      }
+
+      // --- B. BÚSQUEDA DEL NOMBRE (Geocoding) ---
+      let placeName = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      let shortName = placeName;
+
+      try {
+        const result: any = await firstValueFrom(this.searchService.reverseGeocode(lat, lon));
+        if (result) {
+          shortName = result.short_name || result.name || placeName;
+          placeName = result.display_name || result.name || placeName;
+          if (shortName === '(no name)') shortName = placeName;
+          
+          // Actualizamos el rótulo con el nombre real
+          if (this.mapLabelElement) {
+            this.mapLabelElement.textContent = `📍 ${shortName}`;
+          }
+        }
+      } catch (error) {
+        if (this.mapLabelElement) {
+          this.mapLabelElement.textContent = this.translate.instant('RECORD.UNKNOWN_PLACE');
+        }
+      }
+
+      // --- C. LIMPIEZA AUTOMÁTICA DEL RÓTULO ---
+      this.labelTimeout = setTimeout(() => {
+        if (this.mapLabelElement) this.mapLabelElement.style.opacity = '0';
+        
+        // Esperamos a que termine la transición de opacidad y lo eliminamos del mapa
+        setTimeout(() => {
+          if (this.mapLabelOverlay) {
+            this.geography.map?.removeOverlay(this.mapLabelOverlay);
+            this.mapLabelOverlay = undefined;
+          }
+        }, 300);
+      }, 4000);
+
+      // --- D. CREAR RESULTADO Y CERRAR CICLO ---
+      this.zone.run(() => {
         const resMock: any = {
-          name: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-          short_name: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-          display_name: `Punto seleccionado en mapa`,
+          name: placeName,
+          short_name: shortName,
+          display_name: placeName || this.translate.instant('SEARCH.MAP_POINT_SELECTED'),
           lon: lon,
           lat: lat,
           // Añadimos estas propiedades vacías para evitar errores en showLocationOnMap
@@ -140,7 +223,11 @@ export class SearchComponent implements OnInit, OnDestroy {
           geojson: { type: 'Point', coordinates: [lon, lat] }
         };
         
+        // Lo enviamos a la función principal
         this.handleSelection(resMock);
+        
+        // Aseguramos que el panel vuelva a abrirse tras el clic
+        this.reference.isSearchGuidePopoverOpen = true;
         this.cdr.detectChanges();
       });
     });
@@ -316,7 +403,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (this.mapInteraction.isMapPickerActive) {
       this.mapInteraction.isMapPickerActive = false;
       if (this.geography.map) this.geography.map.getTargetElement().style.cursor = '';
-      this.fs.displayToast('Selección en mapa cancelada', 'warning');
+      this.fs.displayToast(this.translate.instant('SEARCH.MAP_SELECTION_CANCELED'), 'warning');
       return;
     }
 
@@ -327,7 +414,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.geography.map.getTargetElement().style.cursor = 'crosshair';
     }
     
-    this.fs.displayToast('Toca un punto en el mapa para seleccionarlo', 'info');
+    this.fs.displayToast(this.translate.instant('SEARCH.TOUCH_MAP_TO_SELECT'), 'info');
   }
 
   // --- SERVICIOS ---
@@ -391,7 +478,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         
         // 2. Solo cerramos el panel y avisamos cuando todo ha ido bien
         this.closePanel();
-        this.fs.displayToast(`¡${features.length} servicios encontrados!`, 'success');
+        this.fs.displayToast(this.translate.instant('SEARCH.SERVICES_FOUND', { count: features.length }), 'success');
       } else {
         this.fs.displayToast(this.translate.instant('SEARCH.NO_SERVICES_FOUND'), 'warning');
       }
@@ -435,7 +522,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.closePanel();
       }
     } catch (error) {
-      this.fs.displayToast('Error al calcular la ruta', 'danger');
+      this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'), 'danger');
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -450,7 +537,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   clearServicesMap() {
     this.geography.searchLayer?.getSource()?.clear();
-    this.fs.displayToast('Pines de servicio eliminados del mapa', 'success');
+    this.fs.displayToast(this.translate.instant('SEARCH.PINS_REMOVED'), 'success');
   }
 
   // --- LÓGICA DE VOZ (DICTADO) ---

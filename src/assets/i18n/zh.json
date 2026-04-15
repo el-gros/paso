@@ -54,7 +54,12 @@
     "REDUCED_AREA": "搜索区域已缩小以提高性能",
     "APPLY": "应用",
     "EDIT": "编辑",
-    "CLEAR_MAP": "清除地图"
+    "CLEAR_MAP": "清除地图",
+    "TOUCH_MAP_TO_SELECT": "点击地图上的点进行选择",
+    "MAP_SELECTION_CANCELED": "已取消地图选择",
+    "SEARCHING_SERVICES": "正在搜索服务...",
+    "PINS_REMOVED": "服务点已从地图上移除",
+    "MAP_POINT_SELECTED": "已在地图上选择点"
   },
   "ARCHIVE": {
     "TRACKS": "轨迹",

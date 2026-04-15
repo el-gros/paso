@@ -54,7 +54,12 @@
     "REDUCED_AREA": "L'àrea de cerca s'ha reduït per millorar el rendiment",
     "APPLY": "Aplicar",
     "EDIT": "Editar",
-    "CLEAR_MAP": "Netejar mapa"
+    "CLEAR_MAP": "Netejar mapa",
+    "TOUCH_MAP_TO_SELECT": "Toca un punt al mapa per seleccionar-lo",
+    "MAP_SELECTION_CANCELED": "Selecció al mapa cancel·lada",
+    "SEARCHING_SERVICES": "Buscant serveis...",
+    "PINS_REMOVED": "Punts de servei eliminats del mapa",
+    "MAP_POINT_SELECTED": "Punt seleccionat al mapa"
   },
 "ARCHIVE": {
   "TRACKS": "Trajectes",
