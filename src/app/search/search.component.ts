@@ -100,24 +100,24 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // Listas completas restauradas
   public transportMeans = [
-    { id: 'foot-walking', icon: 'walk-sharp', label: 'SEARCH.WALK' },
-    { id: 'foot-hiking', icon: 'trending-up-sharp', label: 'SEARCH.HIKE' },
-    { id: 'cycling-regular', icon: 'bicycle-sharp', label: 'SEARCH.CYCLE' },
-    { id: 'driving-car', icon: 'car-sharp', label: 'SEARCH.DRIVE' },
+    { id: 'foot-walking', icon: 'walk-outline', label: 'SEARCH.WALK' },
+    { id: 'foot-hiking', icon: 'trending-up-outline', label: 'SEARCH.HIKE' },
+    { id: 'cycling-regular', icon: 'bicycle-outline', label: 'SEARCH.CYCLE' },
+    { id: 'driving-car', icon: 'car-outline', label: 'SEARCH.DRIVE' },
   ];
 
   public serviceItems = [
-    { id: 'pharmacy', icon: 'medkit-sharp', label: 'SERVICES.PHARMACY', color: 'red' },
-    { id: 'hospital', icon: 'hospital-sharp', label: 'SERVICES.HOSPITAL', color: 'red' },
-    { id: 'police', icon: 'shield-sharp', label: 'SERVICES.POLICE', color: 'blue' },
-    { id: 'ev_charging', icon: 'flash-sharp', label: 'SERVICES.EV_CHARGING', color: 'blue' },
-    { id: 'fuel', icon: 'flame-sharp', label: 'SERVICES.FUEL', color: 'blue' },
-    { id: 'parking', icon: 'parking-sharp', label: 'SERVICES.PARKING', color: 'blue' },
-    { id: 'transport', icon: 'bus-sharp', label: 'SERVICES.TRANSPORT', color: 'blue' },
-    { id: 'atm', icon: 'card-sharp', label: 'SERVICES.ATM', color: 'green' },
-    { id: 'accommodation', icon: 'bed-sharp', label: 'SERVICES.ACCOMMODATION', color: 'green' },
-    { id: 'supermarket', icon: 'cart-sharp', label: 'SERVICES.SUPERMARKET', color: 'green' },
-    { id: 'food', icon: 'restaurant-sharp', label: 'SERVICES.FOOD', color: 'green' }
+    { id: 'pharmacy', icon: 'medkit-outline', label: 'SERVICES.PHARMACY', color: 'red' },
+    { id: 'hospital', icon: 'hospital-outline', label: 'SERVICES.HOSPITAL', color: 'red' },
+    { id: 'police', icon: 'shield-outline', label: 'SERVICES.POLICE', color: 'blue' },
+    { id: 'ev_charging', icon: 'flash-outline', label: 'SERVICES.EV_CHARGING', color: 'blue' },
+    { id: 'fuel', icon: 'flame-outline', label: 'SERVICES.FUEL', color: 'blue' },
+    { id: 'parking', icon: 'parking-outline', label: 'SERVICES.PARKING', color: 'blue' },
+    { id: 'transport', icon: 'bus-outline', label: 'SERVICES.TRANSPORT', color: 'blue' },
+    { id: 'atm', icon: 'card-outline', label: 'SERVICES.ATM', color: 'green' },
+    { id: 'accommodation', icon: 'bed-outline', label: 'SERVICES.ACCOMMODATION', color: 'green' },
+    { id: 'supermarket', icon: 'cart-outline', label: 'SERVICES.SUPERMARKET', color: 'green' },
+    { id: 'food', icon: 'restaurant-outline', label: 'SERVICES.FOOD', color: 'green' }
   ];
 
   ngOnInit() {
@@ -538,6 +538,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   clearServicesMap() {
     this.geography.searchLayer?.getSource()?.clear();
     this.fs.displayToast(this.translate.instant('SEARCH.PINS_REMOVED'), 'success');
+    this.closePanel();
   }
 
   // --- LÓGICA DE VOZ (DICTADO) ---

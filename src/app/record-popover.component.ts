@@ -32,9 +32,6 @@ import { SnapToTrailService } from './services/snapToTrail.service';
 import { GeoMathService } from './services/geo-math.service';
 import { SmartRouteBuilderService } from './services/smart-route-builder.service';
 
-// Opcional pero recomendado: Inyectar el motor que creamos ayer para apagarlo correctamente
-// import { TrackingEngineService } from './services/tracking-engine.service';
-
 @Component({
   standalone: true,
   selector: 'app-record-popover',
@@ -50,24 +47,26 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
       <ng-template>
         <div class="popover-island">
           <div class="button-grid">
+            
             <button
-              class="nav-item-btn enabled"
-              (click)="setTrackDetails(); present.isRecordPopoverOpen = false"
+              class="nav-item-btn enabled primary-btn-style"
+              (click)="setTrackDetails(); closeAllPopovers()"
             >
-              <ion-icon name="save-sharp" class="primary-icon"></ion-icon>
+              <ion-icon name="save-outline" class="primary-icon"></ion-icon>
               <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
             </button>
 
             <button
-              class="nav-item-btn"
+              class="nav-item-btn danger-btn-style"
               (click)="
                 present.isConfirmDeletionOpen = true;
                 present.isRecordPopoverOpen = false
               "
             >
-              <ion-icon name="trash-sharp" class="primary-icon"></ion-icon>
+              <ion-icon name="trash-outline" class="danger-icon"></ion-icon>
               <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
             </button>
+
           </div>
         </div>
       </ng-template>
@@ -83,11 +82,11 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
           <p class="confirm-title">{{ 'RECORD.CONFIRM_STOP' | translate }}</p>
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" (click)="confirmStop()">
-              <ion-icon name="checkmark-sharp"></ion-icon>
+              <ion-icon name="checkmark-circle-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
             <button class="nav-item-btn red-pill" (click)="cancelStop()">
-              <ion-icon name="close-sharp"></ion-icon>
+              <ion-icon name="close-circle-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>
@@ -107,11 +106,11 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
           </p>
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" (click)="confirmDelete()">
-              <ion-icon name="checkmark-sharp"></ion-icon>
+              <ion-icon name="checkmark-circle-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
             <button class="nav-item-btn red-pill" (click)="cancelDelete()">
-              <ion-icon name="close-sharp"></ion-icon>
+              <ion-icon name="close-circle-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>
@@ -134,22 +133,32 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
         justify-content: center;
         gap: 40px;
       }
-      .primary-icon {
-        color: var(--ion-color-primary, #3880ff) !important;
+      
+      /* Colores para iconos principales */
+      .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
+      .danger-icon { color: var(--ion-color-danger, #eb445a) !important; }
+      
+      /* Ajuste de color para el texto de los botones principales */
+      .primary-btn-style p { color: var(--ion-color-primary, #3880ff) !important; }
+      .danger-btn-style p { color: var(--ion-color-danger, #eb445a) !important; }
+
+      /* Estilos para los botones de SI/NO en confirmaciones (icono + texto) */
+      .green-pill ion-icon, .green-pill p {
+        color: var(--ion-color-success, #2dd36f) !important;
       }
+      .red-pill ion-icon, .red-pill p {
+        color: var(--ion-color-danger, #eb445a) !important;
+      }
+
+      /* Animación de pulso para el botón activo */
       .enabled ion-icon {
         animation: pulse 2s infinite;
       }
+
       @keyframes pulse {
-        0% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.1);
-        }
-        100% {
-          transform: scale(1);
-        }
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
       }
     `,
   ],
@@ -173,7 +182,6 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private geoMath = inject(GeoMathService);
   public smartRouteBuilder = inject(SmartRouteBuilderService);
   private loadingCtrl = inject(LoadingController);
-  // private trackingEngine = inject(TrackingEngineService); // Descomentar si decides parar el motor aquí
 
   public loading = false;
   private subscription?: Subscription;
@@ -206,25 +214,21 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // --------------------------------------------------------------------------
 
   async confirmStop() {
-    this.isProcessingStop = true; // 1. Ponemos el candado
-    this.present.isConfirmStopOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
+    this.isProcessingStop = true;
+    this.present.isConfirmStopOpen = false;
 
     try {
       await this.stopTracking();
     } catch (error) {
       console.error('Error al detener track:', error);
     }
-    // IMPORTANTE: NO ponemos finally aquí. El candado se liberará en cancelStop()
   }
 
   cancelStop() {
     if (this.isProcessingStop) {
-      // Entra aquí si se cerró porque pulsamos SÍ.
-      // Liberamos el candado y NO hacemos nada más.
       this.isProcessingStop = false;
       return;
     }
-    // Entra aquí si pulsamos NO o clicamos fuera del popover.
     this.present.isConfirmStopOpen = false;
   }
 
@@ -233,27 +237,21 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // --------------------------------------------------------------------------
 
   async confirmDelete() {
-    this.isProcessingDelete = true; // 1. Ponemos el candado
-    this.present.isConfirmDeletionOpen = false; // 2. Ocultamos popover (Inicia animación que disparará didDismiss)
+    this.isProcessingDelete = true;
+    this.present.isConfirmDeletionOpen = false;
 
     try {
       await this.deleteTrack();
     } catch (error) {
       console.error('Error al borrar track:', error);
     }
-    // IMPORTANTE: NO ponemos finally aquí. El candado se liberará en cancelDelete()
   }
 
   cancelDelete() {
     if (this.isProcessingDelete) {
-      // Entra aquí si se cerró porque pulsamos SÍ.
-      // Liberamos el candado y NO REABRIMOS el menú anterior.
       this.isProcessingDelete = false;
       return;
     }
-
-    // Entra aquí si pulsamos NO o clicamos fuera del popover.
-    // Solo entonces reabrimos el popover principal.
     this.present.isConfirmDeletionOpen = false;
     this.present.isRecordPopoverOpen = true;
   }
@@ -264,7 +262,6 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   async deleteTrack() {
     this.location.state = 'inactive';
-    // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
 
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
@@ -275,20 +272,14 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Finaliza la grabación, actualiza los pines en el mapa y
-   * dispara el flujo de guardado de detalles.
-   */
   async stopTracking(): Promise<void> {
     this.location.state = 'stopped';
-    // this.trackingEngine.stopEngine(); // <-- Detener el motor si aplica
 
     this.subscription?.unsubscribe();
     const source = this.geography.currentLayer?.getSource();
 
     if (!source || !this.present.currentTrack || !this.geography.map) return;
 
-    // 🚀 Corregido: Limpiamos la duplicidad de validación
     const coordinates =
       this.present.currentTrack.features?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coordinates) || coordinates.length === 0) {
@@ -315,7 +306,6 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       startPin.setStyle(this.stylerService.createPinStyle('green'));
     }
     if (endPin) {
-      // 🚀 Corregido: Forma más segura y compatible de obtener el último elemento
       endPin.setGeometry(new Point(coordinates[coordinates.length - 1]));
       endPin.setStyle(this.stylerService.createPinStyle('red'));
     }
@@ -334,138 +324,117 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // 5. PERSISTENCIA Y DETALLES DEL TRACK
   // ==========================================================================
 
-  /**
-   * Orquesta el análisis inteligente de la ruta y abre el popover para
-   * que el usuario introduzca nombre y descripción antes de guardar.
-   */
   async setTrackDetails(ev?: any) {
     const track = this.present.currentTrack;
     let proposedTexts = { name: '', description: '' };
 
-    // 1. Si hay un track válido, autogeneramos los textos mostrando un Loading Alert
-    if (track && track.features && track.features[0]) {
-      // Creamos el alert de carga con la variable de traducción
+    if (track?.features?.[0]) {
       const loadingOverlay = await this.loadingCtrl.create({
-        message: this.translate.instant('RECORD.ANALYZING_ROUTE'), // <-- Nueva variable
+        message: this.translate.instant('RECORD.ANALYZING_ROUTE'),
         spinner: 'crescent',
-        backdropDismiss: false, // Evita que el usuario lo cierre tocando fuera
+        backdropDismiss: false,
       });
       await loadingOverlay.present();
 
       try {
-        const feature = track.features[0];
-        const autoTexts =
-          await this.smartRouteBuilder.generateWikilocStyleTexts(feature);
-        proposedTexts = {
-          name: autoTexts.title,
-          description: autoTexts.description,
+        // 🚀 Ajustado a 10 segundos
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('TIMEOUT_SMART_ROUTE')), 10000)
+        );
+
+        const autoTexts: any = await Promise.race([
+          this.smartRouteBuilder.generateWikilocStyleTexts(track.features[0]),
+          timeout
+        ]);
+
+        console.log('Textos autogenerados:', autoTexts);
+
+        proposedTexts = { 
+          name: autoTexts?.title || autoTexts?.name || '', 
+          description: autoTexts?.description || '' 
         };
-      } catch (err) {
-        console.warn('No se pudo autogenerar el texto de la ruta', err);
+      } catch (err: any) {
+        console.warn('⚠️ Fallo o timeout al autogenerar textos:', err.message || err);
       } finally {
-        // Pase lo que pase, quitamos el alert al terminar
         await loadingOverlay.dismiss();
       }
     }
 
-    // 2. Abrimos el popover pasando los textos propuestos
     const popover = await this.popoverController.create({
       component: SaveTrackPopover,
       componentProps: { modalEdit: proposedTexts },
+      backdropDismiss: true,
       cssClass: 'top-glass-island-wrapper',
       translucent: true,
-      backdropDismiss: true,
     });
 
     await popover.present();
-
-    // 3. Esperamos a que el usuario confirme o edite
     const { data, role } = await popover.onDidDismiss();
 
-    if (role === 'cancel' || role === 'backdrop') {
+    // 🛡️ RED DE SEGURIDAD UI
+    if (role === 'cancel' || role === 'backdrop' || data?.action !== 'ok') {
       if (this.location.state === 'stopped') {
-        this.present.isRecordPopoverOpen = true;
+        this.present.isRecordPopoverOpen = true; 
       }
-      return;
+      return; 
     }
 
-    if (data?.action === 'ok') {
-      const finalName =
-        data.name || this.translate.instant('RECORD.DEFAULT_NAME');
-      // Llamamos al guardado (el Toast de éxito ya lo tienes al final de saveFile!)
-      await this.saveFile(finalName, data.description);
-    }
+    const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+    await this.saveFile(finalName, data.description);
   }
 
-  /**
-   * Realiza el procesado final del archivo (Filtro 2D, Snap-to-trail + DEM, Kalman/EGM96, Estadísticas)
-   * y lo persiste en el almacenamiento local.
-   */
   async saveFile(name: string, description: string) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) return;
 
-    this.loading = true;
+    const loadingOverlay = await this.loadingCtrl.create({
+      message: this.translate.instant('RECORD.SAVING_TRACK'),
+      spinner: 'crescent',
+      backdropDismiss: false,
+      translucent: true,
+      cssClass: 'custom-loading-save'
+    });
+
+    await loadingOverlay.present();
+    this.loading = true; 
+
     try {
-      // 1. Clonamos el track original crudo de forma segura
       let trackToProcess = JSON.parse(JSON.stringify(track));
       const rawCoords = trackToProcess.features[0].geometry.coordinates;
 
-      // ==========================================================
-      // --- INICIO DEL PIPELINE DE OPTIMIZACIÓN ---
-      // ==========================================================
-
-      // PASO 1: FILTRO DE OUTLIERS (Rebotes GPS)
-      // Como usas useGeographic, rawCoords está en [lon, lat] (grados).
-      // Limpiamos saltos ilógicos usando Triangulación + Velocidad límite (15 m/s)
       const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15);
       trackToProcess.features[0].geometry.coordinates = cleanedCoords;
 
-      // PASO 2: SNAP TO TRAIL & CORRECCIÓN DEM (Filtro Gaussiano)
+      loadingOverlay.message = this.translate.instant('RECORD.APPLYING_ELEVATION');
+      
       let snappedTrack;
       try {
-        // 🚀 RESTAURADO: Creamos el array de referencia para engañar al sistema
-        // y que no aborte la función, permitiendo que llegue a la descarga del DEM.
         const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
           lng: c[0],
           lat: c[1],
         }));
 
-        snappedTrack = await this.snapToTrailService.prepareTrackWithTrails(
-          trackToProcess,
-          trailReference // <-- Pasamos el array en lugar de []
+        // 🚀 Ajustado a 10 segundos para el DEM
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('TIMEOUT_OFFLINE')), 10000)
         );
+
+        snappedTrack = await Promise.race([
+          this.snapToTrailService.prepareTrackWithTrails(trackToProcess, trailReference),
+          timeoutPromise
+        ]);
+
       } catch (err) {
-        console.warn('⚠️ Fallo en Snap-to-Trail o DEM. Se usará GPS puro con EGM96.', err);
+        console.warn('⚠️ Sin conexión o DEM muy lento. Guardando con GPS puro + EGM96.', err);
         snappedTrack = trackToProcess;
       }
 
-      // 🛡️ SAFETY CHECK: Asegurar que el Snap no haya destruido la libreta de datos
-      // geoMath.filterSpeedAndAltitude necesita 'data' para leer isMSL y calcular desniveles
-      if (!snappedTrack.features[0].geometry.properties.data || 
-          snappedTrack.features[0].geometry.properties.data.length === 0) {
-        snappedTrack.features[0].geometry.properties.data = trackToProcess.features[0].geometry.properties.data;
-      }
+      const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(snappedTrack, 0);
 
-      // PASO 3: ESTADÍSTICAS FINALES (Y RED DE SEGURIDAD EGM96)
-      // Aplica Filtro de Kalman a la velocidad. Si un punto NO tiene isMSL=true (falló el DEM),
-      // le aplica la corrección EGM96 offline. Luego suma desniveles.
-      const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(
-        snappedTrack,
-        0 // initial = 0 procesará todo el track
-      );
+      const finalTrack = optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
+        ? optimizedTrack
+        : trackToProcess;
 
-      // ==========================================================
-      // --- FIN DEL PIPELINE ---
-      // ==========================================================
-
-      // Validamos que el resultado final tenga coordenadas válidas. Si no, restauramos el original.
-      const finalTrack =
-        optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
-          ? optimizedTrack
-          : trackToProcess;
-
-      // 2. Preparación final de Metadata
       const feature = finalTrack.features[0];
       const saveDate = new Date();
       const dateKey = saveDate.toISOString();
@@ -477,26 +446,21 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
       let routePhotos: string[] = [];
       if (feature.waypoints) {
-        for (const wp of feature.waypoints) {
-          if (wp.photos && wp.photos.length > 0) {
-            routePhotos = [...routePhotos, ...wp.photos];
-          }
-        }
+        routePhotos = feature.waypoints
+          .filter((wp: any) => wp.photos?.length > 0)
+          .flatMap((wp: any) => wp.photos);
       }
 
-      // 3. Guardamos el archivo optimizado en el Storage (IndexedDB/SQLite)
       await this.fs.storeSet(dateKey, finalTrack);
 
-      // 4. Creamos y guardamos el ítem para la lista (Collection Metadata)
-      const newItem = {
+      const newItem: any = {
         name,
         date: saveDate,
         place: feature.properties.place,
         description,
         isChecked: false,
         photos: routePhotos,
-        file: dateKey, // Clave foránea al archivo del track
-
+        file: dateKey,
         distance: feature.properties.distance || 0,
         duration: feature.properties.duration || 0,
       };
@@ -505,19 +469,20 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       await this.fs.storeSet('collection', this.fs.collection);
       this.fs.collection = [...this.fs.collection];
 
-      // 5. Limpieza, interfaz visual y cierre de popovers
       await this.photo.confirmSessionPhotos();
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
 
       this.location.state = 'inactive';
       this.present.currentTrack = undefined;
       this.geography.currentLayer?.getSource()?.clear();
+      
       this.closeAllPopovers();
 
     } catch (e) {
       console.error('❌ Error crítico al guardar el Track:', e);
-      this.fs.displayToast('Error al guardar la ruta', 'error');
+      this.fs.displayToast(this.translate.instant('RECORD.SAVE_ERROR'), 'danger');
     } finally {
+      await loadingOverlay.dismiss();
       this.loading = false;
       this.cd.detectChanges();
     }

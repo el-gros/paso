@@ -10,7 +10,7 @@
 
     <!-- Selección de Idioma -->
     <ion-item lines="full">
-      <ion-icon name="language-sharp" slot="start" color="primary"></ion-icon>
+      <ion-icon name="language-outline" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.LANGUAGE' | translate }}</ion-label>
       <ion-select [value]="selectedLanguage.code" (ionChange)="onLanguageChange($event.detail.value)" interface="popover" slot="end">
         @for (lang of languages; track lang.code) {
@@ -21,7 +21,7 @@
 
     <!-- Selección de Mapa Base -->
     <ion-item lines="full">
-      <ion-icon name="map-sharp" slot="start" color="primary"></ion-icon>
+      <ion-icon name="map-outline" slot="start" color="primary"></ion-icon>
       <ion-label>{{ 'SETTINGS.BASE_MAP' | translate }}</ion-label>
       <ion-select [value]="geography.mapProvider" 
                   (ionChange)="onMapChange($event.detail.value)" 
@@ -43,26 +43,26 @@
 
     <!-- Color Track Actual -->
     <ion-item lines="full">
-      <ion-icon name="git-commit-sharp" slot="start"></ion-icon>
+      <ion-icon name="git-commit-outline" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.CURRENT_TRACK' | translate }}</ion-label>
       
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'current')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': present.currentColor }"></div>
-          <ion-icon name="caret-down-sharp" color="medium" size="small"></ion-icon>
+          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
         </div>
       </ion-button>
     </ion-item>
 
     <!-- Color Track de Referencia -->
     <ion-item lines="none">
-      <ion-icon name="trail-sign-sharp" slot="start"></ion-icon>
+      <ion-icon name="trail-sign-outline" slot="start"></ion-icon>
       <ion-label>{{ 'SETTINGS.REFERENCE_TRACK' | translate }}</ion-label>
       
       <ion-button fill="clear" slot="end" (click)="openColorPopover($event, 'archived')">
         <div class="color-display-v2">
           <div class="color-sample" [ngStyle]="{ 'background-color': reference.archivedColor }"></div>
-          <ion-icon name="caret-down-sharp" color="medium" size="small"></ion-icon>
+          <ion-icon name="caret-down-outline" color="medium" size="small"></ion-icon>
         </div>
       </ion-button>
     </ion-item>
@@ -78,7 +78,7 @@
 
     <!-- Alertas de navegación -->
     <ion-item lines="none"> 
-      <ion-icon name="notifications-sharp" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
+      <ion-icon name="notifications-outline" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
@@ -101,7 +101,7 @@
       <!-- Descarga de nuevos mapas -->
       @if (!state.isDownloading && state.missing && state.missing.length > 0) {
         <ion-item [lines]="state.available && state.available.length > 0 ? 'full' : 'none'">
-          <ion-icon name="cloud-download-sharp" slot="start" color="primary"></ion-icon>
+          <ion-icon name="cloud-download-outline" slot="start" color="primary"></ion-icon>
           <ion-label>{{ 'SETTINGS.DOWNLOAD_MAP' | translate }}</ion-label>
           <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
                       (ionChange)="onMapUploadChange($event.detail.value); $event.target.value = null" 
@@ -116,7 +116,7 @@
       <!-- Eliminación de mapas descargados -->
       @if (state.available && state.available.length > 0) {
         <ion-item lines="none">
-          <ion-icon name="trash-sharp" slot="start" color="danger"></ion-icon>
+          <ion-icon name="trash-outline" slot="start" color="danger"></ion-icon>
           <ion-label>{{ 'SETTINGS.REMOVE_MAP' | translate }}</ion-label>
           <ion-select placeholder="{{ 'SETTINGS.SELECT' | translate }}" 
                       (ionChange)="onMapRemoveChange($event.detail.value); $event.target.value = null" 
@@ -131,7 +131,7 @@
       <!-- Estado: Todo descargado -->
       @if (!state.isDownloading && state.missing?.length === 0 && state.available?.length === 0) {
         <ion-item lines="none">
-          <ion-icon name="checkmark-circle-sharp" slot="start" color="medium"></ion-icon>
+          <ion-icon name="checkmark-circle-outline" slot="start" color="medium"></ion-icon>
           <ion-label color="medium">
             <p>{{ 'SETTINGS.ALL_MAPS_DOWNLOADED' | translate }}</p>
           </ion-label>
@@ -150,7 +150,7 @@
 
     <!-- Exportar Backup -->
     <ion-item lines="full" button (click)="doExport()">
-      <ion-icon name="push-sharp" slot="start" color="success"></ion-icon>
+      <ion-icon name="push-outline" slot="start" color="success"></ion-icon>
       <ion-label>
         <h2>{{ 'SETTINGS.EXPORT_TITLE' | translate }}</h2>
         <p>{{ 'SETTINGS.EXPORT_DESC' | translate }}</p>
@@ -159,7 +159,7 @@
 
     <!-- Importar Backup -->
     <ion-item lines="none" button (click)="doImport()">
-      <ion-icon name="download-sharp" slot="start" color="primary"></ion-icon>
+      <ion-icon name="download-outline" slot="start" color="primary"></ion-icon>
       <ion-label>
         <h2>{{ 'SETTINGS.IMPORT_TITLE' | translate }}</h2>
         <p>{{ 'SETTINGS.IMPORT_DESC' | translate }}</p>
@@ -179,15 +179,15 @@
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row class="button-container">
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="earth-sharp"></ion-icon>
+      <ion-icon name="map-outline"></ion-icon>
       <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="bar-chart-sharp"></ion-icon>
+      <ion-icon name="analytics-outline"></ion-icon>
       <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
-      <ion-icon name="library-sharp"></ion-icon>
+      <ion-icon name="folder-open-outline"></ion-icon>
       <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
     </div>
   </ion-row>

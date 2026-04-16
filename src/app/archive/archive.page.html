@@ -22,12 +22,12 @@
             <ion-item-option 
               [color]="isTrackVisible(item) ? 'medium' : 'primary'" 
               (click)="toggleVisibility(item, slidingItem)">
-              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-sharp' : 'eye-sharp'"></ion-icon>
+              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
               {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
             </ion-item-option>
             
             <ion-item-option color="secondary" (click)="openExportMenu(item, slidingItem)">
-              <ion-icon slot="top" name="share-sharp"></ion-icon>
+              <ion-icon slot="top" name="share-outline"></ion-icon>
               {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
             </ion-item-option>
           </ion-item-options>
@@ -35,7 +35,7 @@
           <!-- Contenido del item del track -->
           <ion-item>
             <!-- Indicador visual si el track está activo como referencia -->
-            <ion-icon name="chevron-forward-sharp" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
+            <ion-icon name="chevron-forward-outline" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
             
             <!-- Miniatura de foto si está disponible -->
             @if (item.photos && item.photos.length > 0) {
@@ -59,17 +59,17 @@
             </ion-label>
               
             <!-- Icono decorativo de Ionic -->
-            <ion-icon name="chevron-back-sharp" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
+            <ion-icon name="chevron-back-outline" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
           </ion-item>
 
           <!-- Opciones deslizantes derechas (Editar, Eliminar) -->
           <ion-item-options side="end">
             <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
-              <ion-icon slot="top" name="create-sharp"></ion-icon>
+              <ion-icon slot="top" name="create-outline"></ion-icon>
               {{ 'ARCHIVE.EDIT_TRACK' | translate }}
             </ion-item-option>
             <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
-              <ion-icon slot="top" name="trash-sharp"></ion-icon>
+              <ion-icon slot="top" name="trash-outline"></ion-icon>
               {{ 'ARCHIVE.REMOVE_TRACK' | translate }}
             </ion-item-option>
           </ion-item-options>
@@ -99,11 +99,11 @@
       <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
       <div class="button-grid horizontal">
         <button class="nav-item-btn green-pill" (click)="deleteTrack(); isConfirmDeletionOpen = false">
-          <ion-icon name="checkmark-sharp"></ion-icon>
+          <ion-icon name="checkmark-outline"></ion-icon>
           <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
         </button>
         <button class="nav-item-btn red-pill" (click)="isConfirmDeletionOpen = false">
-          <ion-icon name="close-sharp"></ion-icon>
+          <ion-icon name="close-outline"></ion-icon>
           <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
         </button>
       </div>
@@ -151,11 +151,11 @@
 
       <div class="button-grid horizontal top-margin equal-buttons">
         <button class="nav-item-btn green-pill" (click)="executeExport()" [disabled]="!isAnyExportOptionSelected()">
-          <ion-icon name="checkmark-sharp"></ion-icon>
+          <ion-icon name="checkmark-outline"></ion-icon>
           <p>OK</p>
         </button>
         <button class="nav-item-btn red-pill" (click)="isExportMenuOpen = false">
-          <ion-icon name="close-sharp"></ion-icon>
+          <ion-icon name="close-outline"></ion-icon>
           <p>{{ 'EDIT.CANCEL' | translate }}</p>
         </button>
       </div>
@@ -173,8 +173,8 @@
        [class.red-pill]="mapService.visibleAll"
        (click)="displayAllTracks(!mapService.visibleAll)">
     <ion-icon 
-      [name]="mapService.visibleAll ? 'eye-off-sharp' : 'eye-sharp'" 
-      [class.blue-icon]="!mapService.visibleAll"> <!-- blue-icon para el estado "eye-sharp" -->
+      [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
+      [class.blue-icon]="!mapService.visibleAll"> <!-- blue-icon para el estado "eye-outline" -->
     </ion-icon>
     <p>{{ 'ARCHIVE.ALL' | translate }}</p> <!-- Usamos <p> para consistencia con global.scss -->
   </div>
@@ -187,15 +187,15 @@
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="earth-sharp"></ion-icon>
+      <ion-icon name="map-outline"></ion-icon>
       <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="bar-chart-sharp"></ion-icon>
+      <ion-icon name="analytics-outline"></ion-icon>
       <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-sharp"></ion-icon>
+      <ion-icon name="settings-outline"></ion-icon>
       <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
     </div>
   </ion-row>

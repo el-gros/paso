@@ -20,7 +20,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
         <div class="actions">
           <button type="button" class="nav-item-btn blue-pill ion-activatable" (click)="dismiss()">
-            <ion-icon name="checkmark-sharp"></ion-icon>
+            <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'LOCATION.OK_BUTTON' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>

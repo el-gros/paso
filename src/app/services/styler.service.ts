@@ -319,7 +319,7 @@ export class StylerService {
       })
     });
   }
-  
+
   public getIconPath(iconName: string): string {
     const baseIcon = iconName.replace('-outline', '').replace('-sharp', '');
     return this.svgPaths[baseIcon] || this.svgPaths[iconName] || this.svgPaths['unknown-circle'];

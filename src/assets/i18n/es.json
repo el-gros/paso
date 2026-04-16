@@ -187,7 +187,10 @@
     "SURROUNDINGS": "los alrededores",
     "PASSING_BY_CIRCULAR": "Recorrido circular desde {{start}} hasta {{target}}, pasando por:",
     "PASSING_BY_LINEAR": "Recorrido lineal desde {{start}} hasta {{end}}, pasando por:",
-    "ANALYZING_ROUTE": "Analizando ruta y buscando lugares de interés..."
+    "ANALYZING_ROUTE": "Analizando ruta y buscando lugares de interés...",
+    "SAVING_TRACK": "Guardando ruta...",
+    "APPLYING_ELEVATION": "Aplicando elevaciones DEM...",
+    "SAVE_ERROR": "Error crítico al guardar la ruta"
   },
   "COLORS": {
     "crimson": "Carmesí",

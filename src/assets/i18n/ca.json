@@ -163,7 +163,7 @@
     "CANCEL": "Cancel·lar"
   },
   "RECORD": {
-    "BUTTON": "Gravar",
+    "BUTTON": "GRAVAR",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
@@ -174,9 +174,9 @@
     "DELETE_YES": "Sí",
     "DELETE_NO": "No",
     "DEFAULT_NAME": "Sense nom",
-    "SHARE_TEXT": "Podeu veure la meva ruta a: ",
+    "SHARE_TEXT": "Pots veure la meva ruta a: ",
     "SEARCHING_PLACE": "Cercant lloc...",
-    "ROUTE_AROUND": "Ruta por {{place}}",
+    "ROUTE_AROUND": "Ruta per {{place}}",
     "UNKNOWN_PLACE": "Lloc desconegut",
     "NO_POIS": "- Sense punts d'interès destacats registrats.\n",
     "START_POINT": "Punt d'inici",
@@ -187,7 +187,10 @@
     "SURROUNDINGS": "els voltants",
     "PASSING_BY_CIRCULAR": "Recorregut circular des de {{start}} fins a {{target}}, passant per:",
     "PASSING_BY_LINEAR": "Recorregut lineal des de {{start}} fins a {{end}}, passant per:",
-    "ANALYZING_ROUTE": "Analitzant la ruta i cercant llocs d'interès..."
+    "ANALYZING_ROUTE": "Analitzant la ruta i cercant llocs d'interès...",
+    "SAVING_TRACK": "Desant la ruta...",
+    "APPLYING_ELEVATION": "Aplicant elevacions DEM...",
+    "SAVE_ERROR": "Error crític en desar la ruta"
   },
   "COLORS": {
     "crimson": "carmesí",

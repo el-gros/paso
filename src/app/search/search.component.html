@@ -41,7 +41,7 @@
           }
           
           <ion-icon 
-            [name]="isListening ? 'mic-sharp' : 'mic-outline'" 
+            [name]="isListening ? 'mic-outline' : 'mic-outline'" 
             [class.mic-active]="isListening"
             (click)="startDictation()">
           </ion-icon>
@@ -104,28 +104,25 @@
     @if (mode === 'services') {
       <div class="services-box">
         <div class="grid">
-          
           <div class="s-item" *ngFor="let s of serviceItems" 
-               [class.active]="selectedServices.includes(s.id)"
-               [style.--service-color]="s.color" 
-               (click)="toggleService(s.id)">
-            <div class="icon-circle" [style.background-color]="s.color">
-              <svg viewBox="0 0 24 24" class="custom-ui-icon">
-                <path [attr.d]="stylerService.getIconPath(s.icon)" fill="currentColor"></path>
-              </svg>
-            </div>
+              [class.active]="selectedServices.includes(s.id)"
+              [style.--service-color]="s.color" 
+              (click)="toggleService(s.id)">
+            
+            <svg viewBox="0 0 24 24" class="custom-ui-icon">
+              <path [attr.d]="stylerService.getIconPath(s.icon)" fill="currentColor"></path>
+            </svg>
+            
             <span>{{ s.label | translate }}</span>
           </div>
 
-          <div class="s-item clear-map-item" (click)="clearServicesMap()">
-            <div class="icon-circle">
+          <div class="s-item clear-map-action" (click)="clearServicesMap()">
+            <div class="clear-icon-wrapper">
               <ion-icon name="trash-bin-outline"></ion-icon>
             </div>
-            <span>{{ 'SEARCH.CLEAR_MAP' | translate }}</span>
+            <span class="clear-label">{{ 'SEARCH.CLEAR_MAP' | translate }}</span>
           </div>
-
-        </div>
-        
+        </div>        
         <ion-row class="action-buttons-row">
           <ion-col size="8">
             <ion-button expand="block" color="primary" (click)="applyServices()" [disabled]="selectedServices.length === 0 || isSearching">

@@ -54,6 +54,7 @@ export class MapService {
 
   scaleSteps = [1, 1.75, 3.5];
   currentScaleIndex = 0;
+  private zoomTimeout: any;
   mapWrapperElement: HTMLElement | null = null;
   
   public customControl!: LocationButtonControl;  
@@ -539,9 +540,33 @@ export class MapService {
       console.warn('Map wrapper element not found');
       return;
     }
+
+    // 1. Limpiar el temporizador anterior si existe
+    if (this.zoomTimeout) {
+      clearTimeout(this.zoomTimeout);
+    }
+
+    // 2. Cambiar el zoom normalmente
     this.currentScaleIndex = (this.currentScaleIndex + 1) % this.scaleSteps.length;
     const scale = this.scaleSteps[this.currentScaleIndex];
     this.mapWrapperElement.style.transform = `scale(${scale})`;
+
+    // 3. Si el zoom no es el inicial (0), programar el regreso
+    if (this.currentScaleIndex !== 0) {
+      this.zoomTimeout = setTimeout(() => {
+        this.resetZoom();
+      }, 60000); // 60.000 ms = 1 minuto
+    }
+  }
+
+  // 4. Crear una función de apoyo para el reset
+  private resetZoom() {
+    if (this.mapWrapperElement) {
+      this.currentScaleIndex = 0;
+      const initialScale = this.scaleSteps[0];
+      this.mapWrapperElement.style.transform = `scale(${initialScale})`;
+      console.log('Zoom restablecido automáticamente a 1.0');
+    }
   }
 
   /** Helper para inicializar capas vectoriales vacías */

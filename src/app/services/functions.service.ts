@@ -192,7 +192,7 @@ export class FunctionsService {
         position: 'bottom', 
         cssClass: `toast toast-${css}`,
         buttons: [{
-          icon: 'close-sharp',
+          icon: 'close-outline',
           role: 'cancel'
         }]
       });

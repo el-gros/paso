@@ -15,7 +15,7 @@ import { LocationManagerService } from './services/location-manager.service';
       <div class="local-glass-island">
       
         <div class="popover-header">
-          <ion-icon name="location-sharp" class="header-icon"></ion-icon>
+          <ion-icon name="location-outline" class="header-icon"></ion-icon>
           <h2>{{ 'CANVAS.TRACK' | translate | uppercase }}</h2>
         </div>
 
@@ -39,12 +39,12 @@ import { LocationManagerService } from './services/location-manager.service';
 
         <div class="button-grid">
           <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
-            <ion-icon name="checkmark-sharp"></ion-icon>
+            <ion-icon name="checkmark-outline"></ion-icon>
             <span>OK</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
           <button class="nav-item-btn red-pill ion-activatable" (click)="cancel()">
-            <ion-icon name="close-sharp"></ion-icon>
+            <ion-icon name="close-outline"></ion-icon>
             <span>{{ 'EDIT.CANCEL' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>

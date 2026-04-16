@@ -28,7 +28,7 @@ import { TranslateModule } from '@ngx-translate/core';
           @for (step of steps; track $index) {
           <div class="step-item">
             <ion-icon
-              name="chevron-forward-circle-sharp"
+              name="chevron-forward-circle-outline"
               color="primary"
             ></ion-icon>
             <p>{{ step | translate }}</p>
@@ -38,7 +38,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
         <div class="actions">
           <button class="btn-main ion-activatable" (click)="confirmar()">
-            <ion-icon name="settings-sharp" slot="start"></ion-icon>
+            <ion-icon name="settings" slot="start"></ion-icon>
             {{ 'BATTERY.CONFIRM' | translate }}
             <ion-ripple-effect></ion-ripple-effect>
           </button>

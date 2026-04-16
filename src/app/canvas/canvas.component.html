@@ -114,7 +114,7 @@
 
                 <div class="data-row">
                   <div class="label-group">
-                    <ion-icon name="flag-sharp" class="icon-dist"></ion-icon>
+                    <ion-icon name="flag-outline" class="icon-dist"></ion-icon>
                     <span>{{ 'CANVAS.TO_END' | translate }}</span>
                   </div>
                   <div class="value">{{ fs.kmRestantes | number: '1.3' }} <span>km</span></div>
@@ -270,15 +270,15 @@
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="earth-sharp"></ion-icon>
+      <ion-icon name="map-outline"></ion-icon>
       <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
-      <ion-icon name="library-sharp"></ion-icon>
+      <ion-icon name="folder-open-outline"></ion-icon>
       <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
     </div>
     <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-sharp"></ion-icon>
+      <ion-icon name="settings-outline"></ion-icon>
       <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p>
     </div>
   </ion-row>
