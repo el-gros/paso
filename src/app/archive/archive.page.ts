@@ -12,6 +12,7 @@ import { MapService } from '../services/map.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
+import { MapTracksService } from '../services/map-tracks.service';
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track, LocationResult, PLACE_CATEGORIES } from '../../globald';
@@ -23,7 +24,7 @@ import { PlaceEditPopover } from '../place-edit-popover.component';
   selector: 'app-archive',
   templateUrl: 'archive.page.html',
   styleUrls: ['archive.page.scss'],
-  imports: [IonicModule, CommonModule, FormsModule, TranslateModule, PlaceEditPopover]
+  imports: [IonicModule, CommonModule, FormsModule, TranslateModule]
 })
 export class ArchivePage implements OnInit {
 
@@ -49,6 +50,7 @@ export class ArchivePage implements OnInit {
   constructor(
     public fs: FunctionsService,
     public mapService: MapService,
+    public mapTracks: MapTracksService,
     private translate: TranslateService,
     public reference: ReferenceService,
     public geography: GeographyService,
@@ -111,9 +113,9 @@ export class ArchivePage implements OnInit {
           await this.location.sendReferenceToPlugin();
         }
         this.mapService.visibleAll = true;
-        await this.fs.gotoPage('tab1');
+        this.fs.gotoPage('tab1');
         setTimeout(async () => {
-          await this.mapService.displayAllTracks();
+          await this.mapTracks.displayAllTracks();
           this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'), 'success');
           this.reference.foundRoute = false;
         }, 200);

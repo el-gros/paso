@@ -76,6 +76,7 @@ export class FunctionsService {
 
     // NUEVO: Forzar que todos los lugares empiecen ocultos al arrancar la app
     this.placesCollection.forEach(place => place.visible = false);
+    this.sortPlacesAlphabetically();
   }
 
   /**
@@ -118,6 +119,7 @@ export class FunctionsService {
       place.visible = false;
 
       this.placesCollection.push(place);
+      this.sortPlacesAlphabetically();
       this.savePlacesToStorage();
       this.displayToast(this.translate.instant('ARCHIVE.PLACE_SAVED'), 'success');
     } else {
@@ -128,8 +130,21 @@ export class FunctionsService {
   public updatePlace(index: number, updatedPlace: LocationResult) {
     if (this.placesCollection[index]) {
       this.placesCollection[index] = updatedPlace;
+      this.sortPlacesAlphabetically();
       this.savePlacesToStorage();
     }
+  }
+
+  /**
+   * Ordena la colección de lugares alfabéticamente por nombre.
+   * Se utiliza 'numeric: true' para que "Punto 2" vaya antes que "Punto 10".
+   */
+  private sortPlacesAlphabetically() {
+    this.placesCollection.sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      return nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
+    });
   }
 
   public removePlace(index: number) {

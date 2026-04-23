@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import pako from 'pako';
+import { TranslateService } from '@ngx-translate/core';
 import { MbTilesService } from './mbtiles.service';
 
 @Injectable({
@@ -8,7 +9,7 @@ import { MbTilesService } from './mbtiles.service';
 })
 export class MapStyleService {
 
-  private readonly THEME = {
+  public readonly THEME = {
     background: '#f8f4f0',
     water: '#a1cae2',
     forest: '#d2e3bc',
@@ -22,16 +23,17 @@ export class MapStyleService {
     fonts: ["OpenSansRegular"]
   };
 
-  constructor(private mbTiles: MbTilesService) {
+  private lastStyleHash: string = '';
+
+  constructor(
+    private mbTiles: MbTilesService,
+    private translate: TranslateService
+  ) {
     this.registerMbtilesProtocol();
   }
 
-  /**
-   * Registra el protocolo personalizado para que MapLibre pueda leer 
-   * directamente de las bases de datos SQLite (MBTiles).
-   */
   private registerMbtilesProtocol() {
-    maplibregl.addProtocol('mbtiles', async (params) => {
+    maplibregl.addProtocol('mbtiles', async (params: any) => {
       try {
         const urlWithoutScheme = params.url.replace('mbtiles://', '');
         const parts = urlWithoutScheme.split('/');
@@ -63,13 +65,11 @@ export class MapStyleService {
     const openedFiles = this.mbTiles.getOpenedFiles();
     const style: any = {
       version: 8,
-      name: "Paso Offline Style",
+      name: "Shortbread Offline Style",
       glyphs: "/assets/fonts/{fontstack}/{range}.pbf",
       sources: {},
       layers: [{ id: 'background', type: 'background', paint: { 'background-color': this.THEME.background } }]
     };
-
-    const layers: any[] = [];
 
     openedFiles.forEach((fileName: string) => {
       const sourceId = `src_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -80,46 +80,47 @@ export class MapStyleService {
         maxzoom: 14
       };
 
-      // --- Definición de Capas Visuales ---
-      layers.push(
-        // Agua
+      const layerGroup = [
         { id: `ocean_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'ocean', paint: { 'fill-color': this.THEME.water } },
         { id: `water_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'water_polygons', paint: { 'fill-color': this.THEME.water } },
-        
-        // Naturaleza
-        { 
-          id: `forest_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'land', 
-          filter: ['in', 'kind', 'forest', 'wood', 'nature_reserve', 'national_park'],
-          paint: { 'fill-color': this.THEME.forest } 
-        },
-        
-        // Carreteras (Casing + Line)
-        {
-          id: `road_casing_${sourceId}`, type: 'line', source: sourceId, 'source-layer': 'streets', minzoom: 10,
-          paint: { 'line-color': this.THEME.roadCasing, 'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 1.5, 18, 12] }
-        },
-        {
-          id: `road_inner_${sourceId}`, type: 'line', source: sourceId, 'source-layer': 'streets', minzoom: 10,
-          paint: {
-            'line-color': ['match', ['get', 'kind'], 'motorway', this.THEME.highway, 'trunk', this.THEME.highway, 'primary', this.THEME.majorRoad, this.THEME.minorRoad],
-            'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 0.5, 18, 10]
-          }
-        },
+        { id: `land_forest_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'land', filter: ['in', 'kind', 'forest', 'wood', 'nature_reserve', 'national_park'], paint: { 'fill-color': this.THEME.forest } },
+        { id: `land_park_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'land', filter: ['in', 'kind', 'park', 'grass', 'garden', 'pitch'], paint: { 'fill-color': this.THEME.park } },
+        { id: `buildings_${sourceId}`, type: 'fill', source: sourceId, 'source-layer': 'buildings', minzoom: 13, paint: { 'fill-color': this.THEME.buildings, 'fill-outline-color': '#dfdcd8' } },
+        { id: `road_casing_${sourceId}`, type: 'line', source: sourceId, 'source-layer': 'streets', minzoom: 10, paint: { 'line-color': this.THEME.roadCasing, 'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 1.5, 18, 12] } },
+        { id: `road_inner_${sourceId}`, type: 'line', source: sourceId, 'source-layer': 'streets', minzoom: 10, paint: { 'line-color': ['match', ['get', 'kind'], 'motorway', this.THEME.highway, 'trunk', this.THEME.highway, 'primary', this.THEME.majorRoad, 'secondary', this.THEME.majorRoad, this.THEME.minorRoad], 'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 0.5, 18, 10] } },
+        { id: `street_labels_${sourceId}`, type: 'symbol', source: sourceId, 'source-layer': 'street_labels', minzoom: 13, layout: { 'text-field': ['get', 'name'], 'text-font': this.THEME.fonts, 'symbol-placement': 'line', 'text-size': 12, 'text-max-angle': 30 }, paint: { 'text-color': this.THEME.text, 'text-halo-color': '#ffffff', 'text-halo-width': 2 } },
+        { id: `places_${sourceId}`, type: 'symbol', source: sourceId, 'source-layer': 'place_labels', minzoom: 5, layout: { 'text-field': ['get', 'name'], 'text-font': this.THEME.fonts, 'text-size': ['match', ['get', 'kind'], 'city', 18, 'town', 14, 'village', 12, 10], 'text-variable-anchor': ['center', 'top', 'bottom'], 'text-justify': 'center' }, paint: { 'text-color': this.THEME.text, 'text-halo-color': '#ffffff', 'text-halo-width': 2 } }
+      ];
 
-        // Etiquetas
-        {
-          id: `places_${sourceId}`, type: 'symbol', source: sourceId, 'source-layer': 'place_labels', minzoom: 5,
-          layout: {
-            'text-field': ['get', 'name'], 'text-font': this.THEME.fonts,
-            'text-size': ['match', ['get', 'kind'], 'city', 18, 'town', 14, 'village', 12, 10],
-            'text-variable-anchor': ['center', 'top', 'bottom'], 'text-justify': 'center'
-          },
-          paint: { 'text-color': this.THEME.text, 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
-        }
-      );
+      // Añadimos las capas al estilo principal (DENTRO del bucle)
+      style.layers.push(...layerGroup);
     });
 
-    style.layers.push(...layers);
     return style;
+  }
+
+  /**
+   * Notifica al motor MapLibre de que debe refrescar su estilo (vía diffing).
+   * Ahora recibe la capa offline como parámetro desde el MapService.
+   */
+  public refreshOfflineStyle(offlineLayer?: any) {
+    if (!offlineLayer) return;
+
+    // Buscamos la instancia del mapa dentro del wrapper
+    const maplibreMap = offlineLayer.mapLibreMap || (offlineLayer as any).maplibreMap;
+
+    if (maplibreMap?.setStyle) {
+      const newStyle = this.generateDynamicStyle();
+      const currentHash = JSON.stringify(newStyle.sources); // Hash simple por fuentes
+
+      if (this.lastStyleHash !== currentHash) {
+        console.log("🚀 Aplicando nuevo estilo con Diff...");
+        maplibreMap.setStyle(newStyle, { diff: true });
+        this.lastStyleHash = currentHash;
+      }
+    } else {
+      // Reintento si el mapa de MapLibre aún no ha terminado de construirse
+      setTimeout(() => this.refreshOfflineStyle(offlineLayer), 500);
+    }
   }
 }

@@ -22,6 +22,7 @@ import { AppStateService } from '../services/appState.service';
 import { GeoMathService } from '../services/geo-math.service';
 import { MapInteractionService } from '../services/map-interaction.service'; 
 import { TrackExportService } from '../services/track-export.service'; 
+import { MapTracksService } from '../services/map-tracks.service';
 import { DeviceSetupService } from '../services/device-setup.service'; 
 import { TrackingEngineService } from '../services/tracking-engine.service'; // <-- NUEVO
 import { PhotoWaypointService } from '../services/photo-waypoint.service'; // <-- NUEVO
@@ -79,6 +80,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     public mapInteraction: MapInteractionService,
     public trackExport: TrackExportService,
     public deviceSetup: DeviceSetupService,
+    public mapTracksService: MapTracksService,
     public trackingEngine: TrackingEngineService, // <-- INYECTADO
     public photoWaypoint: PhotoWaypointService // <-- INYECTADO
   ) {}
@@ -147,7 +149,7 @@ export class Tab1Page implements OnInit, OnDestroy {
         take(1)
     ).subscribe(async () => {
         if (this.fs.reDraw) {
-            await this.mapService.updateColors();
+            this.mapTracksService.updateColors();
             this.fs.reDraw = false;
         }
         /*if (this.fs.buildTrackImage) {
@@ -156,7 +158,7 @@ export class Tab1Page implements OnInit, OnDestroy {
         if (this.mapService.visibleAll) {
             const source = this.geography.archivedLayer?.getSource();
             if (source && source.getFeatures().length === 0) {
-              this.mapService.displayAllTracks();
+              this.mapTracksService.displayAllTracks();
             }
         }
     });
@@ -205,23 +207,6 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.trackingControlService.start();
     this.eventsInitialized = true;
   }
-
-  /*public async buildTrackImage() {
-    const map = this.geography.map;
-    if (!map) {
-      this.fs.buildTrackImage = false;
-      this.fs.gotoPage('archive');
-      return;
-    }
-    const success = await this.trackExport.generateAndSaveMapImage(map);
-    if (success) {
-      this.fs.gotoPage('canvas');
-    } else {
-      this.fs.buildTrackImage = false;
-      await this.fs.displayToast(this.translate.instant('MAP.TOIMAGE_FAILED'), 'error');
-      this.fs.gotoPage('archive');
-    }
-  }*/
 
   handleWikiResult(event: WikiWeatherResult) {
     this.wikiData = event;       

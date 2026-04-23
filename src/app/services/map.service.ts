@@ -43,7 +43,6 @@ import { TrackingControlService } from './trackingControl.service';
 import { OfflineMapService } from './offline-map.service';
 import { AppStateService } from '../services/appState.service';
 import { SearchService } from './search.service';
-//import { MapboxSearchService } from './mapbox-search.service';
 import { LocationButtonControl } from '../utils/openlayers/custom-control';
 import { Track, TrackDefinition } from '../../globald';
 
@@ -90,7 +89,6 @@ export class MapService {
     private zone: NgZone,
     private appState: AppStateService,
     private searchService: SearchService,
-    //private mapboxSearchService: MapboxSearchService,
     private mapStyle: MapStyleService,
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
@@ -100,16 +98,12 @@ export class MapService {
         const urlWithoutScheme = params.url.replace('mbtiles://', '');
         const parts = urlWithoutScheme.split('/');
 
-        // Extraemos las coordenadas desde el final hacia el principio con pop()
-        // Esto es invulnerable a los slashes en los nombres de archivo o rutas
         const y = parseInt(parts.pop()!, 10);
         const x = parseInt(parts.pop()!, 10);
         const z = parseInt(parts.pop()!, 10);
         
-        // Todo lo que quede en el array es el nombre del archivo/ruta
         const fileName = parts.join('/');
 
-        // 🚀 Pasamos la 'y' ORIGINAL. Tu MbTilesService ya calcula el TMS internamente.
         const buffer = await this.mbTiles.getVectorTile(fileName, z, x, y);
 
         if (!buffer || buffer.byteLength === 0) {
@@ -133,27 +127,21 @@ export class MapService {
     window.addEventListener('online', () => this.handleConnectionChange(true));
     window.addEventListener('offline', () => this.handleConnectionChange(false));
     this.appState.onEnterForeground$.subscribe(() => {
-      // Al volver a la app, evaluamos inmediatamente por si la red cambió en el "bolsillo"
       this.handleConnectionChange(window.navigator.onLine, true);
     });  
 
-    // 🚀 Escuchar cuando el servicio offline nos diga que el mapa necesita refrescarse
+    // Escuchar cuando el servicio offline nos diga que el mapa necesita refrescarse
     this.offlineMapService.mapNeedsRefresh$.subscribe(() => {
       console.log("🗺️ MapService: Recibida orden de refresco desde OfflineMapService");
       this.loadMap();
     });
-
   }
 
   // ==========================================================================
   // 1. INICIALIZACIÓN Y CARGA DEL MAPA
   // ==========================================================================
 
-  /**
-   * Configura el mapa desde cero o actualiza el proveedor actual (Online/Offline).
-   */
   async loadMap(): Promise<void> {
-    // Si la lista está vacía, forzamos la lectura antes de tomar decisiones.
     if (this.offlineMapService.availableMaps$.value.length === 0) {
       console.log("⏳ MapService: Esperando a que OfflineMapService lea el disco...");
       await this.offlineMapService.refreshMapsList();
@@ -165,7 +153,6 @@ export class MapService {
     };
 
     const providerKey = this.geography.mapProvider.toLowerCase();
-    // Detectar si es un proveedor offline genérico (si no está en el config, pero es offline)
     const isOffline = providerKey === 'OSM offline' || !['openstreetmap', 'opentopomap', 'german_osm', 'maptiler', 'icgc', 'ign'].some(p => providerKey.includes(p));
     
     const config = isOffline ? mapConfigs['OSM offline'] : mapConfigs['default'];
@@ -175,7 +162,6 @@ export class MapService {
     
     if (!document.getElementById('map')) return;
 
-    // Asegurar capas vectoriales
     this.geography.currentLayer = await this.createLayer(this.geography.currentLayer);
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
@@ -183,22 +169,18 @@ export class MapService {
     this.geography.placesLayer = await this.createLayer(this.geography.placesLayer);
     this.geography.placesLayer.setZIndex(15);
 
-    // Crear o actualizar la capa base (PUNTO 5: Limpieza interna ocurre aquí)
     const result = await this.createMapLayer();
     const olLayer = result.olLayer;
     if (!olLayer) return;
 
     if (this.geography.map) {
-      // Actualización de mapa existente
       const layers = this.geography.map.getLayers();
       layers.setAt(0, olLayer);
       
       const view = this.geography.map.getView();
       view.setMinZoom(minZoom);
       view.setMaxZoom(maxZoom);
-      // Opcional: view.setZoom(zoom); 
     } else {
-      // Creación desde cero
       const mapLayers: BaseLayer[] = [
         olLayer,
         this.geography.currentLayer,
@@ -230,10 +212,10 @@ export class MapService {
 
     this.mapIsReady = true;
 
-    // Disparar el estilo si es offline
+    // Disparar el estilo si es offline (LLAMANDO CORRECTAMENTE AL MAPSTYLE SERVICE)
     if (isOffline) {
       this.geography.map.once('rendercomplete', () => {
-        setTimeout(() => this.refreshOfflineStyle(), 100);
+        setTimeout(() => this.mapStyle.refreshOfflineStyle(this.offlineLayer), 100);
       });
     }
 
@@ -244,36 +226,25 @@ export class MapService {
     }
   }
 
-  /**
-   * Crea la capa base según el proveedor seleccionado.
-   * Incluye la lógica de "fallback" automático a offline si no hay red.
-   */
   async createMapLayer(): Promise<{ olLayer: BaseLayer | null, credits: string }> {
-    // --- PUNTO 5: LIMPIEZA SUAVE ---
-    // En lugar de destruir el motor (remove), simplemente reseteamos la referencia.
-    // Esto evita que MapLibre se quede "huérfano" pero no rompe el renderizado actual.
     if (this.offlineLayer) {
       this.offlineLayer = null;
     }
 
     let olLayer: BaseLayer | null = null;
     let credits = '';
-    // 1. Comprobamos si hay archivos descargados actualmente
     const hasOfflineFiles = this.offlineMapService.availableMaps$.value.length > 0;
     const isOnline = window.navigator.onLine;
     let provider = this.geography.mapProvider;
 
-    // EL SALVAVIDAS UNIVERSAL
     if (!isOnline) {
       if (hasOfflineFiles) {
-        // Pisa siempre la elección del usuario si no hay internet
         provider = 'OSM offline';
       } else {
         return { olLayer: null, credits: this.translate.instant('MAP.NO_CONNECTION_ERROR') };
       }
     }
 
-    // 3. SWITCH DE PROVEEDORES
     switch (provider) {
     
       case 'OpenStreetMap':
@@ -339,7 +310,6 @@ export class MapService {
         break;
       }
 
-      // 🔥 CASO OFFLINE (Recuperamos la lógica simple que te funcionaba)
       case 'OSM offline':
       default: {
         if (hasOfflineFiles) {
@@ -350,8 +320,7 @@ export class MapService {
           });
           olLayer = this.offlineLayer;
         } else {
-          // Si por error llegamos aquí sin archivos
-          olLayer = new TileLayer({ source: new OSM() }); // O un placeholder
+          olLayer = new TileLayer({ source: new OSM() }); 
         }
         break;
       }
@@ -360,132 +329,9 @@ export class MapService {
   }
 
   // ==========================================================================
-  // 2. VISUALIZACIÓN DE TRAYECTOS (Tracks)
-  // ==========================================================================
-
-  /**
-   * Centra la vista del mapa en la posición actual del usuario con un zoom global.
-   */
-  async centerAllTracks(): Promise<void> {
-    const currentPosition = await this.locationManager.getCurrentPosition();
-    if (currentPosition && currentPosition.length === 2 && this.geography.map) {
-      const view = this.geography.map.getView();
-      view.animate({
-        center: currentPosition,
-        zoom: 8,        
-        duration: 1000   
-      });
-    } else {
-      console.warn("No se pudo obtener la ubicación para centrar el mapa.");
-    }
-  }
-
-  /**
-   * Carga y dibuja TODOS los tracks de la colección en el mapa (modo vista general).
-   */
-  async displayAllTracks() {
-    if (!this.geography.map || !this.fs.collection || this.fs.collection.length === 0 || !this.geography.archivedLayer) {
-      console.warn("MapService: Faltan elementos críticos para mostrar los trayectos.");
-      return;
-    }
-
-    try {
-      const keys = this.fs.collection
-        .filter((item: TrackDefinition) => item && item.date)
-        .map((item: TrackDefinition) => {
-            const dateObj = (item.date instanceof Date) ? item.date : new Date(item.date!);
-            return dateObj.toISOString();
-        });
-
-      const rawTracks = await Promise.all(keys.map(key => this.fs.storeGet(key) as Promise<Track>));
-      const source = this.geography.archivedLayer.getSource();
-      
-      if (!source) return;
-      source.clear();
-
-      const featuresToAdd: Feature[] = [];
-
-      for (let i = 0; i < rawTracks.length; i++) {
-        const track = rawTracks[i];
-        const item = this.fs.collection[i];
-
-        if (!track) continue;
-
-        let coords: Coordinate[] | null = null;
-        if (track.features?.[0]?.geometry?.coordinates) {
-          coords = track.features[0].geometry.coordinates;
-        } else if ((track as any).geometry?.coordinates) {
-          coords = (track as any).geometry.coordinates;
-        }
-
-        if (coords && coords.length > 0) {
-          const lineFeature = new Feature({ geometry: new LineString(coords) });
-          lineFeature.set('type', 'archived_line'); 
-          lineFeature.set('date', item.date); 
-          lineFeature.setStyle(this.stylerService.setStrokeStyle('black'));
-          featuresToAdd.push(lineFeature);
-
-          const startFeature = new Feature({ geometry: new Point(coords[0]) });
-          startFeature.set('type', 'archived_start');
-          startFeature.set('date', item.date);
-          startFeature.setStyle(this.stylerService.createPinStyle('green'));
-          featuresToAdd.push(startFeature);
-
-          const endFeature = new Feature({ geometry: new Point(coords[coords.length - 1]) });
-          endFeature.set('type', 'archived_end');
-          endFeature.set('date', item.date);
-          endFeature.setStyle(this.stylerService.createPinStyle('red')); 
-          featuresToAdd.push(endFeature);
-        }
-      }
-
-      if (featuresToAdd.length === 0) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.EMPTY_TRACKS'), 'error');
-        return;
-      }
-
-      source.addFeatures(featuresToAdd);
-      this.geography.archivedLayer.changed();
-      
-      setTimeout(async () => {
-        await this.centerAllTracks();
-        this.geography.map?.render();
-      }, 150);
-
-    } catch (error) {
-      console.error("Error masivo en displayAllTracks:", error);
-      this.fs.displayToast(this.translate.instant('ARCHIVE.LOADING_ERROR'), 'error');
-    }
-  }
-
-  /**
-   * Actualiza el color de los tracks dibujados sin necesidad de recargar todo el mapa.
-   */
-  async updateColors() {
-    const updateLayer = (layer: VectorLayer<VectorSource> | undefined, color: string) => {
-      const features = layer?.getSource()?.getFeatures();
-      features?.forEach((f: Feature) => {
-        const geom = f.getGeometry();
-        if (geom && geom.getType() === 'LineString') {
-          f.setStyle(this.stylerService.setStrokeStyle(color));
-        }
-      });
-      layer?.changed();
-    };
-    updateLayer(this.geography.currentLayer, this.present.currentColor);
-    updateLayer(this.geography.archivedLayer, this.reference.archivedColor);
-    this.geography.map?.render();
-    this.fs.reDraw = false;
-  }
-
-  // ==========================================================================
   // 3. MOTOR DE VECTOR TILES (Offline Engine)
   // ==========================================================================
 
-  /**
-   * Crea una fuente de teselas vectoriales (MVT) para OpenLayers.
-   * Se usa para el sistema de renderizado híbrido.
-   */
   async createSource(server: { getVectorTile: (z: number, x: number, y: number) => Promise<ArrayBuffer | null> }): Promise<VectorTileSource | null> {
     try {
       const epsg3857Extent = [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244];
@@ -501,30 +347,35 @@ export class MapService {
           const vectorTile = tile as VectorTile<RenderFeature>; 
           const [z, x, y] = vectorTile.getTileCoord();
 
-          vectorTile.setLoader(async (extent, resolution, projection) => {
-            try {
-              const rawData = await server.getVectorTile(z, x, y);
+          // SIN ASYNC AQUÍ (Solución al error TS2345)
+          vectorTile.setLoader((extent, resolution, projection) => {
+            
+            (async () => {
+              try {
+                const rawData = await server.getVectorTile(z, x, y);
 
-              if (!rawData || rawData.byteLength === 0) {
-                vectorTile.setFeatures([]);
-                vectorTile.setState(TileState.EMPTY);
-                return;
+                if (!rawData || rawData.byteLength === 0) {
+                  vectorTile.setFeatures([]);
+                  vectorTile.setState(TileState.EMPTY);
+                  return;
+                }
+
+                const decompressed = pako.inflate(new Uint8Array(rawData));
+                const features = new MVT().readFeatures(decompressed.buffer, {
+                  extent: extent,
+                  featureProjection: projection, 
+                  dataProjection: 'EPSG:3857'   
+                });
+
+                vectorTile.setFeatures(features as RenderFeature[]);
+                vectorTile.setState(TileState.LOADED);
+
+              } catch (error) {
+                console.error(`Tile load error (${z}/${x}/${y}):`, error);
+                vectorTile.setState(TileState.ERROR);
               }
+            })();
 
-              const decompressed = pako.inflate(new Uint8Array(rawData));
-              const features = new MVT().readFeatures(decompressed.buffer, {
-                extent: extent,
-                featureProjection: projection, 
-                dataProjection: 'EPSG:3857'   
-              });
-
-              vectorTile.setFeatures(features as RenderFeature[]);
-              vectorTile.setState(TileState.LOADED);
-
-            } catch (error) {
-              console.error(`Tile load error (${z}/${x}/${y}):`, error);
-              vectorTile.setState(TileState.ERROR);
-            }
           });
         },
         tileUrlFunction: ([z, x, y]) => `${z}/${x}/${y}`,
@@ -560,11 +411,10 @@ export class MapService {
     if (this.currentScaleIndex !== 0) {
       this.zoomTimeout = setTimeout(() => {
         this.resetZoom();
-      }, 60000); // 60.000 ms = 1 minuto
+      }, 60000); // 1 minuto
     }
   }
 
-  // 4. Crear una función de apoyo para el reset
   private resetZoom() {
     if (this.mapWrapperElement) {
       this.currentScaleIndex = 0;
@@ -574,241 +424,16 @@ export class MapService {
     }
   }
 
-  /** Helper para inicializar capas vectoriales vacías */
   async createLayer(layer?: VectorLayer<VectorSource>): Promise<VectorLayer<VectorSource>> {
     if (!layer) layer = new VectorLayer();
     if (!layer.getSource()) layer.setSource(new VectorSource());
     return layer;
   }
 
-  /**
-   * Genera el objeto de estilo JSON (Mapbox Style Spec) para el motor MapLibre.
-   * Define colores de agua, bosques, carreteras y etiquetas para el modo offline.
-   */
-  private generateDynamicStyle() {
-    const openedFiles = this.mbTiles.getOpenedFiles();
-
-    // Paleta de colores suave y moderna
-    const THEME = {
-      background: '#f8f4f0',
-      water: '#a1cae2',
-      forest: '#d2e3bc',
-      park: '#dbe9c6',
-      roadCasing: '#cfc7bc',
-      highway: '#f7c352',
-      majorRoad: '#f9d88d',
-      minorRoad: '#ffffff',
-      buildings: '#e8e4e0',
-      text: '#5d5854',
-      fonts: ["OpenSansRegular"] // Usaremos solo esta fuente
-      //fonts: ["Open Sans Regular"]
-    };
-
-    const style: any = {
-      version: 8,
-      name: "Shortbread Offline Style",
-      // 🚀 Cargamos las fuentes desde la carpeta local del dispositivo
-      glyphs: "/assets/fonts/{fontstack}/{range}.pbf",
-      //glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {},
-      layers: [
-        {
-          id: 'background',
-          type: 'background',
-          paint: { 'background-color': THEME.background }
-        }
-      ]
-    };
-
-    const waterLayers: any[] = [];
-    const landLayers: any[] = [];
-    const buildingLayers: any[] = [];
-    const roadLayers: any[] = [];
-    const labelLayers: any[] = [];
-
-    openedFiles.forEach((fileName: string) => {
-      const sourceId = `src_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      style.sources[sourceId] = {
-        type: 'vector',
-        tiles: [`mbtiles://${fileName}/{z}/{x}/{y}`],
-        minzoom: 0,
-        maxzoom: 14 // Geofabrik llega hasta el zoom 14
-      };
-
-      // --- AGUA ---
-      waterLayers.push(
-        {
-          id: `ocean_${sourceId}`,
-          type: 'fill',
-          source: sourceId,
-          'source-layer': 'ocean',
-          paint: { 'fill-color': THEME.water }
-        },
-        {
-          id: `water_polygons_${sourceId}`,
-          type: 'fill',
-          source: sourceId,
-          'source-layer': 'water_polygons',
-          paint: { 'fill-color': THEME.water }
-        }
-      );
-
-      // --- NATURALEZA ---
-      landLayers.push({
-        id: `land_forest_${sourceId}`,
-        type: 'fill',
-        source: sourceId,
-        'source-layer': 'land',
-        filter: ['in', 'kind', 'forest', 'wood', 'nature_reserve', 'national_park'],
-        paint: { 'fill-color': THEME.forest }
-      },
-      {
-        id: `land_park_${sourceId}`,
-        type: 'fill',
-        source: sourceId,
-        'source-layer': 'land',
-        filter: ['in', 'kind', 'park', 'grass', 'garden', 'pitch'],
-        paint: { 'fill-color': THEME.park }
-      });
-
-      // --- EDIFICIOS ---
-      buildingLayers.push({
-        id: `buildings_${sourceId}`,
-        type: 'fill',
-        source: sourceId,
-        'source-layer': 'buildings',
-        minzoom: 13, // Solo se dibujan al acercarse mucho
-        paint: { 
-          'fill-color': THEME.buildings,
-          'fill-outline-color': '#dfdcd8'
-        }
-      });
-
-      // --- CARRETERAS ---
-      roadLayers.push(
-        {
-          id: `road_casing_${sourceId}`,
-          type: 'line',
-          source: sourceId,
-          'source-layer': 'streets',
-          minzoom: 10,
-          paint: {
-            'line-color': THEME.roadCasing,
-            'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 1.5, 18, 12]
-          }
-        },
-        {
-          id: `road_inner_${sourceId}`,
-          type: 'line',
-          source: sourceId,
-          'source-layer': 'streets',
-          minzoom: 10,
-          paint: {
-            'line-color': [
-              'match', ['get', 'kind'],
-              'motorway', THEME.highway,
-              'trunk', THEME.highway,
-              'primary', THEME.majorRoad,
-              'secondary', THEME.majorRoad,
-              THEME.minorRoad
-            ],
-            'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 0.5, 18, 10]
-          }
-        }
-      );
-
-    // --- ETIQUETAS Y NOMBRES ---
-    // Hacemos un solo push con las dos capas para asegurarnos de no duplicar IDs
-    labelLayers.push(
-      // 1. Nombres de las calles
-      {
-        id: `street_labels_${sourceId}`,
-        type: 'symbol',
-        source: sourceId,
-        'source-layer': 'street_labels',
-        minzoom: 13,
-        layout: {
-          'text-field': ['get', 'name'],
-          'text-font': THEME.fonts,
-          'symbol-placement': 'line',
-          'text-size': 12,
-          'text-max-angle': 30
-        },
-        paint: {
-          'text-color': THEME.text,
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2
-        }
-      },
-      // 2. Nombres de pueblos y ciudades
-      {
-        id: `places_${sourceId}`,
-        type: 'symbol',
-        source: sourceId,
-        'source-layer': 'place_labels',
-        minzoom: 5,
-        layout: {
-          'text-field': ['get', 'name'], 
-          'text-font': THEME.fonts,
-          'text-size': [
-            'match', ['get', 'kind'],
-            'city', 18,
-            'town', 14,
-            'village', 12,
-            10
-          ],
-          'text-variable-anchor': ['center', 'top', 'bottom'],
-          'text-justify': 'center'
-        },
-        paint: {
-          'text-color': THEME.text,
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2
-        }
-      }
-    );
-
-  });
-
-    // Juntamos todas las capas en el orden correcto
-    style.layers.push(...waterLayers, ...landLayers, ...buildingLayers, ...roadLayers, ...labelLayers);
-
-    return style;
-  }
-
-  /**
-   * Notifica al motor MapLibre de que debe refrescar su estilo (vía diffing).
-   */
-  public refreshOfflineStyle() {
-    if (!this.offlineLayer) return;
-
-    const maplibreMap = (this.offlineLayer as any).mapLibreMap;
-
-    if (maplibreMap?.setStyle) {
-      const newStyle = this.generateDynamicStyle();
-      const currentHash = JSON.stringify(newStyle.sources); // Hash simple por fuentes
-
-      if (this.lastStyleHash !== currentHash) {
-        console.log("🚀 Aplicando nuevo estilo con Diff...");
-        maplibreMap.setStyle(newStyle, { diff: true });
-        this.lastStyleHash = currentHash;
-      }
-    } else {
-      // Reintento más corto para mejor sensación de carga
-      setTimeout(() => this.refreshOfflineStyle(), 500);
-    }
-  }
-
   // ==========================================================================
   // 4. GESTIÓN DE CONECTIVIDAD
   // ==========================================================================
 
-  /**
-   * Controla el cambio automático entre mapas online y offline.
-   * @param online - Estado de red detectado.
-   * @param immediate - Si es true, no espera el tiempo de cortesía (ej: al abrir la app).
-   */
   private async handleConnectionChange(online: boolean, immediate: boolean = false) {
     if (this.connectionTimeout) {
       clearTimeout(this.connectionTimeout);
@@ -820,9 +445,6 @@ export class MapService {
     }
 
     if (online || immediate) {
-      // Si vuelve la red o abrimos la app, recargamos. 
-      // Si estábamos en un mapa online que hizo fallback a offline, esto lo devolverá a su estado online.
-      // Si ya estábamos explícitamente en 'OSM offline', no pasará nada visualmente.
       if (this.geography.mapProvider !== 'OSM offline') {
           console.log("🌐 Red recuperada: Restaurando mapa online...");
           await this.loadMap();
@@ -830,7 +452,6 @@ export class MapService {
       return;
     }
 
-    // PÉRDIDA DE RED
     console.log(`📡 Señal perdida. Esperando ${this.CONNECTION_GRACE_PERIOD / 1000}s de cortesía...`);
     
     this.zone.runOutsideAngular(() => {
@@ -842,7 +463,6 @@ export class MapService {
             const hasFiles = this.offlineMapService.availableMaps$.value.length > 0;
             const provider = this.geography.mapProvider;
 
-            // Si el usuario estaba viendo un mapa online y tenemos archivos salvavidas:
             if (hasFiles && provider !== 'OSM offline') {
               console.log("🔄 Timeout cumplido: Salvavidas activado. Pasando a Offline.");
               this.fs.displayToast(this.translate.instant('SETTINGS.OFFLINE_MODE_ON'), 'warning');
@@ -854,5 +474,4 @@ export class MapService {
       }, this.CONNECTION_GRACE_PERIOD);
     });
   }
-
 }

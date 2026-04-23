@@ -16,6 +16,7 @@ import { MapService } from './services/map.service';
 import { LanguageService } from './services/language.service';
 import { MbTilesService } from './services/mbtiles.service';
 import { TrackImportService } from './services/track-import.service';
+import { MapStyleService } from './services/map-style.service';
 
 import { useGeographic } from 'ol/proj';
 
@@ -38,8 +39,8 @@ export class AppComponent implements OnDestroy {
     private mapService: MapService,
     private language: LanguageService,
     private mbTilesService: MbTilesService,
-    private trackImportService: TrackImportService
-  ) {
+    private trackImportService: TrackImportService,
+    private mapStyle: MapStyleService  ) {
     this.initializeApp();
   }
 
@@ -54,7 +55,7 @@ export class AppComponent implements OnDestroy {
 
     // 2. Damos un pequeño margen y refrescamos el estilo del mapa
     setTimeout(() => {
-      this.mapService.refreshOfflineStyle();
+      this.mapStyle.refreshOfflineStyle();
     }, 500);
 
     this.lockToPortrait();

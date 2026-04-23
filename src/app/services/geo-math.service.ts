@@ -311,56 +311,6 @@ export class GeoMathService {
   }
 
   /**
-   * Ajusta las coordenadas y propiedades de un track interpolando puntos
-   * si la distancia entre dos puntos consecutivos excede un `maxDistance`.
-   * @param coordinates Array de coordenadas `[lon, lat]`.
-   * @param properties Array de objetos `Data` asociados a las coordenadas.
-   * @param maxDistance La distancia máxima permitida entre puntos antes de interpolar.
-   * @returns Un objeto con los nuevos arrays de coordenadas y propiedades interpoladas.
-   */
-  adjustCoordinatesAndProperties(coordinates: [number, number][], properties: Data[], maxDistance: number) {
-    const newCoordinates: [number, number][] = [];
-    const newProperties: Data[] = [];
-
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      newCoordinates.push(coordinates[i]);
-      newProperties.push({ ...properties[i] });
-
-      const dist = properties[i + 1].distance - properties[i].distance;
-      
-      if (dist > maxDistance) {
-        const steps = Math.ceil(dist / maxDistance) - 1;
-        
-        for (let j = 1; j <= steps; j++) {
-          const f = j / (steps + 1);
-          
-          const lng = coordinates[i][0] + f * (coordinates[i + 1][0] - coordinates[i][0]);
-          const lat = coordinates[i][1] + f * (coordinates[i + 1][1] - coordinates[i][1]);
-          newCoordinates.push([lng, lat]);
-
-          const interp = (a: number, b: number) => a + f * (b - a);
-          
-          newProperties.push({
-            altitude: interp(properties[i].altitude, properties[i + 1].altitude),
-            speed: interp(properties[i].speed, properties[i + 1].speed),
-            time: interp(properties[i].time, properties[i + 1].time),
-            compSpeed: interp(properties[i].compSpeed, properties[i + 1].compSpeed),
-            compAltitude: interp(properties[i].compAltitude, properties[i + 1].compAltitude),
-            distance: interp(properties[i].distance, properties[i + 1].distance)
-          });
-        }
-      }
-    }
-    
-    if (coordinates.length > 0) {
-      newCoordinates.push(coordinates[coordinates.length - 1]);
-      newProperties.push({ ...properties[properties.length - 1] });
-    }
-
-    return { newCoordinates, newProperties };
-  }
-
-  /**
    * Filtro Híbrido GPS: Detecta picos midiendo la relación espacial (triangulación)
    * Y verificando que el salto ocurrió a una velocidad físicamente irreal.
    */
