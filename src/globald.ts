@@ -138,18 +138,6 @@ export interface ParseResult {
   trk: Element | null; // Tipo nativo de DOM
 }
 
-export interface LocationResult {
-  lat: number;
-  lon: number;
-  name: string;
-  display_name: string;
-  short_name?: string;   // 👈 add this
-  type?: string;
-  place_id?: string | number;
-  boundingbox: number[];
-  geojson?: any;
-}
-
 export interface WikiData {
   title: string;
   extract: string;
@@ -166,3 +154,33 @@ export interface WikiWeatherResult {
   weather: any;
   locationName: string;
 }
+
+export interface LocationResult {
+  lat: number;
+  lon: number;
+  name: string;
+  display_name: string;
+  short_name?: string;
+  type?: string;
+  place_id?: number;
+  boundingbox?: number[];
+  geojson?: any;
+  categories?: string[]; 
+  description?: string; 
+  visible?: boolean;
+  class?: string;
+  addresstype?: string;
+  place_rank?: number;
+}
+
+export const PLACE_CATEGORIES = [
+  { id: 'towns', icon: 'business-outline', color: 'primary' },
+  { id: 'mountain', icon: 'terrain-outline', color: 'success' },
+  { id: 'water', icon: 'water-outline', color: 'tertiary' },
+  { id: 'accommodation', icon: 'bed-outline', color: 'warning' },
+  { id: 'poi', icon: 'camera-outline', color: 'secondary' },
+  { id: 'food', icon: 'restaurant-outline', color: 'danger' },
+  { id: 'logistics', icon: 'car-outline', color: 'medium' },
+  { id: 'favorite', icon: 'star-outline', color: 'warning' },
+  { id: 'other', icon: 'apps-outline', color: 'dark' }
+];

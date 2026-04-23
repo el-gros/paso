@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "Вы уверены, что хотите поделиться своим местоположением?",
     "YES": "Да",
     "NO_MAP_AVAILABLE": "Карта недоступна",
-    "REMOVE_REFERENCE": "Справ."
+    "REMOVE_REFERENCE": "Справ.",
+    "OFFLINE_CREDITS": "Данные офлайн-карт",
+    "NO_CONNECTION_ERROR": "Нет соединения / Нет офлайн-карт"
   },
   "SEARCH": {
     "BUTTON": "Поиск",
@@ -59,28 +61,34 @@
     "MAP_SELECTION_CANCELED": "Выбор на карте отменен",
     "SEARCHING_SERVICES": "Поиск сервисов...",
     "PINS_REMOVED": "Точки обслуживания удалены с карты",
-    "MAP_POINT_SELECTED": "Точка выбрана на карте"
+    "MAP_POINT_SELECTED": "Точка выбрана на карте",
+    "NO_NAME": "(без названия)"
   },
   "ARCHIVE": {
-    "TRACKS": "Треки",
+    "TITLE": "Архив",
+    "PLACES": "Места",
+    "SHOW_ALL": "Показать все",
+    "HIDE_ALL": "Скрыть все",
+    "NO_PLACES": "У вас пока нет сохраненных мест",
+    "TRACKS": "Маршруты",
     "SHOW": "Показать",
     "HIDE": "Скрыть",
     "ALL": "Все",
-    "REMOVE_TRACK": "Удалить",
-    "EDIT_TRACK": "Изменить",
+    "REMOVE": "Удалить",
+    "EDIT": "Редактировать",
     "EXPORT_TRACK": "Экспорт",
-    "ALL_DISPLAYED": "Показаны все треки",
-    "ALL_HIDDEN": "Все треки скрыты",
+    "ALL_DISPLAYED": "Все маршруты отображаются",
+    "ALL_HIDDEN": "Все маршруты скрыты",
     "VISIBLE_LABEL": "Видимый",
-    "TEXT": "Вот запрошенный трек",
+    "TEXT": "Вот запрошенный маршрут",
     "DIALOG_TITLE": "Поделиться только через Gmail",
-    "EXPORT_SUCCESS": "Трек успешно отправлен",
+    "EXPORT_SUCCESS": "Маршрут успешно отправлен",
     "EXPORT_ERROR": "Ошибка экспорта",
-    "LOADING_ERROR": "Ошибка загрузки трека",
+    "LOADING_ERROR": "Ошибка загрузки маршрута",
     "EMPTY_TRACKS": "В файлах не найдено действительных координат",
-    "TRACK_UPDATED": "Трек успешно обновлен",
-    "TRACK_SAVED": "Трек успешно сохранен",
-    "GENERATING_FILES": "Создание файлов, подождите..."
+    "TRACK_UPDATED": "Маршрут успешно обновлен",
+    "TRACK_SAVED": "Маршрут успешно сохранен",
+    "GENERATING_FILES": "Создание файлов, пожалуйста, подождите..."
   },
   "SETTINGS": {
     "GENERAL_GROUP": "Общие",
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "Стоп",
     "WAYPOINT": "Тчк.",
     "SAVE_TRACK": "Сохранить",
-    "REMOVE_TRACK": "Удалить",
+    "REMOVE": "Удалить",
     "CONFIRM_STOP": "Подтвердить завершение?",
     "CONFIRM_DELETION": "Подтвердить удаление?",
     "DELETE_YES": "Да",
@@ -292,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "Фото моего маршрута: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Фото моего маршрута с PasoApp ⛰️",
-    "SHARE_DIALOG": "Поделиться фото"
+    "SHARE_DIALOG": "Поделиться фото",
+    "WAITING_GPS": "Ожидание первого сигнала GPS для фотосъемки...",
+    "PHOTO_ADDED": "Фото добавлено к треку",
+    "ERROR_SAVING": "Ошибка при сохранении фото"
+  },
+  "GENERIC": {
+    "OK": "ОК",
+    "CANCEL": "Отмена"
   },
   "EXPORT": {
     "OPTIONS": "Выберите одну или несколько опций",
@@ -301,5 +316,16 @@
     "KMZ": "Файл .KMZ",
     "PHOTOS": "Фото",
     "KMZ_PHOTOS": "KMZ с фото"
+  },
+  "CATEGORIES": {
+    "TOWNS": "Города и поселки",
+    "MOUNTAIN": "Горы и природа",
+    "WATER": "Водоемы",
+    "ACCOMMODATION": "Проживание",
+    "POI": "Достопримечательности",
+    "FOOD": "Питание",
+    "LOGISTICS": "Логистика и транспорт",
+    "FAVORITE": "Избранное",
+    "OTHER": "Другое"
   }
 }

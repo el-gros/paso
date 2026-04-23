@@ -184,7 +184,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         if (result) {
           shortName = result.short_name || result.name || placeName;
           placeName = result.display_name || result.name || placeName;
-          if (shortName === '(no name)') shortName = placeName;
+          if (shortName === this.translate.instant('SEARCH.NO_NAME')) shortName = placeName;
           
           // Actualizamos el rótulo con el nombre real
           if (this.mapLabelElement) {
@@ -313,17 +313,47 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (this.platform.is('capacitor')) await Keyboard.hide();
 
     if (this.mode === 'place') {
-      // 1. Solo intentamos mostrar en el mapa si tenemos lo mínimo necesario
+      
+      // 1. ASIGNACIÓN AUTOMÁTICA DE CATEGORÍAS
+      // Si el lugar no tiene categorías previas, intentamos adivinarla por su 'type'
+      if (!res.categories || res.categories.length === 0) {
+        const type = res.type?.toLowerCase() || '';
+        
+        if (['city', 'town', 'village', 'municipality', 'locality', 'hamlet', 'suburb', 'place', 'administrative'].includes(type)) {
+          res.categories = ['towns'];
+        } else if (['peak', 'mountain', 'forest', 'wood', 'nature_reserve', 'park', 'hill'].includes(type)) {
+          res.categories = ['mountain'];
+        } else if (['water', 'lake', 'river', 'beach', 'bay', 'coastline'].includes(type)) {
+          res.categories = ['water'];
+        } else if (['hotel', 'hostel', 'guest_house', 'camp_site', 'alpine_hut'].includes(type)) {
+          res.categories = ['accommodation'];
+        } else if (['restaurant', 'cafe', 'fast_food', 'bar', 'pub'].includes(type)) {
+          res.categories = ['food'];
+        } else if (['pharmacy', 'hospital', 'police', 'fuel', 'parking', 'bus_station', 'station', 'taxi'].includes(type)) {
+          res.categories = ['logistics'];
+        } else if (['museum', 'monument', 'ruins', 'viewpoint', 'attraction', 'artwork'].includes(type)) {
+          res.categories = ['poi'];
+        } else {
+          // Si no encaja en nada obvio, lo mandamos a 'other' por defecto
+          res.categories = ['other'];
+        }
+      }
+
+      // 2. ¡GUARDADO AUTOMÁTICO EN TU ARCHIVO!
+      // Se añade a placesCollection y se guarda en disco sin duplicar gracias a tu FunctionsService
+      this.fs.addPlace(res);
+
+      // 3. Solo intentamos mostrar en el mapa si tenemos lo mínimo necesario
       if (res.lon && res.lat) {
         this.geography.showLocationOnMap(res);
       }
       
       this.reference.foundPlace = true; 
       
-      // 2. Buscamos Wikipedia y Clima (esto debería funcionar con las coords)
+      // 4. Buscamos Wikipedia y Clima
       await this.searchWiki(res);
 
-      // 3. Cerramos el panel
+      // 5. Cerramos el panel
       this.closePanel(); 
     } 
     else if (this.mode === 'route') {

@@ -36,7 +36,7 @@ export class PhotoWaypointService {
     const coordsArray = this.present.currentTrack?.features?.[0]?.geometry?.coordinates;
 
     if (!this.present.currentTrack || this.location.state !== 'tracking' || !coordsArray || coordsArray.length === 0) {
-      this.fs.displayToast('Esperant el primer punt GPS per fer fotos...', 'warning');
+      this.fs.displayToast('PHOTO.WAITING_GPS', 'warning');
       return;
     }
     
@@ -49,7 +49,7 @@ export class PhotoWaypointService {
       const trackDataArray = this.present.currentTrack.features[0].geometry.properties?.data;
       const realAltitude = trackDataArray && trackDataArray[index] ? trackDataArray[index].compAltitude : undefined;
 
-      let placeName = this.translate.instant('MAP.PHOTO_WAYPOINT_NAME') || 'Foto'; 
+      let placeName = this.translate.instant('MAP.PHOTO_WAYPOINT_NAME'); 
 
       // Geocoding inverso
       try {
@@ -80,11 +80,11 @@ export class PhotoWaypointService {
       }
       this.present.currentTrack.features[0].waypoints.push(newWaypoint);
 
-      this.fs.displayToast('Foto afegida a la ruta', 'success');
+      this.fs.displayToast('PHOTO.PHOTO_ADDED', 'success');
 
     } catch (error) {
       console.error("❌ Error al guardar el waypoint de la foto:", error);
-      this.fs.displayToast('Error en desar la foto', 'error');
+      this.fs.displayToast('PHOTO.ERROR_SAVING', 'error');
     }
   }
 }

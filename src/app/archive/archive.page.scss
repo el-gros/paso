@@ -1,30 +1,14 @@
 /* ==========================================================================
-   1. LAYOUTS ESPECÍFICOS (FABs, Mapa Oculto y Espaciadores)
+   1. LAYOUTS ESPECÍFICOS Y EXPORTACIÓN
    ========================================================================== */
 
-/* FAB superior derecha en Archivo */
-.top-safe-archive {
-  top: 15px !important; 
-  right: 15px !important;
-  margin: 0 !important; 
-  display: block !important; 
-  width: auto !important; 
-  z-index: 1000;
-  pointer-events: none;
-  
-  .record-button {
-    pointer-events: auto;
-  }
-}
-
-/* Contenedor para la exportación silenciosa del mapa */
 .hidden-map-container {
   position: absolute; 
   top: 0; 
   left: 0; 
-  width: 1000px; /* Dimensiones fijas necesarias para la exportación en alta calidad */
+  width: 1000px; 
   height: 800px; 
-  opacity: 0.01; /* Casi invisible, pero el navegador lo sigue renderizando */
+  opacity: 0.01; 
   z-index: -10; 
   pointer-events: none;
 
@@ -34,20 +18,103 @@
   }
 }
 
-/* Espacio inferior para no quedar tapado por el menú FAB principal */
-.list-spacer { // Espaciador para la barra de navegación inferior
+.list-spacer { 
   height: 120px;
 }
 
 /* ==========================================================================
-   2. LISTADO DE TRAYECTOS (ESTRUCTURA Y TEXTOS)
+   2. CABECERAS Y ACORDEONES (Categorías)
+   ========================================================================== */
+
+.header-action-item {
+  --background: var(--ion-color-light, #f4f5f8);
+  --min-height: 52px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--ion-color-primary);
+  
+  strong {
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+}
+
+.category-divider-item {
+  --background: var(--ion-color-light, #f4f5f8);
+  --padding-start: 16px;
+  --min-height: 48px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+
+  ion-icon[slot="start"] {
+    margin-inline-end: 12px;
+    font-size: 20px;
+    opacity: 0.9;
+  }
+
+  strong {
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    color: #444;
+    font-weight: 700;
+  }
+}
+
+/* Cabecera Global: Alinear texto y contador en una sola línea */
+.global-header-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+/* El contador de lugares ('11 Lugares') */
+.header-count {
+  font-size: 12px;
+  color: #777;
+  font-weight: 500;
+  text-transform: none; 
+  letter-spacing: normal;
+  white-space: nowrap; 
+}
+
+/* Contenedor para los dos botones de visibilidad (Ojo y Ojo Tachado) */
+.visibility-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  ion-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    height: 36px;
+    margin: 0;
+
+    &[disabled] {
+      opacity: 0.25; /* Hace que el botón inactivo se vea gris/transparente */
+    }
+
+    ion-icon {
+      font-size: 22px;
+    }
+  }
+}
+
+[slot="content"] {
+  background: white;
+}
+
+/* ==========================================================================
+   3. ÍTEMS DE LA LISTA (Lugares e Individuales)
    ========================================================================== */
 
 ion-item {
   --padding-start: 16px;
   --background: transparent;
-  --border-color: rgba(0, 0, 0, 0.05); // Separador sutil entre ítems
-  --min-height: 60px;
+  --border-color: rgba(0, 0, 0, 0.05);
+  --min-height: 72px;
   
   strong {
     font-size: 14px;
@@ -55,172 +122,181 @@ ion-item {
     color: #222;
     display: block;
     line-height: 1.2;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
+    
+    &.active-text {
+      color: var(--ion-color-primary) !important;
+    }
   }
 
-  .active-text {
-    color: var(--ion-color-primary) !important;
-    font-weight: 800 !important;
-    transition: color 0.2s ease; // Transición suave al activar/desactivar
+  .item-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 0;
   }
-}
-
-.date-and-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
 }
 
 .item-date-subtitle {
   font-size: 11px;
-  color: #777;
+  color: #888;
   font-weight: 500;
-  margin: 0;
+  margin-top: 3px;
 }
 
-.custom-badge-inline {
-  background: var(--ion-color-success, #2dd36f);
-  color: white;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.place-checkbox {
+  margin-inline-end: 12px; 
+  --size: 21px;
+  --border-radius: 4px;
+  --checkbox-background-checked: var(--ion-color-primary);
 }
 
-.active-chevron {
-  color: var(--ion-color-primary) !important;
-  transition: color 0.2s ease;
-}
+.place-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 70px;
 
-.compact-chevron {
-  font-size: 12px !important;
-  color: #bbb;
-  
-  &.start {
-    margin-inline-end: 10px !important;
-    margin-inline-start: 0 !important;
+  ion-button.center-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    --color: #999;
+    font-size: 20px;
+    height: 38px;
+    margin: 0;
+
+    &::part(native) {
+      padding: 0;
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
   }
-  &.end {
-    margin-inline-start: 10px !important;
-    margin-inline-end: 0 !important;
+}
+
+/* Indicadores de deslizamiento (Cheurones) */
+.compact-chevron {
+  font-size: 14px !important;
+  color: #ddd;
+  transition: color 0.3s ease;
+  
+  &.start { margin-inline-end: 10px !important; }
+  &.end { margin-inline-start: 6px !important; }
+
+  &.active-chevron {
+    color: var(--ion-color-primary) !important;
   }
 }
 
 /* ==========================================================================
-   3. MINIATURA DE FOTO
+   4. COMPONENTES MULTIMEDIA (Miniaturas)
    ========================================================================== */
 
 ion-thumbnail.photo-thumbnail {
-  --size: 44px;
+  --size: 46px;
   --border-radius: 8px;
   margin-inline-end: 14px;
   position: relative;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  z-index: 10; // Asegura que la miniatura esté por encima de otros elementos
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   overflow: visible;
 
   img {
-    display: block;
     object-fit: cover;
     width: 100%;
     height: 100%;
-    background: #f0f0f0; // Color de fondo mientras carga la imagen
+    border-radius: 8px;
   }
 
   .mini-badge {
     position: absolute;
-    bottom: -6px;
-    right: -6px;
-    background: rgba(0, 0, 0, 0.85);
+    bottom: -4px;
+    right: -4px;
+    background: #000;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 11;
-    border: 1.5px solid white; // Borde blanco para destacar
+    border: 1.5px solid white;
 
-    ion-icon {
-      font-size: 11px;
-      color: white;
-    }
-  }
-
-  &:active {
-    transform: scale(0.92);
-    opacity: 0.8;
+    ion-icon { font-size: 10px; color: white; }
   }
 }
 
 /* ==========================================================================
-   4. POPOVER DE EXPORTACIÓN
+   5. DIÁLOGOS DE EXPORTACIÓN (Popovers)
    ========================================================================== */
 
-/* 1. Sobrescribir el ancho del global.scss y forzar bordes */
-.custom-export-popover { // Estilos específicos para el popover de exportación
-  --width: 300px !important; /* Ensanchamos la "ventana" de Ionic */
+.custom-export-popover { 
+  --width: 300px !important;
   --border-radius: 16px !important;
 }
 
 .backup-box {
   padding: 20px 16px;
-  width: 100%; /* Ahora ocupa exactamente el 100% de la ventana, sin desbordar */
   box-sizing: border-box;
-  border-radius: 16px; // Bordes redondeados para el popover
-  overflow: hidden;
 }
 
-/* 2. Alineación perfecta de los cuadraditos */
-.backup-options-list { // Lista de opciones de exportación
+.backup-options-list { 
   background: transparent;
   margin: 15px 0;
   
   ion-item {
-    --min-height: 42px;
+    --min-height: 40px;
     --padding-start: 0;
-    --inner-padding-end: 0; 
-    --background: transparent;
     font-size: 14px;
     
     ion-checkbox {
-      --size: 22px; // Tamaño del checkbox
-      --checkbox-background-checked: var(--ion-color-primary);
-      --border-color-checked: var(--ion-color-primary);
+      --size: 20px;
       font-weight: 500;
       color: #333;
       width: 100%;
-      margin: 0;
-    }
-
-    ion-checkbox[disabled] {
-      opacity: 0.5;
     }
   }
 }
 
-.top-margin {
-  margin-top: 20px; // Margen superior para separar elementos
-}
-
-/* 3. Botones exactamente del mismo ancho y centrados */
 .equal-buttons {
   display: flex;
-  justify-content: space-between;
   gap: 12px;
-  width: 100%;
-  padding: 0;
-  // Los botones se distribuyen equitativamente
+  margin-top: 20px;
+  
   button {
-    flex: 1 1 0px; 
+    flex: 1;
     margin: 0 !important; 
     display: flex;
     justify-content: center;
     align-items: center;
-    min-width: 0; 
+    transition: transform 0.1s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+/* ==========================================================================
+   6. ESTADOS VACÍOS
+   ========================================================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  color: #bbb;
+
+  ion-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+  p { 
+    font-size: 14px; 
+    text-align: center; 
+    font-weight: 500;
+    line-height: 1.4;
   }
 }

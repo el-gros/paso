@@ -1,93 +1,194 @@
-<ion-header>
+<ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>{{ 'ARCHIVE.TRACKS' | translate }}</ion-title>
+    <ion-title>{{ 'ARCHIVE.TITLE' | translate }}</ion-title>
+  </ion-toolbar>
+  
+  <ion-toolbar>
+    <ion-segment [(ngModel)]="activeTab" mode="md">
+      <ion-segment-button value="tracks">
+        <ion-label>{{ 'ARCHIVE.TRACKS' | translate }}</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="places">
+        <ion-label>{{ 'ARCHIVE.PLACES' | translate }}</ion-label>
+      </ion-segment-button>
+    </ion-segment>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="custom-content">
 
-  <!-- ======================================================================
-       1. LISTA DE TRACKS (Visibles y sus opciones deslizantes)
-       ====================================================================== -->
+  @if (activeTab === 'tracks') {
+    <div class="ion-content-scroll-host">
+      
+      <ion-item lines="full" class="header-action-item" button (click)="displayAllTracks(!mapService.visibleAll)">
+        <ion-icon 
+          slot="start" 
+          [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'"
+          [color]="mapService.visibleAll ? 'danger' : 'primary'">
+        </ion-icon>
+        <ion-label>
+          <strong>{{ (mapService.visibleAll ? 'ARCHIVE.HIDE_ALL' : 'ARCHIVE.SHOW_ALL') | translate }}</strong>
+        </ion-label>
+        <ion-note slot="end">{{ fs.collection.length }} {{ 'ARCHIVE.TRACKS' | translate }}</ion-note>
+      </ion-item>
 
-  <div class="ion-content-scroll-host">
-    
-    <!-- Bucle para cada track en la colección -->
-    <ion-list lines="full">
-      @for (item of fs.collection; track item; let i = $index) {
-        <ion-item-sliding #slidingItem>
-          
-          <!-- Opciones deslizantes izquierdas (Mostrar/Ocultar, Exportar) -->
-          <ion-item-options side="start">
-            <ion-item-option 
-              [color]="isTrackVisible(item) ? 'medium' : 'primary'" 
-              (click)="toggleVisibility(item, slidingItem)">
-              <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
-              {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
-            </ion-item-option>
+      <ion-list lines="full">
+        @for (item of fs.collection; track item; let i = $index) {
+          <ion-item-sliding #slidingItem>
+            <ion-item-options side="start">
+              <ion-item-option [color]="isTrackVisible(item) ? 'medium' : 'primary'" (click)="toggleVisibility(item, slidingItem)">
+                <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+                {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
+              </ion-item-option>
+              <ion-item-option color="secondary" (click)="openExportMenu(item, slidingItem)">
+                <ion-icon slot="top" name="share-outline"></ion-icon>
+                {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
+              </ion-item-option>
+            </ion-item-options>
             
-            <ion-item-option color="secondary" (click)="openExportMenu(item, slidingItem)">
-              <ion-icon slot="top" name="share-outline"></ion-icon>
-              {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
-            </ion-item-option>
-          </ion-item-options>
-          
-          <!-- Contenido del item del track -->
-          <ion-item>
-            <!-- Indicador visual si el track está activo como referencia -->
-            <ion-icon name="chevron-forward-outline" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
-            
-            <!-- Miniatura de foto si está disponible -->
-            @if (item.photos && item.photos.length > 0) {
-              <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
-                <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
-                <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
-              </ion-thumbnail>
-            }
-
-            <ion-label>
-              <!-- Nombre del track y estado de visibilidad -->
-              <div class="item-content">
-                <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
-                <div class="date-and-status">
-                  <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
-                  @if (isTrackVisible(item)) {
-                    <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
-                  }
+            <ion-item>
+              <ion-icon name="chevron-forward-outline" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
+              @if (item.photos && item.photos.length > 0) {
+                <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
+                  <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
+                  <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
+                </ion-thumbnail>
+              }
+              <ion-label>
+                <div class="item-content">
+                  <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
+                  <div class="date-and-status">
+                    <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+                    @if (isTrackVisible(item)) {
+                      <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
+                    }
+                  </div>
                 </div>
-              </div>
-            </ion-label>
+              </ion-label>
+              <ion-icon name="chevron-back-outline" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
+            </ion-item>
+
+            <ion-item-options side="end">
+              <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
+                <ion-icon slot="top" name="create-outline"></ion-icon>
+                {{ 'ARCHIVE.EDIT' | translate }}
+              </ion-item-option>
+              <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
+                <ion-icon slot="top" name="trash-outline"></ion-icon>
+                {{ 'ARCHIVE.REMOVE' | translate }}
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>      
+        }
+      </ion-list> 
+      <div class="list-spacer"></div>
+    </div>
+  }
+
+  @if (activeTab === 'places') {
+    <div class="ion-content-scroll-host">
+      
+      <ion-item lines="full" class="header-action-item">
+        <ion-label class="global-header-content">
+          <strong>{{ 'ARCHIVE.ALL' | translate }}</strong>
+          <span class="header-count">{{ fs.placesCollection.length }} {{ 'ARCHIVE.PLACES' | translate }}</span>
+        </ion-label>
+        
+        <div slot="end" class="visibility-buttons">
+          <ion-button fill="clear" (click)="displayAllPlaces(true)" [disabled]="isAllPlacesVisible">
+            <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" (click)="displayAllPlaces(false)" [disabled]="isAllPlacesHidden">
+            <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-item>
+
+      @if (groupedPlaces.length > 0) {
+        <ion-accordion-group [multiple]="true">
+          @for (group of groupedPlaces; track group.category.id) {
+            <ion-accordion [value]="group.category.id">
               
-            <!-- Icono decorativo de Ionic -->
-            <ion-icon name="chevron-back-outline" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
-          </ion-item>
+              <ion-item slot="header" class="category-divider-item">
+                <ion-icon [name]="group.category.icon" [color]="group.category.color" slot="start"></ion-icon>
+                <ion-label>
+                  <strong>{{ 'CATEGORIES.' + group.category.id.toUpperCase() | translate }}</strong>
+                </ion-label>
+                
+                <div slot="end" class="visibility-buttons">
+                  <ion-button fill="clear" 
+                    (click)="setCategoryVisibility(group.category.id, true, $event)" 
+                    [disabled]="isAllCategoryVisible(group.category.id)">
+                    <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" 
+                    (click)="setCategoryVisibility(group.category.id, false, $event)" 
+                    [disabled]="isAllCategoryHidden(group.category.id)">
+                    <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
+                  </ion-button>
+                </div>
+              </ion-item>
 
-          <!-- Opciones deslizantes derechas (Editar, Eliminar) -->
-          <ion-item-options side="end">
-            <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
-              <ion-icon slot="top" name="create-outline"></ion-icon>
-              {{ 'ARCHIVE.EDIT_TRACK' | translate }}
-            </ion-item-option>
-            <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
-              <ion-icon slot="top" name="trash-outline"></ion-icon>
-              {{ 'ARCHIVE.REMOVE_TRACK' | translate }}
-            </ion-item-option>
-          </ion-item-options>
+              <div slot="content">
+                @for (place of group.places; track place) {
+                  <ion-item-sliding #slidingItemPlace>
+                    
+                    <ion-item-options side="start">
+                      <ion-item-option color="tertiary" (click)="editPlace(place, slidingItemPlace)">
+                        <ion-icon slot="top" name="create-outline"></ion-icon>
+                        {{ 'ARCHIVE.EDIT' | translate }}
+                      </ion-item-option>
+                    </ion-item-options>
 
-        </ion-item-sliding>      
+                    <ion-item lines="full">
+                      <ion-icon name="chevron-forward-outline" slot="start" 
+                        class="compact-chevron start" 
+                        [class.active-chevron]="place.visible">
+                      </ion-icon>
+
+                      <ion-checkbox slot="start" class="place-checkbox"
+                        [(ngModel)]="place.visible" 
+                        (ionChange)="onPlaceVisibilityChange()">
+                      </ion-checkbox>
+
+                      <div class="item-content">
+                        <strong [class.active-text]="place.visible">{{ place.name }}</strong>
+                        <p class="item-date-subtitle">{{ place.description || place.display_name }}</p>
+                      </div>
+
+                      <div slot="end" class="place-actions-wrapper">
+                        <ion-button fill="clear" class="center-button" (click)="centerPlace(place)">
+                          <ion-icon name="locate-outline" slot="icon-only"></ion-icon>
+                        </ion-button>
+                        
+                        <ion-icon name="chevron-back-outline" slot="end" 
+                          class="compact-chevron end" 
+                          [class.active-chevron]="place.visible">
+                        </ion-icon>
+                      </div>
+                    </ion-item>
+                    
+                    <ion-item-options side="end">
+                      <ion-item-option color="danger" (click)="confirmPlaceDeletion(place, slidingItemPlace)">
+                        <ion-icon slot="top" name="trash-outline"></ion-icon>
+                        {{ 'ARCHIVE.REMOVE' | translate }}
+                      </ion-item-option>
+                    </ion-item-options>
+
+                  </ion-item-sliding>
+                }
+              </div>
+            </ion-accordion>
+          }
+        </ion-accordion-group>
       }
-    </ion-list> 
-    
-    <!-- Espaciador para la barra de navegación inferior -->
-    <div class="list-spacer"></div>
-  </div>
+      
+      <div class="list-spacer"></div>
+    </div>
+  }
+
 </ion-content>
 
-<!-- ======================================================================
-     2. POPOVERS DE CONFIRMACIÓN Y EXPORTACIÓN
-     ====================================================================== -->
-
-<!-- Popover de Confirmación de Borrado -->
 <div class="bottom-safe-gray"></div>
 
 <ion-popover
@@ -98,7 +199,7 @@
     <div class="popover-island confirm-box">
       <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
       <div class="button-grid horizontal">
-        <button class="nav-item-btn green-pill" (click)="deleteTrack(); isConfirmDeletionOpen = false">
+        <button class="nav-item-btn green-pill" (click)="executeDelete()">
           <ion-icon name="checkmark-outline"></ion-icon>
           <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
         </button>
@@ -111,7 +212,6 @@
   </ng-template>
 </ion-popover>
 
-<!-- Popover de Menú de Exportación -->
 <ion-popover
   [isOpen]="isExportMenuOpen"
   (didDismiss)="isExportMenuOpen = false"
@@ -152,7 +252,7 @@
       <div class="button-grid horizontal top-margin equal-buttons">
         <button class="nav-item-btn green-pill" (click)="executeExport()" [disabled]="!isAnyExportOptionSelected()">
           <ion-icon name="checkmark-outline"></ion-icon>
-          <p>OK</p>
+          <p>{{ 'GENERIC.OK' | translate }}</p>
         </button>
         <button class="nav-item-btn red-pill" (click)="isExportMenuOpen = false">
           <ion-icon name="close-outline"></ion-icon>
@@ -162,27 +262,6 @@
     </div>
   </ng-template>
 </ion-popover>
-
-<!-- ======================================================================
-     3. CONTROLES FLOTANTES (FABs)
-     ====================================================================== -->
-
-<!-- Botón flotante para mostrar/ocultar todos los tracks -->
-<ion-fab slot="fixed" horizontal="end" vertical="top" class="top-safe-archive">
-  <div class="record-button" 
-       [class.red-pill]="mapService.visibleAll"
-       (click)="displayAllTracks(!mapService.visibleAll)">
-    <ion-icon 
-      [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'" 
-      [class.blue-icon]="!mapService.visibleAll"> <!-- blue-icon para el estado "eye-outline" -->
-    </ion-icon>
-    <p>{{ 'ARCHIVE.ALL' | translate }}</p> <!-- Usamos <p> para consistencia con global.scss -->
-  </div>
-</ion-fab>
-
-<!-- ======================================================================
-     4. NAVEGACIÓN PRINCIPAL (Bottom Bar)
-     ====================================================================== -->
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
   <ion-row>
@@ -200,10 +279,6 @@
     </div>
   </ion-row>
 </ion-fab>
-
-<!-- ======================================================================
-     5. CONTENEDORES OCULTOS (Para la exportación de imágenes del mapa)
-     ====================================================================== -->
 
 <div id="export-container" class="hidden-map-container">
   <div id="map-export"></div>

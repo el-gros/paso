@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "Are you sure you want to share your location with someone else?",
     "YES": "Yes",
     "NO_MAP_AVAILABLE": "Map not available",
-    "REMOVE_REFERENCE": "Ref."
+    "REMOVE_REFERENCE": "Ref.",
+    "OFFLINE_CREDITS": "Offline map data",
+    "NO_CONNECTION_ERROR": "No connection / No offline maps"
   },
   "SEARCH": {
     "BUTTON": "Search",
@@ -59,25 +61,31 @@
     "MAP_SELECTION_CANCELED": "Map selection canceled",
     "SEARCHING_SERVICES": "Searching for services...",
     "PINS_REMOVED": "Service points removed from the map",
-    "MAP_POINT_SELECTED": "Point selected on map"
+    "MAP_POINT_SELECTED": "Point selected on map",
+    "NO_NAME": "(no name)"
   },
   "ARCHIVE": {
+    "TITLE": "Archive",
+    "PLACES": "Places",
+    "SHOW_ALL": "Show all",
+    "HIDE_ALL": "Hide all",
+    "NO_PLACES": "You have no saved places yet",
     "TRACKS": "Tracks",
     "SHOW": "Show",
     "HIDE": "Hide",
     "ALL": "All",
-    "REMOVE_TRACK": "Delete",
-    "EDIT_TRACK": "Edit",
+    "REMOVE": "Delete",
+    "EDIT": "Edit",
     "EXPORT_TRACK": "Export",
-    "ALL_DISPLAYED": "All tracks are being displayed",
-    "ALL_HIDDEN": "All tracks have been hidden",
+    "ALL_DISPLAYED": "All tracks are displayed",
+    "ALL_HIDDEN": "All tracks are hidden",
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Here is the requested track",
     "DIALOG_TITLE": "Share via Gmail only",
     "EXPORT_SUCCESS": "Track shared successfully",
     "EXPORT_ERROR": "Export failed",
     "LOADING_ERROR": "Error loading track",
-    "EMPTY_TRACKS": "No valid coordinates found in files",
+    "EMPTY_TRACKS": "No valid coordinates found in the files",
     "TRACK_UPDATED": "Track updated successfully",
     "TRACK_SAVED": "Track saved successfully",
     "GENERATING_FILES": "Generating files, please wait..."
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "Stop",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Save",
-    "REMOVE_TRACK": "Delete",
+    "REMOVE": "Delete",
     "CONFIRM_STOP": "Confirm stop?",
     "CONFIRM_DELETION": "Confirm deletion?",
     "DELETE_YES": "Yes",
@@ -243,8 +251,14 @@
       "GENERIC_UNRESTRICTED": "Set battery to 'Don't optimize'"
     }
   },
+  "MAP_CONTROLS": {
+    "CENTER_LOCATION": "Center on my location",
+    "STOP_TRACKING": "Stop tracking"
+  },
   "SHARE": {
     "TITLE_MODAL": "Share position",
+    "DIALOG_TITLE": "Send link to...",
+    "ERROR_GENERATE": "Could not start tracking",
     "STOPPED": "You stopped sharing your location"
   },
   "LOCATION": {
@@ -286,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "Photo of my route: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Photo of my route with PasoApp ⛰️",
-    "SHARE_DIALOG": "Share photo"
+    "SHARE_DIALOG": "Share photo",
+    "WAITING_GPS": "Waiting for first GPS fix to take photos...",
+    "PHOTO_ADDED": "Photo added to track",
+    "ERROR_SAVING": "Error saving photo"
+  },
+  "GENERIC": {
+    "OK": "OK",
+    "CANCEL": "Cancel"
   },
   "EXPORT": {
     "OPTIONS": "Select one or more options",
@@ -295,5 +316,16 @@
     "KMZ": ".KMZ File",
     "PHOTOS": "Photos",
     "KMZ_PHOTOS": "KMZ with photos"
+  },
+  "CATEGORIES": {
+    "TOWNS": "Cities & Towns",
+    "MOUNTAIN": "Mountain & Nature",
+    "WATER": "Water Areas",
+    "ACCOMMODATION": "Accommodation",
+    "POI": "Points of Interest",
+    "FOOD": "Food & Drink",
+    "LOGISTICS": "Logistics & Transport",
+    "FAVORITE": "Favorites",
+    "OTHER": "Other"
   }
 }

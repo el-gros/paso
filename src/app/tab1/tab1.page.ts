@@ -177,7 +177,7 @@ export class Tab1Page implements OnInit, OnDestroy {
    */
   private async initializeVariables() {
     this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
-    this.fs.collection = await this.fs.storeGet('collection') || [];
+    //this.fs.collection = await this.fs.storeGet('collection') || [];
     this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
     this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
     this.fs.alert = await this.fs.check(this.fs.alert,'alert');

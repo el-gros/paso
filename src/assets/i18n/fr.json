@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "Voulez-vous vraiment partager votre position avec une autre personne ?",
     "YES": "Oui",
     "NO_MAP_AVAILABLE": "Carte non disponible",
-    "REMOVE_REFERENCE": "Réf."
+    "REMOVE_REFERENCE": "Réf.",
+    "OFFLINE_CREDITS": "Données cartographiques hors ligne",
+    "NO_CONNECTION_ERROR": "Pas de connexion / Pas de cartes hors ligne"
   },
   "SEARCH": {
     "BUTTON": "Rechercher",
@@ -59,28 +61,34 @@
     "MAP_SELECTION_CANCELED": "Sélection sur la carte annulée",
     "SEARCHING_SERVICES": "Recherche de services...",
     "PINS_REMOVED": "Points de service supprimés de la carte",
-    "MAP_POINT_SELECTED": "Point sélectionné sur la carte"
+    "MAP_POINT_SELECTED": "Point sélectionné sur la carte",
+    "NO_NAME": "(sans nom)"
   },
   "ARCHIVE": {
-    "TRACKS": "Parcours",
+    "TITLE": "Archives",
+    "PLACES": "Lieux",
+    "SHOW_ALL": "Tout afficher",
+    "HIDE_ALL": "Tout masquer",
+    "NO_PLACES": "Vous n'avez pas encore de lieux enregistrés",
+    "TRACKS": "Trajets",
     "SHOW": "Afficher",
     "HIDE": "Masquer",
     "ALL": "Tous",
-    "REMOVE_TRACK": "Supprimer",
-    "EDIT_TRACK": "Modifier",
+    "REMOVE": "Supprimer",
+    "EDIT": "Modifier",
     "EXPORT_TRACK": "Exporter",
-    "ALL_DISPLAYED": "Tous les parcours sont affichés",
-    "ALL_HIDDEN": "Tous les parcours sont masqués",
+    "ALL_DISPLAYED": "Tous les trajets sont affichés",
+    "ALL_HIDDEN": "Tous les trajets sont masqués",
     "VISIBLE_LABEL": "Visible",
-    "TEXT": "Voici le parcours demandé",
-    "DIALOG_TITLE": "Partager uniquement par Gmail",
-    "EXPORT_SUCCESS": "Le parcours a été partagé avec succès",
+    "TEXT": "Voici le trajet demandé",
+    "DIALOG_TITLE": "Partager uniquement via Gmail",
+    "EXPORT_SUCCESS": "Le trajet a été partagé avec succès",
     "EXPORT_ERROR": "L'exportation a échoué",
-    "LOADING_ERROR": "Erreur lors du chargement du parcours",
+    "LOADING_ERROR": "Erreur lors du chargement du trajet",
     "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
-    "TRACK_UPDATED": "Le parcours a été mis à jour avec succès",
-    "TRACK_SAVED": "Le parcours a été enregistré avec succès",
-    "GENERATING_FILES": "Génération des fichiers en cours..."
+    "TRACK_UPDATED": "Le trajet a été mis à jour avec succès",
+    "TRACK_SAVED": "Le trajet a été enregistré avec succès",
+    "GENERATING_FILES": "Génération des fichiers en cours, veuillez patienter..."
   },
   "SETTINGS": {
     "GENERAL_GROUP": "Général",
@@ -150,9 +158,9 @@
     "SPEED": "Vitesse",
     "NO_SPEED_DATA": "Pas de données de vitesse disponibles",
     "NO_TIME_DATA": "Pas de données temporelles disponibles",
-    "PAG1": "Trajecte en cours",
-    "PAG2": "Trajecte de référence",
-    "PAG3": "Trajecte de référence - Parciaux",
+    "PAG1": "Trajet en cours",
+    "PAG2": "Trajet de référence",
+    "PAG3": "Trajet de référence - Partiels",
     "FROM_START": "Distance depuis le début",
     "TO_END": "Distance jusqu'à la fin"
   },
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "Arrêter",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Enregistrer",
-    "REMOVE_TRACK": "Supprimer",
+    "REMOVE": "Supprimer",
     "CONFIRM_STOP": "Confirmer l'arrêt ?",
     "CONFIRM_DELETION": "Confirmer la suppression ?",
     "DELETE_YES": "Oui",
@@ -188,9 +196,9 @@
     "PASSING_BY_CIRCULAR": "Parcours circulaire de {{start}} à {{target}}, en passant par :",
     "PASSING_BY_LINEAR": "Parcours linéaire de {{start}} à {{end}}, en passant par :",
     "ANALYZING_ROUTE": "Analyse de l'itinéraire et recherche de points d'intérêt...",
-    "SAVING_TRACK": "Enregistrement de l'itinéraire...",
+    "SAVING_TRACK": "Enregistrement de la trace...",
     "APPLYING_ELEVATION": "Application des élévations DEM...",
-    "SAVE_ERROR": "Erreur critique lors de l'enregistrement de l'itinéraire"
+    "SAVE_ERROR": "Erreur critique lors de l'enregistrement"
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -292,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "Photo de mon itinéraire : {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Photo de mon itinéraire avec PasoApp ⛰️",
-    "SHARE_DIALOG": "Partager la photo"
+    "SHARE_DIALOG": "Partager la photo",
+    "WAITING_GPS": "En attente du premier signal GPS pour prendre des photos...",
+    "PHOTO_ADDED": "Photo ajoutée à la trace",
+    "ERROR_SAVING": "Erreur lors de l'enregistrement de la photo"
+  },
+  "GENERIC": {
+    "OK": "OK",
+    "CANCEL": "Annuler"
   },
   "EXPORT": {
     "OPTIONS": "Sélectionner une ou plusieurs options",
@@ -301,5 +316,16 @@
     "KMZ": "Fichier .KMZ",
     "PHOTOS": "Photos",
     "KMZ_PHOTOS": "KMZ avec photos"
+  },
+  "CATEGORIES": {
+    "TOWNS": "Villes et Villages",
+    "MOUNTAIN": "Montagne et Nature",
+    "WATER": "Points d'Eau",
+    "ACCOMMODATION": "Hébergement",
+    "POI": "Points d'Intérêt",
+    "FOOD": "Restauration",
+    "LOGISTICS": "Logistique et Transport",
+    "FAVORITE": "Favoris",
+    "OTHER": "Autres"
   }
 }

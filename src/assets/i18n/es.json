@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "¿Seguro que quieres compartir tu posición con otra persona?",
     "YES": "Sí",
     "NO_MAP_AVAILABLE": "Mapa no disponible",
-    "REMOVE_REFERENCE": "Ref."
+    "REMOVE_REFERENCE": "Ref.",
+    "OFFLINE_CREDITS": "Datos de mapas sin conexión",
+    "NO_CONNECTION_ERROR": "Sin conexión / Sin mapas offline"
   },
   "SEARCH": {
     "BUTTON": "Buscar",
@@ -59,15 +61,21 @@
     "MAP_SELECTION_CANCELED": "Selección en mapa cancelada",
     "SEARCHING_SERVICES": "Buscando servicios...",
     "PINS_REMOVED": "Pines de servicio eliminados del mapa",
-    "MAP_POINT_SELECTED": "Punto seleccionado en mapa"
+    "MAP_POINT_SELECTED": "Punto seleccionado en mapa",
+    "NO_NAME": "(sin nombre)"
   },
   "ARCHIVE": {
+    "TITLE": "Archivo",
+    "PLACES": "Lugares",
+    "SHOW_ALL": "Mostrar todos",
+    "HIDE_ALL": "Ocultar todos",
+    "NO_PLACES": "No tienes lugares guardados aún",
     "TRACKS": "Trayectos",
     "SHOW": "Mostrar",
     "HIDE": "Ocultar",
     "ALL": "Todos",
-    "REMOVE_TRACK": "Eliminar",
-    "EDIT_TRACK": "Editar",
+    "REMOVE": "Eliminar",
+    "EDIT": "Editar",
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Se muestran todos los trayectos",
     "ALL_HIDDEN": "Se han ocultado todos los trayectos",
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "Detener",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Guardar",
-    "REMOVE_TRACK": "Eliminar",
+    "REMOVE": "Eliminar",
     "CONFIRM_STOP": "¿Confirma la finalización?",
     "CONFIRM_DELETION": "¿Confirma la eliminación?",
     "DELETE_YES": "Sí",
@@ -292,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "Foto de mi ruta: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Foto de mi ruta con PasoApp ⛰️",
-    "SHARE_DIALOG": "Compartir foto"
+    "SHARE_DIALOG": "Compartir foto",
+    "WAITING_GPS": "Esperando al primer punto GPS para hacer fotos...",
+    "PHOTO_ADDED": "Foto añadida a la ruta",
+    "ERROR_SAVING": "Error al guardar la foto"
+  },
+  "GENERIC": {
+    "OK": "OK",
+    "CANCEL": "Cancelar"
   },
   "EXPORT": {
     "OPTIONS": "Seleccionar una o más opciones",
@@ -301,5 +316,16 @@
     "KMZ": "Fichero .KMZ",
     "PHOTOS": "Fotos",
     "KMZ_PHOTOS": "KMZ con fotos"
+  },
+  "CATEGORIES": {
+    "TOWNS": "Ciudades y Pueblos",
+    "MOUNTAIN": "Montaña y Naturaleza",
+    "WATER": "Zonas de Agua",
+    "ACCOMMODATION": "Alojamiento",
+    "POI": "Puntos de Interés",
+    "FOOD": "Restauración",
+    "LOGISTICS": "Logística y Transporte",
+    "FAVORITE": "Favoritos",
+    "OTHER": "Otros"
   }
 }

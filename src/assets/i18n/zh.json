@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "您确定要与他人分享您的位置吗？",
     "YES": "是",
     "NO_MAP_AVAILABLE": "地图不可用",
-    "REMOVE_REFERENCE": "参考"
+    "REMOVE_REFERENCE": "参考",
+    "OFFLINE_CREDITS": "离线地图数据",
+    "NO_CONNECTION_ERROR": "无网络连接 / 无离线地图"
   },
   "SEARCH": {
     "BUTTON": "搜索",
@@ -59,25 +61,31 @@
     "MAP_SELECTION_CANCELED": "已取消地图选择",
     "SEARCHING_SERVICES": "正在搜索服务...",
     "PINS_REMOVED": "服务点已从地图上移除",
-    "MAP_POINT_SELECTED": "已在地图上选择点"
+    "MAP_POINT_SELECTED": "已在地图上选择点",
+    "NO_NAME": "(无名称)"
   },
   "ARCHIVE": {
+    "TITLE": "档案",
+    "PLACES": "地点",
+    "SHOW_ALL": "显示全部",
+    "HIDE_ALL": "隐藏全部",
+    "NO_PLACES": "您还没有保存的地点",
     "TRACKS": "轨迹",
     "SHOW": "显示",
     "HIDE": "隐藏",
     "ALL": "全部",
-    "REMOVE_TRACK": "删除",
-    "EDIT_TRACK": "编辑",
+    "REMOVE": "删除",
+    "EDIT": "编辑",
     "EXPORT_TRACK": "导出",
     "ALL_DISPLAYED": "已显示所有轨迹",
     "ALL_HIDDEN": "已隐藏所有轨迹",
     "VISIBLE_LABEL": "可见",
-    "TEXT": "这是请求的轨迹",
-    "DIALOG_TITLE": "仅通过 Gmail 共享",
-    "EXPORT_SUCCESS": "轨迹共享成功",
+    "TEXT": "这是您请求的轨迹",
+    "DIALOG_TITLE": "仅通过 Gmail 分享",
+    "EXPORT_SUCCESS": "轨迹分享成功",
     "EXPORT_ERROR": "导出失败",
     "LOADING_ERROR": "加载轨迹时出错",
-    "EMPTY_TRACKS": "文件中未找到有效坐标",
+    "EMPTY_TRACKS": "文件中未找到有效的坐标",
     "TRACK_UPDATED": "轨迹更新成功",
     "TRACK_SAVED": "轨迹保存成功",
     "GENERATING_FILES": "正在生成文件，请稍候..."
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "停止",
     "WAYPOINT": "航点",
     "SAVE_TRACK": "保存",
-    "REMOVE_TRACK": "删除",
+    "REMOVE": "删除",
     "CONFIRM_STOP": "确认结束？",
     "CONFIRM_DELETION": "确认删除？",
     "DELETE_YES": "是",
@@ -292,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "我的路线照片: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "使用 PasoApp 拍摄的路线照片 ⛰️",
-    "SHARE_DIALOG": "分享照片"
+    "SHARE_DIALOG": "分享照片",
+    "WAITING_GPS": "正在等待首次 GPS 定位以拍摄照片...",
+    "PHOTO_ADDED": "照片已添加到轨迹",
+    "ERROR_SAVING": "保存照片时出错"
+  },
+  "GENERIC": {
+    "OK": "确定",
+    "CANCEL": "取消"
   },
   "EXPORT": {
     "OPTIONS": "选择一个或多个选项",
@@ -301,5 +316,16 @@
     "KMZ": ".KMZ 文件",
     "PHOTOS": "照片",
     "KMZ_PHOTOS": "带照片的 KMZ"
+  },
+  "CATEGORIES": {
+    "TOWNS": "城市与村镇",
+    "MOUNTAIN": "山脉与自然",
+    "WATER": "水域",
+    "ACCOMMODATION": "住宿",
+    "POI": "兴趣点",
+    "FOOD": "餐饮",
+    "LOGISTICS": "交通与物流",
+    "FAVORITE": "收藏",
+    "OTHER": "其他"
   }
 }

@@ -280,8 +280,8 @@ export class SearchService {
         const result: LocationResult = {
           lat: featureLat,
           lon: featureLon,
-          name: f.text || '(no name)',
-          display_name: f.place_name || f.text || '(no name)',
+          name: f.text || this.translate.instant('SEARCH.NO_NAME'),
+          display_name: f.place_name || f.text || this.translate.instant('SEARCH.NO_NAME'),
           short_name: this.buildMapTilerShortName(f),
           type: f.place_type?.[0] ?? 'unknown',
           place_id: f.id ?? undefined,
@@ -328,7 +328,11 @@ export class SearchService {
             lat: Number(item.lat), lon: Number(item.lon), name: parts[0], 
             short_name: parts.slice(0, 2).join(','), display_name: item.display_name, 
             boundingbox: item.boundingbox.map(Number), geojson: item.geojson,
-            place_id: item.place_id, type: item.type
+            place_id: item.place_id, 
+            type: item.type,
+            class: item.class,
+            addresstype: item.addresstype,
+            place_rank: Number(item.place_rank)
           } as LocationResult;
         });
       }
@@ -341,19 +345,27 @@ export class SearchService {
   private async fetchNominatimGeoJSON(osmType: string, osmId: number): Promise<any | null> {
     const typeMap: { [key: string]: string } = { 'N': 'N', 'W': 'W', 'R': 'R' };
     const osmTypeLetter = typeMap[osmType] || 'N'; 
-    const url = `${this.NOMINATIM_LOOKUP_URL}?osm_ids=${osmTypeLetter}${osmId}&format=json&polygon_geojson=1`;
+    
+    // 👇 Añadimos &addressdetails=1 a la URL
+    const url = `${this.NOMINATIM_LOOKUP_URL}?osm_ids=${osmTypeLetter}${osmId}&format=json&polygon_geojson=1&addressdetails=1`;
 
     try {
       const response = await CapacitorHttp.get({
-        url, headers: { 'Accept': 'application/json', 'User-Agent': 'PasoApp/1.0' }
+        url, 
+        headers: { 'Accept': 'application/json', 'User-Agent': 'PasoApp/1.0' }
       });
+      
       if (response.status !== 200) return null; 
 
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      
+      // Al usar lookup con addressdetails=1, Nominatim devuelve un array.
+      // El primer elemento contendrá la propiedad 'address' y 'addresstype'.
       if (Array.isArray(data) && data.length > 0) return data[0];
       
       return null;
     } catch (error) {
+      console.error("Error en lookup Nominatim:", error);
       return null;
     }
   }
@@ -362,8 +374,8 @@ export class SearchService {
    * Construye un nombre corto legible para los resultados de MapTiler.
    */
   private buildMapTilerShortName(f: any): string {
-    if (!f) return '(no name)';
-    const main = f.text ?? '(no name)';
+    if (!f) return this.translate.instant('SEARCH.NO_NAME');
+    const main = f.text ?? this.translate.instant('SEARCH.NO_NAME');
     const city = f.context?.find((c: any) =>
       c.id.startsWith('place') || c.id.startsWith('locality')
     )?.text;

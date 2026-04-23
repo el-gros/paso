@@ -24,7 +24,9 @@
     "CONFIRM_SHARING": "Segur que voleu compartir la vostra posició amb una altra persona?",
     "YES": "Sí",
     "NO_MAP_AVAILABLE": "Mapa no disponible",
-    "REMOVE_REFERENCE": "Ref."
+    "REMOVE_REFERENCE": "Ref.",
+    "OFFLINE_CREDITS": "Dades de mapes sense connexió",
+    "NO_CONNECTION_ERROR": "Sense connexió / Sense mapes offline"
   },
   "SEARCH": {
     "BUTTON": "Cercar",
@@ -59,29 +61,35 @@
     "MAP_SELECTION_CANCELED": "Selecció al mapa cancel·lada",
     "SEARCHING_SERVICES": "Buscant serveis...",
     "PINS_REMOVED": "Punts de servei eliminats del mapa",
-    "MAP_POINT_SELECTED": "Punt seleccionat al mapa"
+    "MAP_POINT_SELECTED": "Punt seleccionat al mapa",
+    "NO_NAME": "(sense nom)"
   },
-"ARCHIVE": {
-  "TRACKS": "Trajectes",
-  "SHOW": "Mostrar",
-  "HIDE": "Amagar",
-  "ALL": "Tots",
-  "REMOVE_TRACK": "Eliminar",
-  "EDIT_TRACK": "Editar",
-  "EXPORT_TRACK": "Exportar",
-  "ALL_DISPLAYED": "Es mostren tots els trajectes",
-  "ALL_HIDDEN": "S'han amagat tots els trajectes",
-  "VISIBLE_LABEL": "Visible",
-  "TEXT": "Aquí teniu el trajecte sol·licitat",
-  "DIALOG_TITLE": "Compartiu només per Gmail",
-  "EXPORT_SUCCESS": "S'ha compartit correctament el trajecte",
-  "EXPORT_ERROR": "L'exportació ha fallat",
-  "LOADING_ERROR": "Error al carregar el trajecte",
-  "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els fitxers",
-  "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
-  "TRACK_SAVED": "El trajecte s'ha guardat correctament",
-  "GENERATING_FILES": "S'estan generant els fitxers, espereu..."
-},
+  "ARCHIVE": {
+    "TITLE": "Arxiu",
+    "PLACES": "Llocs",
+    "SHOW_ALL": "Mostrar tots",
+    "HIDE_ALL": "Ocultar tots",
+    "NO_PLACES": "Encara no tens llocs guardats",
+    "TRACKS": "Trajectes",
+    "SHOW": "Mostrar",
+    "HIDE": "Ocultar",
+    "ALL": "Tots",
+    "REMOVE": "Eliminar",
+    "EDIT": "Editar",
+    "EXPORT_TRACK": "Exportar",
+    "ALL_DISPLAYED": "Es mostren tots els trajectes",
+    "ALL_HIDDEN": "S'han ocultat tots els trajectes",
+    "VISIBLE_LABEL": "Visible",
+    "TEXT": "Aquí tens el trajecte sol·licitat",
+    "DIALOG_TITLE": "Compartir només per Gmail",
+    "EXPORT_SUCCESS": "S'ha compartit el trajecte correctament",
+    "EXPORT_ERROR": "L'exportació ha fallat",
+    "LOADING_ERROR": "Error en carregar el trajecte",
+    "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els arxius",
+    "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
+    "TRACK_SAVED": "El trajecte s'ha guardat correctament",
+    "GENERATING_FILES": "S'estan generant els arxius, esperi si us plau..."
+  },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
@@ -168,7 +176,7 @@
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Desar",
-    "REMOVE_TRACK": "Eliminar",
+    "REMOVE": "Eliminar",
     "CONFIRM_STOP": "Confirmeu la finalització?",
     "CONFIRM_DELETION": "Confirmeu l'eliminació?",
     "DELETE_YES": "Sí",
@@ -243,8 +251,14 @@
       "GENERIC_UNRESTRICTED": "Configurar la bateria com a 'Sense optimitzar'"
     }
   },
+  "MAP_CONTROLS": {
+    "CENTER_LOCATION": "Centrar a la meva ubicació",
+    "STOP_TRACKING": "Aturar seguiment"
+  },
   "SHARE": {
     "TITLE_MODAL": "Compartir posició",
+    "DIALOG_TITLE": "Enviar enllaç a...",
+    "ERROR_GENERATE": "No s'ha pogut iniciar el seguiment",
     "STOPPED": "Heu deixat de compartir la vostra ubicació"
   },
   "LOCATION": {
@@ -260,6 +274,8 @@
     "TIME": "Temps",
     "ELEVATION_GAIN": "Desnivell positiu",
     "ELEVATION_LOSS": "Desnivell negatiu",
+    "SHARE_SUBJECT": "Informe de seguiment - Paso App",
+    "SHARE_BODY": "Aquí teniu l'informe d'activitat de la meva ruta: ",
     "VIEW_ROUTE": "Veure ruta interactiva a la web"
   },
   "CAMERA_PERMISSION": {
@@ -284,7 +300,14 @@
   "PHOTO": {
     "SHARE_ROUTE_TITLE": "Foto de la meva ruta: {{route}} ⛰️",
     "SHARE_GENERIC_TITLE": "Foto de la meva ruta amb PasoApp ⛰️",
-    "SHARE_DIALOG": "Compartir foto"
+    "SHARE_DIALOG": "Compartir foto",
+    "WAITING_GPS": "Esperant el primer punt GPS per fer fotos...",
+    "PHOTO_ADDED": "Foto afegida a la ruta",
+    "ERROR_SAVING": "Error en desar la foto"
+  },
+  "GENERIC": {
+    "OK": "OK",
+    "CANCEL": "Cancel·lar"
   },
   "EXPORT": {
     "OPTIONS": "Seleccioneu una o més opcions",
@@ -293,6 +316,17 @@
     "KMZ": "Fitxer .KMZ",
     "PHOTOS": "Fotos",
     "KMZ_PHOTOS": "KMZ amb fotos"
+  },
+  "CATEGORIES": {
+    "TOWNS": "Ciutats i Pobles",
+    "MOUNTAIN": "Muntanya i Natura",
+    "WATER": "Zones d'Aigua",
+    "ACCOMMODATION": "Allotjament",
+    "POI": "Punts d'Interès",
+    "FOOD": "Restauració",
+    "LOGISTICS": "Logística i Transport",
+    "FAVORITE": "Preferits",
+    "OTHER": "Altres"
   }
 
 }

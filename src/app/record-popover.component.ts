@@ -64,7 +64,7 @@ import { SmartRouteBuilderService } from './services/smart-route-builder.service
               "
             >
               <ion-icon name="trash-outline" class="danger-icon"></ion-icon>
-              <p>{{ 'RECORD.REMOVE_TRACK' | translate }}</p>
+              <p>{{ 'RECORD.REMOVE' | translate }}</p>
             </button>
 
           </div>

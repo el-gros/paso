@@ -180,6 +180,8 @@ export class MapService {
     this.geography.archivedLayer = await this.createLayer(this.geography.archivedLayer);
     this.geography.searchLayer = await this.createLayer(this.geography.searchLayer);
     this.geography.locationLayer = await this.createLayer(this.geography.locationLayer);
+    this.geography.placesLayer = await this.createLayer(this.geography.placesLayer);
+    this.geography.placesLayer.setZIndex(15);
 
     // Crear o actualizar la capa base (PUNTO 5: Limpieza interna ocurre aquí)
     const result = await this.createMapLayer();
@@ -202,6 +204,7 @@ export class MapService {
         this.geography.currentLayer,
         this.geography.archivedLayer,
         this.geography.searchLayer,
+        this.geography.placesLayer,
         this.geography.locationLayer,
       ].filter(l => !!l);
 
@@ -221,10 +224,8 @@ export class MapService {
         ],
       });
 
-      // this.customControl = new LocationButtonControl(this.trackingService, this.translate, this.searchService);
       this.customControl = new LocationButtonControl(this.trackingService, this.translate, this.searchService);
       this.geography.map.addControl(this.customControl);
-      //this.geography.map.addControl(this.shareControl); 
     }
 
     this.mapIsReady = true;
@@ -237,6 +238,10 @@ export class MapService {
     }
 
     this.mapWrapperElement = document.getElementById('map-wrapper');
+
+    if (this.geography.placesLayer) {
+      this.geography.refreshPlacesLayer(this.fs.placesCollection);
+    }
   }
 
   /**
@@ -264,7 +269,7 @@ export class MapService {
         // Pisa siempre la elección del usuario si no hay internet
         provider = 'OSM offline';
       } else {
-        return { olLayer: null, credits: 'No connection / No offline maps' };
+        return { olLayer: null, credits: this.translate.instant('MAP.NO_CONNECTION_ERROR') };
       }
     }
 
@@ -338,7 +343,7 @@ export class MapService {
       case 'OSM offline':
       default: {
         if (hasOfflineFiles) {
-          credits = 'Offline Maps Data';
+          credits = this.translate.instant('MAP.OFFLINE_CREDITS');
           const dynamicStyle = this.mapStyle.generateDynamicStyle();
           this.offlineLayer = new MapLibreLayer({
             mapLibreOptions: { style: dynamicStyle }

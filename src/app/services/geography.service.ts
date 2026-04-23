@@ -2,13 +2,15 @@ import { Injectable } from '@angular/core';
 import Map from 'ol/Map';
 import Feature from 'ol/Feature';
 import { transformExtent } from 'ol/proj';
-import { Point } from 'ol/geom';
+import { Circle, Point } from 'ol/geom';
 import { GeoJSON } from 'ol/format';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Track, LocationResult } from '../../globald';
 import { boundingExtent } from 'ol/extent';
 import { StylerService } from './styler.service';
+import { Track, PLACE_CATEGORIES, LocationResult } from '../../globald';
+import { Fill, Stroke, Style } from 'ol/style';
+import { Icon, Circle as CircleStyle } from 'ol/style';
 
 @Injectable({
   providedIn: 'root'
@@ -36,6 +38,8 @@ export class GeographyService {
   public currentLayer?: VectorLayer<VectorSource>;
   /** Capa vectorial para mostrar los resultados de búsqueda. */
   public searchLayer?: VectorLayer<VectorSource>;
+  /** Capa vectorial para mostrar los lugares guardados en el archivo. */
+  public placesLayer?: VectorLayer<VectorSource>;
   /** Capa vectorial para mostrar la ubicación actual del usuario (flecha GPS). */
   public locationLayer?: VectorLayer<VectorSource>;
 
@@ -66,7 +70,12 @@ export class GeographyService {
     source.addFeatures(features);
     this.searchLayer?.setStyle((f) => this.styler.getSearchStyle(f));
 
-    const extent = [location.boundingbox[2], location.boundingbox[0], location.boundingbox[3], location.boundingbox[1]];
+    // Primero nos aseguramos de que haya un boundingbox. Si no lo hay, creamos uno falso usando su latitud y longitud.
+    const bbox = location.boundingbox && location.boundingbox.length >= 4 
+      ? location.boundingbox 
+      : [location.lat, location.lat, location.lon, location.lon];
+
+    const extent = [bbox[2], bbox[0], bbox[3], bbox[1]];
     this.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
   }
   async setMapView(track: Track): Promise<void> {
@@ -148,6 +157,69 @@ export class GeographyService {
     if (this.map) {
       // setTimeout es necesario para esperar a que el DOM repinte el contenedor
       setTimeout(() => this.map?.updateSize(), 100);
+    }
+  }
+
+  // ==========================================================================
+  // MÉTODOS PARA LUGARES ARCHIVADOS
+  // ==========================================================================
+
+  /**
+   * Refresca la capa de lugares guardados dibujando solo aquellos marcados como visibles.
+   * @param places Colección de lugares (normalmente fs.placesCollection)
+   */
+  public refreshPlacesLayer(places: LocationResult[]) {
+    if (!this.placesLayer) return;
+    
+    const source = this.placesLayer.getSource();
+    if (!source) return;
+
+    // 1. Limpiamos la capa para evitar duplicados
+    source.clear();
+
+    // 2. Filtramos: Solo los que son explícitamente visibles
+    // Usamos !== false para que, si por error es 'undefined', se muestre por defecto
+    const visiblePlaces = places.filter(p => p.visible !== false);
+
+    const features = visiblePlaces.map(place => {
+      const feature = new Feature({
+        geometry: new Point([place.lon, place.lat]),
+        name: place.name,
+        data: place // Guardamos el objeto original para el click
+      });
+
+      // 3. Obtenemos la categoría para definir el estilo
+      const catId = (place.categories && place.categories.length > 0) ? place.categories[0] : 'other';
+      const catDef = PLACE_CATEGORIES.find(c => c.id === catId);
+      
+      const pinColor = catDef ? catDef.color : 'medium'; 
+      const iconName = catDef ? catDef.icon : 'location';
+
+      // 4. Aplicamos el estilo de Pin profesional del StylerService
+      // IMPORTANTE: Revisa si tu variable es 'styler' o 'stylerService'
+      feature.setStyle(this.styler.createIconPinStyle(pinColor, iconName));
+      
+      return feature;
+    });
+
+    // 5. Añadimos todos los pines de una vez para mejorar el rendimiento
+    source.addFeatures(features);
+  }
+
+  /**
+   * Centra la vista del mapa en unas coordenadas específicas
+   * @param lon Longitud
+   * @param lat Latitud
+   * @param zoom Nivel de zoom (opcional)
+   */
+  public centerMap(lon: number, lat: number, zoom: number = 15) {
+    if (this.map) {
+      const view = this.map.getView();
+      view.animate({
+        center: [lon, lat],
+        zoom: zoom,
+        duration: 1000 // Animación de 1 segundo para que sea suave
+      });
     }
   }
 }
