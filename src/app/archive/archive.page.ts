@@ -411,7 +411,7 @@ togglePlaceVisibility(place: LocationResult, event: Event) { // <-- Añadido 'ev
     this.fs.placesCollection.forEach(p => p.visible = show);
     this.fs.savePlacesToStorage();
     this.geography.refreshPlacesLayer(this.fs.placesCollection);
-    const msg = show ? 'ARCHIVE.ALL_DISPLAYED' : 'ARCHIVE.ALL_HIDDEN';
+    const msg = show ? 'ARCHIVE.ALL_PLACES_DISPLAYED' : 'ARCHIVE.ALL_PLACES_HIDDEN';
     this.fs.displayToast(this.translate.instant(msg), 'success');
   }
 

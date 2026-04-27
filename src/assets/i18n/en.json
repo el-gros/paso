@@ -79,6 +79,8 @@
     "EXPORT_TRACK": "Export",
     "ALL_DISPLAYED": "All tracks are displayed",
     "ALL_HIDDEN": "All tracks are hidden",
+    "ALL_PLACES_DISPLAYED": "All places are displayed",
+    "ALL_PLACES_HIDDEN": "All places are hidden",
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Here is the requested track",
     "DIALOG_TITLE": "Share via Gmail only",
@@ -88,7 +90,10 @@
     "EMPTY_TRACKS": "No valid coordinates found in the files",
     "TRACK_UPDATED": "Track updated successfully",
     "TRACK_SAVED": "Track saved successfully",
-    "GENERATING_FILES": "Generating files, please wait..."
+    "GENERATING_FILES": "Generating files, please wait...",
+    "EXPORTED_ROUTE": "Exported Route",
+    "PLACE_SAVED": "Place saved to archive",
+    "PLACE_EXISTS": "This place is already in your archive"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "Download map",
     "SELECT": "Select",
     "REMOVE_MAP": "Remove map",
-    "ALL_MAPS_DOWNLOADED": "All maps are downloaded"
+    "ALL_MAPS_DOWNLOADED": "All maps are downloaded",
+    "MAP_UPDATE_ERROR": "Error updating map provider",
+    "OFFLINE_MODE_ON": "No connection: Lifesaver mode activated (Offline)"
   },
   "CANVAS": {
     "TRACK": "Save track",

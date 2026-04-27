@@ -79,6 +79,8 @@
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Se muestran todos los trayectos",
     "ALL_HIDDEN": "Se han ocultado todos los trayectos",
+    "ALL_PLACES_DISPLAYED": "Se muestran todos los lugares",
+    "ALL_PLACES_HIDDEN": "Se han ocultado todos los lugares",
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Aquí tienes el trayecto solicitado",
     "DIALOG_TITLE": "Compartir solo por Gmail",
@@ -88,7 +90,10 @@
     "EMPTY_TRACKS": "No se han encontrado coordenadas válidas en los archivos",
     "TRACK_UPDATED": "El trayecto se ha actualizado correctamente",
     "TRACK_SAVED": "El trayecto se ha guardado correctamente",
-    "GENERATING_FILES": "Se están generando los archivos, espere por favor..."
+    "GENERATING_FILES": "Se están generando los archivos, espere por favor...",
+    "EXPORTED_ROUTE": "Ruta Exportada",
+    "PLACE_SAVED": "Lugar guardado en el archivo",
+    "PLACE_EXISTS": "Este lugar ya está en tu archivo"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "Descargar mapa",
     "SELECT": "Seleccionar",
     "REMOVE_MAP": "Eliminar mapa",
-    "ALL_MAPS_DOWNLOADED": "Todos los mapas están descargados"
+    "ALL_MAPS_DOWNLOADED": "Todos los mapas están descargados",
+    "MAP_UPDATE_ERROR": "Error al actualizar el proveedor de mapa",
+    "OFFLINE_MODE_ON": "Sin conexión: Activado modo salvavidas (Offline)"
   },
   "CANVAS": {
     "TRACK": "Guardar trayecto",

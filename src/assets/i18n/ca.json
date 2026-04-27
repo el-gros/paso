@@ -79,6 +79,8 @@
     "EXPORT_TRACK": "Exportar",
     "ALL_DISPLAYED": "Es mostren tots els trajectes",
     "ALL_HIDDEN": "S'han ocultat tots els trajectes",
+    "ALL_PLACES_DISPLAYED": "Tots els llocs estan mostrats",
+    "ALL_PLACES_HIDDEN": "Tots els llocs estan amagats",
     "VISIBLE_LABEL": "Visible",
     "TEXT": "Aquí tens el trajecte sol·licitat",
     "DIALOG_TITLE": "Compartir només per Gmail",
@@ -88,7 +90,10 @@
     "EMPTY_TRACKS": "No s'han trobat coordenades vàlides en els arxius",
     "TRACK_UPDATED": "El trajecte s'ha actualitzat correctament",
     "TRACK_SAVED": "El trajecte s'ha guardat correctament",
-    "GENERATING_FILES": "S'estan generant els arxius, esperi si us plau..."
+    "GENERATING_FILES": "S'estan generant els arxius, esperi si us plau...",
+    "EXPORTED_ROUTE": "Ruta Exportada",
+    "PLACE_SAVED": "Lloc desat a l'arxiu",
+    "PLACE_EXISTS": "Aquest lloc ja és al teu arxiu"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "General",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "Descarregar mapa",
     "SELECT": "Seleccionar",
     "REMOVE_MAP": "Eliminar mapa",
-    "ALL_MAPS_DOWNLOADED": "Tots els mapes estan descarregats"
+    "ALL_MAPS_DOWNLOADED": "Tots els mapes estan descarregats",
+    "MAP_UPDATE_ERROR": "Error en actualitzar el proveïdor de mapa",
+    "OFFLINE_MODE_ON": "Sense connexió: Activat mode salvavides (Offline)"
   },
   "CANVAS": {
     "TRACK": "Guardar Trajecte",
@@ -328,5 +335,4 @@
     "FAVORITE": "Preferits",
     "OTHER": "Altres"
   }
-
 }

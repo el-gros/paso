@@ -79,6 +79,8 @@
     "EXPORT_TRACK": "导出",
     "ALL_DISPLAYED": "已显示所有轨迹",
     "ALL_HIDDEN": "已隐藏所有轨迹",
+    "ALL_PLACES_DISPLAYED": "已显示所有地点",
+    "ALL_PLACES_HIDDEN": "已隐藏所有地点",
     "VISIBLE_LABEL": "可见",
     "TEXT": "这是您请求的轨迹",
     "DIALOG_TITLE": "仅通过 Gmail 分享",
@@ -88,7 +90,10 @@
     "EMPTY_TRACKS": "文件中未找到有效的坐标",
     "TRACK_UPDATED": "轨迹更新成功",
     "TRACK_SAVED": "轨迹保存成功",
-    "GENERATING_FILES": "正在生成文件，请稍候..."
+    "GENERATING_FILES": "正在生成文件，请稍候...",
+    "EXPORTED_ROUTE": "导出的路线",
+    "PLACE_SAVED": "地点已保存到档案",
+    "PLACE_EXISTS": "此地点已在您的档案中"
   },
   "SETTINGS": {
     "GENERAL_GROUP": "常规",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "下载地图",
     "SELECT": "选择",
     "REMOVE_MAP": "删除地图",
-    "ALL_MAPS_DOWNLOADED": "所有地图已下载"
+    "ALL_MAPS_DOWNLOADED": "所有地图已下载",
+    "MAP_UPDATE_ERROR": "更新地图提供商时出错",
+    "OFFLINE_MODE_ON": "无网络连接：激活救生模式（离线）"
   },
   "CANVAS": {
     "TRACK": "保存轨迹",
@@ -328,4 +335,4 @@
     "FAVORITE": "收藏",
     "OTHER": "其他"
   }
-}
+}    

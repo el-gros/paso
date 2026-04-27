@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notification_recording_track">Enregistrement et analyse de l\'itinéraire...</string>
-    <string name="notification_off_route">⚠️ Hors de l\'itinéraire</string>
-    <string name="notification_on_route">✅ De retour sur l\'itinéraire</string>
+    <string name="notification_off_route">⚠️ Hors itinéraire</string>
+    <string name="notification_on_route">✅ Itinéraire retrouvé</string>
 </resources>

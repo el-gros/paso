@@ -37,7 +37,7 @@ export class LocationButtonControl extends Control {
     this.button.type = 'button';
     this.button.title = this.translate.instant('MAP.TRACKING_BTN') !== 'MAP.TRACKING_BTN' 
       ? this.translate.instant('MAP.TRACKING_BTN') 
-      : 'Location'; 
+      : this.translate.instant('SEARCH.LOCATION'); 
     this.button.style.touchAction = 'none';
 
     this.button.innerHTML = `

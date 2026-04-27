@@ -184,18 +184,18 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     await loading.present();
 
     try {
-      const success = await this.backupService.runFullExport();
+      // Pasamos un callback para actualizar el mensaje con el progreso
+      const success = await this.backupService.runFullExport((progress: number) => {
+        loading.message = `${this.translate.instant('SETTINGS.BACKUP_PACKING')} (${progress}%)`;
+      });
       await loading.dismiss();
 
       if (success) {
-        this.showAlert(
-          this.translate.instant('SETTINGS.BACKUP_SUCCESS_TITLE'), 
-          this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC')
-        );
+        this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC'), 'success', 0);
       }
     } catch (e) {
       await loading.dismiss();
-      this.showAlert(this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'), this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'));
+      this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'), 'danger', 0);
     }
   }
 
@@ -214,24 +214,32 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       });
       await loading.present();
 
-      const success = await this.backupService.runFullImport(file.path);
+      // Pasamos un callback para actualizar el mensaje durante la restauración
+      const success = await this.backupService.runFullImport(file.path, (progress: number) => {
+        loading.message = `${this.translate.instant('SETTINGS.BACKUP_RESTORING')} (${progress}%)`;
+      });
       await loading.dismiss();
 
       if (success) {
-        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success');
+        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success', 0);
         setTimeout(() => window.location.replace('/'), 1500);
       } else {
-        this.showAlert(this.translate.instant('SETTINGS.INVALID_FILE_TITLE'), this.translate.instant('SETTINGS.INVALID_FILE_DESC'));
+        this.fs.displayToast(this.translate.instant('SETTINGS.INVALID_FILE_DESC'), 'danger', 0);
       }
     } catch (e: any) {
       if (e.message !== 'Pick files canceled.') {
-        this.showAlert(this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'), this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'));
+        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'), 'danger', 0);
       }
     }
   }
 
   private async showAlert(header: string, message: string) {
-    const alert = await this.alertCtrl.create({ header, message, buttons: ['OK'], cssClass: 'glass-island-alert' });
+    const alert = await this.alertCtrl.create({ 
+      header, 
+      message, 
+      buttons: ['OK']
+      // Eliminamos cssClass: 'glass-island-alert' para usar el estilo estándar de la app
+    });
     await alert.present();
   }
 

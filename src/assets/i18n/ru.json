@@ -79,7 +79,12 @@
     "EXPORT_TRACK": "Экспорт",
     "ALL_DISPLAYED": "Все маршруты отображаются",
     "ALL_HIDDEN": "Все маршруты скрыты",
+    "ALL_PLACES_DISPLAYED": "Все места отображаются",
+    "ALL_PLACES_HIDDEN": "Все места скрыты",
     "VISIBLE_LABEL": "Видимый",
+    "EXPORTED_ROUTE": "Экспортированный маршрут",
+    "PLACE_SAVED": "Место сохранено в архиве",
+    "PLACE_EXISTS": "Это место уже есть в вашем архиве",
     "TEXT": "Вот запрошенный маршрут",
     "DIALOG_TITLE": "Поделиться только через Gmail",
     "EXPORT_SUCCESS": "Маршрут успешно отправлен",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "Скачать карту",
     "SELECT": "Выбрать",
     "REMOVE_MAP": "Удалить карту",
-    "ALL_MAPS_DOWNLOADED": "Все карты загружены"
+    "ALL_MAPS_DOWNLOADED": "Все карты загружены",
+    "MAP_UPDATE_ERROR": "Ошибка обновления картографического сервиса",
+    "OFFLINE_MODE_ON": "Нет сети: Активирован автономный режим (Offline)"
   },
   "CANVAS": {
     "TRACK": "Сохранить трек",

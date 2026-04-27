@@ -23,7 +23,7 @@ export class BackupService {
   /** 
    * Ejecuta el proceso completo de exportación: recopila datos y genera el archivo .paso 
    */
-  async runFullExport() {
+  async runFullExport(onProgress?: (progress: number) => void) {
     // 1. Preparar Payload
     const payload: any = { collection: this.fs.collection };
     const keys = this.fs.collection
@@ -39,14 +39,14 @@ export class BackupService {
     });
 
     // 2. Llamar a la función que genera el ZIP
-    return await this.exportBackup(payload); 
+    return await this.exportBackup(payload, onProgress); 
   }
 
   /** 
    * Ejecuta el proceso completo de importación y guarda los datos en el Storage 
    */
-  async runFullImport(filePath: string) {
-    const backupData = await this.importBackup(filePath);
+  async runFullImport(filePath: string, onProgress?: (progress: number) => void) {
+    const backupData = await this.importBackup(filePath, onProgress);
     
     if (backupData && backupData.collection) {
       this.fs.collection = backupData.collection;
@@ -70,7 +70,7 @@ export class BackupService {
   /**
    * Genera un archivo de copia de seguridad (.paso) y abre el menú para compartirlo.
    */
-  public async exportBackup(databaseData: any): Promise<boolean> {
+  public async exportBackup(databaseData: any, onProgress?: (progress: number) => void): Promise<boolean> {
     try {
       const zip = new JSZip();
 
@@ -90,6 +90,8 @@ export class BackupService {
           const file = await Filesystem.readFile({ path: path });
           const fileName = path.split('/').pop() || `img_${Date.now()}.jpg`;
 
+          if (onProgress) onProgress(Math.round((i / photoPaths.length) * 80));
+
           if (photoFolder && file.data) {
             photoFolder.file(fileName, file.data, { base64: true });
           }
@@ -104,9 +106,9 @@ export class BackupService {
 
       console.log('📦 Comprimiendo el archivo ZIP (Esto puede tardar unos segundos)...');
 
-      // 🛡️ SALVAVIDAS 2: Compresión DEFLATE para reducir drásticamente la RAM usada
-      const zipBase64 = await zip.generateAsync({ 
-        type: 'base64',
+      // 🛡️ OPTIMIZACIÓN 1: Generamos binario (Uint8Array) en lugar de una cadena Base64 gigante
+      const zipData = await zip.generateAsync({ 
+        type: 'uint8array',
         compression: 'DEFLATE',
         compressionOptions: {
           level: 6 // Nivel 6 es el equilibrio ideal entre velocidad y tamaño
@@ -115,33 +117,38 @@ export class BackupService {
 
       const backupFileName = `Backup_paso_${new Date().getTime()}.paso`; 
       
-      // 🛡️ SALVAVIDAS 3: Troceamos el archivo para no reventar el Bridge de Capacitor
-      const chunkSize = 1048576; // Exactamente 1MB (múltiplo de 4, seguro para Base64)
+      // 🛡️ OPTIMIZACIÓN 2: Escritura binaria segmentada. 
+      const binaryChunkSize = 768 * 1024; // 768KB de binario equivalen exactamente a 1MB en Base64
 
-      // A) Escribimos el primer bloque (writeFile crea el archivo desde cero)
-      await Filesystem.writeFile({
-        path: backupFileName,
-        data: zipBase64.substring(0, chunkSize),
-        directory: Directory.Cache, 
-        encoding: Encoding.UTF8    
-      });
+      for (let i = 0; i < zipData.length; i += binaryChunkSize) {
+        const chunk = zipData.slice(i, i + binaryChunkSize);
+        const base64Chunk = this.uint8ToBase64(chunk);
 
-      // B) Añadimos el resto en bloques de 1MB (appendFile)
-      for (let i = chunkSize; i < zipBase64.length; i += chunkSize) {
-        const chunk = zipBase64.substring(i, i + chunkSize);
-        
-        await Filesystem.appendFile({
-          path: backupFileName,
-          data: chunk,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8
-        });
+        if (onProgress) onProgress(80 + Math.round((i / zipData.length) * 20));
 
-        // Le damos 5 milisegundos al disco duro para procesar la escritura sin colgar la app
-        await new Promise(resolve => setTimeout(resolve, 5));
+        if (i === 0) {
+          await Filesystem.writeFile({
+            path: backupFileName,
+            data: base64Chunk,
+            directory: Directory.Cache, 
+            encoding: Encoding.UTF8    
+          });
+        } else {
+          await Filesystem.appendFile({
+            path: backupFileName,
+            data: base64Chunk,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8
+          });
+        }
+
+        // 🛡️ SALVAVIDAS: Dejamos que el hilo de UI respire un poco entre escrituras
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
 
       console.log('✅ Archivo físico escrito correctamente. Abriendo menú de compartir...');
+
+      if (onProgress) onProgress(100);
 
       // 3. Obtenemos la URI real del archivo que acabamos de crear a trozos
       const fileUri = await Filesystem.getUri({
@@ -171,13 +178,14 @@ export class BackupService {
   /**
    * Se usa desde la pantalla de Ajustes cuando el usuario elige un archivo manualmente.
    */
-  public async importBackup(backupFileUri: string): Promise<any | null> {
+  public async importBackup(backupFileUri: string, onProgress?: (progress: number) => void): Promise<any | null> {
     try {
       const webPath = Capacitor.convertFileSrc(backupFileUri);
       const response = await fetch(webPath);
-      const base64Text = await response.text(); 
+      // 🛡️ OPTIMIZACIÓN 3: Leer como ArrayBuffer es mucho más eficiente para archivos grandes
+      const buffer = await response.arrayBuffer(); 
 
-      return await this.importPasoFile(base64Text);
+      return await this.importPasoFile(buffer, onProgress);
     } catch (error) {
       console.error('[BackupService] Error leyendo la URI desde Ajustes:', error);
       return null;
@@ -188,18 +196,12 @@ export class BackupService {
    * Lee el contenido de un archivo .paso, extrae las fotos,
    * reescribe las rutas y devuelve el objeto JSON listo para guardar.
    */
-  public async importPasoFile(fileData: Blob | string): Promise<any | null> {
+  public async importPasoFile(fileData: ArrayBuffer | string, onProgress?: (progress: number) => void): Promise<any | null> {
     try {
       if (!fileData) throw new Error('Los datos del archivo están vacíos.');
 
       const zip = new JSZip();
-      let loadedZip;
-      
-      if (typeof fileData === 'string') {
-        loadedZip = await zip.loadAsync(fileData, { base64: true });
-      } else {
-        loadedZip = await zip.loadAsync(fileData);
-      }
+      const loadedZip = await zip.loadAsync(fileData, { base64: typeof fileData === 'string' });
 
       const jsonFile = loadedZip.file('database.json');
       if (!jsonFile) throw new Error('Archivo inválido: No contiene database.json');
@@ -222,8 +224,10 @@ export class BackupService {
         const fileKeys = Object.keys(photoFolder.files);
         console.log(`📸 Extrayendo ${fileKeys.length} elementos de la carpeta de fotos...`);
 
-        for (const relativePath of fileKeys) {
-          const zipEntry = photoFolder.files[relativePath];
+        for (let i = 0; i < fileKeys.length; i++) {
+          const zipEntry = photoFolder.files[fileKeys[i]];
+          
+          if (onProgress) onProgress(Math.round(((i + 1) / fileKeys.length) * 100));
           
           if (!zipEntry.dir) { 
             const imgBase64 = await zipEntry.async('base64');
@@ -263,29 +267,29 @@ export class BackupService {
    */
   private relinkPhotoPaths(data: any, newPathsMap: Map<string, string>): void {
     try {
-      const items = Object.values(data);
+      // 1. Relink en la Colección principal (para miniaturas y lista)
+      if (data.collection && Array.isArray(data.collection)) {
+        for (const item of data.collection) {
+          if (item.photos && Array.isArray(item.photos)) {
+            item.photos = item.photos.map((p: string) => {
+              const fileName = p.split('/').pop();
+              return (fileName && newPathsMap.has(fileName)) ? newPathsMap.get(fileName) : p;
+            });
+          }
+        }
+      }
 
-      for (const item of items) {
-        // 🛡️ BLINDAJE 2: Ignoramos elementos que no sean objetos (evita crashes)
-        if (!item || typeof item !== 'object') continue;
-        
-        const track = item as any;
-
-        if (track?.features?.[0]?.waypoints && Array.isArray(track.features[0].waypoints)) {
+      // 2. Relink en los Tracks individuales (para los iconos del mapa)
+      const keys = Object.keys(data).filter(k => k !== 'collection');
+      for (const key of keys) {
+        const track = data[key];
+        if (track?.features?.[0]?.waypoints) {
           for (const wpt of track.features[0].waypoints) {
-            if (wpt.photos && Array.isArray(wpt.photos)) {
-              
-              wpt.photos = wpt.photos.map((oldPath: any) => {
-                // 🛡️ BLINDAJE 3: Nos aseguramos de que oldPath es realmente un string
-                if (typeof oldPath === 'string') {
-                  const fileName = oldPath.split('/').pop();
-                  if (fileName && newPathsMap.has(fileName)) {
-                    return newPathsMap.get(fileName);
-                  }
-                }
-                return oldPath;
+            if (wpt.photos) {
+              wpt.photos = wpt.photos.map((p: string) => {
+                const fileName = p.split('/').pop();
+                return (fileName && newPathsMap.has(fileName)) ? newPathsMap.get(fileName) : p;
               });
-
             }
           }
         }
@@ -300,19 +304,37 @@ export class BackupService {
    */
   private extractAllPhotoPaths(data: any): string[] {
     let paths: string[] = [];
-    const items = Object.values(data);
+    
+    // Extraer de la colección
+    if (data.collection && Array.isArray(data.collection)) {
+      data.collection.forEach((item: any) => {
+        if (item.photos) paths.push(...item.photos);
+      });
+    }
 
-    for (const item of items) {
-      const track = item as any;
-      if (track?.features?.[0]?.waypoints && Array.isArray(track.features[0].waypoints)) {
+    // Extraer de los tracks (waypoints)
+    const keys = Object.keys(data).filter(k => k !== 'collection');
+    for (const key of keys) {
+      const track = data[key];
+      if (track?.features?.[0]?.waypoints) {
         for (const wpt of track.features[0].waypoints) {
-          if (wpt.photos && Array.isArray(wpt.photos)) {
-            paths = [...paths, ...wpt.photos];
-          }
+          if (wpt.photos) paths.push(...wpt.photos);
         }
       }
     }
     
     return [...new Set(paths)].filter(p => !!p);
+  }
+
+  /**
+   * Helper para convertir trozos de binario a Base64 sin desbordar la pila
+   */
+  private uint8ToBase64(uint8: Uint8Array): string {
+    let binary = '';
+    const len = uint8.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    return btoa(binary);
   }
 }

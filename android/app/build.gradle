@@ -19,8 +19,8 @@ android {
         multiDexEnabled true
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 28
-        versionName "2.3.1"
+        versionCode 29
+        versionName "2.3.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
@@ -47,6 +47,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation project(':capacitor-android')
@@ -69,3 +70,10 @@ try {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
 */
+
+// --- ESTA ES LA PARTE NUEVA ---
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.android.material:material:1.12.0'
+    }
+}

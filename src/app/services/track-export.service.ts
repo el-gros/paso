@@ -32,10 +32,10 @@ export class TrackExportService {
 
     const featureToExport = trackData.features ? trackData.features[0] : (trackData as any);
     if (!featureToExport.properties) featureToExport.properties = {};
-    featureToExport.properties.name = item.name || featureToExport.properties.name || 'Track';
+    featureToExport.properties.name = item.name || featureToExport.properties.name || this.translate.instant('RECORD.DEFAULT_NAME');
     featureToExport.properties.description = item.description || featureToExport.properties.description || '';
 
-    const safeName = (item.name || 'track').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const safeName = (item.name || 'track_paso').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
     const filesToShare: string[] = [];
 
     // -- Generación de formatos solicitados --
@@ -84,7 +84,7 @@ export class TrackExportService {
 
   public async geoJsonToGpx(feature: TrackFeature): Promise<string> {
     try {
-      const trackName = this.escapeXml(feature.properties?.name || 'Track');
+      const trackName = this.escapeXml(feature.properties?.name || this.translate.instant('RECORD.DEFAULT_NAME'));
       const trackDesc = this.escapeXml(feature.properties?.description || ''); 
 
       let gpxText = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -164,10 +164,11 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
   // 4. GENERACIÓN REPORTE HTML (OpenLayers + Tarjeta + Gráfica)
   // ==========================================================================
 
-  public generateStandaloneHtml(trackData: Track, routeName: string = 'Ruta Exportada'): string {
+  public generateStandaloneHtml(trackData: Track, routeName?: string): string {
     try {
+      const finalRouteName = routeName || this.translate.instant('ARCHIVE.EXPORTED_ROUTE');
       const geoJsonString = JSON.stringify(trackData);
-      const safeTitle = this.escapeXml(routeName);
+      const safeTitle = this.escapeXml(finalRouteName);
 
       const props = trackData.features[0]?.properties || {};
       
@@ -175,7 +176,8 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
       const timeLabel = this.translate.instant('REPORT.TIME');
       const gainLabel = this.translate.instant('REPORT.ELEVATION_GAIN');
       const lossLabel = this.translate.instant('REPORT.ELEVATION_LOSS');
-      const altLabel = this.translate.instant('REPORT.ALTITUDE') !== 'REPORT.ALTITUDE' ? this.translate.instant('REPORT.ALTITUDE') : 'Altitud';
+      const altLabel = this.translate.instant('REPORT.ALTITUDE') !== 'REPORT.ALTITUDE' ? this.translate.instant('REPORT.ALTITUDE') : this.translate.instant('CANVAS.ALTITUDE');
+      const noDataLabel = this.translate.instant('CANVAS.NO_TIME_DATA');
 
       const distVal = (props.totalDistance || 0).toFixed(2);
       const timeVal = this.fs.formatMillisecondsToUTC(props.totalTime || 0);
@@ -187,7 +189,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>${safeTitle} - Visor de Ruta</title>
+  <title>${safeTitle} - ${this.translate.instant('SEARCH.ROUTE')}</title>
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -330,7 +332,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
             }
         });
     } else {
-        document.getElementById('chart-container').innerHTML = '<p style="text-align:center; color:#999; margin-top: 20px;">Sin datos de elevación.</p>';
+        document.getElementById('chart-container').innerHTML = '<p style="text-align:center; color:#999; margin-top: 20px;">' + noDataLabel + '</p>';
     }
   </script>
 </body>
@@ -351,7 +353,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
    * Generador interno unificado de KML para evitar duplicidad de código.
    */
   private async buildKmlContent(feature: TrackFeature, zip?: JSZip): Promise<string> {
-    const trackName = this.escapeXml(feature.properties?.name || "Track");
+    const trackName = this.escapeXml(feature.properties?.name || this.translate.instant('RECORD.DEFAULT_NAME'));
     let kmlText = `<?xml version="1.0" encoding="UTF-8"?>
       <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
       <name>${trackName}</name>

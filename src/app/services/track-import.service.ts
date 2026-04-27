@@ -139,7 +139,7 @@ export class TrackImportService {
    * Calcula distancias acumuladas y límites geográficos (bbox).
    */
   private async computeTrackStats(trackPoints: any[], waypoints: any[], trk: Element): Promise<Track> {
-    const name = this.fs.sanitize(trk.querySelector('name')?.textContent || 'Imported Track');
+    const name = this.fs.sanitize(trk.querySelector('name')?.textContent || this.translate.instant('MAP.IMPORTED_TRACK_DEFAULT'));
     const desc = this.fs.sanitize(trk.querySelector('cmt, description')?.textContent || '');
     
     let distance = 0;
@@ -197,7 +197,7 @@ export class TrackImportService {
 
     await this.fs.storeSet(dateKey, track);
     const trackDef: TrackDefinition = {
-      name: props.name || 'Imported Track',
+      name: props.name || this.translate.instant('MAP.IMPORTED_TRACK_DEFAULT'),
       date: trackDate,
       place: track.features[0].geometry.coordinates[0] as any,
       description: props.description || '',

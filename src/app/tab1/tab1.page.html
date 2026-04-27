@@ -40,10 +40,11 @@
         </div>
       }
 
-      <!-- Búsqueda y Guía -->
-      <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
-        <ion-icon name="search-circle-outline"></ion-icon>
-        <p>{{ 'SEARCH.BUTTON' | translate }}</p> </div>
+      <!-- Datos y Estadísticas (Movido desde la barra inferior) -->
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics-outline"></ion-icon>
+        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
+      </div>
 
       <!-- Ciclo de Zoom -->
       <div class="record-button" (click)="mapService.cycleZoom()">
@@ -90,9 +91,11 @@
 
   <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
     <ion-row>
-      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-        <ion-icon name="analytics-outline"></ion-icon>
-        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p> </div>
+      <!-- Búsqueda (Movido desde la isla superior) -->
+      <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
+        <ion-icon name="search-circle-outline"></ion-icon>
+        <p>{{ 'SEARCH.BUTTON' | translate }}</p>
+      </div>
       <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
         <ion-icon name="folder-open-outline"></ion-icon>
         <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p> </div>

@@ -79,7 +79,12 @@
     "EXPORT_TRACK": "Exporter",
     "ALL_DISPLAYED": "Tous les trajets sont affichés",
     "ALL_HIDDEN": "Tous les trajets sont masqués",
+    "ALL_PLACES_DISPLAYED": "Tous les lieux sont affichés",
+    "ALL_PLACES_HIDDEN": "Tous les lieux sont masqués",
     "VISIBLE_LABEL": "Visible",
+    "EXPORTED_ROUTE": "Itinéraire exporté",
+    "PLACE_SAVED": "Lieu enregistré dans l'archive",
+    "PLACE_EXISTS": "Ce lieu est déjà dans votre archive",
     "TEXT": "Voici le trajet demandé",
     "DIALOG_TITLE": "Partager uniquement via Gmail",
     "EXPORT_SUCCESS": "Le trajet a été partagé avec succès",
@@ -130,7 +135,9 @@
     "DOWNLOAD_MAP": "Télécharger la carte",
     "SELECT": "Sélectionner",
     "REMOVE_MAP": "Supprimer la carte",
-    "ALL_MAPS_DOWNLOADED": "Toutes les cartes sont téléchargées"
+    "ALL_MAPS_DOWNLOADED": "Toutes les cartes sont téléchargées",
+    "MAP_UPDATE_ERROR": "Erreur lors de la mise à jour du fournisseur de carte",
+    "OFFLINE_MODE_ON": "Hors ligne : Mode de secours activé (Offline)"
   },
   "CANVAS": {
     "TRACK": "Enregistrer la trace",

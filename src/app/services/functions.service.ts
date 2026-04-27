@@ -238,11 +238,19 @@ export class FunctionsService {
     return data;
   }
 
-  public async displayToast(message: string, css: string): Promise<void> {
+  public async displayToast(message: string, css: string, duration: number = 3000): Promise<void> {
       const finalMessage = this.translate.instant(message);
       const toast = await this.toastController.create({ 
-        message: finalMessage, duration: 3000, position: 'bottom', cssClass: `toast toast-${css}`,
-        buttons: [{ icon: 'close-outline', role: 'cancel' }]
+        message: finalMessage, 
+        duration: duration, 
+        position: 'bottom', 
+        cssClass: `toast toast-${css}`,
+        // Si la duración es 0, mostramos el botón de OK para cierre manual
+        buttons: duration === 0 ? [
+          { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
+        ] : [
+          { icon: 'close-outline', role: 'cancel' }
+        ]
       });
       await toast.present();
   }
