@@ -96,6 +96,9 @@
     "PLACE_EXISTS": "Aquest lloc ja és al teu arxiu"
   },
   "SETTINGS": {
+    "VOICE_CONTROL": "Control per veu",
+    "VOICE_CONTROL_DESC": "Llegeix els missatges en lloc de mostrar-los",
+    "VOICE_CONTROL_ACTIVE": "Control per veu activat",
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
     "BASE_MAP": "Mapa base",
@@ -334,5 +337,27 @@
     "LOGISTICS": "Logística i Transport",
     "FAVORITE": "Preferits",
     "OTHER": "Altres"
+  },
+  "VOICE_COMMANDS": {
+      "MAP": "mapa, navegació",
+      "ARCHIVE": "arxiu, biblioteca, historial, rutes",
+      "DATA": "dades, gràfiques, gràfics, estadístiques, canvas",
+      "SETTINGS": "configuració, ajustos, preferències", 
+      "SEARCH": "buscar, cerca, recerca, trobar, localització, localitzar, localitzador",
+      "ZOOM": "zoom, lupa, augmentar, ampliar, engrandir",
+      "RECORD": "gravar, iniciar, començar, comença, engegar, engega",
+      "STOP": "aturar, deturar, para, final, acaba, acaba la ruta, termina",
+      "HELP_COMMAND": "ajuda, info, instruccions, opcions",
+      "HELP_PREFIX": "Les opcions disponibles són: {0}"
+  },
+  "VOICE": {
+    "PROMPT": "Digueu una ordre...",
+    "LISTENING": "Escoltant...",
+    "HOLD_TO_TALK": "Mantingueu per parlar",
+    "COMMAND_NOT_FOUND": "Ordre no reconeguda",
+    "NOT_AVAILABLE": "El reconeixement de veu no està disponible",
+    "OPENING_MAP": "Obrint el mapa",
+    "OPENING_ARCHIVE": "Obrint l'arxiu",
+    "OPENING_DATA": "Obrint les dades"
   }
 }

@@ -76,14 +76,27 @@
       <ion-label>{{ 'SETTINGS.SYSTEM_GROUP' | translate }}</ion-label>
     </ion-list-header>
 
-    <!-- Alertas de navegación -->
-    <ion-item lines="none"> 
+    <ion-item lines="full"> 
       <ion-icon name="notifications-outline" slot="start" [color]="fs.alert === 'on' ? 'warning' : 'medium'"></ion-icon>
       <ion-label>{{ 'SETTINGS.ALERT' | translate }}</ion-label>
       <ion-toggle slot="end" [checked]="fs.alert === 'on'" (ionChange)="onAlertChange($event.detail.checked)"></ion-toggle>
     </ion-item>
-  </ion-list>
 
+    <ion-item lines="none">
+      <ion-icon [name]="fs.voiceControl ? 'volume-high-outline' : 'volume-mute-outline'" 
+                slot="start" 
+                [color]="fs.voiceControl ? 'success' : 'medium'">
+      </ion-icon>
+      <ion-label>
+        <h2>{{ 'SETTINGS.VOICE_CONTROL' | translate }}</h2>
+   <!--     <p>{{ 'SETTINGS.VOICE_CONTROL_DESC' | translate }}</p> -->
+      </ion-label>
+      <ion-toggle slot="end" 
+                  [checked]="fs.voiceControl" 
+                  (ionChange)="onVoiceControlChange($event.detail.checked)">
+      </ion-toggle>
+    </ion-item>
+  </ion-list>
   <!-- ======================================================================
        4. GESTIÓN DE MAPAS OFFLINE
        ====================================================================== -->
@@ -168,27 +181,44 @@
   </ion-list>
 
   <!-- Espaciado para evitar colisión con el FAB -->
-  <div style="height: 120px;"></div>
+  <div style="height: 150px;"></div>
 </ion-content>
 
 <!-- ======================================================================
      6. NAVEGACIÓN PRINCIPAL (Bottom Bar)
      ====================================================================== -->
-<div class="bottom-safe-gray"></div>
-
+<!--
+     <div style="height: 180px;"></div>
+-->
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row class="button-container">
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="map-outline"></ion-icon>
-      <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
+  
+  @if (!fs.voiceControl) {
+    <ion-row class="button-container">
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
+        <ion-icon name="map-outline"></ion-icon>
+        <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
+      </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics-outline"></ion-icon>
+        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
+      </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
+        <ion-icon name="folder-open-outline"></ion-icon>
+        <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
+      </div>
+    </ion-row>
+  }
+
+  @else {
+    <div class="button-container voice-mode-container">
+      <div class="mic-button-wrapper">
+        <div class="mic-main-button" 
+            (click)="voiceRunner.toggleVoiceControl()" 
+            [class.is-listening]="voiceRunner.isListening"> 
+          <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
+        </div>
+      </div>
     </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics-outline"></ion-icon>
-      <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
-    </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
-      <ion-icon name="folder-open-outline"></ion-icon>
-      <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
-    </div>
-  </ion-row>
+  }
+
 </ion-fab>

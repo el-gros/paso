@@ -96,6 +96,9 @@
     "PLACE_EXISTS": "此地点已在您的档案中"
   },
   "SETTINGS": {
+    "VOICE_CONTROL": "语音控制",
+    "VOICE_CONTROL_DESC": "朗读消息而不是显示它们",
+    "VOICE_CONTROL_ACTIVE": "语音控制已激活",
     "GENERAL_GROUP": "常规",
     "SYSTEM_GROUP": "系统",
     "BASE_MAP": "基础地图",
@@ -334,5 +337,27 @@
     "LOGISTICS": "交通与物流",
     "FAVORITE": "收藏",
     "OTHER": "其他"
+  },
+  "VOICE_COMMANDS": {
+    "MAP": "地图, 导航",
+    "ARCHIVE": "档案, 库, 历史, 记录",
+    "DATA": "数据, 图表, 统计, 画布",
+    "SETTINGS": "设置, 配置, 首选项, 设定", 
+    "SEARCH": "搜索, 寻找, 查找, 定位, 查找位置",
+    "ZOOM": "缩放, 放大, 扩大",
+    "RECORD": "录制, 开始, 启动, 开始录制",
+    "STOP": "停止, 结束, 中止, 完成",
+    "HELP_COMMAND": "帮助, 信息, 说明, 选项",
+    "HELP_PREFIX": "可用选项有：{0}"
+  },
+  "VOICE": {
+    "PROMPT": "请输入指令...",
+    "LISTENING": "正在倾听...",
+    "HOLD_TO_TALK": "按住说话",
+    "COMMAND_NOT_FOUND": "无法识别指令",
+    "NOT_AVAILABLE": "语音识别不可用",
+    "OPENING_MAP": "打开地图",
+    "OPENING_ARCHIVE": "打开档案",
+    "OPENING_DATA": "打开数据"
   }
 }    

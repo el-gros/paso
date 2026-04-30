@@ -25,32 +25,32 @@
 
   <!-- Isla de control central: Grabar, Buscar y Zoom -->
   <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
-    <ion-row>
-      <!-- Botón dinámico: Iniciar / Detener grabación -->
-      @if (location.state === 'tracking') {
-        <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
-          <ion-icon name="stop-circle-outline" class="primary-icon"></ion-icon>
-          <span class="tracking-dot"></span>
-          <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
-        </div>
-      } @else {
-        <div class="record-button" (click)="startTracking()">
-          <ion-icon name="play-outline" class="primary-icon"></ion-icon>
-          <p>{{ 'RECORD.BUTTON' | translate }}</p>
-        </div>
-      }
+    @if (!fs.voiceControl) {
+      <ion-row>
+        @if (location.state === 'tracking') {
+          <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
+            <ion-icon name="stop-circle-outline" class="primary-icon"></ion-icon>
+            <span class="tracking-dot"></span>
+            <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
+          </div>
+        } @else {
+          <div class="record-button" (click)="startTracking()">
+            <ion-icon name="play-outline" class="primary-icon"></ion-icon>
+            <p>{{ 'RECORD.BUTTON' | translate }}</p>
+          </div>
+        }
 
-      <!-- Datos y Estadísticas (Movido desde la barra inferior) -->
-      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-        <ion-icon name="analytics-outline"></ion-icon>
-        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
-      </div>
+        <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+          <ion-icon name="analytics-outline"></ion-icon>
+          <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
+        </div>
 
-      <!-- Ciclo de Zoom -->
-      <div class="record-button" (click)="mapService.cycleZoom()">
-        <ion-icon name="expand-outline"></ion-icon>
-        <p>{{ 'MAP.ZOOM_BUTTON' | translate }}</p> </div>
-    </ion-row>
+        <div class="record-button" (click)="mapService.cycleZoom()">
+          <ion-icon name="expand-outline"></ion-icon>
+          <p>{{ 'MAP.ZOOM_BUTTON' | translate }}</p> 
+        </div>
+      </ion-row>
+    }
   </ion-fab>
 
   <!-- ======================================================================
@@ -90,19 +90,47 @@
        ====================================================================== -->
 
   <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-    <ion-row>
-      <!-- Búsqueda (Movido desde la isla superior) -->
-      <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
-        <ion-icon name="search-circle-outline"></ion-icon>
-        <p>{{ 'SEARCH.BUTTON' | translate }}</p>
+    
+    @if (!fs.voiceControl) {
+      <ion-row>
+        <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
+          <ion-icon name="search-circle-outline"></ion-icon>
+          <p>{{ 'SEARCH.BUTTON' | translate }}</p>
+        </div>
+        <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
+          <ion-icon name="folder-open-outline"></ion-icon>
+          <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p> 
+        </div>
+        <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
+          <ion-icon name="settings-outline"></ion-icon>
+          <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p> 
+        </div>
+      </ion-row>
+
+    } @else {
+      <div class="voice-layout-wrapper"> <!-- Nuevo contenedor para agrupar ambos -->
+        
+        <!-- Espaciador a la izquierda para centrar el micro -->
+        <div class="side-spacer"></div>
+
+        <!-- El Micro (Centro) -->
+        <div class="voice-mode-container">
+          <div class="mic-button-wrapper">
+            <div class="mic-main-button" 
+                (click)="voiceRunner.toggleVoiceControl()" 
+                [class.is-listening]="voiceRunner.isListening">
+              <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <!-- El "Salvavidas" (Derecha) -->
+        <div class="emergency-settings" (click)="fs.gotoPage('settings')">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+
       </div>
-      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">
-        <ion-icon name="folder-open-outline"></ion-icon>
-        <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p> </div>
-      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
-        <ion-icon name="settings-outline"></ion-icon>
-        <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p> </div>
-    </ion-row>
+    }
   </ion-fab>
 
   <!-- ======================================================================

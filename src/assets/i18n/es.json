@@ -96,6 +96,9 @@
     "PLACE_EXISTS": "Este lugar ya está en tu archivo"
   },
   "SETTINGS": {
+    "VOICE_CONTROL": "Control por voz",
+    "VOICE_CONTROL_DESC": "Lee los mensajes en lugar de mostrarlos",
+    "VOICE_CONTROL_ACTIVE": "Control por voz activado",
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "Sistema",
     "BASE_MAP": "Mapa base",
@@ -334,5 +337,27 @@
     "LOGISTICS": "Logística y Transporte",
     "FAVORITE": "Favoritos",
     "OTHER": "Otros"
+  },
+  "VOICE_COMMANDS": {
+      "MAP": "mapa, navegación",
+      "ARCHIVE": "archivo, biblioteca, historial",
+      "DATA": "datos, gráficas, gráficos, estadísticas, canvas",
+      "SETTINGS": "configuración, ajustes, preferencias", 
+      "SEARCH": "buscar, búsqueda, localizador, localización, localizar, encontrar",
+      "ZOOM": "zoom, lupa, aumentar, ampliar, agrandar",
+      "RECORD": "grabar, iniciar, comenzar, comienza, empezar, empieza",
+      "STOP": "detener, para, final, acaba, termina",
+      "HELP_COMMAND": "ayuda, info, instrucciones, opciones",
+      "HELP_PREFIX": "Las opciones disponibles son: {0}"
+  },
+  "VOICE": {
+    "PROMPT": "Diga un comando...",
+    "LISTENING": "Escuchando...",
+    "HOLD_TO_TALK": "Mantén para hablar",
+    "COMMAND_NOT_FOUND": "Comando no reconocido",
+    "NOT_AVAILABLE": "El reconocimiento de voz no está disponible",
+    "OPENING_MAP": "Abriendo el mapa",
+    "OPENING_ARCHIVE": "Abriendo el archivo",
+    "OPENING_DATA": "Abriendo los datos"
   }
 }

@@ -18,9 +18,10 @@ import { ReferenceService } from '../services/reference.service';
 import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { AppStateService } from '../services/appState.service'; 
-import { TrackExportService } from '../services/track-export.service'; // <-- AÑADIDO
+//import { TrackExportService } from '../services/track-export.service'; // <-- AÑADIDO
 import { PhotoViewerComponent } from '../photo-viewer.component'; 
 import { TrackChartComponent } from '../track-chart.component'; 
+import { VoiceRunnerService } from '../services/voice-runner.service';
 
 register();
 
@@ -78,7 +79,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     private appState: AppStateService,
     private location: LocationManagerService,
     private zone: NgZone,
-    private trackExport: TrackExportService // <-- INYECTADO
+    //private trackExport: TrackExportService,
+    public voiceRunner: VoiceRunnerService 
   ) {}
 
   // ====================================================================

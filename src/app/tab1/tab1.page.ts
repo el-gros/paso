@@ -26,6 +26,7 @@ import { MapTracksService } from '../services/map-tracks.service';
 import { DeviceSetupService } from '../services/device-setup.service'; 
 import { TrackingEngineService } from '../services/tracking-engine.service'; // <-- NUEVO
 import { PhotoWaypointService } from '../services/photo-waypoint.service'; // <-- NUEVO
+import { VoiceRunnerService } from '../services/voice-runner.service';
 
 register();
 
@@ -82,7 +83,8 @@ export class Tab1Page implements OnInit, OnDestroy {
     public deviceSetup: DeviceSetupService,
     public mapTracksService: MapTracksService,
     public trackingEngine: TrackingEngineService, // <-- INYECTADO
-    public photoWaypoint: PhotoWaypointService // <-- INYECTADO
+    public photoWaypoint: PhotoWaypointService,
+    public voiceRunner: VoiceRunnerService,
   ) {}
 
   async ngOnInit() {

@@ -96,6 +96,9 @@
     "GENERATING_FILES": "Génération des fichiers en cours, veuillez patienter..."
   },
   "SETTINGS": {
+    "VOICE_CONTROL": "Contrôle vocal",
+    "VOICE_CONTROL_DESC": "Lit les messages au lieu de les afficher",
+    "VOICE_CONTROL_ACTIVE": "Contrôle vocal activé",
     "GENERAL_GROUP": "Général",
     "SYSTEM_GROUP": "Système",
     "BASE_MAP": "Carte de base",
@@ -334,5 +337,27 @@
     "LOGISTICS": "Logistique et Transport",
     "FAVORITE": "Favoris",
     "OTHER": "Autres"
+  },
+  "VOICE_COMMANDS": {
+    "MAP": "carte, navigation, afficher la carte",
+    "ARCHIVE": "archives, bibliothèque, historique, parcours",
+    "DATA": "données, graphiques, statistiques, canevas",
+    "SETTINGS": "paramètres, réglages, configuration, préférences", 
+    "SEARCH": "rechercher, chercher, trouver, localisation, localiser, localisateur",
+    "ZOOM": "zoom, loupe, augmenter, agrandir, zoomer",
+    "RECORD": "enregistrer, démarrer, commence, commencer, lance, lancer",
+    "STOP": "arrêter, stop, fin, termine",
+    "HELP_COMMAND": "aide, info, instructions, options",
+    "HELP_PREFIX": "Les options disponibles sont : {0}"
+    },
+  "VOICE": {
+    "PROMPT": "Dites une commande...",
+    "LISTENING": "Écoute...",
+    "HOLD_TO_TALK": "Maintenir pour parler",
+    "COMMAND_NOT_FOUND": "Commande non reconnue",
+    "NOT_AVAILABLE": "Reconnaissance vocale non disponible",
+    "OPENING_MAP": "Ouverture de la carte",
+    "OPENING_ARCHIVE": "Ouverture de l'archive",
+    "OPENING_DATA": "Ouverture des données"
   }
 }

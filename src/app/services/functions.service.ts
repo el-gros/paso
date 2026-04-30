@@ -1,19 +1,28 @@
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastController, PopoverController } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { TranslateService } from '@ngx-translate/core';
 import DOMPurify from 'dompurify';
+import { NavController, LoadingController } from '@ionic/angular';
+
+// --- SERVICES ---
+import { TtsService } from './tts.service';
 
 // --- INTERNAL IMPORTS ---
-// Asegúrate de importar LocationResult aquí
 import { Track, Data, Waypoint, TrackDefinition, LocationResult } from '../../globald';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FunctionsService {
-  
+
+  private injector = inject(Injector); 
+  public voiceControl: boolean = false;
+  private loadingCtrl = inject(LoadingController);
+  private navCtrl = inject(NavController);
+
+
   // ==========================================================================
   // 1. CONFIGURACIÓN Y ESTADO GENERAL
   // ==========================================================================
@@ -38,7 +47,7 @@ export class FunctionsService {
   // 3. DATOS Y COLECCIÓN
   // ==========================================================================
   public collection: TrackDefinition[] = [];
-  public placesCollection: LocationResult[] = []; // Inicializado con su tipo
+  public placesCollection: LocationResult[] = []; 
   
   public properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
   public refreshCollectionUI?: () => void;
@@ -54,17 +63,13 @@ export class FunctionsService {
   /** Inicializa la instancia del storage y carga los datos globales */
   public async init(): Promise<void> {
     this._storage = await this.storage.create();
-    await this.loadGlobalCollections(); // <-- Cargamos todo al arrancar
+    await this.loadGlobalCollections(); 
   }
 
   // ==========================================================================
   // 4. GESTIÓN DE COLECCIONES (Trayectos y Lugares)
   // ==========================================================================
 
-  /**
-   * Carga desde el disco duro (Storage) los trayectos y lugares.
-   * Al ejecutarse en el init(), garantiza que tab1, archive, etc. tengan datos inmediatos.
-   */
   private async loadGlobalCollections(): Promise<void> {
     // Cargar Trayectos
     const storedTracks = await this.storeGet<TrackDefinition[]>('collection');
@@ -74,14 +79,14 @@ export class FunctionsService {
     const storedPlaces = await this.storeGet<LocationResult[]>('saved_places');
     this.placesCollection = storedPlaces || [];
 
-    // NUEVO: Forzar que todos los lugares empiecen ocultos al arrancar la app
+    // NUEVO: Cargar preferencia de voz (si no existe, por defecto false)
+    this.voiceControl = await this.check<boolean>(false, 'voiceControl');
+
+    // Forzar que todos los lugares empiecen ocultos al arrancar la app
     this.placesCollection.forEach(place => place.visible = false);
     this.sortPlacesAlphabetically();
   }
 
-  /**
-   * Guarda la colección de lugares actual en el disco duro.
-   */
   public async savePlacesToStorage(): Promise<void> {
     await this.storeSet('saved_places', this.placesCollection);
   }
@@ -92,20 +97,16 @@ export class FunctionsService {
     const exists = this.placesCollection.find(p => p.lat === place.lat && p.lon === place.lon);
     
     if (!exists) {
-      // Intentar clasificar si no tiene categorías o si viene marcado como 'other'
       if (!place.categories || place.categories.length === 0 || (place.categories.length === 1 && place.categories[0] === 'other')) {
         const raw = place as any;
-        // Lista ampliada para Nominatim y MapTiler
         const townTerms = ['city', 'town', 'village', 'hamlet', 'municipality', 'suburb', 'district', 'settlement', 'borough', 'locality', 'place', 'administrative'];
         
         const type1 = (raw.addresstype || '').toLowerCase();
         const type2 = (raw.type || '').toLowerCase();
         const type3 = (raw.class || '').toLowerCase();
         
-        // Detección directa por términos
         let isTown = townTerms.includes(type1) || townTerms.includes(type2) || townTerms.includes(type3);
         
-        // Detección por rango de importancia (rank 12-16 suele ser municipio/ciudad en OSM)
         const rank = raw.place_rank || 0;
         if ((type2 === 'administrative' || type3 === 'boundary') && (rank >= 12 && rank <= 16)) {
           isTown = true;
@@ -115,15 +116,13 @@ export class FunctionsService {
         else if (!place.categories || place.categories.length === 0) place.categories = ['other'];
       }
 
-      // 🔥 NUEVO: Se guarda como OCULTO para no tapar el resultado rojo de la búsqueda
       place.visible = false;
-
       this.placesCollection.push(place);
       this.sortPlacesAlphabetically();
       this.savePlacesToStorage();
-      this.displayToast(this.translate.instant('ARCHIVE.PLACE_SAVED'), 'success');
+      this.displayToast('ARCHIVE.PLACE_SAVED', 'success');
     } else {
-      this.displayToast(this.translate.instant('ARCHIVE.PLACE_EXISTS'), 'warning');
+      this.displayToast('ARCHIVE.PLACE_EXISTS', 'warning');
     }
   }
  
@@ -135,10 +134,6 @@ export class FunctionsService {
     }
   }
 
-  /**
-   * Ordena la colección de lugares alfabéticamente por nombre.
-   * Se utiliza 'numeric: true' para que "Punto 2" vaya antes que "Punto 10".
-   */
   private sortPlacesAlphabetically() {
     this.placesCollection.sort((a, b) => {
       const nameA = a.name || '';
@@ -154,7 +149,6 @@ export class FunctionsService {
 
   // --- CRUD PARA TRAYECTOS ---
 
-  /** Elimina un track del almacenamiento físico y de la colección en memoria. */
   public async removeTrackFromCollection(index: number): Promise<void> {
     const trackToRemove = this.collection[index];
     if (trackToRemove && trackToRemove.date) {
@@ -162,7 +156,7 @@ export class FunctionsService {
       await this.storeRem(key);
     }
     this.collection.splice(index, 1);
-    await this.storeSet('collection', this.collection); // Persiste la lista de trayectos
+    await this.storeSet('collection', this.collection);
   }
 
 
@@ -239,44 +233,64 @@ export class FunctionsService {
   }
 
   public async displayToast(message: string, css: string, duration: number = 3000): Promise<void> {
-      const finalMessage = this.translate.instant(message);
-      const toast = await this.toastController.create({ 
-        message: finalMessage, 
-        duration: duration, 
-        position: 'bottom', 
-        cssClass: `toast toast-${css}`,
-        // Si la duración es 0, mostramos el botón de OK para cierre manual
-        buttons: duration === 0 ? [
-          { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
-        ] : [
-          { icon: 'close-outline', role: 'cancel' }
-        ]
-      });
-      await toast.present();
+    const finalMessage = this.translate.instant(message);
+
+    if (this.voiceControl) {
+      const tts = this.injector.get(TtsService); 
+      await tts.speak(finalMessage);
+      return; 
+    }
+
+    const toast = await this.toastController.create({ 
+      message: finalMessage, 
+      duration: duration, 
+      position: 'bottom', 
+      cssClass: `toast toast-${css}`,
+      buttons: duration === 0 ? [
+        { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
+      ] : [
+        { icon: 'close-outline', role: 'cancel' }
+      ]
+    });
+    await toast.present();
   }
 
-  public gotoPage(path: string): void {
+  async gotoPage(url: string) {
     if (this.isNavigating) return;
     this.isNavigating = true;
-    this.router.navigate([path]);
-    setTimeout(() => { this.isNavigating = false; }, 1000);
+
+    // 1. Mostramos el loading de cristal
+    const loading = await this.loadingCtrl.create({
+      spinner: 'crescent',
+      cssClass: 'glass-loading-overlay'
+    });
+    
+    // Esperamos a que se dibuje en pantalla
+    await loading.present(); 
+
+    try {
+      // 2. Usamos el Router normal de Angular. 
+      // Esto respeta tu sistema de pestañas y evita el "salto" a la página inicial.
+      await this.router.navigate([url]); 
+      
+      // 3. LA CLAVE: Esperamos 400ms exactos.
+      // Es el tiempo que tarda Ionic en hacer el "slide" y renderizar el DOM pesado.
+      setTimeout(async () => {
+        await loading.dismiss();
+        this.isNavigating = false;
+      }, 400);
+
+    } catch (err) {
+      console.error("Error navegando:", err);
+      await loading.dismiss();
+      this.isNavigating = false;
+    }
   }
 
   private determineCategory(location: any): string {
-    // Lista de etiquetas de Nominatim que consideramos "Poblaciones"
-    const townTags = [
-      'city', 'town', 'village', 'hamlet', 'municipality', 
-      'administrative', 'suburb', 'borough'
-    ];
-
-    // 1. Miramos la propiedad 'addresstype' o 'type' que viene de Nominatim
+    const townTags = ['city', 'town', 'village', 'hamlet', 'municipality', 'administrative', 'suburb', 'borough'];
     const type = location.addresstype || location.type || '';
-    
-    if (townTags.includes(type.toLowerCase())) {
-      return 'towns';
-    }
-
-    // 2. Si no hay coincidencia clara, devolvemos 'other' por defecto
+    if (townTags.includes(type.toLowerCase())) return 'towns';
     return 'other';
   }
 }

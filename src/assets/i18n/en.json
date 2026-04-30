@@ -96,6 +96,9 @@
     "PLACE_EXISTS": "This place is already in your archive"
   },
   "SETTINGS": {
+    "VOICE_CONTROL": "Voice Control",
+    "VOICE_CONTROL_DESC": "Read messages instead of showing them",
+    "VOICE_CONTROL_ACTIVE": "Voice control activated",
     "GENERAL_GROUP": "General",
     "SYSTEM_GROUP": "System",
     "BASE_MAP": "Base Map",
@@ -334,5 +337,27 @@
     "LOGISTICS": "Logistics & Transport",
     "FAVORITE": "Favorites",
     "OTHER": "Other"
+  },
+  "VOICE_COMMANDS": {
+      "MAP": "map, navigation, show map",
+      "ARCHIVE": "archive, library, history, tracks",
+      "DATA": "data, charts, graphs, statistics, canvas",
+      "SETTINGS": "settings, configuration, preferences", 
+      "SEARCH": "search, find, looking for, location, locate, locator",
+      "ZOOM": "zoom, magnifying glass, increase, enlarge",
+      "RECORD": "record, start, begin, start recording, go",
+      "STOP": "stop, finish, end, terminate",
+      "HELP_COMMAND": "help, info, instructions, options",
+      "HELP_PREFIX": "The available options are: {0}"
+  },
+  "VOICE": {
+    "PROMPT": "Say a command...",
+    "LISTENING": "Listening...",
+    "HOLD_TO_TALK": "Hold to talk",
+    "COMMAND_NOT_FOUND": "Command not recognized",
+    "NOT_AVAILABLE": "Speech recognition not available",
+    "OPENING_MAP": "Opening map",
+    "OPENING_ARCHIVE": "Opening archive",
+    "OPENING_DATA": "Opening data"
   }
 }

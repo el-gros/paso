@@ -173,3 +173,97 @@ ion-fab {
   50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
+/*
+.voice-layout-wrapper {
+  display: flex;
+  align-items: center;
+ 
+  justify-content: center; 
+  width: 100vw;
+  margin-right: 100px;
+  margin-left: 100px;
+ 
+  padding: 0 30px; 
+  position: absolute;
+  bottom: 0;
+  gap: 10px; // Espacio mínimo entre elementos
+}
+
+.side-spacer {
+ 
+  width: 50px; 
+  flex-shrink: 0; // Evita que se deforme
+}
+
+.voice-mode-container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.emergency-settings {
+  width: 50px; // Ancho fijo
+  height: 50px;
+  flex-shrink: 0; // Evita que se deforme
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--ion-color-medium);
+  transition: all 0.2s ease;
+  
+  ion-icon {
+    font-size: 24px;
+  }
+}
+*/
+
+.voice-layout-wrapper {
+  // Ahora el wrapper solo sirve de base, no intentamos centrar con él
+  position: relative;
+  width: 100vw;
+  height: 80px; 
+  display: flex;
+  justify-content: center; // Esto solo centrará el MICRO
+  align-items: center;
+}
+
+.voice-mode-container {
+  // El micro se queda en el flujo normal (centrado por el padre)
+  display: flex;
+  justify-content: center;
+}
+
+.emergency-settings {
+  // POSICIONAMIENTO RADICAL
+  position: fixed !important; 
+  bottom: 17px; // Ajusta según la altura de tu micro
+  
+  // En lugar de 'right: 20px', usamos un valor que lo meta más adentro
+  // Prueba con 15% o 20% para que se acerque al micro
+  right: 22%; 
+  
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--ion-color-medium);
+  z-index: 9999;
+  pointer-events: auto !important;
+}
+
+.side-spacer {
+  display: none; // Ya no lo necesitamos con posicionamiento fijo
+}

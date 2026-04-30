@@ -18,6 +18,7 @@ import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { BackupService } from '../services/backup.service'; 
 import { OfflineMapService } from '../services/offline-map.service'; // <--- Nuevo Servicio
+import { VoiceRunnerService } from '../services/voice-runner.service';
 
 // --- COMPONENTS ---
 import { ColorPopoverComponent } from '../color-popover.component';
@@ -76,6 +77,7 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController,
+    public voiceRunner: VoiceRunnerService
   ) {
     this.setupMapActions();
   }
@@ -242,5 +244,23 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     });
     await alert.present();
   }
+
+
+/**
+ * Activa o desactiva la funcionalidad de control de voz.
+ * Si se desactiva, detiene cualquier proceso de escucha activo.
+ */
+public async onVoiceControlChange(value: boolean) {
+  this.fs.voiceControl = value;
+  await this.fs.storeSet('voiceControl', value);
+  
+  if (value) {
+    this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_CONTROL_ACTIVE'), 'success');
+  } else {
+    // Si el usuario apaga el interruptor, nos aseguramos de apagar el micro
+    this.voiceRunner.isListening = false;
+    await this.voiceRunner.stopListening();
+  }
+}
 
 }

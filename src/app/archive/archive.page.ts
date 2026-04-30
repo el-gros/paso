@@ -13,6 +13,7 @@ import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
 import { MapTracksService } from '../services/map-tracks.service';
+import { VoiceRunnerService } from '../services/voice-runner.service'; // <-- Añadido
 
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track, LocationResult, PLACE_CATEGORIES } from '../../globald';
@@ -59,7 +60,8 @@ export class ArchivePage implements OnInit {
     private exportService: TrackExportService,
     private modalCtrl: ModalController,
     private alertController: AlertController,
-    private popoverController: PopoverController
+    private popoverController: PopoverController,
+    public voiceRunner: VoiceRunnerService // <-- Añadido
   ) { }
 
   ngOnInit() {
@@ -199,23 +201,22 @@ export class ArchivePage implements OnInit {
     return new Date(activeDate).getTime() === new Date(itemDate).getTime();
   }
 
-  // archive.page.ts
-
-togglePlaceVisibility(place: LocationResult, event: Event) { // <-- Añadido 'event'
-  // 1. Evitamos que el clic se propague al item (así no se cierra el panel ni centra el mapa)
-  event.stopPropagation();
-  
-  // 2. Buscamos el índice real del lugar en la colección
-  const realIndex = this.fs.placesCollection.findIndex(p => p.lat === place.lat && p.lon === place.lon);
-  
-  if (realIndex > -1) {
-    // 3. Persistimos el cambio en el almacenamiento (Storage/Disco)
-    this.fs.updatePlace(realIndex, place);
+  togglePlaceVisibility(place: LocationResult, event: Event) {
+    // 1. Evitamos que el clic se propague al item (así no se cierra el panel ni centra el mapa)
+    event.stopPropagation();
     
-    // 4. Refrescamos la capa de OpenLayers para que el pin aparezca o desaparezca
-    this.geography.refreshPlacesLayer(this.fs.placesCollection);
+    // 2. Buscamos el índice real del lugar en la colección
+    const realIndex = this.fs.placesCollection.findIndex(p => p.lat === place.lat && p.lon === place.lon);
+    
+    if (realIndex > -1) {
+      // 3. Persistimos el cambio en el almacenamiento (Storage/Disco)
+      this.fs.updatePlace(realIndex, place);
+      
+      // 4. Refrescamos la capa de OpenLayers para que el pin aparezca o desaparezca
+      this.geography.refreshPlacesLayer(this.fs.placesCollection);
+    }
   }
-}
+
   // ==========================================================================
   // 3. EXPORTACIÓN DE ARCHIVOS (HTML, GPX, KMZ)
   // ==========================================================================
@@ -454,4 +455,5 @@ togglePlaceVisibility(place: LocationResult, event: Event) { // <-- Añadido 'ev
       }
     }
   }
+
 }

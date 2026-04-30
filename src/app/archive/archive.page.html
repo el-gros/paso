@@ -264,20 +264,32 @@
 </ion-popover>
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  <ion-row>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
-      <ion-icon name="map-outline"></ion-icon>
-      <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
+  @if (!fs.voiceControl) {
+    <ion-row class="button-container">
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
+        <ion-icon name="map-outline"></ion-icon>
+        <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
+      </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+        <ion-icon name="analytics-outline"></ion-icon>
+        <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
+      </div>
+      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
+        <ion-icon name="settings-outline"></ion-icon>
+        <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+      </div>
+    </ion-row>
+  } @else {
+    <div class="button-container voice-mode-container">
+      <div class="mic-button-wrapper">
+        <div class="mic-main-button" 
+            (click)="voiceRunner.toggleVoiceControl()" 
+            [class.is-listening]="voiceRunner.isListening"> 
+          <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
+        </div>
+      </div>
     </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
-      <ion-icon name="analytics-outline"></ion-icon>
-      <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
-    </div>
-    <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
-      <ion-icon name="settings-outline"></ion-icon>
-      <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
-    </div>
-  </ion-row>
+  }
 </ion-fab>
 
 <div id="export-container" class="hidden-map-container">
