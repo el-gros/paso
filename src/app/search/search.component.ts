@@ -111,7 +111,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     { id: 'hospital', icon: 'hospital-outline', label: 'SERVICES.HOSPITAL', color: 'red' },
     { id: 'police', icon: 'shield-outline', label: 'SERVICES.POLICE', color: 'blue' },
     { id: 'ev_charging', icon: 'flash-outline', label: 'SERVICES.EV_CHARGING', color: 'blue' },
-    { id: 'fuel', icon: 'flame-outline', label: 'SERVICES.FUEL', color: 'blue' },
+    { id: 'fuel', icon: 'gas_station-outline', label: 'SERVICES.FUEL', color: 'blue' },
     { id: 'parking', icon: 'parking-outline', label: 'SERVICES.PARKING', color: 'blue' },
     { id: 'transport', icon: 'bus-outline', label: 'SERVICES.TRANSPORT', color: 'blue' },
     { id: 'atm', icon: 'card-outline', label: 'SERVICES.ATM', color: 'green' },
@@ -500,7 +500,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           const pinColor = serviceConfig ? serviceConfig.color : '#ff0000';
           const icon = serviceConfig ? serviceConfig.icon : 'alert';
 
-          feature.setStyle(this.stylerService.createIconPinStyle(pinColor, icon));
+          feature.setStyle(this.stylerService.createStandaloneIconStyle(pinColor, icon));
           return feature;
         });
 

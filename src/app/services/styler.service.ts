@@ -27,7 +27,16 @@ export class StylerService {
     'star': 'M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z',
     'apps': 'M4,8H8V4H4V8M10,20H14V16H10V20M4,20H8V16H4V20M4,14H8V10H4V14M10,14H14V10H10V14M16,4V8H20V4H16M10,8H14V4H10V8M16,14H20V10H16V14M16,20H20V16H16V20Z',
     'location': 'M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5Z',
-    'medkit': 'M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 9h-4v4h-2v-4H7v-2h4V6h2v4h4v2z'
+    'medkit': 'M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 9h-4v4h-2v-4H7v-2h4V6h2v4h4v2z',
+    'hospital': 'M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z',
+    'shield': 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z',
+    'flash': 'M7 2v11h3v9l7-12h-4l4-8z',
+    'flame': 'M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 4.2-1.45.32-2.84 1.15-3.8 2.29-1.07 1.27-1.63 2.94-1.63 4.67 0 3.79 3.02 6.87 6.81 6.87 3.79 0 6.81-3.08 6.81-6.87 0-3.32-2.33-6.14-5.46-6.74-.63-.12-1.29-.16-1.93-.16-.41 0-.82.04-1.22.12-.19.04-.38.08-.56.13-.02-.27-.03-.54-.03-.82 0-2.37 1.34-4.58 3.44-5.59z',
+    'parking': 'M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z',
+    'bus': 'M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z',
+    'card': 'M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z',
+    'cart': 'M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z',
+    'gas_station': 'M19.77,7.23l.01-.01-3.72-3.72L15,4.56l2.11,2.11C16.17,7,15.5,7.93,15.5,9v1H12V3H6C4.9,3,4,3.9,4,5v15h8v4h2v-4h4v-11C18,8.15,17.7,7.38,17.22,6.77zM10,15H6V5h4V15zM16,14h-2V9h2V14z'
   };
 
   constructor() { }
@@ -291,5 +300,35 @@ export class StylerService {
     
     // Buscamos en el diccionario, si no existe devolvemos el de 'location' por defecto
     return this.svgPaths[baseIcon] || this.svgPaths[iconName] || this.svgPaths['location'];
+  }
+
+  createStandaloneIconStyle(color: string, iconName: string): Style {
+    // 1. Limpiamos el nombre (quitamos '-outline' para que coincida con tu diccionario svgPaths)
+    const cleanIconName = iconName.replace('-outline', '');
+    
+    // 2. Obtenemos el path (si no lo encuentra, usa uno por defecto)
+    const path = this.svgPaths[cleanIconName] || this.svgPaths['location'];
+
+    // 3. Construimos el SVG dinámico en texto plano
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+        <!-- Opcional: un pequeño borde blanco/sombra para que resalte en el mapa -->
+        <path d="${path}" fill="white" stroke="white" stroke-width="3" stroke-linejoin="round" />
+        <!-- El icono real con su color -->
+        <path d="${path}" fill="${color}" />
+      </svg>
+    `;
+
+    // 4. Lo convertimos a un formato que OpenLayers pueda leer
+    const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+
+    // 5. Devolvemos el estilo
+    return new Style({
+      image: new Icon({
+        src: src,
+        anchor: [0.5, 0.5], // Lo centra exactamente en la coordenada
+        scale: 1.2 // Ajusta este número si los quieres más grandes o pequeños
+      })
+    });
   }
 }

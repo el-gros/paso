@@ -78,68 +78,84 @@ export class GeographyService {
     const extent = [bbox[2], bbox[0], bbox[3], bbox[1]];
     this.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
   }
-  async setMapView(track: Track): Promise<void> {
   /**
    * Ajusta la vista del mapa para encuadrar un track completo.
    * Calcula el Bounding Box si no está definido y aplica un padding.
    * @param track El objeto `Track` a encuadrar en la vista.
    */
+  async setMapView(track: Track): Promise<void> {
     return new Promise((resolve) => {
-      if (!this.map) return resolve();
+      // FIX 2: Store in a local constant. TypeScript respects this inside closures.
+      const map = this.map; 
+      if (!map) return resolve();
       
       let boundaries = track.features?.[0]?.bbox;
-      const coordinates = track.features?.[0]?.geometry?.coordinates;
+      let coordinates = track.features?.[0]?.geometry?.coordinates;
 
-      // 🚀 NUEVO: Si no hay bbox pero tenemos coordenadas, lo calculamos al vuelo
-      if (!boundaries && coordinates && coordinates.length > 0) {
-        boundaries = boundingExtent(coordinates) as [number, number, number, number];
+      // FIX 1: Cast to 'any' to bypass TS tuple flattening confusion
+      if (coordinates && Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0])) {
+        coordinates = (coordinates as any).flat(1);
       }
 
-      // Si después de intentar calcularlo seguimos sin nada, abortamos
-      if (!boundaries) return resolve();
+      if (!boundaries && coordinates && coordinates.length > 0) {
+        // Cast the coordinates safely back to what boundingExtent expects
+        boundaries = boundingExtent(coordinates as number[][]) as [number, number, number, number];
+      }
 
-      // Copia del extent para no mutar el original
+      if (!boundaries || boundaries.some(isNaN)) return resolve();
+
       let viewExtent = [...boundaries];
 
-      // Lógica de Área Mínima (Evita zoom infinito en líneas rectas)
-      const minVal = 0.002; // Aprox 200m
+      const minVal = 0.002; 
       const width = viewExtent[2] - viewExtent[0];
       const height = viewExtent[3] - viewExtent[1];
 
       if (width < minVal || height < minVal) {
         const centerX = (viewExtent[0] + viewExtent[2]) / 2;
         const centerY = (viewExtent[1] + viewExtent[3]) / 2;
-        
         const halfSize = Math.max(minVal, Math.max(width, height)) / 2;
 
         viewExtent = [
-          centerX - halfSize, // minX
-          centerY - halfSize, // minY
-          centerX + halfSize, // maxX
-          centerY + halfSize  // maxY
+          centerX - halfSize, 
+          centerY - halfSize, 
+          centerX + halfSize, 
+          centerY + halfSize  
         ];
       }
 
-      this.map.updateSize();
+      const attemptFit = (attemptsLeft: number) => {
+        // Use the local 'map' constant instead of 'this.map'
+        map.updateSize();
+        const mapSize = map.getSize();
 
-      // Guardamos el ID del timeout para limpiarlo si la animación termina bien
-      let fallbackTimeout: any;
-
-      this.map.getView().fit(viewExtent, {
-        padding: [50, 50, 50, 50],
-        duration: 800,
-        maxZoom: 18,
-        callback: () => {
-          clearTimeout(fallbackTimeout); // Evitamos que el fallback se dispare innecesariamente
-          resolve();
+        if (!mapSize || mapSize[0] === 0 || mapSize[1] === 0) {
+          if (attemptsLeft > 0) {
+            setTimeout(() => attemptFit(attemptsLeft - 1), 50);
+            return;
+          } else {
+            console.warn("Map container never got a size, aborting fit.");
+            return resolve();
+          }
         }
-      });
 
-      // Fallback de seguridad por si la app pasa a segundo plano
-      fallbackTimeout = setTimeout(() => resolve(), 850);
+        let fallbackTimeout: any;
+
+        map.getView().fit(viewExtent, {
+          padding: [50, 50, 50, 50],
+          duration: 800,
+          maxZoom: 18,
+          callback: () => {
+            clearTimeout(fallbackTimeout);
+            resolve();
+          }
+        });
+
+        fallbackTimeout = setTimeout(() => resolve(), 850);
+      };
+
+      attemptFit(10); 
     });
   }
-
   /**
    * Limpia todas las capas vectoriales del mapa (track actual, archivado y búsqueda).
    */
