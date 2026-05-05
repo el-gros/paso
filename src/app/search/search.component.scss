@@ -135,7 +135,7 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 8px; // 🔹 Reducido de 12px a 8px para que estén más juntos
     margin-bottom: 20px;
   }
 
@@ -145,9 +145,10 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 12px 5px;
+    padding: 10px 4px; // 🔹 Ligeramente reducido para compactarlos
     border-radius: 18px;
     min-height: 85px;
+    border: 1.5px solid transparent; // 🔹 Preparamos un borde invisible para el estado activo
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     background: #f8f9fa;
     cursor: pointer;
@@ -166,46 +167,46 @@
       line-height: 1.1;
       font-weight: 500;
       color: #444;
+      transition: color 0.2s ease;
     }
 
     &.active {
-      background: var(--service-color);
+      // 🔹 Mezcla el color original dándole solo un 15% de opacidad
+      background: color-mix(in srgb, var(--service-color) 15%, transparent);
+      
+      // 🔹 Añade un borde sutil para enmarcarlo
+      border-color: color-mix(in srgb, var(--service-color) 50%, transparent);
+      
       transform: scale(1.05);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-      .custom-ui-icon, span { color: #ffffff !important; }
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); // Sombra un poco más delicada
+      
+      // 🔹 Ahora el icono y el texto resaltan con su color original en lugar de ser blancos
+      .custom-ui-icon, span { 
+        color: var(--service-color) !important; 
+        font-weight: 700; // Engrosamos el texto un poco para que destaque más
+      }
     }
-  }
+    // ... (tu código anterior de &.active) ...
 
-  .clear-map-action {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    cursor: pointer;
-    
-    .clear-icon-wrapper {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #ff4444;
-      color: #ff4444;
-      margin-bottom: 6px;
-      transition: 0.2s;
-      ion-icon { font-size: 1.5rem; }
-    }
+    // 🔹 Solución para el botón "Limpiar mapa"
+    &.clear-map-action {
+      --service-color: #eb445a; // Le damos el rojo oficial de Ionic (o usa #92949c para gris)
 
-    .clear-label {
-      color: #ff4444;
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
+      // Como este botón usa un <ion-icon> directo en lugar del SVG, 
+      // nos aseguramos de que tome el tamaño y color correctos:
+      ion-icon {
+        font-size: 28px;
+        margin-bottom: 6px;
+        color: var(--service-color);
+        transition: color 0.2s ease;
+      }
 
-    &:active .clear-icon-wrapper {
-      background: #ff4444;
-      color: white;
+      // Si le has puesto un wrapper, aseguramos que se centre
+      .clear-icon-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
     }
   }
 }

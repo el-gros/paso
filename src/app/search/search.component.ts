@@ -107,17 +107,22 @@ export class SearchComponent implements OnInit, OnDestroy {
   ];
 
   public serviceItems = [
-    { id: 'pharmacy', icon: 'medkit-outline', label: 'SERVICES.PHARMACY', color: 'red' },
-    { id: 'hospital', icon: 'hospital-outline', label: 'SERVICES.HOSPITAL', color: 'red' },
-    { id: 'police', icon: 'shield-outline', label: 'SERVICES.POLICE', color: 'blue' },
-    { id: 'ev_charging', icon: 'flash-outline', label: 'SERVICES.EV_CHARGING', color: 'blue' },
-    { id: 'fuel', icon: 'gas_station-outline', label: 'SERVICES.FUEL', color: 'blue' },
-    { id: 'parking', icon: 'parking-outline', label: 'SERVICES.PARKING', color: 'blue' },
-    { id: 'transport', icon: 'bus-outline', label: 'SERVICES.TRANSPORT', color: 'blue' },
-    { id: 'atm', icon: 'card-outline', label: 'SERVICES.ATM', color: 'green' },
-    { id: 'accommodation', icon: 'bed-outline', label: 'SERVICES.ACCOMMODATION', color: 'green' },
-    { id: 'supermarket', icon: 'cart-outline', label: 'SERVICES.SUPERMARKET', color: 'green' },
-    { id: 'food', icon: 'restaurant-outline', label: 'SERVICES.FOOD', color: 'green' }
+    // --- Grupo Rojo (Salud/Emergencias) ---
+    { id: 'pharmacy', icon: 'medkit-outline', label: 'SERVICES.PHARMACY', color: '#eb445a' }, 
+    { id: 'hospital', icon: 'hospital-outline', label: 'SERVICES.HOSPITAL', color: '#eb445a' }, 
+    
+    // --- Grupo Azul (Transporte/Servicios) ---
+    { id: 'police', icon: 'shield-outline', label: 'SERVICES.POLICE', color: '#3880ff' }, 
+    { id: 'ev_charging', icon: 'flash-outline', label: 'SERVICES.EV_CHARGING', color: '#3880ff' }, 
+    { id: 'fuel', icon: 'gas_station-outline', label: 'SERVICES.FUEL', color: '#3880ff' }, 
+    { id: 'parking', icon: 'parking-outline', label: 'SERVICES.PARKING', color: '#3880ff' }, 
+    { id: 'transport', icon: 'bus-outline', label: 'SERVICES.TRANSPORT', color: '#3880ff' }, 
+    
+    // --- Grupo Verde (Comercio/Ocio) ---
+    { id: 'atm', icon: 'card-outline', label: 'SERVICES.ATM', color: '#2dd36f' }, 
+    { id: 'accommodation', icon: 'bed-outline', label: 'SERVICES.ACCOMMODATION', color: '#2dd36f' }, 
+    { id: 'supermarket', icon: 'cart-outline', label: 'SERVICES.SUPERMARKET', color: '#2dd36f' }, 
+    { id: 'food', icon: 'restaurant-outline', label: 'SERVICES.FOOD', color: '#2dd36f' }
   ];
 
   ngOnInit() {

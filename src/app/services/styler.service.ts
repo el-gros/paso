@@ -326,8 +326,8 @@ export class StylerService {
     return new Style({
       image: new Icon({
         src: src,
-        anchor: [0.5, 0.5], // Lo centra exactamente en la coordenada
-        scale: 1.2 // Ajusta este número si los quieres más grandes o pequeños
+        anchor: [0.5, 0.5], 
+        scale: 0.9 
       })
     });
   }
