@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { IonicModule, LoadingController, IonItemSliding, ModalController, AlertController, PopoverController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
+import { IonicModule, LoadingController, IonItemSliding, ModalController, AlertController, PopoverController, ItemReorderEventDetail } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
@@ -18,7 +18,8 @@ import { VoiceRunnerService } from '../services/voice-runner.service'; // <-- A�
 // --- INTERFACES & COMPONENTS ---
 import { TrackDefinition, Track, LocationResult, PLACE_CATEGORIES } from '../../globald';
 import { PhotoViewerComponent } from '../photo-viewer.component';
-import { PlaceEditPopover } from '../place-edit-popover.component';
+import { PlaceEditPopover } from '../place-edit-popover.component'; // Mantener este import si se usa en la sección de places
+import { TrackOptionsPopoverComponent } from '../track-options-popover.component'; // Importar el nuevo componente del popover
 
 @Component({
   standalone: true,
@@ -107,6 +108,50 @@ export class ArchivePage implements OnInit {
     this.reference.foundRoute = false;
   }
 
+  /**
+   * Abre un popover con opciones para un track específico.
+   * @param item El TrackDefinition del track sobre el que se realizarán las acciones.
+   * @param event El evento de clic para posicionar el popover.
+   */
+  async openTrackOptionsPopover(item: TrackDefinition, event: Event) {
+    const popover = await this.popoverController.create({
+      component: TrackOptionsPopoverComponent,
+      componentProps: {
+        trackItem: item,
+        isCurrentlyVisible: this.isTrackVisible(item) // Pasa el estado actual de visibilidad
+      },
+      cssClass: 'glass-island-wrapper', 
+      translucent: true,
+      backdropDismiss: true
+    });
+
+    await popover.present();
+
+    const { data, role } = await popover.onDidDismiss();
+
+    if (role === 'backdrop' || role === 'cancel') {
+      return; // El usuario descartó el popover sin seleccionar una acción
+    }
+
+    if (data && data.action) {
+      // Despacha acciones basadas en la selección del popover
+      switch (data.action) {
+        case 'display':
+          await this.toggleVisibility(item); // Reutiliza toggleVisibility para mostrar/ocultar
+          break;
+        case 'edit':
+          await this.editSpecificTrack(this.fs.collection.indexOf(item)); // Encuentra el índice para el método existente
+          break;
+        case 'export':
+          this.openExportMenu(item, undefined); // Reutiliza la lógica de exportación existente
+          break;
+        case 'delete':
+          this.confirmDeletion(this.fs.collection.indexOf(item), undefined); // Reutiliza la lógica de eliminación existente
+          break;
+      }
+    }
+  }
+
   async displayAllTracks(show: boolean) {
     try {
       if (show) {
@@ -136,7 +181,7 @@ export class ArchivePage implements OnInit {
   // ==========================================================================
   // 2. GESTIÓN DE TRACKS (CRUD)
   // ==========================================================================
-  confirmDeletion(index: number, slidingItem: IonItemSliding) {
+  confirmDeletion(index: number, slidingItem?: IonItemSliding) {
     this.deleteTarget = { type: 'track', index };
     this.isConfirmDeletionOpen = true;
     this.index = index;
@@ -277,7 +322,7 @@ export class ArchivePage implements OnInit {
    * Abre el menú de exportación. 
    * Configura HTML como única opción por defecto y permite selección manual.
    */
-  openExportMenu(item: TrackDefinition, slidingItem: IonItemSliding) {
+  openExportMenu(item: TrackDefinition, slidingItem?: IonItemSliding) {
     this.selectedTrackForExport = item;
 
     this.exportConfig = {
@@ -454,6 +499,18 @@ export class ArchivePage implements OnInit {
         this.geography.refreshPlacesLayer(this.fs.placesCollection);
       }
     }
+  }
+
+  /**
+   * Maneja el evento de reordenación de elementos en la lista de tracks.
+   * Actualiza la colección y la persiste en el almacenamiento.
+   * @param ev El evento CustomEvent<ItemReorderEventDetail> que contiene la información de la reordenación.
+   */
+  async handleReorder(ev: CustomEvent<ItemReorderEventDetail>) {
+    // Actualiza el array `fs.collection` con el nuevo orden
+    this.fs.collection = ev.detail.complete(this.fs.collection);
+    // Persiste el nuevo orden en el almacenamiento
+    await this.fs.storeSet('collection', this.fs.collection);
   }
 
 }

@@ -33,53 +33,32 @@
       </ion-item>
 
       <ion-list lines="full">
-        @for (item of fs.collection; track item; let i = $index) {
-          <ion-item-sliding #slidingItem>
-            <ion-item-options side="start">
-              <ion-item-option [color]="isTrackVisible(item) ? 'medium' : 'primary'" (click)="toggleVisibility(item, slidingItem)">
-                <ion-icon slot="top" [name]="isTrackVisible(item) ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
-                {{ (isTrackVisible(item) ? 'ARCHIVE.HIDE' : 'ARCHIVE.SHOW') | translate }}
-              </ion-item-option>
-              <ion-item-option color="secondary" (click)="openExportMenu(item, slidingItem)">
-                <ion-icon slot="top" name="share-outline"></ion-icon>
-                {{ 'ARCHIVE.EXPORT_TRACK' | translate }}
-              </ion-item-option>
-            </ion-item-options>
-            
-            <ion-item>
-              <ion-icon name="chevron-forward-outline" slot="start" class="compact-chevron start" [class.active-chevron]="isTrackVisible(item)"></ion-icon> 
+        <ion-reorder-group (ionItemReorder)="handleReorder($event)" [disabled]="false">
+          @for (item of fs.collection; track item; let i = $index) {
+            <ion-item button (click)="openTrackOptionsPopover(item, $event)">
               @if (item.photos && item.photos.length > 0) {
                 <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
                   <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
                   <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
                 </ion-thumbnail>
               }
-              <ion-label>
-                <div class="item-content">
-                  <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
-                  <div class="date-and-status">
-                    <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
-                    @if (isTrackVisible(item)) {
-                      <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
-                    }
-                  </div>
+            <ion-label>
+              <div class="item-content">
+                <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
+                <div class="date-and-status">
+                  <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+                  @if (isTrackVisible(item)) {
+                    <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
+                  }
                 </div>
-              </ion-label>
-              <ion-icon name="chevron-back-outline" slot="end" class="compact-chevron end" [class.active-chevron]="isTrackVisible(item)"></ion-icon>
-            </ion-item>
-
-            <ion-item-options side="end">
-              <ion-item-option color="tertiary" (click)="editSpecificTrack(i, slidingItem)">
-                <ion-icon slot="top" name="create-outline"></ion-icon>
-                {{ 'ARCHIVE.EDIT' | translate }}
-              </ion-item-option>
-              <ion-item-option color="danger" (click)="confirmDeletion(i, slidingItem)">
-                <ion-icon slot="top" name="trash-outline"></ion-icon>
-                {{ 'ARCHIVE.REMOVE' | translate }}
-              </ion-item-option>
-            </ion-item-options>
-          </ion-item-sliding>      
-        }
+              </div>
+            </ion-label>
+            <!-- Icono para indicar que hay opciones al hacer clic -->
+            <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon"></ion-icon>
+            <ion-reorder slot="end"></ion-reorder>
+          </ion-item>
+          }
+        </ion-reorder-group>
       </ion-list> 
       <div class="list-spacer"></div>
     </div>

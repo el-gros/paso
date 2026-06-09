@@ -1,10 +1,9 @@
 import { Inject, Injectable, Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { ToastController, PopoverController } from '@ionic/angular';
+import { ToastController, PopoverController, NavController, LoadingController } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { TranslateService } from '@ngx-translate/core';
 import DOMPurify from 'dompurify';
-import { NavController, LoadingController } from '@ionic/angular';
 
 // --- SERVICES ---
 import { TtsService } from './tts.service';

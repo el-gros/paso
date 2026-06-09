@@ -102,7 +102,8 @@
   }
 }
 
-[slot="content"] {
+// Hacerlo específico para accordions para no afectar a popovers u otros componentes
+ion-accordion [slot="content"] {
   background: white;
 }
 
@@ -142,6 +143,14 @@ ion-item {
   color: #888;
   font-weight: 500;
   margin-top: 3px;
+}
+
+.custom-badge-inline {
+  color: var(--ion-color-primary);
+  font-weight: 700;
+  font-size: 10px;
+  margin-left: 12px;
+  text-transform: uppercase;
 }
 
 .place-checkbox {
@@ -299,4 +308,10 @@ ion-thumbnail.photo-thumbnail {
     font-weight: 500;
     line-height: 1.4;
   }
+}
+
+// Estilo para asegurar que el fondo del ion-popover sea transparente
+ion-popover.popover-host-transparent {
+  --background: transparent;
+  --box-shadow: none;
 }
