@@ -121,6 +121,21 @@
                 </div>
               }
             </div>
+
+            @if (currentTrackPhotos.length > 0) {
+              <div class="photo-album-preview" (click)="openPhotoGallery()">
+                <div class="album-cover">
+                  <img [src]="getCoverPhotoUrl(currentTrackPhotos[0])" alt="Portada de la ruta" />
+                  @if (currentTrackPhotos.length > 1) {
+                    <div class="photo-count-badge">
+                      <ion-icon name="images-outline"></ion-icon>
+                      <span>+{{ currentTrackPhotos.length - 1 }}</span>
+                    </div>
+                  }
+                </div>
+                <div class="album-label">Ver galería</div>
+              </div>
+            }
           </div>
 
           <app-track-chart [track]="present.currentTrack" property="compAltitude" mode="x" title="CANVAS.CANVASALTITUDE" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
@@ -181,14 +196,14 @@
               </div>
             </div>
 
-            @if (trackPhotos.length > 0) {
+            @if (referenceTrackPhotos.length > 0) {
               <div class="photo-album-preview" (click)="openPhotoGallery()">
                 <div class="album-cover">
-                  <img [src]="getCoverPhotoUrl(trackPhotos[0])" alt="Portada de la ruta" />
-                  @if (trackPhotos.length > 1) {
+                  <img [src]="getCoverPhotoUrl(referenceTrackPhotos[0])" alt="Portada de la ruta" />
+                  @if (referenceTrackPhotos.length > 1) {
                     <div class="photo-count-badge">
                       <ion-icon name="images-outline"></ion-icon>
-                      <span>+{{ trackPhotos.length - 1 }}</span>
+                      <span>+{{ referenceTrackPhotos.length - 1 }}</span>
                     </div>
                   }
                 </div>

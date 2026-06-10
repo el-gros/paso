@@ -59,11 +59,17 @@ export class CanvasComponent implements OnInit, OnDestroy {
     return this.present.currentTrack || this.reference.archivedTrack;
   }
 
-  get trackPhotos(): string[] {
-    const waypoints = this.activeTrack?.features?.[0]?.waypoints;
+  // Nuevo getter para las fotos del trayecto actual
+  get currentTrackPhotos(): string[] {
+    const waypoints = this.present.currentTrack?.features?.[0]?.waypoints;
     return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
   }
 
+  // Nuevo getter para las fotos del trayecto de referencia
+  get referenceTrackPhotos(): string[] {
+    const waypoints = this.reference.archivedTrack?.features?.[0]?.waypoints;
+    return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
+  }
   // ====================================================================
   // 3. CONSTRUCTOR
   // ====================================================================
@@ -175,7 +181,12 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   async openPhotoGallery() {
-    const photos = this.trackPhotos;
+    let photos: string[] = [];
+    if (this.activeIndex === 0) { // Asumiendo que el slide 0 es para el trayecto actual
+      photos = this.currentTrackPhotos;
+    } else if (this.activeIndex === 1) { // Asumiendo que el slide 1 es para el trayecto de referencia
+      photos = this.referenceTrackPhotos;
+    }
     if (photos.length === 0) return;
 
     const modal = await this.modalCtrl.create({

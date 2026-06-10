@@ -48,9 +48,15 @@ export class TrackImportService {
       const response = await fetch(webPath);
       const fileBlob = await response.blob();
       const urlLower = normalizedPath.toLowerCase();
+      
+      // Detectamos si el archivo es un ZIP binario por su firma (Magic Number: PK..)
+      // Esto es crucial cuando la URL no tiene extensión (p.ej. content:// en Android)
+      const buffer = await fileBlob.slice(0, 4).arrayBuffer();
+      const header = new Uint8Array(buffer);
+      const isBinaryZip = header[0] === 0x50 && header[1] === 0x4B && header[2] === 0x03 && header[3] === 0x04;
 
       // A. Manejo de Backups Propios (.paso)
-      if (urlLower.endsWith('.paso') || (await this.isMaskedBackup(fileBlob))) {
+      if (urlLower.endsWith('.paso') || (!isBinaryZip && await this.isMaskedBackup(fileBlob))) {
         const textContent = await fileBlob.text();
         await this.handlePasoImport(textContent);
         return null;
@@ -58,7 +64,7 @@ export class TrackImportService {
 
       // B. Manejo de formatos de intercambio (GPX, KML, KMZ)
       let result = null;
-      if (urlLower.endsWith('.kmz')) {
+      if (urlLower.endsWith('.kmz') || isBinaryZip) {
         result = await this.parseKmz(fileBlob);
       } else {
         const textContent = await fileBlob.text();
