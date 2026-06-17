@@ -93,7 +93,12 @@
     "GENERATING_FILES": "S'estan generant els arxius, esperi si us plau...",
     "EXPORTED_ROUTE": "Ruta Exportada",
     "PLACE_SAVED": "Lloc desat a l'arxiu",
-    "PLACE_EXISTS": "Aquest lloc ja és al teu arxiu"
+    "PLACE_EXISTS": "Aquest lloc ja és al teu arxiu",
+    "NEW_FOLDER": "Nova carpeta",
+    "FOLDER_NAME_PLACEHOLDER": "Nom de la carpeta",
+    "MOVE_TO_FOLDER": "Moure a carpeta",
+    "RENAME": "Reanomenar",
+    "NO_TRACKS": "Encara no tens trajectes guardats"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control per veu",

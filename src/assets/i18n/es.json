@@ -93,7 +93,12 @@
     "GENERATING_FILES": "Se están generando los archivos, espere por favor...",
     "EXPORTED_ROUTE": "Ruta Exportada",
     "PLACE_SAVED": "Lugar guardado en el archivo",
-    "PLACE_EXISTS": "Este lugar ya está en tu archivo"
+    "PLACE_EXISTS": "Este lugar ya está en tu archivo",
+    "NEW_FOLDER": "Nueva carpeta",
+    "FOLDER_NAME_PLACEHOLDER": "Nombre de la carpeta",
+    "MOVE_TO_FOLDER": "Mover a carpeta",
+    "RENAME": "Renombrar",
+    "NO_TRACKS": "No tienes trayectos guardados aún"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control por voz",

@@ -93,7 +93,12 @@
     "GENERATING_FILES": "Generating files, please wait...",
     "EXPORTED_ROUTE": "Exported Route",
     "PLACE_SAVED": "Place saved to archive",
-    "PLACE_EXISTS": "This place is already in your archive"
+    "PLACE_EXISTS": "This place is already in your archive",
+    "NEW_FOLDER": "New folder",
+    "FOLDER_NAME_PLACEHOLDER": "Folder name",
+    "MOVE_TO_FOLDER": "Move to folder",
+    "RENAME": "Rename",
+    "NO_TRACKS": "You have no saved tracks yet"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Voice Control",

@@ -93,7 +93,12 @@
     "GENERATING_FILES": "正在生成文件，请稍候...",
     "EXPORTED_ROUTE": "导出的路线",
     "PLACE_SAVED": "地点已保存到档案",
-    "PLACE_EXISTS": "此地点已在您的档案中"
+    "PLACE_EXISTS": "此地点已在您的档案中",
+    "NEW_FOLDER": "新建文件夹",
+    "FOLDER_NAME_PLACEHOLDER": "文件夹名称",
+    "MOVE_TO_FOLDER": "移动到文件夹",
+    "RENAME": "重命名",
+    "NO_TRACKS": "您还没有保存的轨迹"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "语音控制",

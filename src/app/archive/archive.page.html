@@ -19,54 +19,96 @@
 
   @if (activeTab === 'tracks') {
     <div class="ion-content-scroll-host">
-      
-      <ion-item lines="full" class="header-action-item" button (click)="displayAllTracks(!mapService.visibleAll)">
-        <ion-icon 
-          slot="start" 
-          [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'"
-          [color]="mapService.visibleAll ? 'danger' : 'primary'">
-        </ion-icon>
-        <ion-label>
-          <strong>{{ (mapService.visibleAll ? 'ARCHIVE.HIDE_ALL' : 'ARCHIVE.SHOW_ALL') | translate }}</strong>
-        </ion-label>
-        <ion-note slot="end">{{ fs.collection.length }} {{ 'ARCHIVE.TRACKS' | translate }}</ion-note>
-      </ion-item>
 
-      <ion-list lines="full">
-        <ion-reorder-group (ionItemReorder)="handleReorder($event)" [disabled]="false">
-          @for (item of fs.collection; track item; let i = $index) {
-            <ion-item button (click)="openTrackOptionsPopover(item, $event)">
-              @if (item.photos && item.photos.length > 0) {
-                <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
-                  <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
-                  <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
-                </ion-thumbnail>
-              }
-            <ion-label>
-              <div class="item-content">
-                <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
-                <div class="date-and-status">
-                  <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
-                  @if (isTrackVisible(item)) {
-                    <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
-                  }
-                </div>
-              </div>
-            </ion-label>
-            <!-- Icono para indicar que hay opciones al hacer clic -->
-            <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon"></ion-icon>
-            <ion-reorder slot="end"></ion-reorder>
-          </ion-item>
+      <div class="archive-header-actions">
+        <div class="action-item" (click)="displayAllTracks(!mapService.visibleAll)">
+          <ion-icon 
+            [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'"
+            [color]="mapService.visibleAll ? 'danger' : 'primary'">
+          </ion-icon>
+          <ion-label><strong>{{ (mapService.visibleAll ? 'ARCHIVE.HIDE_ALL' : 'ARCHIVE.SHOW_ALL') | translate }}</strong></ion-label>
+        </div>
+
+        <div class="vertical-divider"></div>
+
+        <div class="action-item" (click)="createNewFolder()">
+          <ion-icon name="folder-open-outline" color="primary"></ion-icon>
+          <ion-label><strong>{{ 'ARCHIVE.NEW_FOLDER' | translate }}</strong></ion-label>
+        </div>
+      </div>
+
+      <!-- Breadcrumbs: Ahora debajo de las acciones y dentro del flujo de la lista -->
+      @if (currentPath.length > 0) {
+        <div class="breadcrumb-container breadcrumb-under-actions">
+          <ion-text color="primary" (click)="resetPath()">{{ 'ARCHIVE.ALL' | translate }}</ion-text>
+          @for (seg of currentPath; track seg; let i = $index) {
+            <span class="breadcrumb-segment">
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+              <ion-text [color]="i === currentPath.length - 1 ? 'dark' : 'primary'" (click)="navigateTo(i)">
+                {{ seg }}
+              </ion-text>
+            </span>
           }
-        </ion-reorder-group>
-      </ion-list> 
+        </div>
+      }
+
+      @if (foldersAtCurrentLevel.length > 0 || tracksAtCurrentLevel.length > 0) {
+        <ion-list lines="full">
+          <!-- Carpetas en el nivel actual con reordenación y opciones -->
+          <ion-reorder-group (ionItemReorder)="handleFolderReorder($event)" [disabled]="false">
+            @for (folder of foldersAtCurrentLevel; track folder) {
+              <ion-item button (click)="enterFolder(folder)" detail="false">
+                <ion-icon name="folder" slot="start" color="warning"></ion-icon>
+                <ion-label>
+                  <h2>{{ folder }}</h2>
+                </ion-label>
+                <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon" (click)="openFolderOptions($event, folder)"></ion-icon>
+                <ion-reorder slot="end"></ion-reorder>
+              </ion-item>
+            }
+          </ion-reorder-group>
+
+          <!-- Trayectos en el nivel actual -->
+          <ion-reorder-group (ionItemReorder)="handleReorder($event)" [disabled]="false">
+            @for (item of tracksAtCurrentLevel; track item; let i = $index) {
+              <ion-item button (click)="displaySpecificTrack(item)" detail="false">
+                @if (item.photos && item.photos.length > 0) {
+                  <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
+                    <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
+                    <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
+                  </ion-thumbnail>
+                }
+                <ion-label>
+                  <div class="item-content">
+                    <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
+                    <div class="date-and-status">
+                      <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+                      @if (isTrackVisible(item)) {
+                        <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
+                      }
+                    </div>
+                  </div>
+                </ion-label>
+                <!-- Icono para indicar que hay opciones al hacer clic -->
+                <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon" (click)="openTrackOptionsPopover(item, $event)"></ion-icon>
+                <ion-reorder slot="end"></ion-reorder>
+              </ion-item>
+            }
+          </ion-reorder-group>
+        </ion-list>
+      } @else {
+        <ion-item lines="none" class="ion-text-center">
+          <ion-label color="medium">
+            <p>{{ 'ARCHIVE.NO_TRACKS' | translate }}</p>
+          </ion-label>
+        </ion-item>
+      }
       <div class="list-spacer"></div>
     </div>
   }
 
   @if (activeTab === 'places') {
     <div class="ion-content-scroll-host">
-      
       <ion-item lines="full" class="header-action-item">
         <ion-label class="global-header-content">
           <strong>{{ 'ARCHIVE.ALL' | translate }}</strong>

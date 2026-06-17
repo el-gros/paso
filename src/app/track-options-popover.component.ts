@@ -19,11 +19,15 @@ import { TrackDefinition } from '../globald';
             <ion-label [color]="isCurrentlyVisible ? 'danger' : ''">{{ isCurrentlyVisible ? ('ARCHIVE.HIDE' | translate) : ('ARCHIVE.SHOW' | translate) }}</ion-label>
           </ion-item>
           <ion-item button (click)="selectAction('edit')">
-            <ion-icon name="create-outline" slot="start" color="primary"></ion-icon>
+            <ion-icon name="create-outline" slot="start" color="tertiary"></ion-icon>
             <ion-label>{{ 'ARCHIVE.EDIT' | translate }}</ion-label>
           </ion-item>
+          <ion-item button (click)="selectAction('move')">
+            <ion-icon name="folder-open-outline" slot="start" color="primary"></ion-icon>
+            <ion-label>{{ 'ARCHIVE.MOVE_TO_FOLDER' | translate }}</ion-label>
+          </ion-item>
           <ion-item button (click)="selectAction('export')">
-            <ion-icon name="share-outline" slot="start" color="primary"></ion-icon>
+            <ion-icon name="share-social-outline" slot="start" color="success"></ion-icon>
             <ion-label>{{ 'ARCHIVE.EXPORT_TRACK' | translate }}</ion-label>
           </ion-item>
           <ion-item button (click)="selectAction('delete')">

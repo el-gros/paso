@@ -200,7 +200,8 @@ export class ReferenceService {
       date: new Date(storageKey), 
       name: data.name,
       description: data.description,
-      place: (props.place as string) || '' 
+      place: (props.place as string) || '',
+      folderPath: [] // Inicializamos en la raíz para nuevos guardados
     };
 
     this.fs.collection.unshift(newCollectionItem);

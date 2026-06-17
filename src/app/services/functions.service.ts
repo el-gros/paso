@@ -47,6 +47,7 @@ export class FunctionsService {
   // ==========================================================================
   public collection: TrackDefinition[] = [];
   public placesCollection: LocationResult[] = []; 
+  public virtualFolders: string[] = [];
   
   public properties: (keyof Data)[] = ['compAltitude', 'compSpeed'];
   public refreshCollectionUI?: () => void;
@@ -72,11 +73,19 @@ export class FunctionsService {
   private async loadGlobalCollections(): Promise<void> {
     // Cargar Trayectos
     const storedTracks = await this.storeGet<TrackDefinition[]>('collection');
-    this.collection = storedTracks || [];
+    
+    // Saneamiento preventivo: asegura que ningún track antiguo rompa la UI
+    this.collection = (storedTracks || []).map(t => ({
+      ...t,
+      folderPath: (t as any).folderPath || []
+    })) as TrackDefinition[];
 
     // Cargar Lugares
     const storedPlaces = await this.storeGet<LocationResult[]>('saved_places');
     this.placesCollection = storedPlaces || [];
+
+    // Cargar carpetas virtuales (incluso las vacías)
+    this.virtualFolders = await this.storeGet<string[]>('virtual_folders') || [];
 
     // NUEVO: Cargar preferencia de voz (si no existe, por defecto false)
     this.voiceControl = await this.check<boolean>(false, 'voiceControl');
@@ -86,6 +95,14 @@ export class FunctionsService {
     this.sortPlacesAlphabetically();
   }
 
+  /** Añade una nueva carpeta virtual y la persiste */
+  public async addFolder(name: string) {
+    const folderName = name.trim();
+    if (folderName && !this.virtualFolders.includes(folderName)) {
+      this.virtualFolders.push(folderName);
+      await this.storeSet('virtual_folders', this.virtualFolders);
+    }
+  }
   public async savePlacesToStorage(): Promise<void> {
     await this.storeSet('saved_places', this.placesCollection);
   }

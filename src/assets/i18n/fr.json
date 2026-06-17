@@ -93,7 +93,12 @@
     "EMPTY_TRACKS": "Aucune coordonnée valide trouvée dans les fichiers",
     "TRACK_UPDATED": "Le trajet a été mis à jour avec succès",
     "TRACK_SAVED": "Le trajet a été enregistré avec succès",
-    "GENERATING_FILES": "Génération des fichiers en cours, veuillez patienter..."
+    "GENERATING_FILES": "Génération des fichiers en cours, veuillez patienter...",
+    "NEW_FOLDER": "Nouveau dossier",
+    "FOLDER_NAME_PLACEHOLDER": "Nom du dossier",
+    "MOVE_TO_FOLDER": "Déplacer vers le dossier",
+    "RENAME": "Renommer",
+    "NO_TRACKS": "Vous n'avez pas encore de trajets enregistrés"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Contrôle vocal",
