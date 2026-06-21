@@ -541,6 +541,7 @@ export class ArchivePage implements OnInit {
   async createNewFolder() {
     const alert = await this.alertController.create({
       header: this.translate.instant('ARCHIVE.NEW_FOLDER'),
+      cssClass: 'glass-island-alert',
       inputs: [
         {
           name: 'folderName',
@@ -612,6 +613,7 @@ export class ArchivePage implements OnInit {
   async renameFolder(oldName: string) {
     const alert = await this.alertController.create({
       header: this.translate.instant('ARCHIVE.RENAME'),
+      cssClass: 'glass-island-alert',
       inputs: [{ name: 'newName', type: 'text', value: oldName, placeholder: this.translate.instant('ARCHIVE.FOLDER_NAME_PLACEHOLDER') }],
       buttons: [
         { text: this.translate.instant('GENERIC.CANCEL'), role: 'cancel' },
@@ -652,7 +654,7 @@ export class ArchivePage implements OnInit {
    */
   async emptyFolder(folder: string) {
     const folderPathToEmptyStr = JSON.stringify([...this.currentPath, folder]);
-    const parentPath = this.currentPath;
+    const parentPath = [...this.currentPath];
 
     this.fs.collection.forEach(t => {
       if (JSON.stringify((t as any).folderPath || []) === folderPathToEmptyStr) {
@@ -708,6 +710,7 @@ export class ArchivePage implements OnInit {
 
     const alert = await this.alertController.create({
       header: this.translate.instant('ARCHIVE.MOVE_TO_FOLDER'),
+      cssClass: 'glass-island-alert',
       inputs: inputs,
       buttons: [
         { text: this.translate.instant('GENERIC.CANCEL'), role: 'cancel' },

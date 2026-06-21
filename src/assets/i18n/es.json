@@ -98,7 +98,9 @@
     "FOLDER_NAME_PLACEHOLDER": "Nombre de la carpeta",
     "MOVE_TO_FOLDER": "Mover a carpeta",
     "RENAME": "Renombrar",
-    "NO_TRACKS": "No tienes trayectos guardados aún"
+    "EMPTY": "Vaciar la carpeta",
+    "NO_TRACKS": "No tienes trayectos guardados aún",
+    "FOLDER_NOT_EMPTY": "La carpeta no está vacía"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control por voz",

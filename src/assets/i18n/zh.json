@@ -98,7 +98,9 @@
     "FOLDER_NAME_PLACEHOLDER": "文件夹名称",
     "MOVE_TO_FOLDER": "移动到文件夹",
     "RENAME": "重命名",
-    "NO_TRACKS": "您还没有保存的轨迹"
+    "EMPTY": "清空文件夹",
+    "NO_TRACKS": "您还没有保存的轨迹",
+    "FOLDER_NOT_EMPTY": "文件夹不为空"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "语音控制",

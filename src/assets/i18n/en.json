@@ -98,7 +98,9 @@
     "FOLDER_NAME_PLACEHOLDER": "Folder name",
     "MOVE_TO_FOLDER": "Move to folder",
     "RENAME": "Rename",
-    "NO_TRACKS": "You have no saved tracks yet"
+    "EMPTY": "Empty the folder",
+    "NO_TRACKS": "You have no saved tracks yet",
+    "FOLDER_NOT_EMPTY": "Folder is not empty"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Voice Control",

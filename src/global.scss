@@ -580,6 +580,18 @@ ion-popover.top-search-popover {
     color: #3880ff !important;
     font-weight: bold !important;
   }
+  .alert-input {
+    color: #ffffff !important;
+    --color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 10px 14px !important;
+    margin: 10px 0 !important;
+  }
+  .alert-radio-label, .alert-checkbox-label {
+    color: #ffffff !important;
+  }
 }
 
 // ==========================================================================
@@ -723,6 +735,18 @@ ion-popover.top-search-popover {
   .alert-button {
     color: #3880ff !important; /* Azul eléctrico para el OK */
     font-weight: bold !important;
+  }
+  .alert-input {
+    color: #ffffff !important;
+    --color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 10px 14px !important;
+    margin: 10px 0 !important;
+  }
+  .alert-radio-label, .alert-checkbox-label {
+    color: #ffffff !important;
   }
 }
 

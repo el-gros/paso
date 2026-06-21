@@ -98,7 +98,9 @@
     "FOLDER_NAME_PLACEHOLDER": "Nom de la carpeta",
     "MOVE_TO_FOLDER": "Moure a carpeta",
     "RENAME": "Reanomenar",
-    "NO_TRACKS": "Encara no tens trajectes guardats"
+    "EMPTY": "Buidar la carpeta",
+    "NO_TRACKS": "Encara no tens trajectes guardats",
+    "FOLDER_NOT_EMPTY": "La carpeta no està buida"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control per veu",
