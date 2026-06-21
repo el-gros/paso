@@ -1,0 +1,96 @@
+<ion-item lines="full" class="header-action-item">
+  <ion-label class="global-header-content">
+    <strong>{{ 'ARCHIVE.ALL' | translate }}</strong>
+    <span class="header-count">{{ fs.placesCollection.length }} {{ 'ARCHIVE.PLACES' | translate }}</span>
+  </ion-label>
+
+  <div slot="end" class="visibility-buttons">
+    <ion-button fill="clear" (click)="displayAllPlaces(true)" [disabled]="isAllPlacesVisible">
+      <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" (click)="displayAllPlaces(false)" [disabled]="isAllPlacesHidden">
+      <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
+    </ion-button>
+  </div>
+</ion-item>
+
+@if (groupedPlaces.length > 0) {
+  <ion-accordion-group [multiple]="true">
+    @for (group of groupedPlaces; track group.category.id) {
+      <ion-accordion [value]="group.category.id">
+
+        <ion-item slot="header" class="category-divider-item">
+          <ion-icon [name]="group.category.icon" [color]="group.category.color" slot="start"></ion-icon>
+          <ion-label>
+            <strong>{{ 'CATEGORIES.' + group.category.id.toUpperCase() | translate }}</strong>
+          </ion-label>
+
+          <div slot="end" class="visibility-buttons">
+            <ion-button fill="clear"
+              (click)="setCategoryVisibility(group.category.id, true, $event)"
+              [disabled]="isAllCategoryVisible(group.category.id)">
+              <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear"
+              (click)="setCategoryVisibility(group.category.id, false, $event)"
+              [disabled]="isAllCategoryHidden(group.category.id)">
+              <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
+            </ion-button>
+          </div>
+        </ion-item>
+
+        <div slot="content">
+          @for (place of group.places; track place) {
+            <ion-item-sliding #slidingItemPlace>
+
+              <ion-item-options side="start">
+                <ion-item-option color="tertiary" (click)="editPlace(place, slidingItemPlace)">
+                  <ion-icon slot="top" name="create-outline"></ion-icon>
+                  {{ 'ARCHIVE.EDIT' | translate }}
+                </ion-item-option>
+              </ion-item-options>
+
+              <ion-item lines="full">
+                <ion-icon name="chevron-forward-outline" slot="start"
+                  class="compact-chevron start"
+                  [class.active-chevron]="place.visible">
+                </ion-icon>
+
+                <ion-checkbox slot="start" class="place-checkbox"
+                  [(ngModel)]="place.visible"
+                  (ionChange)="onPlaceVisibilityChange()">
+                </ion-checkbox>
+
+                <div class="item-content">
+                  <strong [class.active-text]="place.visible">{{ place.name }}</strong>
+                  <p class="item-date-subtitle">{{ place.description || place.display_name }}</p>
+                </div>
+
+                <div slot="end" class="place-actions-wrapper">
+                  <ion-button fill="clear" class="center-button" (click)="centerPlace(place)">
+                    <ion-icon name="locate-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+
+                  <ion-icon name="chevron-back-outline" slot="end"
+                    class="compact-chevron end"
+                    [class.active-chevron]="place.visible">
+                  </ion-icon>
+                </div>
+              </ion-item>
+
+              <ion-item-options side="end">
+                <ion-item-option color="danger" (click)="confirmPlaceDeletion(place, slidingItemPlace)">
+                  <ion-icon slot="top" name="trash-outline"></ion-icon>
+                  {{ 'ARCHIVE.REMOVE' | translate }}
+                </ion-item-option>
+              </ion-item-options>
+
+            </ion-item-sliding>
+          }
+        </div>
+      </ion-accordion>
+    }
+  </ion-accordion-group>
+}
+
+<div class="list-spacer"></div>
