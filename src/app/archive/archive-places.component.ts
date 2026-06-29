@@ -54,6 +54,11 @@ export class ArchivePlacesComponent {
     return this.fs.placesCollection.every(p => p.visible);
   }
 
+  /**
+   * Comprueba si todos los lugares están ocultos.
+   * Al abrir la app (en functions.service.ts), todos los lugares se configuran
+   * con visible = false, por lo que esto debería ser true por defecto.
+   */
   get isAllPlacesHidden(): boolean {
     if (this.fs.placesCollection.length === 0) return true;
     return this.fs.placesCollection.every(p => !p.visible);
