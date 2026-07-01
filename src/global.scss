@@ -550,50 +550,6 @@ ion-popover.top-search-popover {
   }
 }
 
-/** Estilo para Alertas nativas tipo Cristal */
-.glass-island-alert {
-  --background: transparent;
-  --backdrop-opacity: 0.4;
-
-  .alert-wrapper {
-    background: rgba(30, 30, 30, 0.65) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 32px !important;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
-  }
-  .alert-title {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-  }
-  .alert-message {
-    color: rgba(255, 255, 255, 0.8) !important;
-  }
-  .alert-button-group {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  .alert-button.alert-button-role-cancel {
-    color: #ff4961 !important;
-  }
-  .alert-button {
-    color: #3880ff !important;
-    font-weight: bold !important;
-  }
-  .alert-input {
-    color: #ffffff !important;
-    --color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 12px !important;
-    padding: 10px 14px !important;
-    margin: 10px 0 !important;
-  }
-  .alert-radio-label, .alert-checkbox-label {
-    color: #ffffff !important;
-  }
-}
-
 // ==========================================================================
 // 8. NOTIFICATIONS (Toasts & Loading)
 // ==========================================================================
@@ -687,66 +643,67 @@ ion-popover.top-search-popover {
   }
 }
 
-/* =========================================
-   EFECTO GLASS ISLAND PARA ALERTAS
-   ========================================= */
 .glass-island-alert {
-  /* Hacemos transparente el fondo base de Ionic para controlar el nuestro */
-  --background: transparent;
-  --backdrop-opacity: 0.4; /* Oscurece un poco la pantalla de fondo */
+  --backdrop-opacity: 0.4;
 
+  /* 1. LA CAJA DE LA ALERTA */
   .alert-wrapper {
-    /* Fondo semitransparente (Aquí es oscuro, estilo iOS Dark Mode) */
-    background: rgba(30, 30, 30, 0.65) !important;
-
-    /* El desenfoque mágico del cristal */
+    background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
-
-    /* Borde sutil brillante para dar volumen */
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-
-    /* Curvas muy pronunciadas (Estilo isla) */
-    border-radius: 32px !important;
-
-    /* Sombra suave para que flote */
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
   }
 
-  /* Textos en blanco para que contrasten bien con el cristal oscuro */
+  /* 2. EL TÍTULO */
   .alert-title {
-    color: #ffffff !important;
-    font-weight: 700 !important;
+    color: #111111 !important;
+    font-weight: 800 !important;
   }
 
+  /* 3. EL MENSAJE */
   .alert-message {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #444444 !important;
   }
 
-  /* Color de los botones (Cámbialo por el color principal de tu app) */
-  .alert-button-group {
-    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Línea separadora sutil */
-  }
-
-  .alert-button.alert-button-role-cancel {
-    color: #ff4961 !important; /* Rojo si hay botón cancelar */
-  }
-
-  .alert-button {
-    color: #3880ff !important; /* Azul eléctrico para el OK */
-    font-weight: bold !important;
-  }
+  /* 4. EL CAMPO DE TEXTO */
   .alert-input {
-    color: #ffffff !important;
-    --color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #111111 !important;
+    background: rgba(0, 0, 0, 0.05) !important; /* Gris muy clarito */
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
     border-radius: 12px !important;
     padding: 10px 14px !important;
     margin: 10px 0 !important;
+    
+    &::placeholder {
+      color: #888888 !important;
+    }
   }
-  .alert-radio-label, .alert-checkbox-label {
-    color: #ffffff !important;
+
+  /* 5. LOS BOTONES (Estilo Pill Verde y Rojo) */
+  .alert-button-group {
+    padding: 5px 15px 15px 15px !important; /* Espacio para que no se peguen a los bordes */
+    gap: 12px !important; /* Separación entre el botón Cancelar y OK */
+    border-top: none !important; /* Quitamos la línea horizontal */
+  }
+
+  /* Botón OK (Verde) */
+  .alert-button {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--ion-color-success, #2dd36f) !important;
+    border: 1px solid rgba(45, 211, 111, 0.4) !important; /* Borde verde */
+    border-radius: 20px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    flex: 1 !important; /* Para que ambos botones tengan el mismo ancho */
+    margin: 0 !important;
+  }
+
+  /* Botón Cancelar (Rojo) */
+  .alert-button.alert-button-role-cancel {
+    color: var(--ion-color-danger, #eb445a) !important;
+    border: 1px solid rgba(235, 68, 90, 0.4) !important; /* Borde rojo */
   }
 }
 

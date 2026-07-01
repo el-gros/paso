@@ -62,12 +62,12 @@ import { PhotoViewerComponent } from './photo-viewer.component';
         <div class="button-grid">
           <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
             <ion-icon name="checkmark-outline"></ion-icon>
-            <span>{{ 'GENERIC.OK' | translate }}</span>
+            <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
           <button class="nav-item-btn red-pill ion-activatable" (click)="cancel()">
             <ion-icon name="close-outline"></ion-icon>
-            <span>{{ 'EDIT.CANCEL' | translate }}</span>
+            <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
         </div>

@@ -180,11 +180,11 @@
       <div class="button-grid horizontal top-margin equal-buttons">
         <button class="nav-item-btn green-pill" (click)="executeExport()" [disabled]="!isAnyExportOptionSelected()">
           <ion-icon name="checkmark-outline"></ion-icon>
-          <p>{{ 'GENERIC.OK' | translate }}</p>
+          <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
         </button>
         <button class="nav-item-btn red-pill" (click)="isExportMenuOpen = false">
           <ion-icon name="close-outline"></ion-icon>
-          <p>{{ 'EDIT.CANCEL' | translate }}</p>
+          <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
         </button>
       </div>
     </div>

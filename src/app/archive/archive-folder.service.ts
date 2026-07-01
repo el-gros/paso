@@ -132,9 +132,9 @@ export class ArchiveFolderService {
         }
       ],
       buttons: [
-        { text: this.translate.instant('GENERIC.CANCEL'), role: 'cancel' },
+        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
         {
-          text: this.translate.instant('GENERIC.OK'),
+          text: this.translate.instant('RECORD.DELETE_YES'),
           handler: (data) => {
             if (data.folderName) this.fs.addFolder(data.folderName);
           }
@@ -156,9 +156,9 @@ export class ArchiveFolderService {
         placeholder: this.translate.instant('ARCHIVE.FOLDER_NAME_PLACEHOLDER')
       }],
       buttons: [
-        { text: this.translate.instant('GENERIC.CANCEL'), role: 'cancel' },
+        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
         {
-          text: this.translate.instant('GENERIC.OK'),
+          text: this.translate.instant('RECORD.DELETE_YES'),
           handler: async (data) => {
             const newName = data.newName?.trim();
             if (!newName || newName === oldName) return;
@@ -248,9 +248,9 @@ export class ArchiveFolderService {
       cssClass: 'glass-island-alert',
       inputs: inputs,
       buttons: [
-        { text: this.translate.instant('GENERIC.CANCEL'), role: 'cancel' },
+        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
         {
-          text: this.translate.instant('GENERIC.OK'),
+          text: this.translate.instant('RECORD.DELETE_YES'),
           handler: async (folderName: string) => {
             const index = this.fs.collection.indexOf(item);
             if (index > -1) {
