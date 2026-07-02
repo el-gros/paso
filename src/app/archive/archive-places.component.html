@@ -5,10 +5,10 @@
   </ion-label>
 
   <div slot="end" class="visibility-buttons">
-    <ion-button fill="clear" (click)="displayAllPlaces(true)" [disabled]="isAllPlacesVisible">
+    <ion-button class="glass-btn" fill="clear" (click)="displayAllPlaces(true)" [disabled]="isAllPlacesVisible">
       <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
     </ion-button>
-    <ion-button fill="clear" (click)="displayAllPlaces(false)" [disabled]="isAllPlacesHidden">
+    <ion-button class="glass-btn" fill="clear" (click)="displayAllPlaces(false)" [disabled]="isAllPlacesHidden">
       <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
     </ion-button>
   </div>
@@ -26,12 +26,12 @@
           </ion-label>
 
           <div slot="end" class="visibility-buttons">
-            <ion-button fill="clear"
+            <ion-button class="glass-btn" fill="clear"
               (click)="setCategoryVisibility(group.category.id, true, $event)"
               [disabled]="isAllCategoryVisible(group.category.id)">
               <ion-icon slot="icon-only" name="eye-outline" color="primary"></ion-icon>
             </ion-button>
-            <ion-button fill="clear"
+            <ion-button class="glass-btn" fill="clear"
               (click)="setCategoryVisibility(group.category.id, false, $event)"
               [disabled]="isAllCategoryHidden(group.category.id)">
               <ion-icon slot="icon-only" name="eye-off-outline" color="danger"></ion-icon>
@@ -63,11 +63,11 @@
 
                 <div class="item-content">
                   <strong [class.active-text]="place.visible">{{ place.name }}</strong>
-                  <p class="item-date-subtitle">{{ place.description || place.display_name }}</p>
+                  <p class="item-date-subtitle secondary-info">{{ getShortSubtitle(place) }}</p>
                 </div>
 
                 <div slot="end" class="place-actions-wrapper">
-                  <ion-button fill="clear" class="center-button" (click)="centerPlace(place)">
+                  <ion-button class="glass-btn" fill="clear" (click)="centerPlace(place)">
                     <ion-icon name="locate-outline" slot="icon-only"></ion-icon>
                   </ion-button>
 

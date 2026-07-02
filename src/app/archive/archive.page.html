@@ -79,7 +79,7 @@
                   </ion-thumbnail>
                 }
                 <ion-label>
-                  <div class="item-content">
+                  <div class="item-content" style="flex: 1; margin-inline-start: 10px;">
                     <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
                     <div class="date-and-status">
                       <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
@@ -87,7 +87,7 @@
                         <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
                       }
                     </div>
-                  </div>
+                  </div> 
                 </ion-label>
                 <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon" (click)="openTrackOptionsPopover(item, $event)"></ion-icon>
                 <ion-reorder slot="end"></ion-reorder>

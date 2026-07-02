@@ -171,40 +171,6 @@ ion-accordion [slot="content"] {
    3. ÍTEMS DE LA LISTA (Lugares e Individuales)
    ========================================================================== */
 
-ion-item {
-  --padding-start: 16px;
-  --background: transparent;
-  --border-color: rgba(0, 0, 0, 0.05);
-  --min-height: 72px;
-  
-  strong {
-    font-size: 14px;
-    font-weight: 700;
-    color: #222;
-    display: block;
-    line-height: 1.2;
-    transition: color 0.2s ease;
-    
-    &.active-text {
-      color: var(--ion-color-primary) !important;
-    }
-  }
-
-  .item-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 10px 0;
-  }
-}
-
-.item-date-subtitle {
-  font-size: 11px;
-  color: #888;
-  font-weight: 500;
-  margin-top: 3px;
-}
-
 .custom-badge-inline {
   color: var(--ion-color-primary);
   font-weight: 700;
@@ -224,22 +190,15 @@ ion-item {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-width: 70px;
 
-  ion-button.center-button {
-    --padding-start: 4px;
-    --padding-end: 4px;
-    --color: #999;
-    font-size: 20px;
+  .glass-btn {
+    --padding-start: 10px;
+    --padding-end: 10px;
     height: 38px;
     margin: 0;
-
+    
     &::part(native) {
-      padding: 0;
-    }
-
-    &:active {
-      transform: scale(0.9);
+      padding: 0 10px; 
     }
   }
 }
@@ -346,7 +305,7 @@ ion-thumbnail.photo-thumbnail {
 }
 
 /* ==========================================================================
-   6. ESTADOS VACÍOS
+   6. ESTADOS VACÍOS Y EXTRAS
    ========================================================================== */
 
 .empty-state {
@@ -384,3 +343,4 @@ ion-popover.popover-host-transparent {
   opacity: 0.5;
   pointer-events: none;
 }
+

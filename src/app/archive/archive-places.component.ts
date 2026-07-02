@@ -171,4 +171,30 @@ export class ArchivePlacesComponent {
     // Delega la confirmación al componente padre (que tiene el diálogo compartido)
     this.requestPlaceDeletion.emit({ place, slidingItem });
   }
-}
+
+  // ==========================================================================
+  // FORMATO DE TEXTOS
+  // ==========================================================================
+
+  getShortSubtitle(place: LocationResult): string {
+    // Si el usuario le ha puesto una descripción manual, la respetamos
+    if (place.description) {
+      return place.description;
+    }
+
+    if (!place.display_name) {
+      return '';
+    }
+
+    // Dividimos el string gigante por comas
+    const parts = place.display_name.split(',');
+
+    // Si hay más de una parte, cogemos la segunda (índice 1) y le quitamos los espacios en blanco
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+
+    // Si por casualidad no hay comas, devolvemos lo que haya
+    return place.display_name;
+  }
+}  
