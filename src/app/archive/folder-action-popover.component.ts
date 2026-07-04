@@ -8,33 +8,39 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   selector: 'app-folder-action-popover',
   template: `
-    <div class="popover-island confirm-box">
-      <p class="confirm-title">{{ title | translate }}</p>
-      <ion-item lines="none" style="--background: transparent">
-        <ion-input [(ngModel)]="inputValue" [placeholder]="placeholder | translate"></ion-input>
-      </ion-item>
-      <div class="button-grid horizontal">
-        <button class="glass-pill-btn red-pill" (click)="dismiss(false)">
-          <ion-icon name="close-outline"></ion-icon>
-          <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
-        </button>
-        <button class="glass-pill-btn green-pill" (click)="dismiss(true)">
-          <ion-icon name="checkmark-outline"></ion-icon>
-          <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
-        </button>
+    <ion-content scrollY="false" class="ion-no-padding">
+      <div class="local-glass-island">
+        <div class="popover-header">
+          <ion-icon name="folder-outline" class="header-icon"></ion-icon>
+          <h2>{{ title | translate }}</h2>
+        </div>
+        <div class="form-container">
+          <div class="input-group">
+            <ion-input [(ngModel)]="inputValue" [placeholder]="placeholder | translate" class="custom-input"></ion-input>
+          </div>
+        </div>
+        <div class="popover-button-grid">
+          <button class="popover-btn btn-green ion-activatable" (click)="dismiss(true)">
+            <ion-icon name="checkmark-outline"></ion-icon>
+            <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
+            <ion-ripple-effect></ion-ripple-effect>
+          </button>
+          <button class="popover-btn btn-red ion-activatable" (click)="dismiss(false)">
+            <ion-icon name="close-outline"></ion-icon>
+            <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
+            <ion-ripple-effect></ion-ripple-effect>
+          </button>
+        </div>
       </div>
-    </div>
+    </ion-content>
   `,
+  styles: [``], /* ¡Cero CSS local! */
   imports: [IonicModule, TranslateModule, FormsModule, CommonModule]
 })
 export class FolderActionPopover {
   @Input() title: string = '';
   @Input() placeholder: string = '';
   @Input() inputValue: string = '';
-
   constructor(private popoverCtrl: PopoverController) {}
-
-  dismiss(confirm: boolean) {
-    this.popoverCtrl.dismiss(confirm ? this.inputValue : null);
-  }
+  dismiss(confirm: boolean) { this.popoverCtrl.dismiss(confirm ? this.inputValue : null); }
 }

@@ -37,13 +37,13 @@ import { LocationManagerService } from './services/location-manager.service';
           </div>
         </div>
 
-        <div class="button-grid">
-          <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
+        <div class="popover-button-grid">
+          <button class="popover-btn btn-green ion-activatable" (click)="confirm()">
             <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="nav-item-btn red-pill ion-activatable" (click)="cancel()">
+          <button class="popover-btn btn-red ion-activatable" (click)="cancel()">
             <ion-icon name="close-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
@@ -54,87 +54,25 @@ import { LocationManagerService } from './services/location-manager.service';
     </ion-content>
   `,
   styles: [`
-    ion-content {
-      --background: transparent;
-    }
-
-    .local-glass-island {
-      background: rgba(255, 255, 255, 0.96) !important;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      max-height: 90vh;
-    }
+    ion-content { --background: transparent; }
     
-    .popover-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
-      padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
-      
-      .header-icon { font-size: 20px; color: var(--ion-color-primary); }
-      h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
-    }
-    
+    /* 🚀 Conservamos solo los estilos específicos del formulario */
     .form-container { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+    .scrollable-textarea { max-height: 150px; overflow-y: auto; }
     
-    .scrollable-textarea { 
-      max-height: 150px; 
-      overflow-y: auto;
-    }
-
     .custom-label { 
-      font-size: 10px; 
-      font-weight: 800; 
-      color: var(--ion-color-primary); 
-      text-transform: uppercase; 
-      margin-bottom: 4px;
-      display: block;
+      font-size: 10px; font-weight: 800; color: var(--ion-color-primary); 
+      text-transform: uppercase; margin-bottom: 4px; display: block; 
     }
     
     .custom-textarea { 
-      background: rgba(0, 0, 0, 0.05); 
-      border-radius: 14px; 
-      --padding-start: 12px; 
-      margin: 0;
+      background: rgba(0, 0, 0, 0.05); border-radius: 14px; 
+      --padding-start: 12px; margin: 0; 
     }
 
-    .button-grid { 
-      display: flex; 
-      justify-content: center; 
-      gap: 16px; 
-      margin-top: 25px; 
-    }
-
-    .nav-item-btn {
-      position: relative;
-      overflow: hidden;
-      flex: 1;
-      min-width: 110px; 
-      height: 75px; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: 20px;
-      background: white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: transform 0.1s;
-      
-      ion-icon { font-size: 28px; margin-bottom: 4px; pointer-events: none; }
-      span { margin: 0; font-size: 11px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
-      
-      &:active { transform: scale(0.94); }
-      &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    }
-
-    .green-pill { color: #2dd36f; }
-    .red-pill { color: #eb445a; }
+    /* Modificadores de color para los botones globales */
+    .btn-green { color: #2dd36f; }
+    .btn-red { color: #eb445a; }
   `]
 })
 export class SaveTrackPopover implements OnInit { 
@@ -155,7 +93,6 @@ export class SaveTrackPopover implements OnInit {
   // ==========================================================================
 
   ngOnInit() {
-    // Simplemente aseguramos que el objeto exista y lo copiamos para editarlo
     this.modalEdit = { name: '', description: '', ...this.modalEdit };
   }
 

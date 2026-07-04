@@ -5,18 +5,38 @@ import { TranslateModule } from '@ngx-translate/core';
 @Component({
   standalone: true,
   selector: 'app-import-status-popover',
+  imports: [IonicModule, TranslateModule],
   template: `
-    <div class="popover-island confirm-box" style="--width: 300px">
-      <ion-icon [name]="icon" [color]="color" style="font-size: 48px; margin-bottom: 10px;"></ion-icon>
-      <p class="confirm-title">{{ title | translate }}</p>
-      <p style="font-size: 14px; margin-bottom: 20px;">{{ message | translate }}</p>
-      <button class="glass-pill-btn green-pill" (click)="dismiss()">
-        <ion-icon name="checkmark-outline"></ion-icon>
-        <span>OK</span>
-      </button>
-    </div>
+    <ion-content scrollY="false" class="ion-no-padding">
+      <div class="local-glass-island confirm-box">
+        
+        <div class="icon-container">
+          <ion-icon [name]="icon" [color]="color"></ion-icon>
+        </div>
+
+        <p class="confirm-title">{{ title | translate }}</p>
+        <p class="status-message">{{ message | translate }}</p>
+
+        <div class="popover-button-grid">
+          <button class="popover-btn btn-blue" (click)="dismiss()">
+            <ion-icon name="checkmark-outline"></ion-icon>
+            <span>OK</span>
+          </button>
+        </div>
+        
+      </div>
+    </ion-content>
   `,
-  imports: [IonicModule, TranslateModule]
+  styles: [`
+    .confirm-box { padding: 24px; text-align: center; }
+    .confirm-title { margin: 0 0 10px 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #111; }
+    .status-message { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.4; }
+    
+    .icon-container { margin-bottom: 15px; }
+    .icon-container ion-icon { font-size: 48px; }
+
+    .btn-blue { color: var(--ion-color-primary); }
+  `]
 })
 export class ImportStatusPopover {
   @Input() title: string = '';

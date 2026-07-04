@@ -7,59 +7,36 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   selector: 'app-folder-options-popover',
   template: `
-    <ion-content class="ion-no-padding">
-      <div class="popover-island">
-        <ion-list lines="none">
-          <ion-item button (click)="selectAction('display')">
+    <ion-content scrollY="false" class="ion-no-padding">
+      <div class="local-glass-island compact-island">
+        <ion-list lines="none" class="popover-list">
+          <ion-item button class="action-item" (click)="selectAction('display')">
             <ion-icon name="eye-outline" slot="start" color="primary"></ion-icon>
-            <ion-label>{{ 'ARCHIVE.SHOW' | translate }}</ion-label>
+            <ion-label><strong>{{ 'ARCHIVE.SHOW' | translate }}</strong></ion-label>
           </ion-item>
-          
-          <ion-item button (click)="selectAction('rename')">
+          <ion-item button class="action-item" (click)="selectAction('rename')">
             <ion-icon name="create-outline" slot="start" color="tertiary"></ion-icon>
-            <ion-label>{{ 'ARCHIVE.RENAME' | translate }}</ion-label>
+            <ion-label><strong>{{ 'ARCHIVE.RENAME' | translate }}</strong></ion-label>
           </ion-item>
-
-          <ion-item button (click)="selectAction('empty')">
-            <ion-icon name="trash-outline" slot="start" color="warning"></ion-icon>
-            <ion-label>{{ 'ARCHIVE.EMPTY' | translate }}</ion-label>
+          <ion-item button class="action-item" (click)="selectAction('empty')">
+            <ion-icon name="folder-open-outline" slot="start" color="warning"></ion-icon>
+            <ion-label><strong>{{ 'ARCHIVE.EMPTY' | translate }}</strong></ion-label>
           </ion-item>
-
-          <ion-item button (click)="selectAction('delete')" [disabled]="hasTracks">
+          <ion-item button class="action-item" (click)="selectAction('delete')" [disabled]="hasTracks">
             <ion-icon name="trash-outline" slot="start" [color]="hasTracks ? 'medium' : 'danger'"></ion-icon>
-            <ion-label [color]="hasTracks ? 'medium' : 'danger'">{{ 'ARCHIVE.REMOVE' | translate }}</ion-label>
+            <ion-label [color]="hasTracks ? 'medium' : 'danger'">
+              <strong>{{ 'ARCHIVE.REMOVE' | translate }}</strong>
+            </ion-label>
           </ion-item>
         </ion-list>
       </div>
     </ion-content>
   `,
-  styles: [`
-    ion-content { --background: transparent; }
-    .popover-island {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      margin: 10px;
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-    }
-    ion-list { background: transparent; padding: 6px 0; }
-    ion-item { 
-      --padding-start: 16px; 
-      --inner-padding-end: 16px; 
-      --background: transparent; 
-      --border-radius: 12px; 
-      margin-bottom: 2px; 
-    }
-  `],
+  styles: [``], /* ¡Cero CSS local! Todo lo gestiona el global */
   imports: [IonicModule, CommonModule, TranslateModule]
 })
 export class FolderOptionsPopoverComponent {
   @Input() hasTracks: boolean = false;
   constructor(private popoverController: PopoverController) {}
-  selectAction(action: string) {
-    this.popoverController.dismiss({ action });
-  }
+  selectAction(action: string) { this.popoverController.dismiss({ action }); }
 }

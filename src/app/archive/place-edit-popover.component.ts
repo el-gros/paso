@@ -12,23 +12,19 @@ import { LocationResult, PLACE_CATEGORIES } from '../../globald';
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island">
-      
         <div class="popover-header">
           <ion-icon name="location-outline" class="header-icon"></ion-icon>
           <h2>{{ 'ARCHIVE.EDIT' | translate | uppercase }}</h2>
         </div>
-
         <div class="form-container">
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.NAME' | translate }}</ion-label>
             <ion-textarea [(ngModel)]="editablePlace.name" rows="1" autoGrow="true" class="custom-textarea"></ion-textarea>
           </div>
-          
           <div class="input-group">
             <ion-label class="custom-label">{{ 'EDIT.DESCRIPTION' | translate }}</ion-label>
             <ion-textarea [(ngModel)]="editablePlace.description" rows="2" autoGrow="true" class="custom-textarea"></ion-textarea>
           </div>
-
           <div class="input-group">
             <ion-label class="custom-label">{{ 'ARCHIVE.PLACES' | translate }}</ion-label>
             <div class="categories-grid">
@@ -41,46 +37,24 @@ import { LocationResult, PLACE_CATEGORIES } from '../../globald';
             </div>
           </div>
         </div>
-
-        <div class="button-grid">
-          <button class="nav-item-btn green-pill ion-activatable" (click)="confirm()">
+        <div class="popover-button-grid">
+          <button class="popover-btn btn-green ion-activatable" (click)="confirm()">
             <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="nav-item-btn red-pill ion-activatable" (click)="cancel()">
+          <button class="popover-btn btn-red ion-activatable" (click)="cancel()">
             <ion-icon name="close-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
         </div>
-
       </div>
     </ion-content>
   `,
   styles: [`
-    ion-content { --background: transparent; }
-    .local-glass-island {
-      background: rgba(255, 255, 255, 0.96) !important;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      max-height: 95vh;
-    }
-    .popover-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
-      padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
-      .header-icon { font-size: 20px; color: var(--ion-color-primary); }
-      h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
-    }
-    .form-container { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding-right: 4px; }
-    .custom-label { font-size: 10px; font-weight: 800; color: var(--ion-color-primary); text-transform: uppercase; margin-bottom: 4px; display: block; }
-    .custom-textarea { background: rgba(0, 0, 0, 0.05); border-radius: 14px; --padding-start: 12px; margin: 0; }
+    /* Solo CSS único de este componente */
+    .form-container { padding-right: 4px; }
     .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
     .category-item {
       display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 12px;
@@ -89,18 +63,6 @@ import { LocationResult, PLACE_CATEGORIES } from '../../globald';
       span { font-size: 11px; font-weight: 600; color: #444; }
       &.selected { background: var(--ion-color-primary); border-color: var(--ion-color-primary); span, ion-icon { color: white !important; } }
     }
-    .button-grid { display: flex; justify-content: center; gap: 16px; margin-top: 25px; }
-    .nav-item-btn {
-      position: relative; overflow: hidden; flex: 1; min-width: 100px; height: 70px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border: none; border-radius: 20px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      cursor: pointer; transition: transform 0.1s;
-      ion-icon { font-size: 28px; margin-bottom: 4px; pointer-events: none; }
-      span { margin: 0; font-size: 11px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
-      &:active { transform: scale(0.94); }
-    }
-    .green-pill { color: #2dd36f; }
-    .red-pill { color: #eb445a; }
   `]
 })
 export class PlaceEditPopover implements OnInit {
@@ -112,22 +74,23 @@ export class PlaceEditPopover implements OnInit {
   ngOnInit() {
     this.editablePlace = JSON.parse(JSON.stringify(this.place));
     if (!this.editablePlace.categories) this.editablePlace.categories = [];
-  }
-
-  isCategorySelected(id: string): boolean {
-    return this.editablePlace.categories?.includes(id) || false;
-  }
-
-  toggleCategory(id: string) {
-    if (!this.editablePlace.categories) this.editablePlace.categories = [];
-    const idx = this.editablePlace.categories.indexOf(id);
-    if (idx > -1) {
-      this.editablePlace.categories.splice(idx, 1);
-    } else {
-      this.editablePlace.categories.push(id);
+    if (!this.editablePlace.description && this.editablePlace.display_name) {
+      const parts = this.editablePlace.display_name.split(',');
+      if (parts.length > 1) {
+        this.editablePlace.description = parts[1].trim(); 
+      } else {
+        this.editablePlace.description = this.editablePlace.display_name;
+      }
     }
   }
 
+  isCategorySelected(id: string): boolean { return this.editablePlace.categories?.includes(id) || false; }
+  toggleCategory(id: string) {
+    if (!this.editablePlace.categories) this.editablePlace.categories = [];
+    const idx = this.editablePlace.categories.indexOf(id);
+    if (idx > -1) this.editablePlace.categories.splice(idx, 1);
+    else this.editablePlace.categories.push(id);
+  }
   cancel() { this.popoverCtrl.dismiss(); }
   confirm() { 
     if (!this.editablePlace.categories || this.editablePlace.categories.length === 0) {

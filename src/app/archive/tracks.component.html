@@ -31,13 +31,14 @@
 
 @if (foldersAtCurrentLevel.length > 0 || tracksAtCurrentLevel.length > 0) {
   <ion-list lines="full">
+    
     <ion-reorder-group (ionItemReorder)="handleFolderReorder($event)" [disabled]="false">
       @for (folder of foldersAtCurrentLevel; track folder) {
-        <ion-item button (click)="enterFolder(folder)" detail="false">
+        <ion-item button class="item-has-content" (click)="enterFolder(folder)" detail="false">
           <ion-icon name="folder" slot="start" color="warning"></ion-icon>
-          <ion-label>
-            <h2>{{ folder }}</h2>
-          </ion-label>
+          <div class="item-content">
+            <strong>{{ folder }}</strong>
+          </div>
           <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon" (click)="openFolderOptions($event, folder)"></ion-icon>
           <ion-reorder slot="end"></ion-reorder>
         </ion-item>
@@ -46,24 +47,22 @@
 
     <ion-reorder-group (ionItemReorder)="handleReorder($event)" [disabled]="false">
       @for (item of tracksAtCurrentLevel; track item; let i = $index) {
-        <ion-item button (click)="displaySpecificTrack(item)" detail="false">
+        <ion-item button class="item-has-content" (click)="displaySpecificTrack(item)" detail="false">
           @if (item.photos && item.photos.length > 0) {
             <ion-thumbnail slot="start" class="photo-thumbnail" (click)="openPhotoGallery(item.photos, $event)">
               <img [src]="getCoverPhotoUrl(item.photos[0])" alt="Miniatura" />
               <div class="mini-badge"><ion-icon name="images-outline"></ion-icon></div>
             </ion-thumbnail>
           }
-          <ion-label>
-            <div class="item-content" style="flex: 1; margin-inline-start: 10px;">
-              <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
-              <div class="date-and-status">
-                <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
-                @if (isTrackVisible(item)) {
-                  <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
-                }
-              </div>
-            </div> 
-          </ion-label>
+          <div class="item-content">
+            <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
+            <div class="date-and-status">
+              <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+              @if (isTrackVisible(item)) {
+                <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
+              }
+            </div>
+          </div> 
           <ion-icon name="ellipsis-vertical-outline" slot="end" class="options-icon" (click)="openTrackOptionsPopover(item, $event)"></ion-icon>
           <ion-reorder slot="end"></ion-reorder>
         </ion-item>

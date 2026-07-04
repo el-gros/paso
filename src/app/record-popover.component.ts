@@ -19,7 +19,7 @@ import { Subscription } from 'rxjs';
 import { FunctionsService } from './services/functions.service';
 import { PresentService } from './services/present.service';
 import { SaveTrackPopover } from './save-track-popover.component';
-import { TrackManagerService } from './services/track-manager.service'; // <-- EL NUEVO SERVICIO
+import { TrackManagerService } from './services/track-manager.service'; 
 
 @Component({
   standalone: true,
@@ -27,7 +27,6 @@ import { TrackManagerService } from './services/track-manager.service'; // <-- E
   imports: [IonicModule, FormsModule, TranslateModule],
   providers: [DecimalPipe, DatePipe],
   template: `
-    <!-- Popover Principal -->
     <ion-popover
       [isOpen]="present.isRecordPopoverOpen"
       (didDismiss)="present.isRecordPopoverOpen = false"
@@ -35,61 +34,59 @@ import { TrackManagerService } from './services/track-manager.service'; // <-- E
       class="floating-popover"
     >
       <ng-template>
-        <div class="popover-island">
-          <div class="button-grid">
-            <button class="nav-item-btn enabled primary-btn-style" (click)="handleSaveClick()">
-              <ion-icon name="save-outline" class="primary-icon"></ion-icon>
-              <p>{{ 'RECORD.SAVE_TRACK' | translate }}</p>
+        <div class="local-glass-island">
+          <div class="popover-button-grid">
+            <button class="popover-btn btn-blue enabled" (click)="handleSaveClick()">
+              <ion-icon name="save-outline"></ion-icon>
+              <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
             </button>
-            <button class="nav-item-btn danger-btn-style" (click)="handleDeleteClick()">
-              <ion-icon name="trash-outline" class="danger-icon"></ion-icon>
-              <p>{{ 'RECORD.REMOVE' | translate }}</p>
+            <button class="popover-btn btn-red" (click)="handleDeleteClick()">
+              <ion-icon name="trash-outline"></ion-icon>
+              <span>{{ 'RECORD.REMOVE' | translate }}</span>
             </button>
           </div>
         </div>
       </ng-template>
     </ion-popover>
 
-    <!-- Confirmación Parar -->
     <ion-popover
       [isOpen]="present.isConfirmStopOpen"
       (didDismiss)="onStopDismiss()"
       class="confirm-popover"
     >
       <ng-template>
-        <div class="popover-island confirm-box">
+        <div class="local-glass-island confirm-box">
           <p class="confirm-title">{{ 'RECORD.CONFIRM_STOP' | translate }}</p>
-          <div class="button-grid horizontal">
-            <button class="nav-item-btn green-pill" (click)="confirmStop()">
+          <div class="popover-button-grid">
+            <button class="popover-btn btn-green" (click)="confirmStop()">
               <ion-icon name="checkmark-outline"></ion-icon>
-              <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
+              <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             </button>
-            <button class="nav-item-btn red-pill" (click)="cancelStop()">
+            <button class="popover-btn btn-red" (click)="cancelStop()">
               <ion-icon name="close-outline"></ion-icon>
-              <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
+              <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             </button>
           </div>
         </div>
       </ng-template>
     </ion-popover>
 
-    <!-- Confirmación Borrar -->
     <ion-popover
       [isOpen]="present.isConfirmDeletionOpen"
       (didDismiss)="onDeleteDismiss()"
       class="confirm-popover"
     >
       <ng-template>
-        <div class="popover-island confirm-box">
+        <div class="local-glass-island confirm-box">
           <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
-          <div class="button-grid horizontal">
-            <button class="nav-item-btn green-pill" (click)="confirmDelete()">
+          <div class="popover-button-grid">
+            <button class="popover-btn btn-green" (click)="confirmDelete()">
               <ion-icon name="checkmark-outline"></ion-icon>
-              <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
+              <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             </button>
-            <button class="nav-item-btn red-pill" (click)="cancelDelete()">
+            <button class="popover-btn btn-red" (click)="cancelDelete()">
               <ion-icon name="close-outline"></ion-icon>
-              <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
+              <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             </button>
           </div>
         </div>
@@ -98,15 +95,13 @@ import { TrackManagerService } from './services/track-manager.service'; // <-- E
   `,
   styles: [
     `
-      .popover-island { padding: 16px 10px; }
-      .button-grid { display: flex; justify-content: space-around; align-items: center; gap: 5px; }
-      .button-grid.horizontal { justify-content: center; gap: 40px; }
-      .primary-icon { color: var(--ion-color-primary, #3880ff) !important; }
-      .danger-icon { color: var(--ion-color-danger, #eb445a) !important; }
-      .primary-btn-style p { color: var(--ion-color-primary, #3880ff) !important; }
-      .danger-btn-style p { color: var(--ion-color-danger, #eb445a) !important; }
-      .green-pill ion-icon, .green-pill p { color: var(--ion-color-success, #2dd36f) !important; }
-      .red-pill ion-icon, .red-pill p { color: var(--ion-color-danger, #eb445a) !important; }
+      .confirm-box { padding: 24px 16px; text-align: center; }
+      .confirm-title { margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #111; text-transform: uppercase; }
+      
+      .btn-blue { color: var(--ion-color-primary); }
+      .btn-red { color: var(--ion-color-danger); }
+      .btn-green { color: var(--ion-color-success); }
+      
       .enabled ion-icon { animation: pulse 2s infinite; }
       @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     `,

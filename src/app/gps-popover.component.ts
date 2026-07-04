@@ -8,7 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
   imports: [IonicModule, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
-      <div class="local-glass-island popover-island">
+      <div class="local-glass-island text-center-island">
         
         <div class="icon-container">
           <ion-icon name="satellite-outline"></ion-icon>
@@ -18,8 +18,8 @@ import { TranslateModule } from '@ngx-translate/core';
         
         <p>{{ 'LOCATION.CHECK' | translate }}</p>
 
-        <div class="actions">
-          <button type="button" class="nav-item-btn blue-pill ion-activatable" (click)="dismiss()">
+        <div class="popover-button-grid">
+          <button type="button" class="popover-btn btn-blue ion-activatable" (click)="dismiss()">
             <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'LOCATION.OK_BUTTON' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
@@ -30,17 +30,13 @@ import { TranslateModule } from '@ngx-translate/core';
     </ion-content>
   `,
   styles: [`
-    ion-content { 
-      --background: transparent; 
-    }
-    
-    .local-glass-island {
+    /* 1. Modificadores específicos para esta isla */
+    .text-center-island {
       text-align: center;
-      padding: 30px 20px 24px; /* Un poco más de aire por arriba */
-      background: rgba(255, 255, 255, 0.96); /* Fallback por si popover-island falla */
-      border-radius: 30px;
+      padding-top: 30px; /* Un poco más de aire por arriba, el resto lo hereda del global */
     }
 
+    /* 2. Estilos únicos del contenido (icono y textos) */
     .icon-container {
       display: flex;
       justify-content: center;
@@ -70,56 +66,17 @@ import { TranslateModule } from '@ngx-translate/core';
       padding: 0 10px;
     }
 
-    .actions {
-      display: flex;
-      justify-content: center;
-    }
-
-    /* 🚀 Botón optimizado con position relative para el Ripple */
-    .nav-item-btn {
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: transform 0.1s;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-
-      /* pointer-events: none evita falsos clics en los elementos internos */
-      ion-icon { font-size: 26px; margin-bottom: 4px; pointer-events: none; }
-      span { margin: 0; font-size: 10px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
-      
-      &:active { transform: scale(0.92); }
-    }
-
-    .blue-pill {
-      background: rgba(255, 255, 255, 0.95) !important;
+    /* 3. Variante de color azul para el botón global */
+    .btn-blue {
       border: 1px solid rgba(56, 128, 255, 0.3) !important;
-      min-width: 120px;
-      height: 70px;
-      
-      ion-icon, span { 
-        color: var(--ion-color-primary, #3880ff) !important; 
-      }
+      color: var(--ion-color-primary, #3880ff) !important;
     }
   `]
 })
 export class GpsPopoverComponent {
 
-  // ==========================================================================
-  // 1. PROPIEDADES E INYECCIONES
-  // ==========================================================================
-
   private popoverCtrl = inject(PopoverController);
   
-  // ==========================================================================
-  // 2. ACCIONES (API PÚBLICA)
-  // ==========================================================================
-
   public dismiss() { 
     this.popoverCtrl.dismiss(); 
   }
