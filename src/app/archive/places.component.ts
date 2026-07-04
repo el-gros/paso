@@ -7,15 +7,16 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FunctionsService } from '../services/functions.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationResult, PLACE_CATEGORIES } from '../../globald';
-import { PlaceEditPopover } from '../place-edit-popover.component';
+import { PlaceEditPopover } from './place-edit-popover.component';
 
 @Component({
   standalone: true,
   selector: 'app-archive-places',
-  templateUrl: 'archive-places.component.html',
+  templateUrl: 'places.component.html',
+  styleUrls: ['places.component.scss'],
   imports: [IonicModule, CommonModule, FormsModule, TranslateModule]
 })
-export class ArchivePlacesComponent {
+export class PlacesComponent {
 
   /**
    * Emite cuando el usuario quiere borrar un lugar.

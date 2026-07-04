@@ -1,5 +1,6 @@
+import { LoadingController, PopoverController } from '@ionic/angular'; // Cambiado Alert por Popover
+import { ImportStatusPopover } from '../import-status-popover.component'; // Tu nuevo co
 import { Injectable } from '@angular/core';
-import { LoadingController, AlertController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -29,7 +30,7 @@ export class TrackImportService {
     private mapService: MapService,
     private translate: TranslateService,
     private loadingCtrl: LoadingController,
-    private alertCtrl: AlertController
+    private popoverCtrl: PopoverController
   ) {}
 
   // ==========================================================================
@@ -256,13 +257,17 @@ export class TrackImportService {
       setTimeout(() => window.location.replace('/'), 1500);
     } catch (error) {
       if (loading) await loading.dismiss();
-      const alert = await this.alertCtrl.create({
-        header: this.translate.instant('SETTINGS.BACKUP_ERROR_TITLE'),
-        message: this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'),
-        buttons: ['OK']
+      const popover = await this.popoverCtrl.create({
+        component: ImportStatusPopover,
+        componentProps: {
+          title: 'SETTINGS.BACKUP_ERROR_TITLE',
+          message: 'SETTINGS.RESTORE_ERROR_DESC',
+          icon: 'alert-outline',
+          color: 'danger'
+        },
+        cssClass: 'confirm-popover'
       });
-      await alert.present();
-    }
+      await popover.present();    }
   }
 
   // ==========================================================================

@@ -93,12 +93,26 @@
   &:disabled { opacity: 0.25 !important; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
 }
 
-/** Clase Maestra unificada para botones pill **/
+/** Clase Maestra unificada para botones pill (Alertas y Popovers) **/
 .glass-pill-btn {
-  background: rgba(255, 255, 255, 0.95) !important; border-radius: 20px !important;
-  font-weight: 800 !important; text-transform: uppercase !important; padding: 10px 16px !important;
-  display: flex !important; align-items: center !important; justify-content: center !important;
-  transition: all 0.2s ease !important; cursor: pointer !important;
+  background: rgba(255, 255, 255, 0.95) !important; 
+  border-radius: 20px !important;
+  font-weight: 800 !important; 
+  text-transform: uppercase !important; 
+  padding: 12px 16px !important; 
+  
+  display: flex !important; 
+  flex-direction: row !important; 
+  align-items: center !important; 
+  justify-content: center !important;
+  gap: 8px !important; 
+  
+  transition: all 0.2s ease !important; 
+  cursor: pointer !important;
+  
+  ion-icon { font-size: 20px !important; margin: 0 !important; }
+  span, p { font-size: 12px !important; margin: 0 !important; }
+  
   &:active { transform: scale(0.95); }
   ion-icon, span, p { color: inherit !important; }
 }
@@ -139,36 +153,153 @@ ion-fab { pointer-events: none; z-index: 1000; ion-row, .record-button, ion-fab-
 .bottom-safe-gray { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: var(--ion-safe-area-bottom, 0px); background-color: #f4f4f7; z-index: 10; border-top: 1px solid rgba(0, 0, 0, 0.05); }
 
 // ==========================================================================
-// 7. MODALS, POPOVERS & ALERTS
+// 7. MODALS & POPOVERS 
 // ==========================================================================
-.floating-popover, .confirm-popover { --background: transparent; --box-shadow: none; --width: var(--popover-width, 95%); --max-width: var(--popover-max-width, 420px); }
-.glass-island-wrapper {
-  --background: transparent !important; --box-shadow: none !important; --width: 90% !important;
-  &::part(content) { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; background: transparent !important; box-shadow: none !important; border: none !important; max-width: 380px !important; }
+
+/* --- 1. BASE RESET PARA POPOVERS DE CRISTAL --- */
+// Eliminamos el fondo y sombra por defecto de Ionic en todos estos componentes
+.floating-popover, 
+.confirm-popover, 
+.glass-island-wrapper, 
+.top-glass-island-wrapper { 
+  --background: transparent !important; 
+  --box-shadow: none !important; 
 }
+
+/* --- 2. CONTENEDORES GENÉRICOS --- */
+.floating-popover {
+  --width: var(--popover-width, 95%); 
+  --max-width: var(--popover-max-width, 420px);
+}
+
+/* Estilos compartidos para las "islas" */
+.glass-island-wrapper, 
 .top-glass-island-wrapper {
-  --background: transparent !important; --box-shadow: none !important; --width: 90% !important;
-  &::part(content) { position: fixed !important; top: 8vh !important; left: 50% !important; transform: translateX(-50%) !important; background: transparent !important; box-shadow: none !important; border: none !important; max-width: 380px !important; }
+  --width: 90% !important;
+  
+  &::part(content) {
+    position: fixed !important;
+    left: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 380px !important;
+  }
 }
+
+/* Posicionamiento específico de las islas */
+.glass-island-wrapper::part(content) { 
+  top: 50% !important; 
+  transform: translate(-50%, -50%) !important; 
+}
+
+.top-glass-island-wrapper::part(content) { 
+  top: 8vh !important; 
+  transform: translateX(-50%) !important; 
+}
+
+/* --- 3. POPOVER DE BÚSQUEDA --- */
 ion-popover.top-search-popover {
   &::part(content) {
-    position: absolute !important; top: 5vh !important; bottom: auto !important; transform: none !important; width: 94vw !important; left: 3vw !important; max-width: 420px !important;
-    max-height: 70vh !important; border-radius: var(--glass-radius, 28px) !important; overflow-y: auto !important;
+    position: absolute !important; 
+    top: 5vh !important; 
+    bottom: auto !important; 
+    transform: none !important; 
+    width: 94vw !important; 
+    left: 3vw !important; 
+    max-width: 420px !important;
+    max-height: 70vh !important; 
+    border-radius: var(--glass-radius, 28px) !important; 
+    overflow-y: auto !important;
+    
     @media (min-width: 450px) { left: calc(50% - 210px) !important; }
   }
 }
+
+/* --- 4. POPOVER DE CONFIRMACIÓN --- */
 .confirm-popover {
-  --width: 280px; --border-radius: var(--glass-radius);
-  .popover-island.confirm-box { padding: 24px 16px; text-align: center; }
-  .confirm-title { margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #111111; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.4; }
-  .button-grid.horizontal { display: flex; justify-content: center; gap: 12px; }
-  .btn-ok { @extend .glass-pill-btn; color: var(--ion-color-success, #2dd36f) !important; border-color: rgba(45, 211, 111, 0.4) !important; }
-  .btn-cancel { @extend .glass-pill-btn; color: var(--ion-color-danger, #eb445a) !important; border-color: rgba(235, 68, 90, 0.4) !important; }
+  --width: 280px; 
+  --border-radius: var(--glass-radius);
+  
+  .popover-island.confirm-box { 
+    padding: 24px 16px; 
+    text-align: center; 
+  }
+  
+  .confirm-title { 
+    margin-bottom: 20px; 
+    font-size: 14px; 
+    font-weight: 800; 
+    color: #111111; 
+    text-transform: uppercase; 
+    letter-spacing: 0.8px; 
+    line-height: 1.4; 
+  }
+  
+  .button-grid.horizontal { 
+    display: flex; 
+    justify-content: center; 
+    gap: 12px; 
+    
+    /* Aseguramos que los botones compartan espacio por igual */
+    > button { flex: 1 !important; }
+  }
 }
-.share-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.35); z-index: 9998; display: none; &.active { display: block; } }
-.share-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; display: none; pointer-events: auto; &.active { display: block; } .popover-island { min-width: 260px; padding: 24px 16px; } }
-.share-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 75px; height: 75px; border: none; border-radius: 15px; font-weight: 600; color: white; transition: transform 0.1s; img { width: 26px; height: 26px; margin-bottom: 6px; } &:active { transform: scale(0.92); } &.btn-yes { background: #2dd36f; } &.btn-no { background: #eb445a; } }
-.centered-glass-popover { --width: 280px; --max-height: 80vh; --box-shadow: none; --background: transparent; &::part(content) { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; } }
+
+/* --- 5. MENÚ DE COMPARTIR (CUSTOM POPUP) --- */
+.share-backdrop { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100vw; 
+  height: 100vh; 
+  background: rgba(0, 0, 0, 0.35); 
+  z-index: 9998; 
+  display: none; 
+  
+  &.active { display: block; } 
+}
+
+.share-popup { 
+  position: fixed; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%); 
+  z-index: 9999; 
+  display: none; 
+  pointer-events: auto; 
+  
+  &.active { display: block; } 
+  
+  .popover-island { 
+    min-width: 260px; 
+    padding: 24px 16px; 
+  } 
+}
+
+.share-action-btn { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  width: 75px; 
+  height: 75px; 
+  border: none; 
+  border-radius: 15px; 
+  font-weight: 600; 
+  color: white; 
+  transition: transform 0.1s; 
+  
+  img { 
+    width: 26px; 
+    height: 26px; 
+    margin-bottom: 6px; 
+  } 
+  
+  &:active { transform: scale(0.92); } 
+  &.btn-yes { background: #2dd36f; } 
+  &.btn-no { background: #eb445a; } 
+}
 
 // ==========================================================================
 // 8. NOTIFICATIONS & ALERTS (Isla de Cristal)
@@ -178,40 +309,6 @@ ion-popover.top-search-popover {
 .toast-error { @extend .toast; --background: #eb445a; --color: #ffffff; }
 .custom-toast { --top: 100px; --end: 15px; --width: auto; --max-width: 250px; --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); &::part(message) { font-weight: 600; padding-inline-start: 10px; } }
 .glass-loading-overlay { --background: rgba(255, 255, 255, 0.95); --spinner-color: var(--ion-color-primary, #3880ff); backdrop-filter: blur(12px); .loading-wrapper { border-radius: 20px !important; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(255, 255, 255, 0.6); color: #333 !important; font-weight: 700; text-transform: uppercase; } }
-.glass-island-alert {
-  .alert-wrapper { background: var(--glass-bg) !important; backdrop-filter: blur(var(--glass-blur)) !important; border: var(--glass-border) !important; border-radius: var(--glass-radius) !important; box-shadow: var(--glass-shadow) !important; }
-  .alert-title { color: #111111 !important; font-weight: 800 !important; }
-  .alert-message { color: #444444 !important; }
-  
-  .alert-input { 
-    color: #111111 !important; 
-    background: rgba(0, 0, 0, 0.05) !important; 
-    border: 1px solid rgba(0, 0, 0, 0.1) !important; 
-    border-radius: 12px !important; 
-    padding: 10px 14px !important; 
-    margin: 10px 0 !important; 
-    
-    /* Reglas añadidas para anular el borde/sombra rojo por defecto */
-    outline: none !important;
-    box-shadow: none !important;
-
-    &:focus, &:focus-visible, &.ion-invalid, &.ion-touched, &.ion-dirty {
-      outline: none !important;
-      box-shadow: none !important;
-      border: 1px solid rgba(0, 0, 0, 0.2) !important;
-    }
-  }
-
-  /* Por si Ionic inyecta un contenedor alrededor del input */
-  .alert-input-wrapper {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-  }
-
-  .alert-button { @extend .glass-pill-btn; color: var(--ion-color-success, #2dd36f) !important; border-color: rgba(45, 211, 111, 0.4) !important; flex: 1; }
-  .alert-button.alert-button-role-cancel { color: var(--ion-color-danger, #eb445a) !important; border-color: rgba(235, 68, 90, 0.4) !important; }
-}
 
 // ==========================================================================
 // 9. VOICE CONTROL UI
@@ -241,18 +338,15 @@ ion-popover.top-search-popover {
   letter-spacing: 0.5px;
   transition: transform 0.15s ease, background 0.2s ease;
 
-  // Aseguramos que el click sea consistente
   &:active {
     transform: scale(0.95);
   }
 
-  // Estilo "pill" específico si lo necesitas
   &.pill {
     border-radius: 50px;
   }
 }
 
-// Clase para sobrescribir en los componentes que lo necesiten
 .glass-btn-primary {
   --background: var(--ion-color-primary);
   --color: #ffffff;
@@ -262,21 +356,16 @@ ion-popover.top-search-popover {
 /* ==========================================================================
    AJUSTES DE LISTAS (Tracks y Lugares)
    ========================================================================== */
-
-/* Forzar que el padding del item no nos estorbe */
 ion-item.item-has-content {
   --min-height: 56px !important;
   --padding-start: 16px;
   --inner-padding-end: 0;
 }
 
-/* Nuestro contenedor flex principal */
 .item-content {
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
-  
-  /* Aquí controlamos el espacio: 14px arriba, 4px abajo */
   padding: 14px 0 4px 0 !important; 
   width: 100%;
 
@@ -285,8 +374,8 @@ ion-item.item-has-content {
     font-weight: 700 !important;
     color: #222;
     display: block !important;
-    line-height: 1.1 !important; /* Interlineado apretado */
-    margin-bottom: 2px !important; /* Espacio mínimo entre el título y la fecha */
+    line-height: 1.1 !important; 
+    margin-bottom: 2px !important; 
     transition: color 0.2s ease;
     
     &.active-text {
@@ -295,10 +384,9 @@ ion-item.item-has-content {
   }
 }
 
-/* Subtítulos (Fecha e info secundaria) */
 .item-date-subtitle, 
 .secondary-info {
-  font-size: 10px !important; /* Fuente muy pequeña */
+  font-size: 10px !important; 
   color: #888 !important;     
   margin: 0 !important;
   line-height: 1.1 !important;
@@ -308,7 +396,6 @@ ion-item.item-has-content {
   font-weight: 500;
 }
 
-/* Ocultar márgenes rebeldes de etiquetas nativas de Ionic si aún quedase alguna */
 ion-item .item-content ion-label {
   margin: 0 !important;
 }

@@ -1,0 +1,121 @@
+/* ==========================================================================
+   ESTILOS DE LUGARES (Places)
+   ========================================================================== */
+
+.header-action-item {
+  --background: var(--ion-color-light, #f4f5f8);
+  --min-height: 52px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--ion-color-primary);
+  
+  strong {
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+}
+
+.category-divider-item {
+  --background: var(--ion-color-light, #f4f5f8);
+  --padding-start: 16px;
+  --min-height: 48px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+
+  ion-icon[slot="start"] {
+    margin-inline-end: 12px;
+    font-size: 20px;
+    opacity: 0.9;
+  }
+
+  strong {
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    color: #444;
+    font-weight: 700;
+  }
+}
+
+.global-header-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.header-count {
+  font-size: 12px;
+  color: #777;
+  font-weight: 500;
+  text-transform: none; 
+  letter-spacing: normal;
+  white-space: nowrap; 
+}
+
+.visibility-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  ion-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    height: 36px;
+    margin: 0;
+
+    &[disabled] {
+      opacity: 0.25;
+    }
+
+    ion-icon {
+      font-size: 22px;
+    }
+  }
+}
+
+ion-accordion [slot="content"] {
+  background: white;
+}
+
+.place-checkbox {
+  margin-inline-end: 12px; 
+  --size: 21px;
+  --border-radius: 4px;
+  --checkbox-background-checked: var(--ion-color-primary);
+}
+
+.place-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  .glass-btn {
+    --padding-start: 10px;
+    --padding-end: 10px;
+    height: 38px;
+    margin: 0;
+    
+    &::part(native) {
+      padding: 0 10px; 
+    }
+  }
+}
+
+.compact-chevron {
+  font-size: 14px !important;
+  color: #ddd;
+  transition: color 0.3s ease;
+  
+  &.start { margin-inline-end: 10px !important; }
+  &.end { margin-inline-start: 6px !important; }
+
+  &.active-chevron {
+    color: var(--ion-color-primary) !important;
+  }
+}
+
+.list-spacer { 
+  height: 120px;
+}

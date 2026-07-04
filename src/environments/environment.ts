@@ -16,7 +16,6 @@ interface GlobalConfig {
   mapTilerKey: string;
   ors_key: string;
   weather_key: string;
-  okButton: { text: string; role: string; cssClass: string; };
   offlineMaps: OfflineMapConfig[];
   maptiler_terrain_modified?: StyleJSON;
 }
@@ -32,21 +31,6 @@ export var global: GlobalConfig = {
   mapTilerKey: 'VndVluazDWO8Aijuzfpp',
   ors_key: '5b3ce3597851110001cf624876b05cf836e24d5aafce852a55c3ea23',
   weather_key: 'e39530f127b7c58745ddeb78f71e2019',
-
-  // ==========================================================================
-  // 2. UI CONFIGURATION & DYNAMIC GETTERS
-  // ==========================================================================
-  /**
-   * Define las propiedades para un botón de confirmación "OK",
-   * frecuentemente usado en alertas o diálogos.
-   */
-  get okButton() {
-    return {
-      text: 'OK',
-      role: 'confirm',
-      cssClass: 'alert-ok-button',
-    };
-  },
 
   // ==========================================================================
   // 3. OFFLINE MAPS DATA

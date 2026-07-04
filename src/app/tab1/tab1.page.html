@@ -29,7 +29,7 @@
       <ion-row>
         @if (location.state === 'tracking') {
           <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
-            <ion-icon name="stop-circle-outline" class="primary-icon"></ion-icon>
+            <ion-icon name="stop-outline" class="primary-icon"></ion-icon>
             <span class="tracking-dot"></span>
             <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
           </div>
@@ -94,7 +94,7 @@
     @if (!fs.voiceControl) {
       <ion-row>
         <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
-          <ion-icon name="search-circle-outline"></ion-icon>
+          <ion-icon name="search-outline"></ion-icon>
           <p>{{ 'SEARCH.BUTTON' | translate }}</p>
         </div>
         <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('archive')">

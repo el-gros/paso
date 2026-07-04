@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
-import { AlertController, PopoverController, ItemReorderEventDetail } from '@ionic/angular';
+import { PopoverController, ItemReorderEventDetail } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
 
 import { FunctionsService } from '../services/functions.service';
 import { TrackDefinition } from '../../globald';
 import { FolderOptionsPopoverComponent } from '../folder-options-popover.component';
+import { FolderActionPopover } from './folder-action-popover.component';
+import { FolderMovePopover } from './folder-move-popover.component';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +19,6 @@ export class ArchiveFolderService {
   constructor(
     public fs: FunctionsService,
     private translate: TranslateService,
-    private alertController: AlertController,
     private popoverController: PopoverController
   ) { }
 
@@ -120,73 +121,68 @@ export class ArchiveFolderService {
   // ==========================================================================
 
   /** Abre un diálogo para crear una nueva carpeta virtual. */
-  async createNewFolder() {
-    const alert = await this.alertController.create({
-      header: this.translate.instant('ARCHIVE.NEW_FOLDER'),
-      cssClass: 'glass-island-alert',
-      inputs: [
-        {
-          name: 'folderName',
-          type: 'text',
-          placeholder: this.translate.instant('ARCHIVE.FOLDER_NAME_PLACEHOLDER')
-        }
-      ],
-      buttons: [
-        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
-        {
-          text: this.translate.instant('RECORD.DELETE_YES'),
-          handler: (data) => {
-            if (data.folderName) this.fs.addFolder(data.folderName);
-          }
-        }
-      ]
+async createNewFolder() {
+    const popover = await this.popoverController.create({
+      component: FolderActionPopover,
+      componentProps: { 
+        title: 'ARCHIVE.NEW_FOLDER',
+        placeholder: 'ARCHIVE.FOLDER_NAME_PLACEHOLDER'
+      },
+      cssClass: 'confirm-popover' 
     });
-    await alert.present();
+
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+    
+    // 'data' contendrá el nombre de la carpeta si el usuario pulsó "OK"
+    if (data && data.trim().length > 0) {
+      this.fs.addFolder(data);
+    }
   }
 
   /** Renombra una carpeta y actualiza el path de todos sus trayectos hijos. */
   async renameFolder(oldName: string) {
-    const alert = await this.alertController.create({
-      header: this.translate.instant('ARCHIVE.RENAME'),
-      cssClass: 'glass-island-alert',
-      inputs: [{
-        name: 'newName',
-        type: 'text',
-        value: oldName,
-        placeholder: this.translate.instant('ARCHIVE.FOLDER_NAME_PLACEHOLDER')
-      }],
-      buttons: [
-        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
-        {
-          text: this.translate.instant('RECORD.DELETE_YES'),
-          handler: async (data) => {
-            const newName = data.newName?.trim();
-            if (!newName || newName === oldName) return;
-
-            const oldPathPrefix = JSON.stringify([...this.currentPath, oldName]);
-            const newPathBase = [...this.currentPath, newName];
-            const oldFull = [...this.currentPath, oldName];
-
-            this.fs.collection.forEach(t => {
-              const path = (t as any).folderPath || [];
-              if (JSON.stringify(path).startsWith(oldPathPrefix)) {
-                (t as any).folderPath = [...newPathBase, ...path.slice(oldFull.length)];
-              }
-            });
-
-            if (this.currentPath.length === 0) {
-              const idx = this.fs.virtualFolders.indexOf(oldName);
-              if (idx > -1) this.fs.virtualFolders[idx] = newName;
-              await this.fs.storeSet('virtual_folders', this.fs.virtualFolders);
-            }
-
-            await this.fs.storeSet('collection', this.fs.collection);
-            this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
-          }
-        }
-      ]
+    const popover = await this.popoverController.create({
+      component: FolderActionPopover,
+      componentProps: { 
+        title: 'ARCHIVE.RENAME',
+        placeholder: 'ARCHIVE.FOLDER_NAME_PLACEHOLDER',
+        inputValue: oldName // Esto prellena el input automáticamente
+      },
+      cssClass: 'confirm-popover'
     });
-    await alert.present();
+
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+
+    // 'data' es el nuevo nombre que ha introducido el usuario
+    if (data && data.trim().length > 0 && data.trim() !== oldName) {
+      const newName = data.trim();
+
+      const oldPathPrefix = JSON.stringify([...this.currentPath, oldName]);
+      const newPathBase = [...this.currentPath, newName];
+      const oldFull = [...this.currentPath, oldName];
+
+      // Actualizar todos los trayectos afectados
+      this.fs.collection.forEach(t => {
+        const path = (t as any).folderPath || [];
+        if (JSON.stringify(path).startsWith(oldPathPrefix)) {
+          (t as any).folderPath = [...newPathBase, ...path.slice(oldFull.length)];
+        }
+      });
+
+      // Si estamos en la raíz, actualizar la lista de carpetas virtuales
+      if (this.currentPath.length === 0) {
+        const idx = this.fs.virtualFolders.indexOf(oldName);
+        if (idx > -1) {
+          this.fs.virtualFolders[idx] = newName;
+          await this.fs.storeSet('virtual_folders', this.fs.virtualFolders);
+        }
+      }
+
+      await this.fs.storeSet('collection', this.fs.collection);
+      this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
+    }
   }
 
   /** Envía todos los trayectos de esta carpeta a la carpeta inmediatamente superior. */
@@ -224,44 +220,28 @@ export class ArchiveFolderService {
   /** Abre un selector para mover un trayecto a una carpeta existente o a la raíz. */
   async moveTrackToFolder(item: TrackDefinition) {
     const currentFolderPath = (item as any).folderPath || [];
+    const currentFolder = currentFolderPath.length > 0 ? currentFolderPath[0] : '';
 
-    const inputs: any[] = [
-      {
-        type: 'radio',
-        label: this.translate.instant('ARCHIVE.ALL'),
-        value: '',
-        checked: currentFolderPath.length === 0
+    const options = [{ label: this.translate.instant('ARCHIVE.ALL'), value: '' }];
+    this.fs.virtualFolders.forEach(f => options.push({ label: f, value: f }));
+
+    const popover = await this.popoverController.create({
+      component: FolderMovePopover,
+      componentProps: { folders: options, selectedFolder: currentFolder },
+      cssClass: 'confirm-popover'
+    });
+
+    await popover.present();
+    const { data } = await popover.onDidDismiss();
+
+    if (data !== null) { // El usuario pulsó OK
+      const index = this.fs.collection.indexOf(item);
+      if (index > -1) {
+        (this.fs.collection[index] as any).folderPath = data ? [data] : [];
+        await this.fs.storeSet('collection', this.fs.collection);
+        this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
       }
-    ];
-
-    this.fs.virtualFolders.forEach(folder => {
-      inputs.push({
-        type: 'radio',
-        label: folder,
-        value: folder,
-        checked: currentFolderPath.length > 0 && currentFolderPath[0] === folder
-      });
-    });
-
-    const alert = await this.alertController.create({
-      header: this.translate.instant('ARCHIVE.MOVE_TO_FOLDER'),
-      cssClass: 'glass-island-alert',
-      inputs: inputs,
-      buttons: [
-        { text: this.translate.instant('RECORD.DELETE_NO'), role: 'cancel' },
-        {
-          text: this.translate.instant('RECORD.DELETE_YES'),
-          handler: async (folderName: string) => {
-            const index = this.fs.collection.indexOf(item);
-            if (index > -1) {
-              (this.fs.collection[index] as any).folderPath = folderName ? [folderName] : [];
-              await this.fs.storeSet('collection', this.fs.collection);
-              this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
+    }
   }
+ 
 }

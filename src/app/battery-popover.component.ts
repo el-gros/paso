@@ -28,7 +28,7 @@ import { TranslateModule } from '@ngx-translate/core';
           @for (step of steps; track $index) {
           <div class="step-item">
             <ion-icon
-              name="chevron-forward-circle-outline"
+              name="chevron-forward-outline"
               color="primary"
             ></ion-icon>
             <p>{{ step | translate }}</p>

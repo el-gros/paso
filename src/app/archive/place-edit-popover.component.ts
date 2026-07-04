@@ -3,7 +3,7 @@ import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
-import { LocationResult, PLACE_CATEGORIES } from '../globald';
+import { LocationResult, PLACE_CATEGORIES } from '../../globald';
 
 @Component({
   selector: 'app-place-edit-popover',

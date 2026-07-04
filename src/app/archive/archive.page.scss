@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. LAYOUTS ESPECÍFICOS Y EXPORTACIÓN
+   ESTILOS COMPARTIDOS Y CONTENEDORES (Padre)
    ========================================================================== */
 
 .hidden-map-container {
@@ -18,249 +18,6 @@
   }
 }
 
-.list-spacer { 
-  height: 120px;
-}
-
-/* ==========================================================================
-   2. CABECERAS Y ACORDEONES (Categorías)
-   ========================================================================== */
-
-.header-action-item {
-  --background: var(--ion-color-light, #f4f5f8);
-  --min-height: 52px;
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--ion-color-primary);
-  
-  strong {
-    font-size: 13px;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-  }
-}
-
-.archive-header-actions {
-  background: var(--ion-color-light);
-  display: flex;
-  align-items: center;
-  border-bottom: 2px solid var(--ion-color-primary);
-
-  .action-item {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 10px;
-    cursor: pointer;
-
-    &:active {
-      background: rgba(0, 0, 0, 0.05);
-    }
-
-    ion-label strong {
-      font-size: 12px;
-      text-transform: uppercase;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-  }
-
-  .vertical-divider {
-    width: 1px;
-    height: 24px;
-    background: rgba(0, 0, 0, 0.1);
-  }
-}
-
-.breadcrumb-container {
-  padding: 8px 16px;
-  font-size: 0.9em;
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  white-space: nowrap;
-  scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
-  background: var(--ion-color-light);
-
-  &.breadcrumb-under-actions {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .breadcrumb-segment {
-    display: flex;
-    align-items: center;
-
-    ion-icon {
-      font-size: 0.8em;
-      margin: 0 4px;
-    }
-  }
-}
-
-.category-divider-item {
-  --background: var(--ion-color-light, #f4f5f8);
-  --padding-start: 16px;
-  --min-height: 48px;
-  margin-bottom: 2px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-
-  ion-icon[slot="start"] {
-    margin-inline-end: 12px;
-    font-size: 20px;
-    opacity: 0.9;
-  }
-
-  strong {
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.8px;
-    color: #444;
-    font-weight: 700;
-  }
-}
-
-/* Cabecera Global: Alinear texto y contador en una sola línea */
-.global-header-content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 8px;
-}
-
-/* El contador de lugares ('11 Lugares') */
-.header-count {
-  font-size: 12px;
-  color: #777;
-  font-weight: 500;
-  text-transform: none; 
-  letter-spacing: normal;
-  white-space: nowrap; 
-}
-
-/* Contenedor para los dos botones de visibilidad (Ojo y Ojo Tachado) */
-.visibility-buttons {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-
-  ion-button {
-    --padding-start: 4px;
-    --padding-end: 4px;
-    height: 36px;
-    margin: 0;
-
-    &[disabled] {
-      opacity: 0.25; /* Hace que el botón inactivo se vea gris/transparente */
-    }
-
-    ion-icon {
-      font-size: 22px;
-    }
-  }
-}
-
-// Hacerlo específico para accordions para no afectar a popovers u otros componentes
-ion-accordion [slot="content"] {
-  background: white;
-}
-
-/* ==========================================================================
-   3. ÍTEMS DE LA LISTA (Lugares e Individuales)
-   ========================================================================== */
-
-.custom-badge-inline {
-  color: var(--ion-color-primary);
-  font-weight: 700;
-  font-size: 10px;
-  margin-left: 12px;
-  text-transform: uppercase;
-}
-
-.place-checkbox {
-  margin-inline-end: 12px; 
-  --size: 21px;
-  --border-radius: 4px;
-  --checkbox-background-checked: var(--ion-color-primary);
-}
-
-.place-actions-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-
-  .glass-btn {
-    --padding-start: 10px;
-    --padding-end: 10px;
-    height: 38px;
-    margin: 0;
-    
-    &::part(native) {
-      padding: 0 10px; 
-    }
-  }
-}
-
-/* Indicadores de deslizamiento (Cheurones) */
-.compact-chevron {
-  font-size: 14px !important;
-  color: #ddd;
-  transition: color 0.3s ease;
-  
-  &.start { margin-inline-end: 10px !important; }
-  &.end { margin-inline-start: 6px !important; }
-
-  &.active-chevron {
-    color: var(--ion-color-primary) !important;
-  }
-}
-
-/* ==========================================================================
-   4. COMPONENTES MULTIMEDIA (Miniaturas)
-   ========================================================================== */
-
-ion-thumbnail.photo-thumbnail {
-  --size: 46px;
-  --border-radius: 8px;
-  margin-inline-end: 14px;
-  position: relative;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  overflow: visible;
-
-  img {
-    object-fit: cover;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-  }
-
-  .mini-badge {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    background: #000;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid white;
-
-    ion-icon { font-size: 10px; color: white; }
-  }
-}
-
-/* ==========================================================================
-   5. DIÁLOGOS DE EXPORTACIÓN (Popovers)
-   ========================================================================== */
-
-.custom-export-popover { 
-  --width: 300px !important;
-  --border-radius: 16px !important;
-}
 
 .backup-box {
   padding: 20px 16px;
@@ -304,10 +61,6 @@ ion-thumbnail.photo-thumbnail {
   }
 }
 
-/* ==========================================================================
-   6. ESTADOS VACÍOS Y EXTRAS
-   ========================================================================== */
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -329,12 +82,6 @@ ion-thumbnail.photo-thumbnail {
   }
 }
 
-// Estilo para asegurar que el fondo del ion-popover sea transparente
-ion-popover.popover-host-transparent {
-  --background: transparent;
-  --box-shadow: none;
-}
-
 .danger-text {
   color: var(--ion-color-danger) !important;
 }
@@ -343,4 +90,3 @@ ion-popover.popover-host-transparent {
   opacity: 0.5;
   pointer-events: none;
 }
-

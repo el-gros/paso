@@ -61,11 +61,11 @@ import { TrackManagerService } from './services/track-manager.service'; // <-- E
           <p class="confirm-title">{{ 'RECORD.CONFIRM_STOP' | translate }}</p>
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" (click)="confirmStop()">
-              <ion-icon name="checkmark-circle-outline"></ion-icon>
+              <ion-icon name="checkmark-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
             <button class="nav-item-btn red-pill" (click)="cancelStop()">
-              <ion-icon name="close-circle-outline"></ion-icon>
+              <ion-icon name="close-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>
@@ -84,11 +84,11 @@ import { TrackManagerService } from './services/track-manager.service'; // <-- E
           <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
           <div class="button-grid horizontal">
             <button class="nav-item-btn green-pill" (click)="confirmDelete()">
-              <ion-icon name="checkmark-circle-outline"></ion-icon>
+              <ion-icon name="checkmark-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_YES' | translate }}</p>
             </button>
             <button class="nav-item-btn red-pill" (click)="cancelDelete()">
-              <ion-icon name="close-circle-outline"></ion-icon>
+              <ion-icon name="close-outline"></ion-icon>
               <p>{{ 'RECORD.DELETE_NO' | translate }}</p>
             </button>
           </div>

@@ -6,7 +6,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-import { LoadingController, AlertController } from '@ionic/angular';
+import { LoadingController } from '@ionic/angular';
 
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
@@ -76,7 +76,6 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private location: LocationManagerService,
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
-    private alertCtrl: AlertController,
     public voiceRunner: VoiceRunnerService
   ) {
     this.setupMapActions();
@@ -234,17 +233,6 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       }
     }
   }
-
-  private async showAlert(header: string, message: string) {
-    const alert = await this.alertCtrl.create({ 
-      header, 
-      message, 
-      buttons: ['OK']
-      // Eliminamos cssClass: 'glass-island-alert' para usar el estilo estándar de la app
-    });
-    await alert.present();
-  }
-
 
 /**
  * Activa o desactiva la funcionalidad de control de voz.
