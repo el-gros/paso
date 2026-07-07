@@ -100,7 +100,8 @@
     "RENAME": "Renombrar",
     "EMPTY": "Vaciar la carpeta",
     "NO_TRACKS": "No tienes trayectos guardados aún",
-    "FOLDER_NOT_EMPTY": "La carpeta no está vacía"
+    "FOLDER_NOT_EMPTY": "La carpeta no está vacía",
+    "CENTER_MAP": "Centrar mapa"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control por voz",

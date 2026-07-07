@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+   import { Component, Input, OnInit, inject } from '@angular/core';
 import { PopoverController, IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
@@ -29,7 +29,7 @@ import { LocationResult, PLACE_CATEGORIES } from '../../globald';
             <ion-label class="custom-label">{{ 'ARCHIVE.PLACES' | translate }}</ion-label>
             <div class="categories-grid">
               @for (cat of availableCategories; track cat.id) {
-                <div class="category-item" [class.selected]="isCategorySelected(cat.id)" (click)="toggleCategory(cat.id)">
+                <div class="category-item" [class.selected]="isCategorySelected(cat.id)" (click)="selectCategory(cat.id)">
                    <ion-icon [name]="cat.icon" [color]="isCategorySelected(cat.id) ? 'white' : cat.color"></ion-icon>
                    <span>{{ 'CATEGORIES.' + cat.id.toUpperCase() | translate }}</span>
                 </div>
@@ -53,7 +53,6 @@ import { LocationResult, PLACE_CATEGORIES } from '../../globald';
     </ion-content>
   `,
   styles: [`
-    /* Solo CSS único de este componente */
     .form-container { padding-right: 4px; }
     .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
     .category-item {
@@ -73,7 +72,10 @@ export class PlaceEditPopover implements OnInit {
 
   ngOnInit() {
     this.editablePlace = JSON.parse(JSON.stringify(this.place));
-    if (!this.editablePlace.categories) this.editablePlace.categories = [];
+    if (!this.editablePlace.categories || this.editablePlace.categories.length === 0) {
+      this.editablePlace.categories = ['other']; // Valor por defecto si viene vacío
+    }
+    
     if (!this.editablePlace.description && this.editablePlace.display_name) {
       const parts = this.editablePlace.display_name.split(',');
       if (parts.length > 1) {
@@ -84,14 +86,18 @@ export class PlaceEditPopover implements OnInit {
     }
   }
 
-  isCategorySelected(id: string): boolean { return this.editablePlace.categories?.includes(id) || false; }
-  toggleCategory(id: string) {
-    if (!this.editablePlace.categories) this.editablePlace.categories = [];
-    const idx = this.editablePlace.categories.indexOf(id);
-    if (idx > -1) this.editablePlace.categories.splice(idx, 1);
-    else this.editablePlace.categories.push(id);
+  // 🚀 Simplificado para comprobar solo el primer (y único) elemento
+  isCategorySelected(id: string): boolean { 
+    return this.editablePlace.categories?.[0] === id; 
   }
+
+  // 🚀 Sustituye el array por uno nuevo con el ID único
+  selectCategory(id: string) {
+    this.editablePlace.categories = [id];
+  }
+
   cancel() { this.popoverCtrl.dismiss(); }
+  
   confirm() { 
     if (!this.editablePlace.categories || this.editablePlace.categories.length === 0) {
       this.editablePlace.categories = ['other'];

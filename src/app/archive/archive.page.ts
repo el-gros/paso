@@ -68,11 +68,10 @@ export class ArchivePage implements OnInit {
   }
 
   /** Recibido desde app-archive-places */
-  onPlaceDeletionRequest(event: { place: LocationResult, slidingItem: IonItemSliding }) {
+  onPlaceDeletionRequest(event: { place: LocationResult }) {
     const realIndex = this.fs.placesCollection.findIndex(p => p.lat === event.place.lat && p.lon === event.place.lon);
     this.deleteTarget = { type: 'place', index: realIndex, data: event.place };
     this.isConfirmDeletionOpen = true;
-    this.slidingItem = event.slidingItem;
   }
 
   async executeDelete() {

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, IonItemSliding, PopoverController } from '@ionic/angular';
+import { IonicModule, PopoverController, ItemReorderEventDetail } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -8,6 +8,7 @@ import { FunctionsService } from '../services/functions.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationResult, PLACE_CATEGORIES } from '../../globald';
 import { PlaceEditPopover } from './place-edit-popover.component';
+import { PlaceOptionsPopoverComponent } from './place-options-popover.component';
 
 @Component({
   standalone: true,
@@ -18,11 +19,7 @@ import { PlaceEditPopover } from './place-edit-popover.component';
 })
 export class PlacesComponent {
 
-  /**
-   * Emite cuando el usuario quiere borrar un lugar.
-   * El componente padre gestiona el diálogo de confirmación compartido.
-   */
-  @Output() requestPlaceDeletion = new EventEmitter<{ place: LocationResult, slidingItem: IonItemSliding }>();
+  @Output() requestPlaceDeletion = new EventEmitter<{ place: LocationResult }>();
 
   constructor(
     public fs: FunctionsService,
@@ -35,10 +32,8 @@ export class PlacesComponent {
   // GETTERS
   // ==========================================================================
 
-  /** Agrupa los lugares por categoría para la vista en acordeón */
   get groupedPlaces() {
     const groups: { category: any, places: LocationResult[] }[] = [];
-
     for (const cat of PLACE_CATEGORIES) {
       const placesInCat = this.fs.placesCollection.filter(p =>
         p.categories && p.categories.length > 0 && p.categories[0] === cat.id
@@ -55,11 +50,6 @@ export class PlacesComponent {
     return this.fs.placesCollection.every(p => p.visible);
   }
 
-  /**
-   * Comprueba si todos los lugares están ocultos.
-   * Al abrir la app (en functions.service.ts), todos los lugares se configuran
-   * con visible = false, por lo que esto debería ser true por defecto.
-   */
   get isAllPlacesHidden(): boolean {
     if (this.fs.placesCollection.length === 0) return true;
     return this.fs.placesCollection.every(p => !p.visible);
@@ -123,30 +113,27 @@ export class PlacesComponent {
   }
 
   // ==========================================================================
-  // NAVEGACIÓN AL MAPA
+  // NAVEGACIÓN Y CENTRADO MANUAL (CONTROL TOTAL)
   // ==========================================================================
-
-  focusOnPlace(place: LocationResult) {
-    if (place.lat && place.lon) {
-      this.geography.showLocationOnMap(place);
-      this.fs.gotoPage('tab1');
-    }
-  }
 
   centerPlace(place: LocationResult) {
-    place.visible = true;
-    this.fs.savePlacesToStorage();
-    this.geography.refreshPlacesLayer(this.fs.placesCollection);
-    this.geography.centerMap(place.lon, place.lat, 15);
+
+    // 1. Centramos con tu función de confianza
+    if (place.lat && place.lon) {
+      // this.geography.centerMap(place.lon, place.lat, 14);
+      this.geography.pendingLocation = place;
+    }
+
+    // 2. Navegamos
+    this.fs.gotoPage('tab1');
+
   }
 
   // ==========================================================================
-  // EDICIÓN Y BORRADO
+  // EDICIÓN, BORRADO Y REORDENAMIENTO
   // ==========================================================================
 
-  async editPlace(place: LocationResult, slidingItem?: IonItemSliding) {
-    if (slidingItem) slidingItem.close();
-
+  async editPlace(place: LocationResult) {
     const realIndex = this.fs.placesCollection.findIndex(p => p.lat === place.lat && p.lon === place.lon);
 
     if (realIndex > -1) {
@@ -168,9 +155,50 @@ export class PlacesComponent {
     }
   }
 
-  confirmPlaceDeletion(place: LocationResult, slidingItem: IonItemSliding) {
-    // Delega la confirmación al componente padre (que tiene el diálogo compartido)
-    this.requestPlaceDeletion.emit({ place, slidingItem });
+  handlePlaceReorder(ev: CustomEvent<ItemReorderEventDetail>, categoryId: string) {
+    const placesInCat = this.fs.placesCollection.filter(p =>
+      p.categories && p.categories.length > 0 && p.categories[0] === categoryId
+    );
+
+    const reorderedSubset = ev.detail.complete(placesInCat);
+
+    const originalGlobalIndices = this.fs.placesCollection
+      .map((p, index) => (p.categories && p.categories[0] === categoryId) ? index : -1)
+      .filter(index => index !== -1);
+
+    originalGlobalIndices.forEach((globalIndex, i) => {
+      this.fs.placesCollection[globalIndex] = reorderedSubset[i];
+    });
+
+    this.fs.savePlacesToStorage();
+  }
+
+  // ==========================================================================
+  // POPUP OPCIONES DE LUGAR
+  // ==========================================================================
+
+  async openPlaceOptionsPopover(place: LocationResult, event: Event | any) {
+    if (event) event.stopPropagation();
+    const popover = await this.popoverController.create({
+      component: PlaceOptionsPopoverComponent,
+      cssClass: 'glass-island-wrapper',
+      translucent: true,
+      backdropDismiss: true,
+      event: event,
+    });
+
+    await popover.present();
+    const { data, role } = await popover.onDidDismiss();
+
+    if (role === 'backdrop' || role === 'cancel') return;
+
+    if (data && data.action) {
+      switch (data.action) {
+        case 'center': this.centerPlace(place); break;
+        case 'edit': await this.editPlace(place); break;
+        case 'delete': this.requestPlaceDeletion.emit({ place }); break;
+      }
+    }
   }
 
   // ==========================================================================
@@ -178,24 +206,10 @@ export class PlacesComponent {
   // ==========================================================================
 
   getShortSubtitle(place: LocationResult): string {
-    // Si el usuario le ha puesto una descripción manual, la respetamos
-    if (place.description) {
-      return place.description;
-    }
-
-    if (!place.display_name) {
-      return '';
-    }
-
-    // Dividimos el string gigante por comas
+    if (place.description) return place.description;
+    if (!place.display_name) return '';
     const parts = place.display_name.split(',');
-
-    // Si hay más de una parte, cogemos la segunda (índice 1) y le quitamos los espacios en blanco
-    if (parts.length > 1) {
-      return parts[1].trim();
-    }
-
-    // Si por casualidad no hay comas, devolvemos lo que haya
+    if (parts.length > 1) return parts[1].trim();
     return place.display_name;
   }
-}  
+}

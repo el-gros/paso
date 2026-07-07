@@ -164,6 +164,15 @@ export class Tab1Page implements OnInit, OnDestroy {
             }
         }
     });
+    if (this.geography.pendingLocation) {
+      // Retraso para asegurar que el DOM del mapa esté completamente renderizado
+      setTimeout(() => {
+        this.geography.showLocationOnMap(this.geography.pendingLocation!);
+        
+        // Muy importante: Limpiar después de usarlo
+        this.geography.pendingLocation = null;
+      }, 300);
+    }
   }
 
   ngOnDestroy() {

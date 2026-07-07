@@ -10,24 +10,29 @@ import { TranslateModule } from '@ngx-translate/core';
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island compact-island">
         <ion-list lines="none" class="popover-list">
+          
           <ion-item button class="action-item" (click)="selectAction('display')">
             <ion-icon name="eye-outline" slot="start" color="primary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.SHOW' | translate }}</strong></ion-label>
           </ion-item>
+
           <ion-item button class="action-item" (click)="selectAction('rename')">
             <ion-icon name="create-outline" slot="start" color="tertiary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.RENAME' | translate }}</strong></ion-label>
           </ion-item>
-          <ion-item button class="action-item" (click)="selectAction('empty')">
+
+          <ion-item button class="action-item" (click)="selectAction('empty')" [disabled]="!hasTracks">
             <ion-icon name="folder-open-outline" slot="start" color="warning"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.EMPTY' | translate }}</strong></ion-label>
           </ion-item>
+
           <ion-item button class="action-item" (click)="selectAction('delete')" [disabled]="hasTracks">
             <ion-icon name="trash-outline" slot="start" [color]="hasTracks ? 'medium' : 'danger'"></ion-icon>
             <ion-label [color]="hasTracks ? 'medium' : 'danger'">
               <strong>{{ 'ARCHIVE.REMOVE' | translate }}</strong>
             </ion-label>
           </ion-item>
+
         </ion-list>
       </div>
     </ion-content>

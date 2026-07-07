@@ -16,6 +16,8 @@ import { Icon, Circle as CircleStyle } from 'ol/style';
   providedIn: 'root'
 })
 export class GeographyService {
+
+  public pendingLocation: LocationResult | null = null;
   
   // ==========================================================================
   // 1. ESTADO DEL MAPA
@@ -76,6 +78,7 @@ export class GeographyService {
       : [location.lat, location.lat, location.lon, location.lon];
 
     const extent = [bbox[2], bbox[0], bbox[3], bbox[1]];
+    console.log(extent)
     this.map?.getView().fit(extent, { duration: 800, padding: [50, 50, 50, 50] });
   }
   /**

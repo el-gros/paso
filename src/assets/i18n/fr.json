@@ -100,7 +100,8 @@
     "RENAME": "Renommer",
     "EMPTY": "Vider le dossier",
     "NO_TRACKS": "Vous n'avez pas encore de trajets enregistrés",
-    "FOLDER_NOT_EMPTY": "Le dossier n'est pas vide"
+    "FOLDER_NOT_EMPTY": "Le dossier n'est pas vide",
+    "CENTER_MAP": "Centrer la carte"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Contrôle vocal",

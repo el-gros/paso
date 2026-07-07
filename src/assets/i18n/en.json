@@ -100,7 +100,8 @@
     "RENAME": "Rename",
     "EMPTY": "Empty the folder",
     "NO_TRACKS": "You have no saved tracks yet",
-    "FOLDER_NOT_EMPTY": "Folder is not empty"
+    "FOLDER_NOT_EMPTY": "Folder is not empty",
+    "CENTER_MAP": "Center map"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Voice Control",

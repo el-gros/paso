@@ -100,7 +100,8 @@
     "RENAME": "Reanomenar",
     "EMPTY": "Buidar la carpeta",
     "NO_TRACKS": "Encara no tens trajectes guardats",
-    "FOLDER_NOT_EMPTY": "La carpeta no està buida"
+    "FOLDER_NOT_EMPTY": "La carpeta no està buida",
+    "CENTER_MAP": "Centrar mapa"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control per veu",

@@ -86,36 +86,7 @@ ion-accordion [slot="content"] {
   --checkbox-background-checked: var(--ion-color-primary);
 }
 
-.place-actions-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-
-  .glass-btn {
-    --padding-start: 10px;
-    --padding-end: 10px;
-    height: 38px;
-    margin: 0;
-    
-    &::part(native) {
-      padding: 0 10px; 
-    }
-  }
-}
-
-.compact-chevron {
-  font-size: 14px !important;
-  color: #ddd;
-  transition: color 0.3s ease;
-  
-  &.start { margin-inline-end: 10px !important; }
-  &.end { margin-inline-start: 6px !important; }
-
-  &.active-chevron {
-    color: var(--ion-color-primary) !important;
-  }
-}
-
 .list-spacer { 
   height: 120px;
 }
+
