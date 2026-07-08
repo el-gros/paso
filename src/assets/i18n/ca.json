@@ -101,7 +101,9 @@
     "EMPTY": "Buidar la carpeta",
     "NO_TRACKS": "Encara no tens trajectes guardats",
     "FOLDER_NOT_EMPTY": "La carpeta no està buida",
-    "CENTER_MAP": "Centrar mapa"
+    "CENTER_MAP": "Centrar mapa",
+    "FOLDER_EMPTY": "Carpeta buidada correctament",
+    "FOLDER_DELETED": "Carpeta eliminada correctament"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control per veu",

@@ -9,16 +9,16 @@ import VectorSource from 'ol/source/Vector';
 import { boundingExtent } from 'ol/extent';
 import { StylerService } from './styler.service';
 import { Track, PLACE_CATEGORIES, LocationResult } from '../../globald';
-import { Fill, Stroke, Style } from 'ol/style';
-import { Icon, Circle as CircleStyle } from 'ol/style';
+import { Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GeographyService {
 
+  public searchCleared$ = new Subject<void>();
   public pendingLocation: LocationResult | null = null;
-  
+
   // ==========================================================================
   // 1. ESTADO DEL MAPA
   // ==========================================================================
@@ -54,14 +54,22 @@ export class GeographyService {
     return transformExtent(extent, source, destination);
   }
 
+  public clearSearchLayer() {
+    if (this.searchLayer) {
+      this.searchLayer.getSource()?.clear();
+    }
+    // 2. Emitimos el aviso a toda la app
+    this.searchCleared$.next();
+  }
+
   /**
    * Muestra un resultado de búsqueda en el mapa, ajustando la vista y el estilo.
    */
   public showLocationOnMap(location: LocationResult): void {
     const source = this.searchLayer?.getSource();
     if (!source) return;
+    this.clearSearchLayer();
 
-    source.clear();
     const geojsonFormat = new GeoJSON();
     const features = geojsonFormat.readFeatures(location.geojson);
     
@@ -165,7 +173,7 @@ export class GeographyService {
   clearLayers(): void {
     this.currentLayer?.getSource()?.clear();
     this.archivedLayer?.getSource()?.clear();
-    this.searchLayer?.getSource()?.clear();
+    this.clearSearchLayer();
   }
 
   /**

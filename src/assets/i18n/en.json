@@ -101,7 +101,9 @@
     "EMPTY": "Empty the folder",
     "NO_TRACKS": "You have no saved tracks yet",
     "FOLDER_NOT_EMPTY": "Folder is not empty",
-    "CENTER_MAP": "Center map"
+    "CENTER_MAP": "Center map",
+    "FOLDER_EMPTY": "Folder emptied successfully",
+    "FOLDER_DELETED": "Folder deleted successfully"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Voice Control",

@@ -101,7 +101,9 @@
     "EMPTY": "Vaciar la carpeta",
     "NO_TRACKS": "No tienes trayectos guardados aún",
     "FOLDER_NOT_EMPTY": "La carpeta no está vacía",
-    "CENTER_MAP": "Centrar mapa"
+    "CENTER_MAP": "Centrar mapa",
+    "FOLDER_EMPTY": "Se ha vaciado la carpeta",
+    "FOLDER_DELETED": "Se ha eliminado la carpeta"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control por voz",

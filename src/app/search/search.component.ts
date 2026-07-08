@@ -253,7 +253,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   clearPlace() {
     this.query = '';
     this.results = [];
-    this.geography.searchLayer?.getSource()?.clear();
+    this.geography.clearSearchLayer();
     this.reference.foundPlace = false;
     this.onClearResult.emit();
     this.cdr.detectChanges();
@@ -277,7 +277,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   clearServices() {
     this.selectedServices = [];
-    this.geography.searchLayer?.getSource()?.clear();
+    this.geography.clearSearchLayer();
     this.cdr.detectChanges();
   }
 
@@ -571,7 +571,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   clearServicesMap() {
-    this.geography.searchLayer?.getSource()?.clear();
+    this.geography.clearSearchLayer();
     this.fs.displayToast(this.translate.instant('SEARCH.PINS_REMOVED'), 'success');
     this.closePanel();
   }

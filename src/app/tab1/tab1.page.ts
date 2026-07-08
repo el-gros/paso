@@ -121,6 +121,13 @@ export class Tab1Page implements OnInit, OnDestroy {
 
     this.cd.detectChanges();
     this.initStatus$.next(true);
+
+    this.geography.searchCleared$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.wikiData = null; // Oculta la tarjeta
+        this.cd.detectChanges(); // Actualiza el HTML
+      });
   }
 
   /**

@@ -77,13 +77,7 @@
     </ion-fab>
   }
 
-  <!-- Tarjeta de información de Wikipedia / Clima -->
-  @if (wikiData) {
-    <app-wiki-card 
-      [data]="wikiData" 
-      (onClose)="wikiData = null">
-    </app-wiki-card>
-  }
+
 
   <!-- ======================================================================
        4. NAVEGACIÓN PRINCIPAL (Bottom Bar)
@@ -149,3 +143,11 @@
     }
 
 </ion-content>
+
+  <!-- Tarjeta de información de Wikipedia / Clima -->
+  @if (wikiData) {
+    <app-wiki-card 
+      [data]="wikiData" 
+      (onClose)="wikiData = null">
+    </app-wiki-card>
+  }

@@ -101,7 +101,9 @@
     "EMPTY": "Vider le dossier",
     "NO_TRACKS": "Vous n'avez pas encore de trajets enregistrés",
     "FOLDER_NOT_EMPTY": "Le dossier n'est pas vide",
-    "CENTER_MAP": "Centrer la carte"
+    "CENTER_MAP": "Centrer la carte",
+    "FOLDER_EMPTY": "Dossier vidé avec succès",
+    "FOLDER_DELETED": "Dossier supprimé avec succès"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Contrôle vocal",

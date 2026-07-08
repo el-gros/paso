@@ -304,12 +304,70 @@ ion-popover.top-search-popover {
 // ==========================================================================
 // 8. NOTIFICATIONS & ALERTS (Isla de Cristal)
 // ==========================================================================
-.toast { --top: calc(10px + var(--ion-safe-area-top, 0px)); text-align: center; font-size: 16px; font-weight: 500; --border-radius: 8px; --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); button { font-weight: 800 !important; text-transform: uppercase; font-size: 14px; } }
-.toast-success { @extend .toast; --background: #2dd36f; --color: #ffffff; }
-.toast-error { @extend .toast; --background: #eb445a; --color: #ffffff; }
-.custom-toast { --top: 100px; --end: 15px; --width: auto; --max-width: 250px; --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); &::part(message) { font-weight: 600; padding-inline-start: 10px; } }
-.glass-loading-overlay { --background: rgba(255, 255, 255, 0.95); --spinner-color: var(--ion-color-primary, #3880ff); backdrop-filter: blur(12px); .loading-wrapper { border-radius: 20px !important; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(255, 255, 255, 0.6); color: #333 !important; font-weight: 700; text-transform: uppercase; } }
+/* --- BASE TOAST --- */
+.toast { 
+  --top: calc(10px + var(--ion-safe-area-top, 0px)); 
+  text-align: center; 
+  font-size: 16px; 
+  font-weight: 500; 
+  --border-radius: 8px; 
+  /* Sombra ligeramente suavizada (de 0.2 a 0.15) para que encaje mejor con fondos claros */
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); 
 
+  /* Uso de ::part() para penetrar el Shadow DOM de Ionic y estilizar el botón */
+  &::part(button) { 
+    font-weight: 800 !important; 
+    text-transform: uppercase; 
+    font-size: 14px; 
+  } 
+}
+
+/* --- ESTADOS (Éxito y Error) --- */
+.toast-success { 
+  @extend .toast; 
+  --background: #edf7ed; /* Verde pálido */
+  --color: #1e4620;      /* Texto verde oscuro */
+  --button-color: #1e4620; 
+  --icon-color: #1e4620;
+}
+
+.toast-error { 
+  @extend .toast; 
+  --background: #fdeded; /* Rojo pálido */
+  --color: #5f2120;      /* Texto rojo oscuro */
+  --button-color: #5f2120;
+  --icon-color: #5f2120;
+}
+
+/* --- OTROS COMPONENTES (Sin cambios mayores, ya se ven geniales) --- */
+.custom-toast { 
+  --top: 100px; 
+  --end: 15px; 
+  --width: auto; 
+  --max-width: 250px; 
+  --border-radius: 12px; 
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
+  
+  &::part(message) { 
+    font-weight: 600; 
+    padding-inline-start: 10px; 
+  } 
+}
+
+.glass-loading-overlay { 
+  --background: rgba(255, 255, 255, 0.95); 
+  --spinner-color: var(--ion-color-primary, #3880ff); 
+  backdrop-filter: blur(12px); 
+  
+  .loading-wrapper { 
+    border-radius: 20px !important; 
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.6); 
+    color: #333 !important; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+  } 
+}
 // ==========================================================================
 // 9. VOICE CONTROL UI
 // ==========================================================================
@@ -484,3 +542,4 @@ ion-popover ion-content {
   ion-label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #333; }
   &:last-child { margin-bottom: 0; }
 }
+

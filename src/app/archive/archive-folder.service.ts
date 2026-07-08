@@ -197,7 +197,7 @@ async createNewFolder() {
     });
 
     await this.fs.storeSet('collection', this.fs.collection);
-    this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
+    this.fs.displayToast('ARCHIVE.FOLDER_EMPTY', 'success');
   }
 
   async deleteFolder(folder: string) {
@@ -205,6 +205,7 @@ async createNewFolder() {
     if (idx > -1) {
       this.fs.virtualFolders.splice(idx, 1);
       await this.fs.storeSet('virtual_folders', this.fs.virtualFolders);
+      this.fs.displayToast('ARCHIVE.FOLDER_DELETED', 'success');
     }
   }
 

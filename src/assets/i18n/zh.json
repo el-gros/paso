@@ -101,7 +101,9 @@
     "EMPTY": "清空文件夹",
     "NO_TRACKS": "您还没有保存的轨迹",
     "FOLDER_NOT_EMPTY": "文件夹不为空",
-    "CENTER_MAP": "居中地图"
+    "CENTER_MAP": "居中地图",
+    "FOLDER_EMPTY": "文件夹已清空",
+    "FOLDER_DELETED": "文件夹已删除"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "语音控制",
