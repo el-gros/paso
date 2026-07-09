@@ -25,6 +25,7 @@
     "YES": "Да",
     "NO_MAP_AVAILABLE": "Карта недоступна",
     "REMOVE_REFERENCE": "Справ.",
+    "REMOVE_SEARCH": "Поиск",
     "OFFLINE_CREDITS": "Данные офлайн-карт",
     "NO_CONNECTION_ERROR": "Нет соединения / Нет офлайн-карт"
   },

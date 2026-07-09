@@ -25,6 +25,7 @@
     "YES": "Oui",
     "NO_MAP_AVAILABLE": "Carte non disponible",
     "REMOVE_REFERENCE": "Réf.",
+    "REMOVE_SEARCH": "Rech.",
     "OFFLINE_CREDITS": "Données cartographiques hors ligne",
     "NO_CONNECTION_ERROR": "Pas de connexion / Pas de cartes hors ligne"
   },

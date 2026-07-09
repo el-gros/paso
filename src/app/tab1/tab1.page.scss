@@ -63,10 +63,10 @@ ion-fab {
 // ==========================================================================
 
 // A. Botón Limpiar Referencia (Arriba Izquierda)
-.clear-reference-fab {
+.clear-reference-fab,
+.clear-search-fab {
   top: env(safe-area-inset-top, 10px);
   margin-top: -10px; 
-  left: 10px;
   z-index: 9999 !important;
   pointer-events: auto !important;
 
@@ -94,6 +94,16 @@ ion-fab {
       line-height: 1;
     }
   }
+}
+
+// Posicionamiento específico a la izquierda
+.clear-reference-fab {
+  left: 10px;
+}
+
+// Posicionamiento específico a la derecha
+.clear-search-fab {
+  right: 10px;
 }
 
 // B. Botón de Cámara (Abajo Izquierda del semáforo)

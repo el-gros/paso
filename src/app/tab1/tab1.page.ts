@@ -60,6 +60,11 @@ export class Tab1Page implements OnInit, OnDestroy {
     return source ? source.getFeatures().length > 0 : false;
   }
 
+  get hasSearchContent(): boolean {
+    const source = this.geography.searchLayer?.getSource();
+    return source ? source.getFeatures().length > 0 : false;
+  }
+
   // ==========================================================================
   // 2. CICLO DE VIDA (Lifecycle)
   // ==========================================================================

@@ -50,7 +50,7 @@ export class ArchivePage implements OnInit {
   ) { }
 
   ngOnInit() {
-    if (this.geography.searchLayer) this.geography.clearSearchLayer();
+//    if (this.geography.searchLayer) this.geography.clearSearchLayer();
     this.geography.refreshPlacesLayer(this.fs.placesCollection);
   }
 

@@ -14,6 +14,16 @@
     </ion-fab>
   }
 
+  <!-- Botón para limpiar capa de referencia (solo si hay contenido) -->
+  @if (hasSearchContent) {
+    <ion-fab slot="fixed" vertical="top" horizontal="end" class="clear-search-fab" (click)="geography.clearSearchLayer()">
+      <div class="map-control-btn">
+        <ion-icon name="eye-off-outline" class="danger-icon"></ion-icon>
+        <span>{{ 'MAP.REMOVE_SEARCH' | translate }}</span>
+      </div>
+    </ion-fab>
+  }
+
   <!-- Botón de Cámara (solo durante la grabación activa) -->
   @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
     <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">

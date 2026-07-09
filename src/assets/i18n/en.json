@@ -25,6 +25,7 @@
     "YES": "Yes",
     "NO_MAP_AVAILABLE": "Map not available",
     "REMOVE_REFERENCE": "Ref.",
+    "REMOVE_SEARCH": "Srch",
     "OFFLINE_CREDITS": "Offline map data",
     "NO_CONNECTION_ERROR": "No connection / No offline maps"
   },

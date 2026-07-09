@@ -25,6 +25,7 @@
     "YES": "Sí",
     "NO_MAP_AVAILABLE": "Mapa no disponible",
     "REMOVE_REFERENCE": "Ref.",
+    "REMOVE_SEARCH": "Cerca",
     "OFFLINE_CREDITS": "Dades de mapes sense connexió",
     "NO_CONNECTION_ERROR": "Sense connexió / Sense mapes offline"
   },

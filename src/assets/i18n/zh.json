@@ -25,6 +25,7 @@
     "YES": "是",
     "NO_MAP_AVAILABLE": "地图不可用",
     "REMOVE_REFERENCE": "参考",
+    "REMOVE_SEARCH": "搜索",
     "OFFLINE_CREDITS": "离线地图数据",
     "NO_CONNECTION_ERROR": "无网络连接 / 无离线地图"
   },
