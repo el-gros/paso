@@ -277,3 +277,9 @@ ion-fab {
 .side-spacer {
   display: none; // Ya no lo necesitamos con posicionamiento fijo
 }
+
+.button-disabled {
+  opacity: 0.4; /* Lo hace semitransparente */
+  pointer-events: none; /* Bloquea cualquier clic o interacción táctil a nivel visual/navegador */
+  filter: grayscale(100%); /* Opcional: lo vuelve gris para que quede clarísimo que no está activo */
+}

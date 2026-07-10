@@ -1,32 +1,19 @@
 <ion-content class="custom-content">
 
-  <!-- ======================================================================
-       1. PAGINACIÓN SUPERIOR (Indicadores de Slide)
-       ====================================================================== -->
   <div class="top-pagination">
-    <div class="dot" [class.active]="activeIndex === 0" (click)="moveToSlide(0)">
-      <span>{{ 'CANVAS.PAG1' | translate }}</span>
-    </div>
-    <div class="dot" [class.active]="activeIndex === 1" (click)="moveToSlide(1)">
-      <span>{{ 'CANVAS.PAG2' | translate }}</span>
-    </div>
-    <div class="dot" [class.active]="activeIndex === 2" (click)="moveToSlide(2)">
-      <span>{{ 'CANVAS.PAG3' | translate }}</span>
-    </div>
+    @for (slide of availableSlides; track slide.id; let i = $index) {
+      <div class="dot" [class.active]="activeIndex === i" (click)="moveToSlide(i)">
+        <span>{{ slide.label | translate }}</span>
+      </div>
+    }
   </div>
 
-  <!-- ======================================================================
-       2. CONTENEDOR PRINCIPAL DE SLIDES (Swiper)
-       ====================================================================== -->
   @if (canRenderSwiper) {
   <swiper-container #swiperRef init="false" (swiperslidechange)="onSlideChange($event)">
     
-    <!-- ==================================================================
-         2.1. SLIDE 1: DATOS DEL TRACK ACTUAL
-         ================================================================== -->
-    <swiper-slide>
-      <div class="slide-wrapper">
-        @if (present.currentTrack) {
+    @if (present.currentTrack) {
+      <swiper-slide>
+        <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</div>
 
@@ -140,24 +127,14 @@
 
           <app-track-chart [track]="present.currentTrack" property="compAltitude" mode="x" title="CANVAS.CANVASALTITUDE" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
           <app-track-chart [track]="present.currentTrack" property="compSpeed" mode="t" title="CANVAS.CANVASSPEED" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
+        </div>
+      </swiper-slide>
+    }
 
-        } @else {
-          <div class="empty-state">
-            <div class="icon-container current"><ion-icon name="stats-chart-outline"></ion-icon></div>
-            <h3>{{'CANVAS.NO_RECORDING' | translate}}</h3>
-            <p>{{'CANVAS.DO_START' | translate}}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('tab1')">{{'CANVAS.GOTO_MAP' | translate}}</ion-button>
-          </div>
-        }
-      </div>
-    </swiper-slide>
-
-    <!-- ==================================================================
-         2.2. SLIDE 2: DATOS DEL TRACK DE REFERENCIA
-         ================================================================== -->
-    <swiper-slide>
-      <div class="slide-wrapper">
-        @if (reference.archivedTrack) {
+    @if (reference.archivedTrack) {
+      
+      <swiper-slide>
+        <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
             <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
@@ -214,24 +191,11 @@
 
           <app-track-chart [track]="reference.archivedTrack" property="compAltitude" mode="x" title="CANVAS.CANVASALTITUDE" [markerPosition]="(fs.routeStatus === 'green') ? fs.kmRecorridos : null" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
           <app-track-chart [track]="reference.archivedTrack" property="compSpeed" mode="t" title="CANVAS.CANVASSPEED" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
+        </div>
+      </swiper-slide>
 
-        } @else {
-          <div class="empty-state">
-            <div class="icon-container archived"><ion-icon name="archive-outline"></ion-icon></div>
-            <h3>{{'CANVAS.NO_REFERENCE' | translate}}</h3>
-            <p>{{'CANVAS.DO_SELECT' | translate}}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('archive')">{{'CANVAS.GOTO_ARCHIVE' | translate}}</ion-button>
-          </div>
-        }
-      </div>
-    </swiper-slide>
-
-    <!-- ==================================================================
-         2.3. SLIDE 3: PARCIALES DE VELOCIDAD
-         ================================================================== -->
-    <swiper-slide>
-      <div class="slide-wrapper">
-        @if (reference.archivedTrack) {
+      <swiper-slide>
+        <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
             <div class="subtitle">{{ reference.archivedTrack.features[0].properties.name }}</div>
@@ -264,23 +228,14 @@
               </div>
             }
           </div>
-        } @else {
-          <div class="empty-state">
-            <div class="icon-container archived"><ion-icon name="library-outline"></ion-icon></div>
-            <h3>{{ 'CANVAS.NO_REFERENCE' | translate }}</h3>
-            <p>{{ 'CANVAS.DO_SELECT' | translate }}</p>
-            <ion-button fill="clear" (click)="fs.gotoPage('archive')">{{ 'CANVAS.GOTO_ARCHIVE' | translate }}</ion-button>
-          </div>
-        }
-      </div>
-    </swiper-slide>
+        </div>
+      </swiper-slide>
+
+    }
   </swiper-container>
   }
 </ion-content>
 
-<!-- ======================================================================
-     3. NAVEGACIÓN PRINCIPAL (Bottom Bar)
-     ====================================================================== -->
 <div class="bottom-safe-gray"></div>
 
 <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">

@@ -198,7 +198,9 @@
         <ion-icon name="map-outline"></ion-icon>
         <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
       </div>
-      <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('canvas')">
+      <div class="record-button" 
+          [class.button-disabled]="fs.isNavigating || (!present.currentTrack && !reference.archivedTrack)" 
+          (click)="(!present.currentTrack && !reference.archivedTrack) ? null : fs.gotoPage('canvas')">
         <ion-icon name="analytics-outline"></ion-icon>
         <p>{{ 'MAP.DATA_BUTTON' | translate }}</p>
       </div>

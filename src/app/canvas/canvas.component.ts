@@ -70,6 +70,19 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const waypoints = this.reference.archivedTrack?.features?.[0]?.waypoints;
     return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
   }
+
+  get availableSlides() {
+    const slides = [];
+    if (this.present.currentTrack) {
+      slides.push({ id: 'current', label: 'CANVAS.PAG1' });
+    }
+    if (this.reference.archivedTrack) {
+      slides.push({ id: 'ref-data', label: 'CANVAS.PAG2' });
+      slides.push({ id: 'ref-partials', label: 'CANVAS.PAG3' });
+    }
+    return slides;
+  }
+  
   // ====================================================================
   // 3. CONSTRUCTOR
   // ====================================================================
