@@ -60,7 +60,28 @@ export class TracksComponent {
   handleFolderReorder(ev: CustomEvent<ItemReorderEventDetail>) { this.folderService.handleFolderReorder(ev); }
 
   async handleReorder(ev: CustomEvent<ItemReorderEventDetail>) {
-    this.fs.collection = ev.detail.complete(this.fs.collection);
+    // 1. Obtener los índices visuales (dentro de la carpeta actual)
+    const fromIndex = ev.detail.from;
+    const toIndex = ev.detail.to;
+
+    // 2. Identificar qué trayectos exactos estamos intercambiando
+    const itemToMove = this.tracksAtCurrentLevel[fromIndex];
+    const targetItem = this.tracksAtCurrentLevel[toIndex];
+
+    // 3. Buscar sus posiciones reales en la colección maestra
+    const realFromIndex = this.fs.collection.indexOf(itemToMove);
+    const realToIndex = this.fs.collection.indexOf(targetItem);
+
+    if (realFromIndex !== -1 && realToIndex !== -1) {
+      // 4. Mover el elemento dentro de la colección original
+      const movedItem = this.fs.collection.splice(realFromIndex, 1)[0];
+      this.fs.collection.splice(realToIndex, 0, movedItem);
+    }
+
+    // 5. Finalizar la animación visual de Ionic (sin pasarle el array)
+    ev.detail.complete();
+
+    // 6. Guardar los cambios en el almacenamiento
     await this.fs.storeSet('collection', this.fs.collection);
   }
 

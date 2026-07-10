@@ -105,3 +105,10 @@ ion-thumbnail.photo-thumbnail {
 .list-spacer { 
   height: 120px;
 }
+
+.options-icon {
+  padding: 15px; /* Aumenta el área táctil invisible */
+  margin-right: -5px; /* Ajusta esto si el padding empuja el icono demasiado a la izquierda */
+  font-size: 20px; /* Tamaño visual del icono */
+  z-index: 10; /* Asegura que esté por encima de otros elementos al hacer clic */
+}
