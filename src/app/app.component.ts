@@ -1,4 +1,4 @@
-import { Component, NgZone, OnDestroy } from '@angular/core';
+import { Component, inject, NgZone, OnDestroy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { IonicModule, Platform } from '@ionic/angular';
@@ -20,6 +20,8 @@ import { MapStyleService } from './services/map-style.service';
 
 import { useGeographic } from 'ol/proj';
 
+import { VoiceRunnerService } from './services/voice-runner.service';
+
 useGeographic();
 
 @Component({
@@ -40,7 +42,9 @@ export class AppComponent implements OnDestroy {
     private language: LanguageService,
     private mbTilesService: MbTilesService,
     private trackImportService: TrackImportService,
-    private mapStyle: MapStyleService  ) {
+    private mapStyle: MapStyleService,
+    public voiceRunner: VoiceRunnerService,
+  ) {
     this.initializeApp();
   }
 

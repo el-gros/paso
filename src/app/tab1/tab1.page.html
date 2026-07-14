@@ -1,10 +1,5 @@
 <ion-content [fullscreen]="true">
   
-  <!-- ======================================================================
-       1. CONTROLES FLOTANTES SUPERIORES (Acciones rápidas)
-       ====================================================================== -->
-
-  <!-- Botón para limpiar capa de referencia (solo si hay contenido) -->
   @if (hasReferenceContent) {
     <ion-fab slot="fixed" vertical="top" horizontal="start" class="clear-reference-fab" (click)="clearReferenceLayer()">
       <div class="map-control-btn">
@@ -14,7 +9,6 @@
     </ion-fab>
   }
 
-  <!-- Botón para limpiar capa de referencia (solo si hay contenido) -->
   @if (hasSearchContent) {
     <ion-fab slot="fixed" vertical="top" horizontal="end" class="clear-search-fab" (click)="geography.clearSearchLayer()">
       <div class="map-control-btn">
@@ -24,7 +18,6 @@
     </ion-fab>
   }
 
-  <!-- Botón de Cámara (solo durante la grabación activa) -->
   @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
     <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
       <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
@@ -33,18 +26,18 @@
     </ion-fab>
   }
 
-  <!-- Isla de control central: Grabar, Buscar y Zoom -->
-  <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
-    @if (!fs.voiceControl) {
+  @if (!fs.voiceControl) {
+    <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
+
       <ion-row>
         @if (location.state === 'tracking') {
-          <div class="record-button with-indicator" (click)="present.isConfirmStopOpen = true">
+          <div class="record-button with-indicator" (click)="state.transitionTo('CONFIRM_STOP')">
             <ion-icon name="stop-outline" class="primary-icon"></ion-icon>
             <span class="tracking-dot"></span>
             <p>{{ 'RECORD.STOP_TRACKING' | translate }}</p>
           </div>
         } @else {
-          <div class="record-button" (click)="startTracking()">
+          <div class="record-button" (click)="trackManager.startTracking()">
             <ion-icon name="play-outline" class="primary-icon"></ion-icon>
             <p>{{ 'RECORD.BUTTON' | translate }}</p>
           </div>
@@ -62,23 +55,14 @@
           <p>{{ 'MAP.ZOOM_BUTTON' | translate }}</p> 
         </div>
       </ion-row>
-    }
-  </ion-fab>
-
-  <!-- ======================================================================
-       2. MOTOR DE MAPA (Capa base)
-       ====================================================================== -->
+    </ion-fab>
+  }  
 
   <div id="map-wrapper">
     <div id="map"></div>
   </div>
   <div class="safe-area"></div>
 
-  <!-- ======================================================================
-       3. INDICADORES Y SOBRECAPAS (Overlays)
-       ====================================================================== -->
-
-  <!-- Indicador LED de estado de ruta (Dentro/Fuera de ruta) -->
   @if (present.currentTrack && reference.archivedTrack) { 
     <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
       <div class="status-indicator-container">
@@ -89,16 +73,9 @@
     </ion-fab>
   }
 
-
-
-  <!-- ======================================================================
-       4. NAVEGACIÓN PRINCIPAL (Bottom Bar)
-       ====================================================================== -->
-
-  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-    
-    @if (!fs.voiceControl) {
-      <ion-row>
+  @if (!fs.voiceControl) {
+    <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+      <ion-row class="normal-mode-row">
         <div class="record-button" (click)="reference.isSearchGuidePopoverOpen = !reference.isSearchGuidePopoverOpen;">
           <ion-icon name="search-outline"></ion-icon>
           <p>{{ 'SEARCH.BUTTON' | translate }}</p>
@@ -112,54 +89,32 @@
           <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p> 
         </div>
       </ion-row>
+    </ion-fab>
+  }  
 
-    } @else {
-      <div class="voice-layout-wrapper"> <!-- Nuevo contenedor para agrupar ambos -->
-        
-        <!-- Espaciador a la izquierda para centrar el micro -->
-        <div class="side-spacer"></div>
-
-        <!-- El Micro (Centro) -->
-        <div class="voice-mode-container">
-          <div class="mic-button-wrapper">
-            <div class="mic-main-button" 
-                (click)="voiceRunner.toggleVoiceControl()" 
-                [class.is-listening]="voiceRunner.isListening">
-              <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
-            </div>
-          </div>
-        </div>
-
-        <!-- El "Salvavidas" (Derecha) -->
-        <div class="emergency-settings" (click)="fs.gotoPage('settings')">
-          <ion-icon name="settings-outline"></ion-icon>
-        </div>
-
-      </div>
-    }
-  </ion-fab>
-
-  <!-- ======================================================================
-       5. COMPONENTES LÓGICOS Y POPOVERS
-       ====================================================================== -->
-
-  <app-record-popover></app-record-popover>
+  <ion-popover 
+    [isOpen]="state.current === 'CONFIRM_STOP' || state.current === 'CONFIRM_DELETE' || state.current === 'TRACK_MENU'" 
+    (didDismiss)="onStopDismiss()" 
+    class="confirm-popover">
+    <ng-template>
+      <app-record-popover></app-record-popover>
+    </ng-template>
+  </ion-popover>
     
-    @if (reference.isSearchGuidePopoverOpen) {
-      <div slot="fixed" style="width: 100%; top: 0; left: 0; z-index: 99999;">
-        <app-search
-          (onWikiResult)="handleWikiResult($event)"
-          (onClearResult)="wikiData = null">
-        </app-search>
-      </div>
-    }
+  @if (reference.isSearchGuidePopoverOpen) {
+    <div slot="fixed" style="width: 100%; top: 0; left: 0; z-index: 99999;">
+      <app-search
+        (onWikiResult)="handleWikiResult($event)"
+        (onClearResult)="wikiData = null">
+      </app-search>
+    </div>
+  }
 
 </ion-content>
 
-  <!-- Tarjeta de información de Wikipedia / Clima -->
-  @if (wikiData) {
-    <app-wiki-card 
-      [data]="wikiData" 
-      (onClose)="wikiData = null">
-    </app-wiki-card>
-  }
+@if (wikiData) {
+  <app-wiki-card 
+    [data]="wikiData" 
+    (onClose)="wikiData = null">
+  </app-wiki-card>
+}

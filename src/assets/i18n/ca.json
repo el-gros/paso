@@ -194,6 +194,7 @@
   "RECORD": {
     "BUTTON": "GRAVAR",
     "START_TRACKING": "Iniciar",
+    "STARTING": "Iniciant gravació...",
     "STOP_TRACKING": "Aturar",
     "WAYPOINT": "Wpt.",
     "SAVE_TRACK": "Desar",
@@ -350,18 +351,25 @@
     "OTHER": "Altres"
   },
   "VOICE_COMMANDS": {
-      "MAP": "mapa, navegació",
-      "ARCHIVE": "arxiu, biblioteca, historial, rutes",
-      "DATA": "dades, gràfiques, gràfics, estadístiques, canvas",
-      "SETTINGS": "configuració, ajustos, preferències", 
-      "SEARCH": "buscar, cerca, recerca, trobar, localització, localitzar, localitzador",
-      "ZOOM": "zoom, lupa, augmentar, ampliar, engrandir",
-      "RECORD": "gravar, iniciar, començar, comença, engegar, engega",
-      "STOP": "aturar, deturar, para, final, acaba, acaba la ruta, termina",
-      "HELP_COMMAND": "ajuda, info, instruccions, opcions",
-      "HELP_PREFIX": "Les opcions disponibles són: {0}"
+    "MAP": "mapa, navegació",
+    "ARCHIVE": "arxiu, biblioteca, historial",
+    "DATA": "dades, gràfiques, gràfics, estadístiques, canvas",
+    "SETTINGS": "configuració, ajustos, preferències",
+    "SEARCH": "cercar, cerca, buscar, localitzador, localització, localitzar, trobar",
+    "ZOOM": "zoom, lupa, augmentar, ampliar, engrandir",
+    "RECORD": "gravar, iniciar, començar, comença, començar a gravar",
+    "STOP": "parar, aturar, final, acaba, detingues",
+    "HELP_COMMAND": "ajuda, info, instruccions, opcions",
+    "HELP_PREFIX": "Les opcions disponibles són: {0}",
+    "HELP_IDLE": "Les opcions disponibles són: gravar, mapa, arxiu, dades o configuració.",
+    "HELP_TRACKING": "Les opcions de gravació són: parar, mapa, arxiu, dades o configuració.",
+    "ALREADY_IN_MAP": "Ja ets al mapa",
+    "ALREADY_IN_ARCHIVE": "Ja ets a l'arxiu",
+    "ALREADY_IN_DATA": "Ja ets a la pantalla de dades",
+    "ALREADY_IN_SETTINGS": "Ja ets a la pantalla de configuració",
+    "NO_TRACKS": "No hi ha trajectes al mapa"
   },
-  "VOICE": {
+   "VOICE": {
     "PROMPT": "Digueu una ordre...",
     "LISTENING": "Escoltant...",
     "HOLD_TO_TALK": "Mantingueu per parlar",

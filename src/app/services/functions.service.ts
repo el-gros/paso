@@ -248,28 +248,32 @@ export class FunctionsService {
     return data;
   }
 
-  public async displayToast(message: string, css: string, duration: number = 3000): Promise<void> {
-    const finalMessage = this.translate.instant(message);
+public async displayToast(message: string, css: string, duration: number = 3000): Promise<void> {
+  const finalMessage = this.translate.instant(message);
 
-    if (this.voiceControl) {
-      const tts = this.injector.get(TtsService); 
-      await tts.speak(finalMessage);
-      return; 
-    }
-
-    const toast = await this.toastController.create({ 
-      message: finalMessage, 
-      duration: duration, 
-      position: 'bottom', 
-      cssClass: `toast toast-${css}`,
-      buttons: duration === 0 ? [
-        { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
-      ] : [
-        { icon: 'close-outline', role: 'cancel' }
-      ]
-    });
-    await toast.present();
+  if (this.voiceControl) {
+    const tts = this.injector.get(TtsService);
+    
+    // 1. Limpiamos cualquier emoji del texto antes de pasarlo al sintetizador
+    const textWithoutEmojis = finalMessage.replace(/[\u1000-\uFFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim();
+    
+    await tts.speak(textWithoutEmojis);
+    return; // Ojo: si devuelves aquí, el toast visual nunca llega a mostrarse en pantalla
   }
+
+  const toast = await this.toastController.create({ 
+    message: finalMessage, 
+    duration: duration, 
+    position: 'bottom', 
+    cssClass: `toast toast-${css}`,
+    buttons: duration === 0 ? [
+      { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
+    ] : [
+      { icon: 'close-outline', role: 'cancel' }
+    ]
+  });
+  await toast.present();
+}
 
   async gotoPage(url: string) {
     if (this.isNavigating) return;

@@ -21,7 +21,7 @@ import { AppStateService } from '../services/appState.service';
 //import { TrackExportService } from '../services/track-export.service'; // <-- AÑADIDO
 import { PhotoViewerComponent } from '../photo-viewer.component'; 
 import { TrackChartComponent } from '../track-chart.component'; 
-import { VoiceRunnerService } from '../services/voice-runner.service';
+import { VoiceRunnerService } from '../services/voice-runner.service'; // Ajusta la ruta relativa si es necesario
 
 register();
 
@@ -82,7 +82,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     }
     return slides;
   }
-  
+
   // ====================================================================
   // 3. CONSTRUCTOR
   // ====================================================================
@@ -98,8 +98,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     private appState: AppStateService,
     private location: LocationManagerService,
     private zone: NgZone,
+    public voiceRunner: VoiceRunnerService,
     //private trackExport: TrackExportService,
-    public voiceRunner: VoiceRunnerService 
   ) {}
 
   // ====================================================================

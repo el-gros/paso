@@ -20,7 +20,8 @@ import { FunctionsService } from './services/functions.service';
 import { PresentService } from './services/present.service';
 import { SaveTrackPopover } from './save-track-popover.component';
 import { TrackManagerService } from './services/track-manager.service'; 
-
+import { StateService } from './services/state.service';
+import { VoiceRunnerService } from './services/voice-runner.service';
 @Component({
   standalone: true,
   selector: 'app-record-popover',
@@ -115,15 +116,23 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private cd = inject(ChangeDetectorRef);
   private loadingCtrl = inject(LoadingController);
   private trackManager = inject(TrackManagerService);
-
+  public state = inject(StateService); // <-- Inyecta el servicio aquí
   public loading = false;
   private subscription?: Subscription;
+  public voiceRunner = inject(VoiceRunnerService);
 
   // Banderas anti-bucles
   private confirmedDelete = false;
   private confirmedStop = false;
 
-  ngOnInit() {}
+  ngOnInit() {
+    // En el ngOnInit de tu RecordPopoverComponent (o en tu PresentService):
+    this.state.state$.subscribe(currentState => {
+      this.present.isConfirmStopOpen = (currentState === 'CONFIRM_STOP');
+      this.present.isRecordPopoverOpen = (currentState === 'TRACK_MENU');
+      this.present.isConfirmDeletionOpen = (currentState === 'CONFIRM_DELETE');
+    });
+    }
   ngOnDestroy() { this.subscription?.unsubscribe(); }
 
   // ==========================================================================
@@ -178,7 +187,8 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     try {
       this.subscription?.unsubscribe();
       const isSuccess = await this.trackManager.stopTrackingProcess();
-      
+      this.state.transitionTo('TRACK_MENU');
+
       if (isSuccess) {
         this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
         await this.setTrackDetails();
@@ -195,8 +205,11 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   }
 
   onStopDismiss() {
-    this.present.isConfirmStopOpen = false;
-    this.confirmedStop = false; // Reseteamos la bandera
+    if (this.state.current === 'CONFIRM_STOP') {
+      this.voiceRunner.cancelStop();
+    }
+    //this.present.isConfirmStopOpen = false;
+    //this.confirmedStop = false; // Reseteamos la bandera
   }
 
   // ==========================================================================

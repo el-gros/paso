@@ -1,3 +1,27 @@
 <ion-app>
   <ion-router-outlet></ion-router-outlet>
+
+  @if (fs.voiceControl) {
+    <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="global-voice-fab">
+      <div class="voice-layout-wrapper"> 
+        
+        <div class="grid-left-column"></div>
+
+        <div class="voice-mode-container">
+          <div class="mic-button-wrapper">
+            <div class="mic-main-button" 
+                 (click)="voiceRunner.toggleVoiceControl()" 
+                 [class.is-listening]="voiceRunner.isListening">
+              <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <div class="emergency-settings" (click)="fs.gotoPage('settings')">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+
+      </div>
+    </ion-fab>
+  }
 </ion-app>

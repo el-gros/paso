@@ -1,285 +1,187 @@
-// ==========================================================================
-// 1. CONTENEDOR DEL MOTOR DE MAPA
-// ==========================================================================
-
-#map-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-}
-
-#map {
-  width: 100%;
-  height: 100%;
-}
-
-// ==========================================================================
-// 2. GESTIÓN DE INTERACTIVIDAD (Z-Index y Pointer Events)
-// ==========================================================================
-
-ion-fab {
-  pointer-events: none; // El contenedor FAB no bloquea el mapa
-  
-  ion-row {
-    pointer-events: auto;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
+:host {
+  // ==========================================================================
+  // 1. CONTENEDOR DEL MOTOR DE MAPA
+  // ==========================================================================
+  #map-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
   }
 
-  ion-fab-button {
-    pointer-events: auto;
+  #map {
+    width: 100%;
+    height: 100%;
   }
-}
 
-// ==========================================================================
-// 3. CONTROLES SUPERIORES (Isla Central y Búsqueda)
-// ==========================================================================
- 
-/* Nota: .top-safe y .record-button ahora se heredan de global.scss */
+  // ==========================================================================
+  // 2. GESTIÓN DE INTERACTIVIDAD (Z-Index y Pointer Events)
+  // ==========================================================================
+  ion-fab {
+    pointer-events: none; // El contenedor FAB no bloquea el mapa
+    
+    ion-row {
+      pointer-events: auto;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
 
-.record-button {
-  // Punto rojo parpadeante durante la grabación
-  &.with-indicator {
-    position: relative;
-    .tracking-dot {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 8px;
-      height: 8px;
-      background-color: var(--ion-color-danger, #eb445a);
-      border-radius: 50%;
-      animation: blink 1.2s infinite;
+    ion-fab-button {
+      pointer-events: auto;
     }
   }
-}
 
-// ==========================================================================
-// 4. SOBRECAPAS LATERALES (Cámara, Semáforo, Limpiar Ref)
-// ==========================================================================
+  // ==========================================================================
+  // 3. CONTROLES SUPERIORES (Indicador rojo de grabación)
+  // ==========================================================================
+  .record-button {
+    &.with-indicator {
+      position: relative;
+      .tracking-dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background-color: var(--ion-color-danger, #eb445a);
+        border-radius: 50%;
+        animation: blink 1.2s infinite;
+      }
+    }
+  }
 
-// A. Botón Limpiar Referencia (Arriba Izquierda)
-.clear-reference-fab,
-.clear-search-fab {
-  top: env(safe-area-inset-top, 10px);
-  margin-top: -10px; 
-  z-index: 9999 !important;
-  pointer-events: auto !important;
+  // ==========================================================================
+  // 4. SOBRECAPAS LATERALES (Cámara, Semáforo, Limpiar Ref)
+  // ==========================================================================
+  .clear-reference-fab,
+  .clear-search-fab {
+    top: env(safe-area-inset-top, 10px);
+    margin-top: -10px; 
+    z-index: 9999 !important;
+    pointer-events: auto !important;
 
-  .map-control-btn {
+    .map-control-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--ion-background-color, #ffffff);
+      padding: 4px 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+
+      .danger-icon {
+        color: var(--ion-color-danger, #eb445a);
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+
+      span {
+        font-size: 11px;
+        font-weight: bold;
+        color: var(--ion-text-color, #333);
+        text-align: center;
+        line-height: 1;
+      }
+    }
+  }
+
+  .clear-reference-fab {
+    left: 10px;
+  }
+
+  .clear-search-fab {
+    right: 10px;
+  }
+
+  .camera-fab {
+    top: 90px !important;
+    left: 15px !important;
+    margin: 0 !important;
+    
+    ion-fab-button {
+      --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      width: 48px;
+      height: 48px;
+      ion-icon { font-size: 24px; }
+    }
+  }
+
+  .route-indicator-fab {
+    position: fixed !important;
+    top: 95px !important;
+    right: 15px !important;
+    z-index: 9999 !important;      
+    pointer-events: auto !important; 
+    cursor: pointer !important;
+    margin: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    left: auto !important;
+  }
+
+  .status-indicator-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--ion-background-color, #ffffff);
-    padding: 4px 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    pointer-events: none; 
+  }
 
-    .danger-icon {
-      color: var(--ion-color-danger, #eb445a);
-      font-size: 24px;
-      margin-bottom: 4px;
+  .led-button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
+    ion-icon {
+      font-size: 20px;
+      color: white;
     }
 
-    span {
-      font-size: 11px;
-      font-weight: bold;
-      color: var(--ion-text-color, #333);
-      text-align: center;
-      line-height: 1;
+    &.green {
+      background-color: var(--ion-color-success, #2dd36f);
+      box-shadow: 0 0 12px rgba(45, 211, 111, 0.6);
+    }
+
+    &.red {
+      background-color: var(--ion-color-danger, #eb445a);
+      box-shadow: 0 0 12px rgba(235, 68, 90, 0.6);
+      animation: blink 1.5s infinite;
+    }
+
+    &.unknown, &.black {
+      background-color: #333;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
     }
   }
-}
 
-// Posicionamiento específico a la izquierda
-.clear-reference-fab {
-  left: 10px;
-}
-
-// Posicionamiento específico a la derecha
-.clear-search-fab {
-  right: 10px;
-}
-
-// B. Botón de Cámara (Abajo Izquierda del semáforo)
-.camera-fab {
-  top: 90px !important;
-  left: 15px !important;
-  margin: 0 !important;
-  
-  ion-fab-button {
-    --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-    width: 48px;
-    height: 48px;
-    ion-icon { font-size: 24px; }
-  }
-}
-
-// C. Indicador de Estado de Ruta (Semáforo - Arriba Derecha)
-.route-indicator-fab {
-  position: fixed !important;
-  top: 95px !important;
-  right: 15px !important;
-  z-index: 9999 !important;      
-  pointer-events: auto !important; 
-  cursor: pointer !important;
-  margin: 0 !important;
-  width: auto !important;
-  height: auto !important;
-  left: auto !important;
-}
-
-.status-indicator-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none; 
-}
-
-.led-button {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-
-  ion-icon {
-    font-size: 20px;
-    color: white;
+  // ==========================================================================
+  // 5. INTERFAZ INFERIOR (Solo Modo Normal)
+  // ==========================================================================
+  .normal-mode-row {
+    pointer-events: auto; 
+    display: flex;
+    justify-content: center; // Cambiamos de space-around a center
+    align-items: center;
+    gap: 12px;               // Espaciado uniforme entre botones
+    width: auto;             // Que solo ocupe lo que necesita
+    padding: 0 16px;
+    height: 80px;            // Altura fija para que no se vea "estrecho"
   }
 
-  /* Estados de color */
-  &.green {
-    background-color: var(--ion-color-success, #2dd36f);
-    box-shadow: 0 0 12px rgba(45, 211, 111, 0.6);
+  // ==========================================================================
+  // 6. ANIMACIONES LOCALES
+  // ==========================================================================
+  @keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
   }
-
-  &.red {
-    background-color: var(--ion-color-danger, #eb445a);
-    box-shadow: 0 0 12px rgba(235, 68, 90, 0.6);
-    animation: blink 1.5s infinite;
-  }
-
-  &.unknown, &.black {
-    background-color: #333;
-    box-shadow: 0 0 6px rgba(0,0,0,0.5);
-  }
-}
-
-// ==========================================================================
-// 6. ANIMACIONES
-// ==========================================================================
-
-@keyframes blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-/*
-.voice-layout-wrapper {
-  display: flex;
-  align-items: center;
- 
-  justify-content: center; 
-  width: 100vw;
-  margin-right: 100px;
-  margin-left: 100px;
- 
-  padding: 0 30px; 
-  position: absolute;
-  bottom: 0;
-  gap: 10px; // Espacio mínimo entre elementos
-}
-
-.side-spacer {
- 
-  width: 50px; 
-  flex-shrink: 0; // Evita que se deforme
-}
-
-.voice-mode-container {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.emergency-settings {
-  width: 50px; // Ancho fijo
-  height: 50px;
-  flex-shrink: 0; // Evita que se deforme
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 15px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: var(--ion-color-medium);
-  transition: all 0.2s ease;
-  
-  ion-icon {
-    font-size: 24px;
-  }
-}
-*/
-
-.voice-layout-wrapper {
-  // Ahora el wrapper solo sirve de base, no intentamos centrar con él
-  position: relative;
-  width: 100vw;
-  height: 80px; 
-  display: flex;
-  justify-content: center; // Esto solo centrará el MICRO
-  align-items: center;
-}
-
-.voice-mode-container {
-  // El micro se queda en el flujo normal (centrado por el padre)
-  display: flex;
-  justify-content: center;
-}
-
-.emergency-settings {
-  // POSICIONAMIENTO RADICAL
-  position: fixed !important; 
-  bottom: 17px; // Ajusta según la altura de tu micro
-  
-  // En lugar de 'right: 20px', usamos un valor que lo meta más adentro
-  // Prueba con 15% o 20% para que se acerque al micro
-  right: 22%; 
-  
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 15px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: var(--ion-color-medium);
-  z-index: 9999;
-  pointer-events: auto !important;
-}
-
-.side-spacer {
-  display: none; // Ya no lo necesitamos con posicionamiento fijo
-}
-
-.button-disabled {
-  opacity: 0.4; /* Lo hace semitransparente */
-  pointer-events: none; /* Bloquea cualquier clic o interacción táctil a nivel visual/navegador */
-  filter: grayscale(100%); /* Opcional: lo vuelve gris para que quede clarísimo que no está activo */
 }

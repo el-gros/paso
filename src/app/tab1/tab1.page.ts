@@ -26,7 +26,9 @@ import { MapTracksService } from '../services/map-tracks.service';
 import { DeviceSetupService } from '../services/device-setup.service'; 
 import { TrackingEngineService } from '../services/tracking-engine.service'; // <-- NUEVO
 import { PhotoWaypointService } from '../services/photo-waypoint.service'; // <-- NUEVO
-import { VoiceRunnerService } from '../services/voice-runner.service';
+import { VoiceRunnerService } from '../services/voice-runner.service'; // Ajusta la ruta relativa si es necesario
+import { TrackManagerService } from '../services/track-manager.service'; // <-- NUEVO
+import { StateService } from '../services/state.service';
 
 register();
 
@@ -90,6 +92,8 @@ export class Tab1Page implements OnInit, OnDestroy {
     public trackingEngine: TrackingEngineService, // <-- INYECTADO
     public photoWaypoint: PhotoWaypointService,
     public voiceRunner: VoiceRunnerService,
+    public trackManager: TrackManagerService, // <-- INYECTADO
+    public state: StateService, // <-- INYECTADO
   ) {}
 
   async ngOnInit() {
@@ -256,7 +260,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     await this.photoWaypoint.addPhotoWaypoint();
   }
 
-  async startTracking() {
+/*  async startTracking() {
     this.present.currentTrack = undefined;
     this.location.currentPoint = 0;
     this.present.filtered = 0;
@@ -265,7 +269,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
     this.location.state = 'tracking';
     await this.location.sendReferenceToPlugin();
-  }
+  } */
 
   async refreshMapOnForeground() {
     if (!this.present.currentTrack) return;
@@ -302,6 +306,14 @@ export class Tab1Page implements OnInit, OnDestroy {
       await this.location.sendReferenceToPlugin();
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  public onStopDismiss() {
+    // Cuando el popover se cierra, simplemente validamos el estado
+    // Si el estado sigue siendo 'CONFIRM_STOP', es que el usuario canceló fuera del botón
+    if (this.state.current === 'CONFIRM_STOP') {
+      this.voiceRunner.cancelStop();
     }
   }
 }

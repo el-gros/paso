@@ -18,7 +18,7 @@ import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { BackupService } from '../services/backup.service'; 
 import { OfflineMapService } from '../services/offline-map.service'; // <--- Nuevo Servicio
-import { VoiceRunnerService } from '../services/voice-runner.service';
+import { VoiceRunnerService } from '../services/voice-runner.service'; // Ajusta la ruta relativa si es necesario
 
 // --- COMPONENTS ---
 import { ColorPopoverComponent } from '../color-popover.component';
@@ -76,7 +76,7 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private location: LocationManagerService,
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
-    public voiceRunner: VoiceRunnerService
+    public voiceRunner: VoiceRunnerService,
   ) {
     this.setupMapActions();
   }
@@ -246,8 +246,6 @@ public async onVoiceControlChange(value: boolean) {
     this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_CONTROL_ACTIVE'), 'success');
   } else {
     // Si el usuario apaga el interruptor, nos aseguramos de apagar el micro
-    this.voiceRunner.isListening = false;
-    await this.voiceRunner.stopListening();
   }
 }
 

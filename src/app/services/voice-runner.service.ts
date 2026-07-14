@@ -1,13 +1,14 @@
+// src/app/services/voice/voice-runner.service.ts
 import { Injectable, inject } from '@angular/core';
-import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { FunctionsService } from './functions.service';
-import { MapService } from './map.service';
-import { GeographyService } from './geography.service';
-import { LocationManagerService } from './location-manager.service';
+import { TrackManagerService } from './track-manager.service';
+import { StateService } from './state.service';
 import { PresentService } from './present.service';
 import { ReferenceService } from './reference.service';
+import { VoiceDriverService } from './voice-driver.service';
+import { VoiceParserService } from './voice-parser.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,263 +17,311 @@ export class VoiceRunnerService {
   private translate = inject(TranslateService);
   private fs = inject(FunctionsService);
   private router = inject(Router);
-  private mapService = inject(MapService);
-  private geography = inject(GeographyService);
-  private location = inject(LocationManagerService);
+  private trackManager = inject(TrackManagerService);
+  private state = inject(StateService);
   private present = inject(PresentService);
   private reference = inject(ReferenceService);
+  
+  // Servicios modulares de voz
+  private driver = inject(VoiceDriverService);
+  private parser = inject(VoiceParserService);
 
-  public isListening = false;
-  private isToggling: boolean = false;
+  /**
+   * Getter público para que tus plantillas HTML ([class.is-listening]="voiceRunner.isListening")
+   * sigan funcionando exactamente igual sin tocar ninguna página.
+   */
+  public get isListening(): boolean {
+    return this.driver.isListening;
+  }
 
-public async toggleVoiceControl() {
-  if (this.isToggling) return;
-  this.isToggling = true;
-
-  try {
-    if (this.isListening) {
-      await this.stopListening();
+  /**
+   * Acción disparada por el botón flotante de micrófono en la UI.
+   */
+  public async toggleVoiceControl(): Promise<void> {
+    if (this.driver.isListening) {
+      await this.driver.stopListening();
     } else {
-      // OPCIÓN A: Si usas el SpeechRecognition nativo del navegador
-      // Simplemente arrancamos. El navegador gestionará el pop-up de permiso.
-      await this.startListening();
-      
-      // Si después de startListening() sigue sin sonar, 
-      // es probable que el error esté DENTRO de startListening.
-    }
-  } catch (error) {
-    console.error("Error en el control de voz:", error);
-    this.isListening = false;
-  } finally {
-    // Un pequeño delay antes de permitir otra pulsación
-    setTimeout(() => { this.isToggling = false; }, 500);
-  }
-}
-
-  async startListening() {
-    if (this.isListening) return;
-    try {
-      const permissions = await SpeechRecognition.checkPermissions();
-      if (permissions.speechRecognition !== 'granted') {
-        await SpeechRecognition.requestPermissions();
-      }
-      this.isListening = true;
-      const result = await SpeechRecognition.start({
-        language: this.getLocale(this.translate.currentLang),
-        partialResults: false,
-        popup: false 
-      });
-      this.isListening = false;
-      const text = (result.matches && result.matches.length > 0) ? result.matches[0] : '';
-      if (text) {
-        this.processCommand(this.analyzeCommand(text));
-      }
-    } catch (error: any) {
-      this.isListening = false; 
+      await this.startListeningCycle();
     }
   }
 
-  async stopListening() {
-    if (!this.isListening) return;
-    try { await SpeechRecognition.stop(); this.isListening = false; } catch (e) {}
+  /**
+   * Inicia el ciclo completo: escuchar -> analizar -> ejecutar.
+   */
+  public async startListeningCycle(): Promise<void> {
+    const text = await this.driver.listen();
+    if (text) {
+      const command = this.parser.analyzeCommand(text, this.state.current);
+      await this.processCommand(command);
+    }
   }
 
-  private analyzeCommand(text: string): string | null {
-    if (!text) return null;
-    const rawText = this.removeAccents(text.toLowerCase().trim());
-    console.log("Analizando texto escuchado:", rawText);
-
-    const helpKeywords = this.getKeywords('VOICE_COMMANDS.HELP_COMMAND');
-    if (helpKeywords.some(kw => rawText.includes(kw))) {
-        console.log("¡Comando HELP detectado!");
-        return 'help';
+  // ==========================================================================
+  // PROCESADOR DE COMANDOS POR ESTADO
+  // ==========================================================================
+  private async processCommand(command: string | null): Promise<void> {
+    if (!command) {
+      this.fs.displayToast('Comando no válido para el estado actual 🤷‍♂️', 'warning');
+      return;
     }
 
-    const commands = {
-      map: this.getKeywords('VOICE_COMMANDS.MAP'),
-      archive: this.getKeywords('VOICE_COMMANDS.ARCHIVE'),
-      data: this.getKeywords('VOICE_COMMANDS.DATA'),
-      settings: this.getKeywords('VOICE_COMMANDS.SETTINGS'),
-      search: this.getKeywords('VOICE_COMMANDS.SEARCH'),
-      zoom: this.getKeywords('VOICE_COMMANDS.ZOOM'),
-      record: this.getKeywords('VOICE_COMMANDS.RECORD'),
-      stop: this.getKeywords('VOICE_COMMANDS.STOP'),
-      help: this.getKeywords('VOICE_COMMANDS.HELP_COMMAND') // <-- Nuevo
-    };
+    if (command === 'help') {
+      this.giveStatefulHelp();
+      return;
+    }
 
-    if (commands.map.some(kw => rawText.includes(kw))) return 'map';
-    if (commands.archive.some(kw => rawText.includes(kw))) return 'archive';
-    if (commands.data.some(kw => rawText.includes(kw))) return 'data';
-    if (commands.settings.some(kw => rawText.includes(kw))) return 'settings';
-    if (commands.search.some(kw => rawText.includes(kw))) return 'search';
-    if (commands.zoom.some(kw => rawText.includes(kw))) return 'zoom';
-    if (commands.record.some(kw => rawText.includes(kw))) return 'record';
-    if (commands.stop.some(kw => rawText.includes(kw))) return 'stop';
-    if (commands.help.some(kw => rawText.includes(kw))) return 'help'; // <-- Nuevo
-    
-    return null;
+    switch (this.state.current) {
+      case 'IDLE':
+        await this.handleIdleState(command);
+        break;
+      case 'TRACKING':
+        await this.handleTrackingState(command);
+        break;
+      case 'CONFIRM_STOP':
+        await this.handleConfirmStop(command);
+        break;
+      case 'TRACK_MENU':
+        await this.handleTrackMenu(command);
+        break;
+      case 'CONFIRM_DELETE':
+        await this.handleConfirmDelete(command);
+        break;
+    }
   }
 
-  private async processCommand(command: string | null) {
-    if (!command) return;
-
+  // --- LOGICA: ESTADO REPOSO (IDLE) ---
+  private async handleIdleState(command: string): Promise<void> {
     switch (command) {
-      case 'map': this.fs.gotoPage('tab1'); break;
-      case 'archive': this.fs.gotoPage('archive'); break;
-      case 'data': this.fs.gotoPage('canvas'); break;
-      case 'settings': this.fs.gotoPage('settings'); break;
-
-      case 'search':
+      case 'record':
         if (!this.router.url.includes('tab1')) await this.fs.gotoPage('tab1');
-        this.reference.isSearchGuidePopoverOpen = !this.reference.isSearchGuidePopoverOpen;
+          
+        // 1. Ejecutamos la lógica de negocio (sin avisos dentro)
+        await this.executeStartTracking(); 
+        
+        // 2. Transicionamos el estado
+        this.state.transitionTo('TRACKING'); 
+        
+        // 3. Notificamos al usuario de forma multilingüe
+        const startMsg = this.translate.instant('RECORD.STARTING');
+        this.fs.displayToast(`${startMsg} ⏺️`, 'success');
+        this.safeSpeak(startMsg);
+        
         break;
 
-      case 'zoom':
+      case 'map': 
+        if (this.router.url.includes('tab1')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_MAP');
+          this.fs.displayToast(`${msg} 🗺️`, 'info');
+          this.safeSpeak(msg);
+        } else {
+          this.fs.gotoPage('tab1'); 
+        }
+        break;
+
+      case 'archive': 
+        if (this.router.url.includes('archive')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_ARCHIVE');
+          this.fs.displayToast(`${msg} 📁`, 'info');
+          this.safeSpeak(msg);
+        } else {
+          this.fs.gotoPage('archive'); 
+        }
+        break;
+
+      case 'settings': 
+        if (this.router.url.includes('settings')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_SETTINGS');
+          this.fs.displayToast(`${msg} ⚙️`, 'info');
+          this.safeSpeak(msg);
+        } else {
+          this.fs.gotoPage('settings'); 
+        }
+        break;
+
+      case 'data':
+        if (this.router.url.includes('canvas')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_DATA');
+          this.fs.displayToast(`${msg} 📊`, 'info');
+          this.safeSpeak(msg);
+        } else if (!this.present.currentTrack && !this.reference.archivedTrack) {
+          const noTracksMsg = this.translate.instant('VOICE_COMMANDS.NO_TRACKS');
+          this.fs.displayToast(`${noTracksMsg} 📊`, 'info');
+          this.safeSpeak(noTracksMsg);
+        } else {
+          this.fs.gotoPage('canvas'); 
+        }
+        break;
+        
+      case 'stop':
+        this.fs.displayToast('No hay grabación activa ⏹️', 'info');
+        this.safeSpeak('No hay grabación activa');
+        break;
+    }
+  }
+
+  // --- LOGICA: ESTADO GRABANDO (TRACKING) ---
+  private async handleTrackingState(command: string): Promise<void> {
+    switch (command) {
+      case 'stop':
         if (!this.router.url.includes('tab1')) await this.fs.gotoPage('tab1');
-        this.mapService.cycleZoom(); 
+        this.state.transitionTo('CONFIRM_STOP');
+        this.promptStateQuestion('RECORD.CONFIRM_STOP');
         break;
 
       case 'record':
-        if (this.location.state === 'tracking') {
-          this.fs.displayToast('Ya estás grabando ⏺️', 'info');
+        this.fs.displayToast('Ya estás grabando ⏺️', 'info');
+        this.safeSpeak('Grabación activa');
+        break;
+
+      case 'map': 
+        if (this.router.url.includes('tab1')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_MAP');
+          this.fs.displayToast(`${msg} 🗺️`, 'info');
+          this.safeSpeak(msg);
         } else {
-          if (!this.router.url.includes('tab1')) await this.fs.gotoPage('tab1');
-          this.executeStartTracking();
+          this.fs.gotoPage('tab1'); 
         }
         break;
 
-      case 'stop':
-        if (this.location.state !== 'tracking') {
-          this.fs.displayToast('No hay grabación activa ⏹️', 'info');
+      case 'archive': 
+        if (this.router.url.includes('archive')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_ARCHIVE');
+          this.fs.displayToast(`${msg} 📁`, 'info');
+          this.safeSpeak(msg);
         } else {
-          if (!this.router.url.includes('tab1')) await this.fs.gotoPage('tab1');
-          this.present.isConfirmStopOpen = true;
+          this.fs.gotoPage('archive'); 
         }
         break;
 
-      case 'help': // <-- Nuevo
-        await this.giveHelp();
+      case 'data':
+        if (this.router.url.includes('canvas')) {
+          const msg = this.translate.instant('VOICE_COMMANDS.ALREADY_IN_DATA');
+          this.fs.displayToast(`${msg} 📊`, 'info');
+          this.safeSpeak(msg);
+        } else {
+          this.fs.gotoPage('canvas');
+        }
         break;
+    }
+  }
+
+  // --- LOGICA: CONFIRMACIÓN DE PARADA (CONFIRM_STOP) ---
+  private async handleConfirmStop(command: string): Promise<void> {
+    if (command === 'yes') {
+      try {
+        const isSuccess = await this.trackManager.stopTrackingProcess();
+        if (isSuccess) {
+          const finishedMsg = this.translate.instant('MAP.TRACK_FINISHED');
+          this.fs.displayToast(finishedMsg, 'success');
+          this.safeSpeak(finishedMsg);
+          
+          // 1. Avanzamos al menú de Guardar / Borrar
+          this.state.transitionTo('TRACK_MENU');
+          
+          // 2. Encadenamos la siguiente pregunta y abrimos el micrófono
+          setTimeout(() => {
+            const saveOpt = this.translate.instant('RECORD.SAVE_TRACK') || 'Guardar';
+            const delOpt = this.translate.instant('RECORD.REMOVE') || 'Borrar';
+            
+            const prompt = `¿${saveOpt}, o ${delOpt}?`;
+            this.fs.displayToast(prompt, 'info', 4000);
+            this.safeSpeak(prompt);
+            
+            // ¡Clave para manos libres! Reactivamos el reconocimiento de voz
+            setTimeout(() => { this.startListeningCycle(); }, 2000);
+          }, 1500);
+
+        } else {
+          this.state.transitionTo('IDLE');
+        }
+      } catch (error) {
+        console.error('Error al detener track:', error);
+        this.state.transitionTo('IDLE');
+      }
+    } else if (command === 'no') {
+      this.state.transitionTo('TRACKING');
+      this.fs.displayToast('Continuando grabación...', 'info');
+      this.safeSpeak('Continuando');
+    }
+  }
+
+  // --- LOGICA: MENÚ POST-GRABACIÓN (TRACK_MENU) ---
+  private async handleTrackMenu(command: string): Promise<void> {
+    if (command === 'save') {
+      this.state.transitionTo('IDLE');
+      this.fs.displayToast('Abriendo opciones de guardado...', 'success');
+      this.safeSpeak('Guardando');
+    } else if (command === 'delete') {
+      this.state.transitionTo('CONFIRM_DELETE');
+      this.promptStateQuestion('RECORD.CONFIRM_DELETION');
+    }
+  }
+
+  // --- LOGICA: CONFIRMACIÓN DE BORRADO (CONFIRM_DELETE) ---
+  private async handleConfirmDelete(command: string): Promise<void> {
+    if (command === 'yes') {
+      try {
+        await this.trackManager.deleteTrackProcess();
+        this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
+        this.safeSpeak('Trayecto eliminado');
+      } finally {
+        this.state.transitionTo('IDLE'); 
+      }
+    } else if (command === 'no') {
+      this.state.transitionTo('TRACK_MENU');
+      this.safeSpeak('Borrado cancelado');
+    }
+  }
+
+  // ==========================================================================
+  // AYUDAS Y MÉTODOS AUXILIARES
+  // ==========================================================================
+  private giveStatefulHelp(): void {
+    const rawMessage = this.parser.getHelpMessage(this.state.current);
+    this.fs.displayToast(rawMessage, 'info', 4000);
+    this.safeSpeak(rawMessage);
+
+    // Si estamos en menús de confirmación críticos, reactivamos escucha automáticamente
+    if (['CONFIRM_STOP', 'CONFIRM_DELETE', 'TRACK_MENU'].includes(this.state.current)) {
+      setTimeout(() => { this.startListeningCycle(); }, 3000);
+    }
+  }
+
+  private promptStateQuestion(translationKey: string): void {
+    const question = this.translate.instant(translationKey);
+    const optYes = this.translate.instant('RECORD.DELETE_YES');
+    const optNo = this.translate.instant('RECORD.DELETE_NO');
+    const fullPrompt = `${question}. ¿${optYes}, o ${optNo}?`;
+
+    this.fs.displayToast(fullPrompt, 'warning', 4000);
+    this.safeSpeak(fullPrompt);
+
+    setTimeout(() => { this.startListeningCycle(); }, 2500);
+  }
+
+  private async executeStartTracking(): Promise<void> {
+    try {
+      await this.trackManager.startTracking();
+    } catch (error) {
+      console.error("Error al arrancar el track en el TrackManager:", error);
     }
   }
 
   /**
-   * Genera una respuesta de voz dinámica según la página actual
+   * Método puente que elimina cualquier emoji por código antes de pasarlo al altavoz.
+   * Evita que el móvil pronuncie "mapa mundial", "carpeta" o "gráfico de barras".
    */
-  private async giveHelp() {
-    const url = this.router.url;
-    let keys: string[] = [];
-
-    // 1. Definimos qué opciones mencionar según la ubicación
-    if (url.includes('tab1')) {
-      keys = ['RECORD', 'STOP', 'ZOOM', 'SEARCH', 'DATA', 'ARCHIVE', 'SETTINGS'];
-    } else if (url.includes('settings')) {
-      keys = ['MAP', 'DATA', 'ARCHIVE'];
-    } else if (url.includes('archive')) {
-      keys = ['MAP', 'DATA', 'SETTINGS'];
-    } else if (url.includes('canvas')) {
-      keys = ['MAP', 'ARCHIVE', 'SETTINGS'];
-    } else {
-      keys = ['MAP', 'DATA', 'ARCHIVE', 'SETTINGS'];
-    }
-
-    // 2. Extraemos la primera palabra de cada categoría del JSON
-    const availableWords = keys.map(k => {
-      const words = this.getKeywords(`VOICE_COMMANDS.${k}`);
-      return words.length > 0 ? words[0] : '';
-    }).filter(w => w !== '');
-
-    // 3. Construimos y dictamos la frase
-    const prefix = this.translate.instant('VOICE_COMMANDS.HELP_PREFIX');
-    const rawMessage = prefix.replace('{0}', availableWords.join(', '));
-
-    // Aplicamos el parche fonético solo para el habla, no para el Toast
-    const phoneticMessage = this.applyPhoneticFixes(rawMessage);
-
-    this.speak(phoneticMessage); // La app dirá "zum"
-    this.fs.displayToast(rawMessage, 'info', 4000); // El usuario leerá "zoom"  }
+  private safeSpeak(text: string): void {
+    if (!text) return;
+    const cleanText = text.replace(/[\u1000-\uFFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim();
+    this.driver.speak(cleanText);
   }
 
-  /**
-   * Motor de Texto a Voz (TTS) nativo del navegador
-   */
-    private speak(text: string) {
-        // 1. Verificamos si el motor existe de forma segura
-        const synth = window?.speechSynthesis;
-
-        if (!synth) {
-            console.warn("El motor de voz (speechSynthesis) no está disponible en este dispositivo.");
-            // Si no puede hablar, al menos que el usuario lo vea en el Toast que ya tienes
-            return;
-        }
-
-        try {
-            // 2. Cancelamos cualquier locución previa
-            synth.cancel();
-
-            // 3. Creamos la locución
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = this.getLocale(this.translate.currentLang);
-            utterance.rate = 0.9;
-
-            // 4. Pequeño fix para Android: Las voces pueden tardar en cargar
-            // Envolvemos el speak en un pequeño timeout si es necesario o lo lanzamos directo
-            setTimeout(() => {
-            synth.speak(utterance);
-            }, 50);
-
-        } catch (error) {
-            console.error("Error intentando hablar:", error);
-        }
+  public cancelStop(): void {
+    if (this.state.current === 'CONFIRM_STOP') {
+        this.state.transitionTo('TRACKING');
+        this.fs.displayToast('Continuando grabación...', 'info');
+        this.safeSpeak('Continuando');
     }
-
-  private async executeStartTracking() {
-    this.present.currentTrack = undefined;
-    this.location.currentPoint = 0;
-    this.present.filtered = 0;
-    this.location.averagedSpeed = 0;
-    this.present.computedDistances = 0;
-    if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
-    this.location.state = 'tracking';
-    await this.location.sendReferenceToPlugin();
   }
-
-  private getKeywords(key: string): string[] {
-    const translated = this.translate.instant(key);
-    if (!translated || translated === key) return [];
-    if (Array.isArray(translated)) return translated.map((s: string) => this.removeAccents(String(s).trim().toLowerCase()));
-    if (typeof translated === 'string') return translated.split(',').map((s: string) => this.removeAccents(s.trim().toLowerCase()));
-    return [];
-  }
-
-  private removeAccents(text: string): string {
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-
-  private getLocale(lang: string | undefined): string {
-    const map: { [key: string]: string } = { 'es': 'es-ES', 'en': 'en-US', 'ca': 'ca-ES', 'fr': 'fr-FR', 'ru': 'ru-RU', 'zh': 'zh-CN' };
-    return map[lang || 'es'] || 'es-ES';
-  }
-
-    /**
-     * Corrige palabras que el TTS lee mal en ciertos idiomas
-     */
-    private applyPhoneticFixes(text: string): string {
-    const lang = this.translate.currentLang;
-    let fixedText = text;
-
-    // Correcciones para Catalán
-    if (lang === 'ca') {
-        // Escribimos "zum" para que el motor catalán lo pronuncie parecido al inglés
-        fixedText = fixedText.replace(/zoom/gi, 'zum'); 
-    }
-
-    // Correcciones para Español
-    if (lang === 'es') {
-        fixedText = fixedText.replace(/zoom/gi, 'zum');
-    }
-
-    // Puedes añadir más excepciones aquí
-    return fixedText;
-    }
 }

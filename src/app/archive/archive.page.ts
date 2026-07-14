@@ -10,8 +10,8 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
-import { VoiceRunnerService } from '../services/voice-runner.service';
 import { PresentService } from '../services/present.service';
+import { VoiceRunnerService } from '../services/voice-runner.service'; // Ajusta la ruta relativa si es necesario
 
 // --- COMPONENTES E INTERFACES ---
 import { TrackDefinition, LocationResult } from '../../globald';
@@ -47,8 +47,8 @@ export class ArchivePage implements OnInit {
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
+    public present: PresentService,
     public voiceRunner: VoiceRunnerService,
-    public present: PresentService
   ) { }
 
   ngOnInit() {

@@ -38,59 +38,152 @@
 // 3. OPENLAYERS OVERLAYS (Mapa y Controles)
 // ==========================================================================
 .ol-scale-line.vertical-scale {
-  display: block !important; z-index: 10000 !important; position: absolute !important;
-  bottom: 25px !important; left: 50px !important; background: transparent !important;
-  pointer-events: none; transform: rotate(-90deg) !important; transform-origin: left bottom !important;
+  display: block !important;
+  z-index: 10000 !important;
+  position: absolute !important;
+  bottom: 25px !important;
+  left: 50px !important;
+  background: transparent !important;
+  pointer-events: none;
+  transform: rotate(-90deg) !important;
+  transform-origin: left bottom !important;
 }
 
-.ol-scale-line.vertical-scale div, .ol-scale-line.vertical-scale .vertical-scale-inner, .ol-scale-line.vertical-scale .ol-scale-line-inner {
-  color: #000 !important; background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid #ccc !important; border-bottom: 4px solid #3880ff !important;
-  border-radius: 4px 4px 0 0 !important; padding: 4px 10px !important;
-  font-size: 11px !important; font-weight: bold; white-space: nowrap;
-  display: flex !important; align-items: center; justify-content: center; min-width: 60px !important;
+.ol-scale-line.vertical-scale div, 
+.ol-scale-line.vertical-scale .vertical-scale-inner, 
+.ol-scale-line.vertical-scale .ol-scale-line-inner {
+  color: #000 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #ccc !important;
+  border-bottom: 4px solid #3880ff !important;
+  border-radius: 4px 4px 0 0 !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: bold;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px !important;
 }
 
-.ol-zoom { top: 25px !important; left: 1em; }
-.ol-rotate { top: 25px !important; right: 1em; }
-
-.ol-control.location-button-control, .ol-control.share-control {
-  bottom: 25px !important; right: 15px !important; top: auto !important; left: auto !important;
-  position: absolute !important; z-index: 5000 !important; pointer-events: none !important;
+.ol-zoom {
+  top: 25px !important;
+  left: 1em;
 }
 
-.ol-control.location-button-control button, .ol-control.share-control button {
-  width: 46px !important; height: 46px !important; min-width: 46px !important;
-  max-width: 46px !important; box-sizing: border-box !important; margin: 0 !important;
-  padding: 0 !important; border: none !important; outline: none !important;
-  background-color: white !important; border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important; display: flex !important;
-  align-items: center !important; justify-content: center !important; pointer-events: auto !important;
-  touch-action: none !important; user-select: none !important; -webkit-user-drag: none;
+.ol-rotate {
+  top: 25px !important;
+  right: 1em;
+}
+
+.ol-control.location-button-control {
+  bottom: 25px !important;
+  right: 15px !important;
+  top: auto !important;
+  left: auto !important;
+  position: absolute !important;
+  z-index: 5000 !important;
+  pointer-events: none !important;
+}
+
+.ol-control.location-button-control button {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  background-color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none;
 }
 
 // ==========================================================================
 // 4. UI COMPONENTS (Botones y Navegación)
 // ==========================================================================
 .record-button {
-  background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(12px);
-  border-radius: 20px; padding: 8px; min-width: 60px; min-height: 60px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease; pointer-events: auto !important; cursor: pointer;
-  position: relative !important; overflow: visible !important;
-  ion-icon { font-size: 26px; color: var(--ion-color-primary, #3880ff); margin-bottom: 4px; }
-  span, p { margin: 0; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #333; }
-  &:active { transform: scale(0.95); background: rgba(255, 255, 255, 1) !important; }
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 8px;
+  min-width: 60px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
+  cursor: pointer;
+  position: relative !important;
+  overflow: visible !important;
+
+  ion-icon {
+    font-size: 26px;
+    color: var(--ion-color-primary, #3880ff);
+    margin-bottom: 4px;
+  }
+
+  span, p {
+    margin: 0;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+  }
+
+  &:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 1) !important;
+  }
 }
 
 .nav-item-btn {
-  background: transparent; border: none; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s;
-  ion-icon { font-size: 32px; margin-bottom: 4px; }
-  p { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  &:active { transform: scale(0.9); }
-  &:disabled { opacity: 0.25 !important; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+
+  ion-icon {
+    font-size: 32px;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  &:disabled {
+    opacity: 0.25 !important;
+    filter: grayscale(1);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 }
 
 /** Clase Maestra unificada para botones pill (Alertas y Popovers) **/
@@ -100,13 +193,11 @@
   font-weight: 800 !important; 
   text-transform: uppercase !important; 
   padding: 12px 16px !important; 
-  
   display: flex !important; 
   flex-direction: row !important; 
   align-items: center !important; 
   justify-content: center !important;
   gap: 8px !important; 
-  
   transition: all 0.2s ease !important; 
   cursor: pointer !important;
   
@@ -117,47 +208,123 @@
   ion-icon, span, p { color: inherit !important; }
 }
 
-.red-pill { @extend .glass-pill-btn; border: 1px solid rgba(235, 68, 90, 0.4) !important; color: var(--ion-color-danger, #eb445a) !important; }
-.green-pill { @extend .glass-pill-btn; border: 1px solid rgba(45, 211, 111, 0.4) !important; color: var(--ion-color-success, #2dd36f) !important; }
-.blue-icon { color: var(--ion-color-primary) !important; }
-.button-disabled { opacity: 0.5; pointer-events: none; transition: opacity 0.2s; }
+.red-pill {
+  @extend .glass-pill-btn;
+  border: 1px solid rgba(235, 68, 90, 0.4) !important;
+  color: var(--ion-color-danger, #eb445a) !important;
+}
+
+.green-pill {
+  @extend .glass-pill-btn;
+  border: 1px solid rgba(45, 211, 111, 0.4) !important;
+  color: var(--ion-color-success, #2dd36f) !important;
+}
+
+.blue-icon {
+  color: var(--ion-color-primary) !important;
+}
+
+/* Definición Única y Definitiva de Botón Deshabilitado */
+.button-disabled {
+  opacity: 0.4 !important;
+  pointer-events: none !important;
+  filter: grayscale(100%) !important;
+  cursor: not-allowed !important;
+  transition: opacity 0.2s ease;
+}
 
 // ==========================================================================
-// 5. ANIMACIONES E INDICADORES
+// 5. ANIMACIONES E INDICADORES GLOBALES
 // ==========================================================================
-.record-button.with-indicator { position: relative !important; overflow: visible !important; }
+.record-button.with-indicator {
+  position: relative !important;
+  overflow: visible !important;
+}
+
 .sharing-dot {
-  position: absolute; top: 6px; right: 6px; width: 9px; height: 9px;
-  background-color: #2dd36f !important; border-radius: 50%; border: 2px solid white;
-  z-index: 10; animation: sharing-pulse 1.5s infinite; pointer-events: none;
-}
-.tracking-dot {
-  position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px;
-  background-color: #2dd36f !important; border-radius: 50%; border: 2px solid white;
-  z-index: 10; animation: tracking-pulse-centered 1.5s infinite; pointer-events: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  animation: sharing-pulse 1.5s infinite;
+  pointer-events: none;
 }
 
-@keyframes sharing-pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(0.9); opacity: 1; } }
-@keyframes tracking-pulse-centered { 0% { transform: translateX(-50%) scale(0.9); opacity: 1; } 50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; } 100% { transform: translateX(-50%) scale(0.9); opacity: 1; } }
+.tracking-dot {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background-color: #2dd36f !important;
+  border-radius: 50%;
+  border: 2px solid white;
+  z-index: 10;
+  animation: tracking-pulse-centered 1.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes sharing-pulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 1; }
+}
+
+@keyframes tracking-pulse-centered {
+  0% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 0.6; }
+  100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+}
 
 // ==========================================================================
 // 6. LAYOUTS & ÁREAS SEGURAS
 // ==========================================================================
-ion-fab { pointer-events: none; z-index: 1000; ion-row, .record-button, ion-fab-button { pointer-events: auto; } }
+ion-fab {
+  pointer-events: none;
+  z-index: 1000;
+  ion-row, .record-button, ion-fab-button { pointer-events: auto; }
+}
+
 .top-safe, .bottom-safe {
-  position: fixed; z-index: 999; pointer-events: none; width: 100%; display: flex; justify-content: center;
+  position: fixed;
+  z-index: 999;
+  pointer-events: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
   ion-row { @extend .glass-panel; padding: 8px 16px; pointer-events: auto; gap: 12px; }
 }
-.top-safe { top: env(safe-area-inset-top, 20px); margin-top: 10px; }
-.bottom-safe { bottom: calc(15px + var(--ion-safe-area-bottom, 0px)); }
-.bottom-safe-gray { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: var(--ion-safe-area-bottom, 0px); background-color: #f4f4f7; z-index: 10; border-top: 1px solid rgba(0, 0, 0, 0.05); }
+
+.top-safe {
+  top: env(safe-area-inset-top, 20px);
+  margin-top: 10px;
+}
+
+.bottom-safe {
+  bottom: calc(15px + var(--ion-safe-area-bottom, 0px));
+}
+
+.bottom-safe-gray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--ion-safe-area-bottom, 0px);
+  background-color: #f4f4f7;
+  z-index: 10;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
 
 // ==========================================================================
-// 7. MODALS & POPOVERS 
+// 7. MODALS & POPOVERS GLOBALES
 // ==========================================================================
-
-/* --- 1. BASE RESET PARA POPOVERS DE CRISTAL --- */
-// Eliminamos el fondo y sombra por defecto de Ionic en todos estos componentes
 .floating-popover, 
 .confirm-popover, 
 .glass-island-wrapper, 
@@ -166,17 +333,14 @@ ion-fab { pointer-events: none; z-index: 1000; ion-row, .record-button, ion-fab-
   --box-shadow: none !important; 
 }
 
-/* --- 2. CONTENEDORES GENÉRICOS --- */
 .floating-popover {
   --width: var(--popover-width, 95%); 
   --max-width: var(--popover-max-width, 420px);
 }
 
-/* Estilos compartidos para las "islas" */
 .glass-island-wrapper, 
 .top-glass-island-wrapper {
   --width: 90% !important;
-  
   &::part(content) {
     position: fixed !important;
     left: 50% !important;
@@ -187,18 +351,16 @@ ion-fab { pointer-events: none; z-index: 1000; ion-row, .record-button, ion-fab-
   }
 }
 
-/* Posicionamiento específico de las islas */
-.glass-island-wrapper::part(content) { 
-  top: 50% !important; 
-  transform: translate(-50%, -50%) !important; 
+.glass-island-wrapper::part(content) {
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
 }
 
-.top-glass-island-wrapper::part(content) { 
-  top: 8vh !important; 
-  transform: translateX(-50%) !important; 
+.top-glass-island-wrapper::part(content) {
+  top: 8vh !important;
+  transform: translateX(-50%) !important;
 }
 
-/* --- 3. POPOVER DE BÚSQUEDA --- */
 ion-popover.top-search-popover {
   &::part(content) {
     position: absolute !important; 
@@ -212,11 +374,12 @@ ion-popover.top-search-popover {
     border-radius: var(--glass-radius, 28px) !important; 
     overflow-y: auto !important;
     
-    @media (min-width: 450px) { left: calc(50% - 210px) !important; }
+    @media (min-width: 450px) {
+      left: calc(50% - 210px) !important;
+    }
   }
 }
 
-/* --- 4. POPOVER DE CONFIRMACIÓN --- */
 .confirm-popover {
   --width: 280px; 
   --border-radius: var(--glass-radius);
@@ -240,148 +403,114 @@ ion-popover.top-search-popover {
     display: flex; 
     justify-content: center; 
     gap: 12px; 
-    
-    /* Aseguramos que los botones compartan espacio por igual */
-    > button { flex: 1 !important; }
+    > button { flex: 1 !important; } 
   }
 }
 
-/* --- 5. MENÚ DE COMPARTIR (CUSTOM POPUP) --- */
-.share-backdrop { 
-  position: fixed; 
-  top: 0; 
-  left: 0; 
-  width: 100vw; 
-  height: 100vh; 
-  background: rgba(0, 0, 0, 0.35); 
-  z-index: 9998; 
-  display: none; 
-  
-  &.active { display: block; } 
+.share-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 9998;
+  display: none;
+  &.active { display: block; }
 }
 
 .share-popup { 
-  position: fixed; 
-  top: 50%; 
-  left: 50%; 
-  transform: translate(-50%, -50%); 
-  z-index: 9999; 
-  display: none; 
-  pointer-events: auto; 
-  
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: none;
+  pointer-events: auto;
   &.active { display: block; } 
-  
-  .popover-island { 
-    min-width: 260px; 
-    padding: 24px 16px; 
-  } 
+  .popover-island { min-width: 260px; padding: 24px 16px; } 
 }
 
 .share-action-btn { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center; 
-  width: 75px; 
-  height: 75px; 
-  border: none; 
-  border-radius: 15px; 
-  font-weight: 600; 
-  color: white; 
-  transition: transform 0.1s; 
-  
-  img { 
-    width: 26px; 
-    height: 26px; 
-    margin-bottom: 6px; 
-  } 
-  
-  &:active { transform: scale(0.92); } 
-  &.btn-yes { background: #2dd36f; } 
-  &.btn-no { background: #eb445a; } 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 75px;
+  height: 75px;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  color: white;
+  transition: transform 0.1s;
+  img { width: 26px; height: 26px; margin-bottom: 6px; }
+  &:active { transform: scale(0.92); }
+  &.btn-yes { background: #2dd36f; }
+  &.btn-no { background: #eb445a; }
 }
 
 // ==========================================================================
 // 8. NOTIFICATIONS & ALERTS (Isla de Cristal)
 // ==========================================================================
-/* --- BASE TOAST --- */
 .toast { 
-  --top: calc(10px + var(--ion-safe-area-top, 0px)); 
-  text-align: center; 
-  font-size: 16px; 
-  font-weight: 500; 
-  --border-radius: 8px; 
-  /* Sombra ligeramente suavizada (de 0.2 a 0.15) para que encaje mejor con fondos claros */
-  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); 
-
-  /* Uso de ::part() para penetrar el Shadow DOM de Ionic y estilizar el botón */
-  &::part(button) { 
-    font-weight: 800 !important; 
-    text-transform: uppercase; 
-    font-size: 14px; 
-  } 
+  --top: calc(10px + var(--ion-safe-area-top, 0px));
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  
+  &::part(button) {
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    font-size: 14px;
+  }
 }
 
-/* --- ESTADOS (Éxito y Error) --- */
-.toast-success { 
-  @extend .toast; 
-  --background: #edf7ed; /* Verde pálido */
-  --color: #1e4620;      /* Texto verde oscuro */
-  --button-color: #1e4620; 
+.toast-success {
+  @extend .toast;
+  --background: #edf7ed;
+  --color: #1e4620;
+  --button-color: #1e4620;
   --icon-color: #1e4620;
 }
 
-.toast-error { 
-  @extend .toast; 
-  --background: #fdeded; /* Rojo pálido */
-  --color: #5f2120;      /* Texto rojo oscuro */
+.toast-error {
+  @extend .toast;
+  --background: #fdeded;
+  --color: #5f2120;
   --button-color: #5f2120;
   --icon-color: #5f2120;
 }
 
-/* --- OTROS COMPONENTES (Sin cambios mayores, ya se ven geniales) --- */
 .custom-toast { 
-  --top: 100px; 
-  --end: 15px; 
-  --width: auto; 
-  --max-width: 250px; 
-  --border-radius: 12px; 
-  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
-  
-  &::part(message) { 
-    font-weight: 600; 
-    padding-inline-start: 10px; 
-  } 
+  --top: 100px;
+  --end: 15px;
+  --width: auto;
+  --max-width: 250px;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  &::part(message) { font-weight: 600; padding-inline-start: 10px; }
 }
 
 .glass-loading-overlay { 
-  --background: rgba(255, 255, 255, 0.95); 
-  --spinner-color: var(--ion-color-primary, #3880ff); 
-  backdrop-filter: blur(12px); 
+  --background: rgba(255, 255, 255, 0.95);
+  --spinner-color: var(--ion-color-primary, #3880ff);
+  backdrop-filter: blur(12px);
   
-  .loading-wrapper { 
-    border-radius: 20px !important; 
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important; 
-    border: 1px solid rgba(255, 255, 255, 0.6); 
-    color: #333 !important; 
-    font-weight: 700; 
-    text-transform: uppercase; 
-  } 
+  .loading-wrapper {
+    border-radius: 20px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #333 !important;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
 }
-// ==========================================================================
-// 9. VOICE CONTROL UI
-// ==========================================================================
-.bottom-safe { bottom: 40px !important; }
-.voice-mode-container { display: flex; justify-content: center; align-items: center; background: transparent; pointer-events: auto; }
-.mic-main-button {
-  width: 70px; height: 70px; border-radius: 50%; background: white !important; display: flex; justify-content: center; align-items: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: var(--ion-color-primary); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  &.is-listening { transform: scale(1.15); background: var(--ion-color-primary) !important; color: white; animation: pulse-primary 1.5s infinite; }
-  &:active:not(.is-listening) { transform: scale(0.92); background: #f4f4f4 !important; }
-}
-@keyframes pulse-primary { 0% { box-shadow: 0 0 0 0 rgba(var(--ion-color-primary-rgb), 0.6), 0 4px 16px rgba(0, 0, 0, 0.25); } 70% { box-shadow: 0 0 0 20px rgba(var(--ion-color-primary-rgb), 0), 0 4px 16px rgba(0, 0, 0, 0.1); } 100% { box-shadow: 0 0 0 0 rgba(var(--ion-color-primary-rgb), 0), 0 4px 16px rgba(0, 0, 0, 0.25); } }
 
-/* global.scss - Sistema de botones unificado */
+// ==========================================================================
+// 9. SISTEMA DE BOTONES UNIFICADO Y LISTAS GLOBALES
+// ==========================================================================
 .glass-btn {
   --background: transparent;
   --color: #333;
@@ -390,7 +519,6 @@ ion-popover.top-search-popover {
   --border-style: solid;
   --border-color: rgba(0, 0, 0, 0.1);
   --box-shadow: none;
-  
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -411,15 +539,10 @@ ion-popover.top-search-popover {
   --border-color: transparent;
 }
 
-/* ==========================================================================
-   AJUSTES DE LISTAS (Tracks y Lugares)
-   ========================================================================== */
 ion-item.item-has-content {
   --min-height: 46px !important;
   --padding-start: 16px;
   --inner-padding-end: 0;
-  
-  /* Anulamos los paddings por defecto de Ionic para controlar el centrado desde el contenido */
   --padding-top: 0;
   --padding-bottom: 0;
   --inner-padding-top: 0;
@@ -429,8 +552,8 @@ ion-item.item-has-content {
 .item-content {
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important; /* Cambiado a center para centrado vertical perfecto */
-  padding: 8px 0 !important; /* Margen superior e inferior igualados */
+  justify-content: center !important;
+  padding: 8px 0 !important;
   width: 100%;
 
   strong {
@@ -438,8 +561,8 @@ ion-item.item-has-content {
     font-weight: 700 !important;
     color: #222;
     display: block !important;
-    line-height: 1.1 !important; /* Interlineado ligeramente más amplio para respirar */
-    margin-bottom: 2px !important; /* Separación simétrica entre título y subtítulo */
+    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
     transition: color 0.2s ease;
     
     &.active-text {
@@ -450,26 +573,23 @@ ion-item.item-has-content {
 
 .item-date-subtitle, 
 .secondary-info {
-  font-size: 12px !important; 
-  color: #888 !important;     
+  font-size: 12px !important;
+  color: #888 !important;
   margin: 0 !important;
-  line-height: 1.3 !important; /* Interlineado igualado con el del título */
+  line-height: 1.3 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
 }
 
-/* ==========================================================================
-   10. POPOVERS UNIFICADOS (Islas de Cristal)
-   ========================================================================== */
-
-/* Fondo transparente para el contenido del popover */
+// ==========================================================================
+// 10. POPOVERS UNIFICADOS (Islas de Cristal)
+// ==========================================================================
 ion-popover ion-content {
   --background: transparent;
 }
 
-/* Contenedor principal de la isla */
 .local-glass-island {
   background: rgba(255, 255, 255, 0.96) !important;
   backdrop-filter: blur(16px);
@@ -480,66 +600,128 @@ ion-popover ion-content {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  
-  /* Variante por defecto (Formularios) */
   padding: 24px;
   max-height: 90vh;
 
-  /* Variante compacta (Menús de opciones como TrackOptions y FolderOptions) */
   &.compact-island {
     padding: 12px 8px;
   }
 }
 
-/* Cabeceras de los popovers */
 .popover-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
-  padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
-  
-  .header-icon { font-size: 20px; color: var(--ion-color-primary); }
-  h2 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #333; }
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+  .header-icon {
+    font-size: 20px;
+    color: var(--ion-color-primary);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #333;
+  }
 }
 
-/* Formularios genéricos en popovers */
 .form-container { 
-  display: flex; flex-direction: column; gap: 14px; overflow-y: auto; 
-}
-.custom-label { 
-  font-size: 10px; font-weight: 800; color: var(--ion-color-primary); 
-  text-transform: uppercase; margin-bottom: 4px; display: block; 
-}
-.custom-input, .custom-textarea { 
-  background: rgba(0, 0, 0, 0.05); border-radius: 14px; --padding-start: 12px; margin: 0; 
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto; 
 }
 
-/* Botones inferiores de acción (Sí/No) */
-.popover-button-grid { 
-  display: flex; justify-content: center; gap: 16px; margin-top: 25px; 
+.custom-label { 
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ion-color-primary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: block; 
 }
+
+.custom-input, 
+.custom-textarea { 
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  --padding-start: 12px;
+  margin: 0; 
+}
+
+.popover-button-grid { 
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 25px; 
+}
+
 .popover-btn {
-  position: relative; overflow: hidden; flex: 1; min-width: 100px; height: 75px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border: none; border-radius: 20px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  cursor: pointer; transition: transform 0.1s;
-  
-  ion-icon { font-size: 28px; margin-bottom: 4px; pointer-events: none; }
-  span { margin: 0; font-size: 11px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
-  &:active { transform: scale(0.94); }
-  
-  /* Colores específicos para evitar conflicto con las pills globales */
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-width: 100px;
+  height: 75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 0.1s;
+
+  ion-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+    pointer-events: none;
+  }
+
+  span {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
   &.btn-green { color: #2dd36f; }
   &.btn-red { color: #eb445a; }
 }
 
-/* Listas de opciones (Menús de 3 puntitos) */
-.popover-list { 
-  background: transparent; padding: 0; margin: 0; 
+.popover-list {
+  background: transparent;
+  padding: 0;
+  margin: 0;
 }
+
 .popover-list .action-item { 
-  --padding-start: 16px; --inner-padding-end: 16px; 
-  --background: transparent; --border-radius: 16px; margin-bottom: 4px; 
-  
-  ion-label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #333; }
-  &:last-child { margin-bottom: 0; }
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+  --background: transparent;
+  --border-radius: 16px;
+  margin-bottom: 4px;
+
+  ion-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 

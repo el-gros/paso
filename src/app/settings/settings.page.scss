@@ -1,113 +1,115 @@
-// ==========================================================================
-// 1. CONFIGURACIÓN BASE Y CABECERAS
-// ==========================================================================
-
-ion-content {
-  --background: #f4f4f7; 
-}
-
-ion-list-header {
-  padding-left: 16px;
-  margin-bottom: 4px;
-  
-  ion-label {
-    color: var(--ion-color-primary) !important;
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
+:host {
+  // ==========================================================================
+  // 1. CONFIGURACIÓN BASE Y CABECERAS
+  // ==========================================================================
+  ion-content {
+    --background: #f4f4f7; 
   }
-}
 
-// ==========================================================================
-// 2. ESTRUCTURA DE LISTAS (Glass Style)
-// ==========================================================================
+  ion-list-header {
+    padding-left: 16px;
+    margin-bottom: 4px;
+    
+    ion-label {
+      color: var(--ion-color-primary) !important;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+  }
 
-ion-list[inset="true"] {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: var(--glass-radius);
-  margin: 0 16px 20px 16px;
-  overflow: hidden; 
-}
+  // ==========================================================================
+  // 2. ESTRUCTURA DE LISTAS (Glass Style)
+  // ==========================================================================
+  ion-list[inset="true"] {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--glass-radius);
+    margin: 0 16px 20px 16px;
+    overflow: hidden; 
+  }
 
-// ==========================================================================
-// 3. ELEMENTOS DE LISTA (Items e Iconos)
-// ==========================================================================
+  // ==========================================================================
+  // 3. ELEMENTOS DE LISTA (Items e Iconos)
+  // ==========================================================================
+  ion-item {
+    --background: transparent;
+    --min-height: 56px;
+    --border-color: rgba(0, 0, 0, 0.05);
+    --padding-start: 16px;
+    color: #333;
 
-ion-item {
-  --background: transparent;
-  --min-height: 56px;
-  --border-color: rgba(0, 0, 0, 0.05);
-  --padding-start: 16px;
-  color: #333;
+    ion-icon[slot="start"] {
+      font-size: 22px;
+      margin-right: 12px;
+      color: var(--ion-color-primary);
+    }
+  }
 
-  ion-icon[slot="start"] {
-    font-size: 22px;
-    margin-right: 12px;
+  // ==========================================================================
+  // 4. CONTROLES DE FORMULARIO
+  // ==========================================================================
+  ion-select {
+    font-weight: 600;
     color: var(--ion-color-primary);
+    width: 100%;
+    max-width: 140px; 
   }
-}
 
-// ==========================================================================
-// 4. CONTROLES DE FORMULARIO
-// ==========================================================================
-
-ion-select {
-  font-weight: 600;
-  color: var(--ion-color-primary);
-  width: 100%;
-  max-width: 140px; 
-}
-
-// ==========================================================================
-// 5. COMPONENTES PERSONALIZADOS
-// ==========================================================================
-
-ion-button {
-  margin: 0;
-  --padding-start: 0;
-  --padding-end: 0;
-}
-
-.color-display-v2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.04);
-  padding: 6px 12px;
-  border-radius: 12px;
-  transition: background 0.2s;
-
-  &:active {
-    background: rgba(0, 0, 0, 0.1);
-  }
-  
-  .color-sample {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-  }
-  
-  ion-icon {
+  ion-button {
     margin: 0;
+    --padding-start: 0;
+    --padding-end: 0;
   }
-}
 
-.download-progress-item {
-  --background: rgba(var(--ion-color-success-rgb), 0.05);
-  ion-progress-bar { 
-    height: 8px; 
-    border-radius: 4px; 
+  .color-display-v2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 6px 12px;
+    border-radius: 12px;
+    transition: background 0.2s;
+
+    &:active {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    
+    .color-sample {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    ion-icon {
+      margin: 0;
+    }
   }
-}
 
-.button-disabled {
-  opacity: 0.4; /* Lo hace semitransparente */
-  pointer-events: none; /* Bloquea cualquier clic o interacción táctil a nivel visual/navegador */
-  filter: grayscale(100%); /* Opcional: lo vuelve gris para que quede clarísimo que no está activo */
+  .download-progress-item {
+    --background: rgba(var(--ion-color-success-rgb), 0.05);
+    ion-progress-bar { 
+      height: 8px; 
+      border-radius: 4px; 
+    }
+  }
+
+  // ==========================================================================
+  // 5. NAVEGACIÓN INFERIOR (Modo Normal)
+  // ==========================================================================
+  .normal-mode-row {
+    pointer-events: auto; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    width: auto;
+    padding: 0 16px;
+    height: 80px;
+  }
 }

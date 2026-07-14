@@ -238,9 +238,9 @@
 
 <div class="bottom-safe-gray"></div>
 
-<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  @if (!fs.voiceControl) {
-    <ion-row class="button-container">
+@if (!fs.voiceControl) {
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+    <ion-row class="normal-mode-row">
       <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
         <ion-icon name="map-outline"></ion-icon>
         <p>{{ 'MAP.MAP_BUTTON' | translate }}</p>
@@ -251,18 +251,8 @@
       </div>
       <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('settings')">
         <ion-icon name="settings-outline"></ion-icon>
-        <span>{{ 'MAP.SETTINGS_BUTTON' | translate }}</span>
+        <p>{{ 'MAP.SETTINGS_BUTTON' | translate }}</p>
       </div>
     </ion-row>
-  } @else {
-    <div class="button-container voice-mode-container">
-      <div class="mic-button-wrapper">
-        <div class="mic-main-button" 
-             (click)="voiceRunner.toggleVoiceControl()" 
-             [class.is-listening]="voiceRunner.isListening"> 
-          <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
-        </div>
-      </div>
-    </div>
-  }
-</ion-fab>
+  </ion-fab>
+}

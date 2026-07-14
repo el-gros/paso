@@ -187,12 +187,10 @@
 <!-- ======================================================================
      6. NAVEGACIÓN PRINCIPAL (Bottom Bar)
      ====================================================================== -->
-<!--
-     <div style="height: 180px;"></div>
--->
-<ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
-  
-  @if (!fs.voiceControl) {
+
+@if (!fs.voiceControl) {
+  <ion-fab slot="fixed" horizontal="center" vertical="bottom" class="bottom-safe">
+
     <ion-row class="button-container">
       <div class="record-button" [class.button-disabled]="fs.isNavigating" (click)="fs.gotoPage('tab1')">
         <ion-icon name="map-outline"></ion-icon>
@@ -209,18 +207,6 @@
         <p>{{ 'MAP.ARCHIVE_BUTTON' | translate }}</p>
       </div>
     </ion-row>
-  }
-
-  @else {
-    <div class="button-container voice-mode-container">
-      <div class="mic-button-wrapper">
-        <div class="mic-main-button" 
-            (click)="voiceRunner.toggleVoiceControl()" 
-            [class.is-listening]="voiceRunner.isListening"> 
-          <ion-icon [name]="voiceRunner.isListening ? 'mic' : 'mic-outline'"></ion-icon>
-        </div>
-      </div>
-    </div>
-  }
-
-</ion-fab>
+  
+  </ion-fab>
+}  

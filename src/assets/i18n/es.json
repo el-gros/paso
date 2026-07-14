@@ -193,6 +193,7 @@
   },
   "RECORD": {
     "BUTTON": "GRABAR",
+    "STARTING": "Iniciando grabación...",
     "START_TRACKING": "Iniciar",
     "STOP_TRACKING": "Detener",
     "WAYPOINT": "Wpt.",
@@ -350,16 +351,23 @@
     "OTHER": "Otros"
   },
   "VOICE_COMMANDS": {
-      "MAP": "mapa, navegación",
-      "ARCHIVE": "archivo, biblioteca, historial",
-      "DATA": "datos, gráficas, gráficos, estadísticas, canvas",
-      "SETTINGS": "configuración, ajustes, preferencias", 
-      "SEARCH": "buscar, búsqueda, localizador, localización, localizar, encontrar",
-      "ZOOM": "zoom, lupa, aumentar, ampliar, agrandar",
-      "RECORD": "grabar, iniciar, comenzar, comienza, empezar, empieza",
-      "STOP": "detener, para, final, acaba, termina",
-      "HELP_COMMAND": "ayuda, info, instrucciones, opciones",
-      "HELP_PREFIX": "Las opciones disponibles son: {0}"
+    "MAP": "mapa, navegación",
+    "ARCHIVE": "archivo, biblioteca, historial",
+    "DATA": "datos, gráficas, gráficos, estadísticas, canvas",
+    "SETTINGS": "configuración, ajustes, preferencias", 
+    "SEARCH": "buscar, búsqueda, localizador, localización, localizar, encontrar",
+    "ZOOM": "zoom, lupa, aumentar, ampliar, agrandar",
+    "RECORD": "grabar, iniciar, comenzar, comienza, empezar, empieza",
+    "STOP": "detener, para, final, acaba, termina",
+    "HELP_COMMAND": "ayuda, info, instrucciones, opciones",
+    "HELP_PREFIX": "Las opciones disponibles son: {0}",
+    "HELP_IDLE": "Las opciones disponibles son: grabar, mapa, archivo, datos o configuración.",
+    "HELP_TRACKING": "Las opciones de grabación son: detener, mapa, archivo, datos o configuración.",
+    "ALREADY_IN_MAP": "Ya estás en el mapa",
+    "ALREADY_IN_ARCHIVE": "Ya estás en el archivo",
+    "ALREADY_IN_DATA": "Ya estás en la pantalla de datos",
+    "ALREADY_IN_SETTINGS": "Ya estás en la pantalla de ajustes",
+    "NO_TRACKS": "No hay trayectos en el mapa"
   },
   "VOICE": {
     "PROMPT": "Diga un comando...",

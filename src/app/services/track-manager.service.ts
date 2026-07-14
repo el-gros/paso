@@ -197,4 +197,16 @@ export class TrackManagerService {
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
   }
+
+  async startTracking() {
+    this.present.currentTrack = undefined;
+    this.location.currentPoint = 0;
+    this.present.filtered = 0;
+    this.location.averagedSpeed = 0;
+    this.present.computedDistances = 0;
+    if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
+    this.location.state = 'tracking';
+    await this.location.sendReferenceToPlugin();
+  }
+
 }
