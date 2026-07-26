@@ -12,76 +12,65 @@ export class VoiceParserService {
   /**
    * Analiza el texto bruto escuchado y devuelve la acción correspondiente al estado actual.
    */
-  public analyzeCommand(text: string, currentState: AppState): string | null {
-    if (!text) return null;
-    const rawText = this.removeAccents(text.toLowerCase().trim());
-    console.log(`[VoiceParser - Estado: ${currentState}] Escuchado: "${rawText}"`);
+  public analyzeCommand(text: string, state: AppState): string | null {
+    // 1. Limpieza total de caracteres especiales
+    const clean = text.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~?¡¿]/g, "");
 
-    // Comando de ayuda universal
-    if (this.matchKeyword(rawText, 'VOICE_COMMANDS.HELP_COMMAND')) return 'help';
-    if (this.matchKeyword(rawText, 'VOICE_COMMANDS.MAP')) return 'map';
-    if (this.matchKeyword(rawText, 'VOICE_COMMANDS.ARCHIVE')) return 'archive';
-    if (this.matchKeyword(rawText, 'VOICE_COMMANDS.DATA')) return 'data';
-    if (this.matchKeyword(rawText, 'VOICE_COMMANDS.SETTINGS')) return 'settings';
+    // 2. Lógica para Estados de Confirmación (SÍ / NO)
+    // Como SÍ/NO no siempre están en el JSON o pueden variar mucho, los blindamos aquí:
+    if (['CONFIRM_STOP', 'CONFIRM_DELETE', 'TRACK_MENU', 'WAITING_SAVE'].includes(state)) {
+      if (/^(s[íi]|yes|acord|vale|guardar|ok|d'acord|confirmar)$/.test(clean)) return 'yes';
+      if (/^(no|cancelar|descartar|tancar)$/.test(clean)) return 'no';
+    }
 
-    switch (currentState) {
-      case 'CONFIRM_STOP':
-      case 'CONFIRM_DELETE':
-        if (this.matchKeyword(rawText, 'RECORD.DELETE_YES')) return 'yes';
-        if (this.matchKeyword(rawText, 'RECORD.DELETE_NO')) return 'no';
-        break;
+    // 3. Lógica Dinámica para el resto de Comandos desde el JSON
+    // Obtenemos todo el objeto VOICE_COMMANDS del idioma actual
+    const commands = this.translate.instant('VOICE_COMMANDS') as { [key: string]: string };
 
-      case 'TRACK_MENU':
-        if (this.matchKeyword(rawText, 'RECORD.SAVE_TRACK')) return 'save';
-        if (this.matchKeyword(rawText, 'RECORD.REMOVE')) return 'delete';
-        break;
+    if (commands) {
+      for (const [key, synonymsString] of Object.entries(commands)) {
+        // Convertimos la cadena "grabar, iniciar, comenzar..." en un array ["grabar", "iniciar", ...]
+        const synonyms = synonymsString.split(',').map(s => s.trim().toLowerCase());
 
-      case 'IDLE':
-      case 'TRACKING':
-      default:
-        if (this.matchKeyword(rawText, 'VOICE_COMMANDS.RECORD')) return 'record';
-        if (this.matchKeyword(rawText, 'VOICE_COMMANDS.STOP')) return 'stop';
-        break;
+        // Si el texto del usuario incluye alguno de los sinónimos
+        if (synonyms.some(syn => clean.includes(syn))) {
+          
+          // Mapeamos las claves del JSON a lo que espera tu VoiceRunner
+          if (key === 'RECORD') return 'record';
+          if (key === 'MAP') return 'map';
+          if (key === 'ARCHIVE') return 'archive';
+          if (key === 'DATA') return 'data';
+          if (key === 'SETTINGS') return 'settings';
+          if (key === 'STOP') return 'stop';
+          if (key === 'HELP_COMMAND') return 'help';
+          // Añade aquí cualquier otra clave si fuera necesario
+        }
+      }
     }
 
     return null;
   }
 
-  /**
+/**
    * Generates el mensaje de ayuda contextual leyendo frases fijas del JSON para evitar errores fonéticos.
    */
-  public getHelpMessage(currentState: AppState): string {
-    const prefix = this.translate.instant('VOICE_COMMANDS.HELP_PREFIX') || 'Opcions: ';
-    let rawMessage = '';
+  public getHelpMessage(state: AppState): string {
+    switch (state) {
+      case 'TRACKING':
+        return this.translate.instant('VOICE_COMMANDS.HELP_TRACKING');
+      case 'CONFIRM_STOP':
+        return this.translate.instant('VOICE_COMMANDS.HELP_CONFIRM_STOP');
+      case 'CONFIRM_DELETE':
+        return this.translate.instant('VOICE_COMMANDS.HELP_CONFIRM_DELETE');
+        
+      // 🚀 AÑADE ESTO:
+      case 'WAITING_SAVE':
+        return this.translate.instant('VOICE_COMMANDS.HELP_WAITING_SAVE'); 
 
-    if (currentState === 'CONFIRM_STOP' || currentState === 'CONFIRM_DELETE') {
-      const optYes = this.translate.instant('RECORD.DELETE_YES') || 'sí';
-      const optNo = this.translate.instant('RECORD.DELETE_NO') || 'no';
-      rawMessage = prefix.includes('{0}') 
-        ? prefix.replace('{0}', `${optYes} o ${optNo}`) 
-        : `${prefix}${optYes} o ${optNo}`;
-    } 
-    else if (currentState === 'TRACK_MENU') {
-      const optSave = this.translate.instant('RECORD.SAVE_TRACK') || 'guardar';
-      const optDel = this.translate.instant('RECORD.REMOVE') || 'borrar';
-      rawMessage = prefix.includes('{0}') 
-        ? prefix.replace('{0}', `${optSave} o ${optDel}`) 
-        : `${prefix}${optSave} o ${optDel}`;
-    } 
-    else if (currentState === 'TRACKING') {
-      const trackHelp = this.translate.instant('VOICE_COMMANDS.HELP_TRACKING');
-      rawMessage = (trackHelp && !trackHelp.includes('VOICE_COMMANDS.')) 
-        ? trackHelp 
-        : 'Les opcions de gravació són: parar, mapa, arxiu o dades.';
-    } 
-    else {
-      const idleHelp = this.translate.instant('VOICE_COMMANDS.HELP_IDLE');
-      rawMessage = (idleHelp && !idleHelp.includes('VOICE_COMMANDS.')) 
-        ? idleHelp 
-        : 'Les opcions disponibles són: gravar, mapa, arxiu o dades.';
+      case 'IDLE':
+      default:
+        return this.translate.instant('VOICE_COMMANDS.HELP_IDLE');
     }
-
-    return rawMessage;
   }
 
   private matchKeyword(rawText: string, translationKey: string): boolean {

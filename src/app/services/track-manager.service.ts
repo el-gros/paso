@@ -15,6 +15,10 @@ import { PhotoService } from './photo.service';
 import { SnapToTrailService } from './snapToTrail.service';
 import { GeoMathService } from './geo-math.service';
 import { SmartRouteBuilderService } from './smart-route-builder.service';
+import { StateService } from './state.service';
+import { PopoverController, LoadingController } from '@ionic/angular';
+import { SaveTrackPopover } from '../save-track-popover.component'; // (Ajusta la ruta si está en otra carpeta)
+import { VoiceDriverService } from './voice-driver.service';
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +34,11 @@ export class TrackManagerService {
   private snapToTrailService = inject(SnapToTrailService);
   private geoMath = inject(GeoMathService);
   private smartRouteBuilder = inject(SmartRouteBuilderService);
-
+  private state = inject(StateService);
+  private popoverController = inject(PopoverController);
+  private loadingCtrl = inject(LoadingController);
+  private voiceDriver = inject(VoiceDriverService);
+  
   // ==========================================================================
   // 1. BORRAR TRACK
   // ==========================================================================
@@ -206,7 +214,100 @@ export class TrackManagerService {
     this.present.computedDistances = 0;
     if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
     this.location.state = 'tracking';
+    this.state.transitionTo('TRACKING');
     await this.location.sendReferenceToPlugin();
+    const startMsg = this.translate.instant('RECORD.STARTING');
+    this.fs.displayToast(`${startMsg} ⏺️`, 'success');
   }
 
+  async setTrackDetails() {
+    // 1. Limpieza inicial
+    this.state.transitionTo('IDLE');
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // 2. Cargador
+    const loadingOverlay = await this.loadingCtrl.create({
+      message: this.translate.instant('RECORD.ANALYZING_ROUTE'),
+      spinner: 'crescent',
+      backdropDismiss: false,
+    });
+    await loadingOverlay.present();
+
+    // 3. Análisis
+    const proposedTexts = await this.generateSmartTexts();
+    await loadingOverlay.dismiss();
+
+    // 4. Pausa de estabilización de audio
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // 5. Estado de espera
+    this.state.transitionTo('WAITING_SAVE');
+
+    // 6. Locución (con limpieza de emojis)
+    const promptMsg = this.translate.instant('RECORD.SAVE_PROMPT') || '¿Guardar trayecto, sí o no?';
+    const cleanPrompt = promptMsg.replace(/[\u1000-\uFFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim();
+
+    if (cleanPrompt) {
+      try {
+        await this.voiceDriver.speak(cleanPrompt);
+      } catch (e) {
+        console.warn('⚠️ Motor de voz ocupado:', e);
+      }
+    }
+
+    // 7. Configuración del Popover (CRÍTICO PARA QUE EL MICRO FUNCIONE)
+    const popover = await this.popoverController.create({
+      component: SaveTrackPopover,
+      componentProps: { modalEdit: proposedTexts },
+      
+      // 🚀 CAMBIOS CLAVE AQUÍ:
+      backdropDismiss: false, // Evita que se cierre al pulsar el micro o el mapa
+      showBackdrop: false,    // Elimina la capa invisible que bloquea los clics inferiores
+      
+      cssClass: 'top-glass-island-wrapper',
+      translucent: true,
+    });
+
+    await popover.present();
+    const { data, role } = await popover.onDidDismiss();
+
+    // 8. Flujo final
+    if (role === 'cancel' || role === 'backdrop' || data?.action !== 'ok') {
+      this.state.transitionTo('CONFIRM_DELETE'); 
+      return; 
+    }
+
+    const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+    await this.saveFile(finalName, data.description);
+  }
+
+  async saveFile(name: string, description: string) {
+    const loadingOverlay = await this.loadingCtrl.create({
+      message: this.translate.instant('RECORD.SAVING_TRACK'),
+      spinner: 'crescent',
+      backdropDismiss: false,
+      translucent: true,
+      cssClass: 'custom-loading-save'
+    });
+
+    await loadingOverlay.present();
+
+    try {
+      await this.processAndSaveTrack(name, description, (msg) => {
+        loadingOverlay.message = msg;
+      });
+
+      this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
+      
+      // Al finalizar con éxito, liberamos la máquina de estados hacia IDLE
+      this.state.transitionTo('IDLE');
+      
+    } catch (e) {
+      console.error('❌ Error crítico al guardar el Track:', e);
+      this.fs.displayToast(this.translate.instant('RECORD.SAVE_ERROR'), 'danger');
+      this.state.transitionTo('IDLE');
+    } finally {
+      await loadingOverlay.dismiss();
+    }
+  }
 }

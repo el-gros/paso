@@ -59,21 +59,46 @@ export class VoiceDriverService {
   /**
    * Reproduce texto por voz aplicando correcciones fonéticas según el idioma.
    */
-  public speak(text: string): void {
-    const synth = window?.speechSynthesis;
-    if (!synth || !text) return;
+  public speak(text: string): Promise<void> {
+    return new Promise((resolve) => {
+      const synth = window?.speechSynthesis;
+      if (!synth || !text) {
+        resolve();
+        return;
+      }
 
-    try {
-      synth.cancel();
-      const fixedText = this.applyPhoneticFixes(text);
-      const utterance = new SpeechSynthesisUtterance(fixedText);
-      utterance.lang = this.getLocale(this.translate.currentLang);
-      utterance.rate = 0.9;
-      
-      setTimeout(() => { synth.speak(utterance); }, 50);
-    } catch (error) {
-      console.error("Error en TTS (Driver):", error);
-    }
+      try {
+        // 1. Limpieza global de emojis y símbolos que rompen el Web Speech API en móviles
+        const cleanText = text.replace(/[\u1000-\uFFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim();
+        if (!cleanText) {
+          resolve();
+          return;
+        }
+
+        // 2. Si ya está hablando, cancelamos la locución anterior
+        if (synth.speaking || synth.pending) {
+          synth.cancel();
+        }
+
+        const fixedText = this.applyPhoneticFixes(cleanText);
+        const utterance = new SpeechSynthesisUtterance(fixedText);
+        utterance.lang = this.getLocale(this.translate.currentLang);
+        utterance.rate = 0.9;
+        
+        utterance.onend = () => resolve();
+        utterance.onerror = (error) => {
+          console.error("Error en TTS (Driver):", error);
+          resolve();
+        };
+
+        // ⚠️ CLAVE: Subimos a 200ms. 50ms es insuficiente en móviles cuando se ha hecho 
+        // un synth.cancel() y provoca que el sistema silencie la nueva locución.
+        setTimeout(() => { synth.speak(utterance); }, 200);
+      } catch (error) {
+        console.error("Error en TTS (Driver):", error);
+        resolve();
+      }
+    });
   }
 
   private getLocale(lang: string | undefined): string {

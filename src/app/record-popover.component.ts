@@ -140,12 +140,12 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // ==========================================================================
   handleSaveClick() {
     this.present.isRecordPopoverOpen = false;
-    this.setTrackDetails();
+    this.trackManager.setTrackDetails(); // <-- Asegúrate de que use this.trackManager
   }
 
   handleDeleteClick() {
-    this.present.isRecordPopoverOpen = false;
-    this.present.isConfirmDeletionOpen = true;
+    // Usamos el StateService en lugar de this.present.isConfirmDeletionOpen = true
+    this.state.transitionTo('CONFIRM_DELETE');
   }
 
   // ==========================================================================
@@ -153,7 +153,11 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   // ==========================================================================
   async confirmDelete() {
     this.confirmedDelete = true; // Marcamos que el usuario dijo SÍ
-    this.present.isConfirmDeletionOpen = false; // Cerramos la ventana (esto dispara onDeleteDismiss)
+    
+    // 1. PRIMERO devolvemos la máquina de estados a reposo (IDLE).
+    // Esto hará que tu ngOnInit ponga isConfirmDeletionOpen en false automáticamente
+    // y le dirá al micrófono que ya no esperamos un "Sí/No".
+    this.state.transitionTo('IDLE');
 
     try {
       await this.trackManager.deleteTrackProcess();
@@ -164,39 +168,47 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   }
 
   cancelDelete() {
-    this.present.isConfirmDeletionOpen = false;
+    // Si pulsa "No", volvemos al menú del track anterior usando el estado
+    this.state.transitionTo('TRACK_MENU');
   }
 
   onDeleteDismiss() {
-    this.present.isConfirmDeletionOpen = false;
-    // Si NO se confirmó el borrado (pulsó "NO" o fuera de la caja), reabrimos el menú principal
+    // Este evento salta cuando el popover se cierra (por botón o tocando fuera)
     if (!this.confirmedDelete) {
-      this.present.isRecordPopoverOpen = true;
+      // Si se cerró tocando fuera del recuadro (sin pulsar el botón SÍ),
+      // nos aseguramos de que el sistema y la voz vuelvan al menú principal
+      this.state.transitionTo('TRACK_MENU');
     }
     // Reseteamos la bandera para la próxima vez
     this.confirmedDelete = false;
   }
-
+  
   // ==========================================================================
   // GESTIÓN DE PARADA
   // ==========================================================================
   async confirmStop() {
-    this.confirmedStop = true; // Marcamos que el usuario dijo SÍ
-    this.present.isConfirmStopOpen = false; // Cerramos la ventana
+    this.confirmedStop = true;
+    this.present.isConfirmStopOpen = false;
 
     try {
       this.subscription?.unsubscribe();
       const isSuccess = await this.trackManager.stopTrackingProcess();
-      this.state.transitionTo('TRACK_MENU');
 
       if (isSuccess) {
         this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
-        await this.setTrackDetails();
+        
+        // ❌ Antes tenías: await this.setTrackDetails();
+        // ✅ CÁMBIALO POR ESTO: Llamamos al método centralizado en el servicio
+        await this.trackManager.setTrackDetails(); 
+
       } else {
         this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'), 'warning');
+        this.state.transitionTo('IDLE');
+        await this.trackManager.deleteTrackProcess();
       }
     } catch (error) {
       console.error('Error al detener track:', error);
+      this.state.transitionTo('IDLE');
     }
   }
 
@@ -212,71 +224,4 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     //this.confirmedStop = false; // Reseteamos la bandera
   }
 
-  // ==========================================================================
-  // GUARDAR RUTA Y UI DE CARGA
-  // ==========================================================================
-  async setTrackDetails() {
-    const loadingOverlay = await this.loadingCtrl.create({
-      message: this.translate.instant('RECORD.ANALYZING_ROUTE'),
-      spinner: 'crescent',
-      backdropDismiss: false,
-    });
-    await loadingOverlay.present();
-
-    const proposedTexts = await this.trackManager.generateSmartTexts();
-    await loadingOverlay.dismiss();
-
-    const popover = await this.popoverController.create({
-      component: SaveTrackPopover,
-      componentProps: { modalEdit: proposedTexts },
-      backdropDismiss: true,
-      cssClass: 'top-glass-island-wrapper',
-      translucent: true,
-    });
-
-    await popover.present();
-    const { data, role } = await popover.onDidDismiss();
-
-    if (role === 'cancel' || role === 'backdrop' || data?.action !== 'ok') {
-      this.present.isRecordPopoverOpen = true; 
-      return; 
-    }
-
-    const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
-    await this.saveFile(finalName, data.description);
-  }
-
-  async saveFile(name: string, description: string) {
-    const loadingOverlay = await this.loadingCtrl.create({
-      message: this.translate.instant('RECORD.SAVING_TRACK'),
-      spinner: 'crescent',
-      backdropDismiss: false,
-      translucent: true,
-      cssClass: 'custom-loading-save'
-    });
-
-    await loadingOverlay.present();
-    this.loading = true; 
-
-    try {
-      await this.trackManager.processAndSaveTrack(name, description, (msg) => {
-        loadingOverlay.message = msg;
-      });
-
-      this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
-      
-      // Cerramos todo
-      this.present.isRecordPopoverOpen = false;
-      this.present.isConfirmStopOpen = false;
-      this.present.isConfirmDeletionOpen = false;
-      
-    } catch (e) {
-      console.error('❌ Error crítico al guardar el Track:', e);
-      this.fs.displayToast(this.translate.instant('RECORD.SAVE_ERROR'), 'danger');
-    } finally {
-      await loadingOverlay.dismiss();
-      this.loading = false;
-      this.cd.detectChanges();
-    }
-  }
 }

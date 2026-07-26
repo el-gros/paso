@@ -9,6 +9,7 @@ import { PresentService } from './present.service';
 import { ReferenceService } from './reference.service';
 import { VoiceDriverService } from './voice-driver.service';
 import { VoiceParserService } from './voice-parser.service';
+import { PopoverController } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +22,8 @@ export class VoiceRunnerService {
   private state = inject(StateService);
   private present = inject(PresentService);
   private reference = inject(ReferenceService);
-  
+  private popoverCtrl = inject(PopoverController);
+
   // Servicios modulares de voz
   private driver = inject(VoiceDriverService);
   private parser = inject(VoiceParserService);
@@ -50,8 +52,11 @@ export class VoiceRunnerService {
    */
   public async startListeningCycle(): Promise<void> {
     const text = await this.driver.listen();
+    console.log('🎤 DEBUG: El sistema ha escoltat exactament: "', text, '"'); // 👈 AQUEST LOG ÉS VITAL
+
     if (text) {
       const command = this.parser.analyzeCommand(text, this.state.current);
+      console.log('🤖 DEBUG: L\'analitzador ha interpretat l\'ordre com: ', command); // 👈 PER VEURE PER QUÈ TORNA NULL
       await this.processCommand(command);
     }
   }
@@ -61,7 +66,7 @@ export class VoiceRunnerService {
   // ==========================================================================
   private async processCommand(command: string | null): Promise<void> {
     if (!command) {
-      this.fs.displayToast('Comando no válido para el estado actual 🤷‍♂️', 'warning');
+      this.fs.displayToast(this.translate.instant('VOICE.INVALID_STATE'), 'warning');
       return;
     }
 
@@ -86,6 +91,9 @@ export class VoiceRunnerService {
       case 'CONFIRM_DELETE':
         await this.handleConfirmDelete(command);
         break;
+      case 'WAITING_SAVE':
+        await this.handleWaitingSave(command);
+        break;
     }
   }
 
@@ -95,17 +103,15 @@ export class VoiceRunnerService {
       case 'record':
         if (!this.router.url.includes('tab1')) await this.fs.gotoPage('tab1');
           
-        // 1. Ejecutamos la lógica de negocio (sin avisos dentro)
+        // 1. Ejecutamos la lógica que inicia el track y muestra el Toast visual
         await this.executeStartTracking(); 
         
-        // 2. Transicionamos el estado
+        // 2. Transicionamos el estado (el TrackManager ya lo hace, pero dejarlo aquí es seguro)
         this.state.transitionTo('TRACKING'); 
         
-        // 3. Notificamos al usuario de forma multilingüe
+        // 3. El Runner solo se encarga de la voz (el Toast ya lo gestionó el servicio anterior)
         const startMsg = this.translate.instant('RECORD.STARTING');
-        this.fs.displayToast(`${startMsg} ⏺️`, 'success');
-        this.safeSpeak(startMsg);
-        
+        await this.safeSpeak(startMsg); // <-- Si safeSpeak es asíncrono, puedes poner await
         break;
 
       case 'map': 
@@ -153,8 +159,10 @@ export class VoiceRunnerService {
         break;
         
       case 'stop':
-        this.fs.displayToast('No hay grabación activa ⏹️', 'info');
-        this.safeSpeak('No hay grabación activa');
+        // CORREGIDO: Usando claves de traducción en lugar de texto duro
+        const noTrackMsg = this.translate.instant('VOICE_COMMANDS.NO_ACTIVE_RECORDING') || 'No active recording';
+        this.fs.displayToast(`${noTrackMsg} ⏹️`, 'info');
+        this.safeSpeak(noTrackMsg);
         break;
     }
   }
@@ -169,8 +177,8 @@ export class VoiceRunnerService {
         break;
 
       case 'record':
-        this.fs.displayToast('Ya estás grabando ⏺️', 'info');
-        this.safeSpeak('Grabación activa');
+        this.fs.displayToast(this.translate.instant('RECORD.ALREADY_RECORDING'), 'info');
+        this.safeSpeak(this.translate.instant('RECORD.ALREADY_RECORDING'));
         break;
 
       case 'map': 
@@ -213,24 +221,14 @@ export class VoiceRunnerService {
         if (isSuccess) {
           const finishedMsg = this.translate.instant('MAP.TRACK_FINISHED');
           this.fs.displayToast(finishedMsg, 'success');
-          this.safeSpeak(finishedMsg);
+          await this.safeSpeak(finishedMsg); // 👈 Espera a terminar "Trayecto finalizado"
           
-          // 1. Avanzamos al menú de Guardar / Borrar
-          this.state.transitionTo('TRACK_MENU');
+          const analyzingMsg = this.translate.instant('RECORD.ANALYZING_ROUTE');
+          this.fs.displayToast(analyzingMsg, 'info');
+          await this.safeSpeak(analyzingMsg); // 👈 Espera a terminar "Analizando ruta..."
           
-          // 2. Encadenamos la siguiente pregunta y abrimos el micrófono
-          setTimeout(() => {
-            const saveOpt = this.translate.instant('RECORD.SAVE_TRACK') || 'Guardar';
-            const delOpt = this.translate.instant('RECORD.REMOVE') || 'Borrar';
-            
-            const prompt = `¿${saveOpt}, o ${delOpt}?`;
-            this.fs.displayToast(prompt, 'info', 4000);
-            this.safeSpeak(prompt);
-            
-            // ¡Clave para manos libres! Reactivamos el reconocimiento de voz
-            setTimeout(() => { this.startListeningCycle(); }, 2000);
-          }, 1500);
-
+          // Y justo aquí llama directamente a guardar sin pasar por el menú intermedio:
+          await this.trackManager.setTrackDetails();
         } else {
           this.state.transitionTo('IDLE');
         }
@@ -240,17 +238,19 @@ export class VoiceRunnerService {
       }
     } else if (command === 'no') {
       this.state.transitionTo('TRACKING');
-      this.fs.displayToast('Continuando grabación...', 'info');
-      this.safeSpeak('Continuando');
+      this.fs.displayToast(this.translate.instant('RECORD.CONTINUE_TRACKING'), 'success');
+      this.safeSpeak(this.translate.instant('RECORD.CONTINUE_TRACKING'));
     }
   }
 
   // --- LOGICA: MENÚ POST-GRABACIÓN (TRACK_MENU) ---
   private async handleTrackMenu(command: string): Promise<void> {
     if (command === 'save') {
-      this.state.transitionTo('IDLE');
-      this.fs.displayToast('Abriendo opciones de guardado...', 'success');
-      this.safeSpeak('Guardando');
+      // ✅ MODIFICACIÓN CLAVE: En lugar de solo ir a IDLE, disparar el guardado de TrackManager
+      const savingMsg = this.translate.instant('RECORD.SAVING_TRACK') || 'Guardando...';
+      this.fs.displayToast(savingMsg, 'success');
+      this.safeSpeak(savingMsg);
+      await this.trackManager.setTrackDetails();
     } else if (command === 'delete') {
       this.state.transitionTo('CONFIRM_DELETE');
       this.promptStateQuestion('RECORD.CONFIRM_DELETION');
@@ -262,14 +262,16 @@ export class VoiceRunnerService {
     if (command === 'yes') {
       try {
         await this.trackManager.deleteTrackProcess();
-        this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
-        this.safeSpeak('Trayecto eliminado');
+        const deletedMsg = this.translate.instant('MAP.CURRENT_TRACK_DELETED');
+        this.fs.displayToast(deletedMsg, 'success');
+        this.safeSpeak(deletedMsg);
       } finally {
         this.state.transitionTo('IDLE'); 
       }
     } else if (command === 'no') {
       this.state.transitionTo('TRACK_MENU');
-      this.safeSpeak('Borrado cancelado');
+      const cancelMsg = this.translate.instant('RECORD.DELETE_NO');
+      this.safeSpeak(cancelMsg);
     }
   }
 
@@ -311,17 +313,43 @@ export class VoiceRunnerService {
    * Método puente que elimina cualquier emoji por código antes de pasarlo al altavoz.
    * Evita que el móvil pronuncie "mapa mundial", "carpeta" o "gráfico de barras".
    */
-  private safeSpeak(text: string): void {
+
+  private async safeSpeak(text: string): Promise<void> { // <-- Asegúrate de que tenga "async" y ": Promise<void>"
     if (!text) return;
     const cleanText = text.replace(/[\u1000-\uFFFF]|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim();
-    this.driver.speak(cleanText);
+    
+    // Como ahora driver.speak es una promesa, aquí necesitamos el await
+    await this.driver.speak(cleanText); 
   }
-
+  
   public cancelStop(): void {
     if (this.state.current === 'CONFIRM_STOP') {
         this.state.transitionTo('TRACKING');
-        this.fs.displayToast('Continuando grabación...', 'info');
-        this.safeSpeak('Continuando');
+        this.fs.displayToast(this.translate.instant('RECORD.CONTINUE_TRACKING'), 'success');
+        this.safeSpeak(this.translate.instant('RECORD.CONTINUE_TRACKING'));
     }
   }
-}
+
+  private async handleWaitingSave(command: string): Promise<void> {
+    if (command === 'yes') {
+      // 1. Damos feedback visual
+      this.fs.displayToast(this.translate.instant('RECORD.SAVING'), 'success');
+
+      // 2. Disparamos el evento para que el Popover ejecute su propio confirm()
+      // Esto hace que el popover guarde los datos del formulario (ngModel) 
+      // y se cierre solo, enviando la data a TrackManager.
+      this.state.triggerVoiceConfirm();
+      
+      // NO hacemos transitionTo('IDLE') aquí.
+      // El código de TrackManagerService seguirá ejecutándose tras el dismiss.
+      
+    } else if (command === 'no') {
+      // 1. Cerramos el popover indicando cancelación
+      // Necesitas tener inyectado PopoverController en VoiceRunnerService
+      await this.popoverCtrl.dismiss(null, 'cancel');
+
+      // 2. Cambiamos el estado al siguiente paso lógico
+      this.state.transitionTo('CONFIRM_DELETE');
+      this.promptStateQuestion('RECORD.CONFIRM_DELETION');
+    }
+  }}

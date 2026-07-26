@@ -189,6 +189,7 @@
     "HEADER": "Point de passage",
     "NAME": "Nom",
     "DESCRIPTION": "Description",
+    "SAVE": "Enregistrer",
     "CANCEL": "Annuler"
   },
   "RECORD": {
@@ -219,7 +220,10 @@
     "ANALYZING_ROUTE": "Analyse de l'itinéraire et recherche de points d'intérêt...",
     "SAVING_TRACK": "Enregistrement de la trace...",
     "APPLYING_ELEVATION": "Application des élévations DEM...",
-    "SAVE_ERROR": "Erreur critique lors de l'enregistrement"
+    "SAVE_ERROR": "Erreur critique lors de l'enregistrement",
+    "CONTINUE_TRACKING": "Reprise de l'enregistrement...",
+    "ALREADY_RECORDING": "Déjà en train d'enregistrer ⏺️",
+    "SAVE_PROMPT": "Voulez-vous enregistrer le parcours, oui ou non?"
   },
   "COLORS": {
     "crimson": "Cramoisi",
@@ -369,6 +373,7 @@
     "NOT_AVAILABLE": "Reconnaissance vocale non disponible",
     "OPENING_MAP": "Ouverture de la carte",
     "OPENING_ARCHIVE": "Ouverture de l'archive",
-    "OPENING_DATA": "Ouverture des données"
+    "OPENING_DATA": "Ouverture des données",
+    "INVALID_STATE": "Commande non valide pour l'état actuel 🤷‍♂️"
   }
 }

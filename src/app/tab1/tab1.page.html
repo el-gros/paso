@@ -28,7 +28,6 @@
 
   @if (!fs.voiceControl) {
     <ion-fab slot="fixed" horizontal="center" vertical="top" class="top-safe">
-
       <ion-row>
         @if (location.state === 'tracking') {
           <div class="record-button with-indicator" (click)="state.transitionTo('CONFIRM_STOP')">
@@ -92,14 +91,7 @@
     </ion-fab>
   }  
 
-  <ion-popover 
-    [isOpen]="state.current === 'CONFIRM_STOP' || state.current === 'CONFIRM_DELETE' || state.current === 'TRACK_MENU'" 
-    (didDismiss)="onStopDismiss()" 
-    class="confirm-popover">
-    <ng-template>
-      <app-record-popover></app-record-popover>
-    </ng-template>
-  </ion-popover>
+  <app-record-popover></app-record-popover>
     
   @if (reference.isSearchGuidePopoverOpen) {
     <div slot="fixed" style="width: 100%; top: 0; left: 0; z-index: 99999;">
@@ -116,5 +108,5 @@
   <app-wiki-card 
     [data]="wikiData" 
     (onClose)="wikiData = null">
-  </app-wiki-card>
+ qq </app-wiki-card>
 }

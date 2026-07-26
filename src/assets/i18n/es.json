@@ -189,6 +189,7 @@
     "HEADER": "Punto de paso",
     "NAME": "Nombre",
     "DESCRIPTION": "Descripción",
+    "SAVE": "Guardar",
     "CANCEL": "Cancelar"
   },
   "RECORD": {
@@ -220,7 +221,10 @@
     "ANALYZING_ROUTE": "Analizando ruta y buscando lugares de interés...",
     "SAVING_TRACK": "Guardando ruta...",
     "APPLYING_ELEVATION": "Aplicando elevaciones DEM...",
-    "SAVE_ERROR": "Error crítico al guardar la ruta"
+    "SAVE_ERROR": "Error crítico al guardar la ruta",
+    "CONTINUE_TRACKING": "Continuando grabación...",
+    "ALREADY_RECORDING": "Ya estás grabando ⏺️",
+    "SAVE_PROMPT": "¿Quieres guardar el trayecto, sí o no?"
   },
   "COLORS": {
     "crimson": "Carmesí",
@@ -367,7 +371,8 @@
     "ALREADY_IN_ARCHIVE": "Ya estás en el archivo",
     "ALREADY_IN_DATA": "Ya estás en la pantalla de datos",
     "ALREADY_IN_SETTINGS": "Ya estás en la pantalla de ajustes",
-    "NO_TRACKS": "No hay trayectos en el mapa"
+    "NO_TRACKS": "No hay trayectos en el mapa",
+    "YES": "si, vale, de acuerdo"
   },
   "VOICE": {
     "PROMPT": "Diga un comando...",
@@ -377,6 +382,7 @@
     "NOT_AVAILABLE": "El reconocimiento de voz no está disponible",
     "OPENING_MAP": "Abriendo el mapa",
     "OPENING_ARCHIVE": "Abriendo el archivo",
-    "OPENING_DATA": "Abriendo los datos"
+    "OPENING_DATA": "Abriendo los datos",
+    "INVALID_STATE": "Comando no válido para el estado actual 🤷‍♂️"
   }
 }

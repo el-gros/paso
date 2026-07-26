@@ -189,6 +189,7 @@
     "HEADER": "航点",
     "NAME": "名称",
     "DESCRIPTION": "描述",
+    "SAVE": "保存",
     "CANCEL": "取消"
   },
   "RECORD": {
@@ -219,7 +220,10 @@
     "ANALYZING_ROUTE": "正在分析路线并寻找兴趣点...",
     "SAVING_TRACK": "正在保存路线...",
     "APPLYING_ELEVATION": "正在应用 DEM 高程数据...",
-    "SAVE_ERROR": "保存路线时发生严重错误"
+    "SAVE_ERROR": "保存路线时发生严重错误",
+    "CONTINUE_TRACKING": "正在继续记录...",
+    "ALREADY_RECORDING": "您已在记录中 ⏺️",
+    "SAVE_PROMPT": "您想保存路线吗，是或否？"
   },
   "COLORS": {
     "crimson": "深红色",
@@ -369,6 +373,7 @@
     "NOT_AVAILABLE": "语音识别不可用",
     "OPENING_MAP": "打开地图",
     "OPENING_ARCHIVE": "打开档案",
-    "OPENING_DATA": "打开数据"
+    "OPENING_DATA": "打开数据",
+          "INVALID_STATE": "当前状态下指令无效 🤷‍♂️"
   }
 }    

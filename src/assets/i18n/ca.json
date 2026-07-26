@@ -189,6 +189,7 @@
     "HEADER": "Punt de pas",
     "NAME": "Nom",
     "DESCRIPTION": "Descripció",
+    "SAVE": "Guardar",
     "CANCEL": "Cancel·lar"
   },
   "RECORD": {
@@ -220,7 +221,10 @@
     "ANALYZING_ROUTE": "Analitzant la ruta i cercant llocs d'interès...",
     "SAVING_TRACK": "Desant la ruta...",
     "APPLYING_ELEVATION": "Aplicant elevacions DEM...",
-    "SAVE_ERROR": "Error crític en desar la ruta"
+    "SAVE_ERROR": "Error crític en desar la ruta",
+    "CONTINUE_TRACKING": "Continuant la grabació...",
+    "ALREADY_RECORDING": "Ja estàs grabant ⏺️",
+    "SAVE_PROMPT": "Voleu guardar el trayecte, sí o no?"
   },
   "COLORS": {
     "crimson": "carmesí",
@@ -367,7 +371,8 @@
     "ALREADY_IN_ARCHIVE": "Ja ets a l'arxiu",
     "ALREADY_IN_DATA": "Ja ets a la pantalla de dades",
     "ALREADY_IN_SETTINGS": "Ja ets a la pantalla de configuració",
-    "NO_TRACKS": "No hi ha trajectes al mapa"
+    "NO_TRACKS": "No hi ha trajectes al mapa",
+    "YES": "sí, d'acord, correcte"
   },
    "VOICE": {
     "PROMPT": "Digueu una ordre...",
@@ -377,6 +382,7 @@
     "NOT_AVAILABLE": "El reconeixement de veu no està disponible",
     "OPENING_MAP": "Obrint el mapa",
     "OPENING_ARCHIVE": "Obrint l'arxiu",
-    "OPENING_DATA": "Obrint les dades"
+    "OPENING_DATA": "Obrint les dades",
+    "INVALID_STATE": "Ordre no vàlida per al estat actual 🤷‍♂️"
   }
 }

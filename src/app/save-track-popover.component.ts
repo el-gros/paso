@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PresentService } from './services/present.service';
 import { LocationManagerService } from './services/location-manager.service';
+import { StateService } from './services/state.service';
+import { Subscription } from 'maplibre-gl';
 
 @Component({
   selector: 'app-save-track-popover',
@@ -76,7 +78,7 @@ import { LocationManagerService } from './services/location-manager.service';
   `]
 })
 export class SaveTrackPopover implements OnInit { 
-
+  
   // ==========================================================================
   // 1. INPUTS Y PROPIEDADES
   // ==========================================================================
@@ -87,6 +89,8 @@ export class SaveTrackPopover implements OnInit {
   public present = inject(PresentService);
   private popoverCtrl = inject(PopoverController);
   private translate = inject(TranslateService); 
+  private state = inject(StateService);
+  private sub!: Subscription;
   
   // ==========================================================================
   // 2. CICLO DE VIDA
@@ -94,6 +98,12 @@ export class SaveTrackPopover implements OnInit {
 
   ngOnInit() {
     this.modalEdit = { name: '', description: '', ...this.modalEdit };
+    this.modalEdit = { name: '', description: '', ...this.modalEdit };
+    
+    // Suscripción: Si llega orden de confirmación por voz, ejecuto mi propio botón
+    this.sub = this.state.voiceConfirm$.subscribe(() => {
+        this.confirm(); 
+    });
   }
 
   // ==========================================================================
@@ -105,6 +115,15 @@ export class SaveTrackPopover implements OnInit {
   }
   
   public confirm() { 
-    this.popoverCtrl.dismiss({ action: 'ok', ...this.modalEdit }); 
+    // Añadimos 'ok' como segundo parámetro (el rol)
+    this.popoverCtrl.dismiss({ 
+      action: 'ok', 
+      name: this.modalEdit.name, 
+      description: this.modalEdit.description 
+    }, 'ok'); 
+  }
+
+  ngOnDestroy() {
+    this.sub?.unsubscribe(); // Limpieza para evitar fugas de memoria
   }
 }

@@ -189,6 +189,7 @@
     "HEADER": "Waypoint",
     "NAME": "Name",
     "DESCRIPTION": "Description",
+    "SAVE": "Save",
     "CANCEL": "Cancel"
   },
   "RECORD": {
@@ -219,7 +220,10 @@
     "ANALYZING_ROUTE": "Analyzing route and searching for points of interest...",
     "SAVING_TRACK": "Saving route...",
     "APPLYING_ELEVATION": "Applying DEM elevations...",
-    "SAVE_ERROR": "Critical error saving the route"  
+    "SAVE_ERROR": "Critical error saving the route" ,
+    "CONTINUE_TRACKING": "Continuing recording...",
+    "ALREADY_RECORDING": "Already recording ⏺️",
+    "SAVE_PROMPT": "Do you want to save the track, yes or no?"
   },
   "COLORS": {
     "crimson": "Crimson",
@@ -369,6 +373,7 @@
     "NOT_AVAILABLE": "Speech recognition not available",
     "OPENING_MAP": "Opening map",
     "OPENING_ARCHIVE": "Opening archive",
-    "OPENING_DATA": "Opening data"
+    "OPENING_DATA": "Opening data",
+    "INVALID_STATE": "Command not valid for the current state 🤷‍♂️"
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 // 1. Catálogo estricto de los estados posibles de la app
 export type AppState = 
@@ -7,17 +7,24 @@ export type AppState =
   | 'TRACKING'        // Grabación activa en segundo plano
   | 'CONFIRM_STOP'    // Preguntando si desea detener
   | 'TRACK_MENU'      // Menú post-grabación (Guardar/Borrar)
-  | 'CONFIRM_DELETE'; // Preguntando si desea borrar definitivamente
+  | 'CONFIRM_DELETE' // Preguntando si desea borrar definitivamente
+  | 'WAITING_SAVE';   // Esperando a que termine de guardar
 
 @Injectable({
   providedIn: 'root'
 })
 export class StateService {
+  public voiceConfirmSubject = new Subject<void>();
+  public voiceConfirm$ = this.voiceConfirmSubject.asObservable();
   // 2. Fuente de la verdad reactiva (inicia en IDLE)
   private stateSubject = new BehaviorSubject<AppState>('IDLE');
   
   // 3. Observable público para que otros componentes se suscriban (pero no puedan modificarlo directamente)
   public state$: Observable<AppState> = this.stateSubject.asObservable();
+
+  public triggerVoiceConfirm() {
+    this.voiceConfirmSubject.next();
+  }
 
   constructor() {}
 
