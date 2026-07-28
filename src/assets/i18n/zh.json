@@ -27,7 +27,8 @@
     "REMOVE_REFERENCE": "参考",
     "REMOVE_SEARCH": "搜索",
     "OFFLINE_CREDITS": "离线地图数据",
-    "NO_CONNECTION_ERROR": "无网络连接 / 无离线地图"
+    "NO_CONNECTION_ERROR": "无网络连接 / 无离线地图",
+    "TRACKING_STARTED": "跟踪已开始"
   },
   "SEARCH": {
     "BUTTON": "搜索",
@@ -104,7 +105,11 @@
     "FOLDER_NOT_EMPTY": "文件夹不为空",
     "CENTER_MAP": "居中地图",
     "FOLDER_EMPTY": "文件夹已清空",
-    "FOLDER_DELETED": "文件夹已删除"
+    "FOLDER_DELETED": "文件夹已删除",
+    "MAP_CENTERED": "地图已居中于该位置",
+    "PLACE_EDITED": "地点已成功更新",
+    "PLACE_DELETED": "地点已成功删除",
+    "TRACK_DELETED": "轨迹已成功删除"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "语音控制",
@@ -151,7 +156,12 @@
     "REMOVE_MAP": "删除地图",
     "ALL_MAPS_DOWNLOADED": "所有地图已下载",
     "MAP_UPDATE_ERROR": "更新地图提供商时出错",
-    "OFFLINE_MODE_ON": "无网络连接：激活救生模式（离线）"
+    "OFFLINE_MODE_ON": "无网络连接：激活救生模式（离线）",
+    "VOICE": "语音",
+    "VOICE_ACTIVE": "语音已激活",
+    "VOICE_INACTIVE": "语音已停用",
+    "ALERT_ACTIVE": "警报已激活",
+    "ALERT_INACTIVE": "警报已停用"
   },
   "CANVAS": {
     "TRACK": "保存轨迹",
@@ -219,7 +229,8 @@
     "ANALYZING_ROUTE": "正在分析路线并寻找兴趣点...",
     "SAVING_TRACK": "正在保存路线...",
     "APPLYING_ELEVATION": "正在应用 DEM 高程数据...",
-    "SAVE_ERROR": "保存路线时发生严重错误"
+    "SAVE_ERROR": "保存路线时发生严重错误",
+    "CONTINUE_TRACKING": "继续记录轨迹"
   },
   "COLORS": {
     "crimson": "深红色",

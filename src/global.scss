@@ -318,7 +318,9 @@ ion-popover.top-search-popover {
   &::part(button) { 
     font-weight: 800 !important; 
     text-transform: uppercase; 
-    font-size: 14px; 
+    font-size: 14px;
+    color: inherit !important;  /* Obliga al botón a usar el mismo color oscuro del texto */
+    opacity: 1 !important;      /* Quita la transparencia que Ionic le pone por defecto */ 
   } 
 }
 
@@ -331,12 +333,21 @@ ion-popover.top-search-popover {
   --icon-color: #1e4620;
 }
 
-.toast-error { 
+.toast-error, 
+.toast-danger { 
   @extend .toast; 
   --background: #fdeded; /* Rojo pálido */
   --color: #5f2120;      /* Texto rojo oscuro */
   --button-color: #5f2120;
   --icon-color: #5f2120;
+}
+
+.toast-warning { 
+  @extend .toast; 
+  --background: #fff4e5; /* Naranja pálido / crema */
+  --color: #663c00;      /* Texto naranja oscuro / marrón */
+  --button-color: #663c00; 
+  --icon-color: #663c00;
 }
 
 /* --- OTROS COMPONENTES (Sin cambios mayores, ya se ven geniales) --- */

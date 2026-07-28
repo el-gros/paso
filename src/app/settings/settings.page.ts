@@ -18,7 +18,6 @@ import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { BackupService } from '../services/backup.service'; 
 import { OfflineMapService } from '../services/offline-map.service'; // <--- Nuevo Servicio
-import { VoiceRunnerService } from '../services/voice-runner.service';
 
 // --- COMPONENTS ---
 import { ColorPopoverComponent } from '../color-popover.component';
@@ -76,7 +75,6 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private location: LocationManagerService,
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
-    public voiceRunner: VoiceRunnerService
   ) {
     this.setupMapActions();
   }
@@ -143,6 +141,11 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.fs.alert = value ? 'on' : 'off'; 
     await this.fs.storeSet('alert', this.fs.alert);
     await this.location.sendReferenceToPlugin();
+    if (value) {
+      this.fs.displayToast(this.translate.instant('SETTINGS.ALERT_ACTIVE'), 'success');
+    } else {
+      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_INACTIVE'), 'warning');
+    }
   }
 
   /** Abre el selector de color para el track activo o el de referencia */
@@ -172,6 +175,16 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     }
   }
 
+  public async onVoiceFeedbackChange(value: boolean) {
+    this.fs.voiceFeedback = value;
+    await this.fs.storeSet('voiceFeedback', value);
+    if (value) {
+      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_ACTIVE'), 'success');
+    } else {
+      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_INACTIVE'), 'warning');
+    }
+  }
+
   // ==========================================================================
   // 5. BACKUP (Copia de Seguridad)
   // ==========================================================================
@@ -192,11 +205,11 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       await loading.dismiss();
 
       if (success) {
-        this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC'), 'success', 0);
+        this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC'), 'success');
       }
     } catch (e) {
       await loading.dismiss();
-      this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'), 'danger', 0);
+      this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'), 'danger');
     }
   }
 
@@ -222,33 +235,16 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       await loading.dismiss();
 
       if (success) {
-        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success', 0);
+        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success');
         setTimeout(() => window.location.replace('/'), 1500);
       } else {
-        this.fs.displayToast(this.translate.instant('SETTINGS.INVALID_FILE_DESC'), 'danger', 0);
+        this.fs.displayToast(this.translate.instant('SETTINGS.INVALID_FILE_DESC'), 'danger');
       }
     } catch (e: any) {
       if (e.message !== 'Pick files canceled.') {
-        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'), 'danger', 0);
+        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'), 'danger');
       }
     }
   }
-
-/**
- * Activa o desactiva la funcionalidad de control de voz.
- * Si se desactiva, detiene cualquier proceso de escucha activo.
- */
-public async onVoiceControlChange(value: boolean) {
-  this.fs.voiceControl = value;
-  await this.fs.storeSet('voiceControl', value);
-  
-  if (value) {
-    this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_CONTROL_ACTIVE'), 'success');
-  } else {
-    // Si el usuario apaga el interruptor, nos aseguramos de apagar el micro
-    this.voiceRunner.isListening = false;
-    await this.voiceRunner.stopListening();
-  }
-}
 
 }

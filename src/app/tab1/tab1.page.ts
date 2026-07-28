@@ -26,7 +26,6 @@ import { MapTracksService } from '../services/map-tracks.service';
 import { DeviceSetupService } from '../services/device-setup.service'; 
 import { TrackingEngineService } from '../services/tracking-engine.service'; // <-- NUEVO
 import { PhotoWaypointService } from '../services/photo-waypoint.service'; // <-- NUEVO
-import { VoiceRunnerService } from '../services/voice-runner.service';
 
 register();
 
@@ -89,7 +88,6 @@ export class Tab1Page implements OnInit, OnDestroy {
     public mapTracksService: MapTracksService,
     public trackingEngine: TrackingEngineService, // <-- INYECTADO
     public photoWaypoint: PhotoWaypointService,
-    public voiceRunner: VoiceRunnerService,
   ) {}
 
   async ngOnInit() {
@@ -265,6 +263,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
     this.location.state = 'tracking';
     await this.location.sendReferenceToPlugin();
+    this.fs.displayToast(this.translate.instant('MAP.TRACKING_STARTED'), 'success');
   }
 
   async refreshMapOnForeground() {

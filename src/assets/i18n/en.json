@@ -27,7 +27,8 @@
     "REMOVE_REFERENCE": "Ref.",
     "REMOVE_SEARCH": "Srch",
     "OFFLINE_CREDITS": "Offline map data",
-    "NO_CONNECTION_ERROR": "No connection / No offline maps"
+    "NO_CONNECTION_ERROR": "No connection / No offline maps",
+    "TRACKING_STARTED": "Tracking started"
   },
   "SEARCH": {
     "BUTTON": "Search",
@@ -104,7 +105,11 @@
     "FOLDER_NOT_EMPTY": "Folder is not empty",
     "CENTER_MAP": "Center map",
     "FOLDER_EMPTY": "Folder emptied successfully",
-    "FOLDER_DELETED": "Folder deleted successfully"
+    "FOLDER_DELETED": "Folder deleted successfully",
+    "MAP_CENTERED": "Map centered on the location",
+    "PLACE_EDITED": "Place updated successfully",
+    "PLACE_DELETED": "Place deleted successfully",
+    "TRACK_DELETED": "Track deleted successfully"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Voice Control",
@@ -151,7 +156,12 @@
     "REMOVE_MAP": "Remove map",
     "ALL_MAPS_DOWNLOADED": "All maps are downloaded",
     "MAP_UPDATE_ERROR": "Error updating map provider",
-    "OFFLINE_MODE_ON": "No connection: Lifesaver mode activated (Offline)"
+    "OFFLINE_MODE_ON": "No connection: Lifesaver mode activated (Offline)",
+    "VOICE": "Voice",
+    "VOICE_ACTIVE": "Voice activated",
+    "VOICE_INACTIVE": "Voice deactivated",
+    "ALERT_ACTIVE": "Alert activated",
+    "ALERT_INACTIVE": "Alert deactivated"
   },
   "CANVAS": {
     "TRACK": "Save track",
@@ -219,7 +229,8 @@
     "ANALYZING_ROUTE": "Analyzing route and searching for points of interest...",
     "SAVING_TRACK": "Saving route...",
     "APPLYING_ELEVATION": "Applying DEM elevations...",
-    "SAVE_ERROR": "Critical error saving the route"  
+    "SAVE_ERROR": "Critical error saving the route",
+    "CONTINUE_TRACKING": "Continuing track recording"  
   },
   "COLORS": {
     "crimson": "Crimson",

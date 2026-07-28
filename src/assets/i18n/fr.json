@@ -27,7 +27,8 @@
     "REMOVE_REFERENCE": "Réf.",
     "REMOVE_SEARCH": "Rech.",
     "OFFLINE_CREDITS": "Données cartographiques hors ligne",
-    "NO_CONNECTION_ERROR": "Pas de connexion / Pas de cartes hors ligne"
+    "NO_CONNECTION_ERROR": "Pas de connexion / Pas de cartes hors ligne",
+    "TRACKING_STARTED": "Le suivi a été démarré"
   },
   "SEARCH": {
     "BUTTON": "Rechercher",
@@ -104,7 +105,11 @@
     "FOLDER_NOT_EMPTY": "Le dossier n'est pas vide",
     "CENTER_MAP": "Centrer la carte",
     "FOLDER_EMPTY": "Dossier vidé avec succès",
-    "FOLDER_DELETED": "Dossier supprimé avec succès"
+    "FOLDER_DELETED": "Dossier supprimé avec succès",
+    "MAP_CENTERED": "Carte centrée sur le lieu",
+    "PLACE_EDITED": "Lieu mis à jour avec succès",
+    "PLACE_DELETED": "Lieu supprimé avec succès",
+    "TRACK_DELETED": "Trajet supprimé avec succès"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Contrôle vocal",
@@ -151,7 +156,12 @@
     "REMOVE_MAP": "Supprimer la carte",
     "ALL_MAPS_DOWNLOADED": "Toutes les cartes sont téléchargées",
     "MAP_UPDATE_ERROR": "Erreur lors de la mise à jour du fournisseur de carte",
-    "OFFLINE_MODE_ON": "Hors ligne : Mode de secours activé (Offline)"
+    "OFFLINE_MODE_ON": "Hors ligne : Mode de secours activé (Offline)",
+    "VOICE": "Voix",
+    "VOICE_ACTIVE": "Voix activée",
+    "VOICE_INACTIVE": "Voix désactivée",
+    "ALERT_ACTIVE": "Alerte activée",
+    "ALERT_INACTIVE": "Alerte désactivée"
   },
   "CANVAS": {
     "TRACK": "Enregistrer la trace",
@@ -219,7 +229,8 @@
     "ANALYZING_ROUTE": "Analyse de l'itinéraire et recherche de points d'intérêt...",
     "SAVING_TRACK": "Enregistrement de la trace...",
     "APPLYING_ELEVATION": "Application des élévations DEM...",
-    "SAVE_ERROR": "Erreur critique lors de l'enregistrement"
+    "SAVE_ERROR": "Erreur critique lors de l'enregistrement",
+    "CONTINUE_TRACKING": "Continuation de l'enregistrement du parcours"
   },
   "COLORS": {
     "crimson": "Cramoisi",

@@ -151,6 +151,9 @@ export class PlacesComponent {
       if (data?.action === 'ok' && data.place) {
         this.fs.updatePlace(realIndex, data.place);
         this.geography.refreshPlacesLayer(this.fs.placesCollection);
+        
+        // 🔔 Toast de edición (Solo se muestra si realmente se guardaron los cambios)
+        this.fs.displayToast(this.translate.instant('ARCHIVE.PLACE_EDITED'), 'success');
       }
     }
   }
@@ -194,9 +197,19 @@ export class PlacesComponent {
 
     if (data && data.action) {
       switch (data.action) {
-        case 'center': this.centerPlace(place); break;
-        case 'edit': await this.editPlace(place); break;
-        case 'delete': this.requestPlaceDeletion.emit({ place }); break;
+        case 'center': 
+          this.centerPlace(place); 
+          // 🔔 Toast de centrar mapa
+          this.fs.displayToast(this.translate.instant('ARCHIVE.MAP_CENTERED'), 'success');
+          break;
+          
+        case 'edit': 
+          await this.editPlace(place); 
+          break;
+          
+        case 'delete': 
+          this.requestPlaceDeletion.emit({ place }); 
+          break;
       }
     }
   }

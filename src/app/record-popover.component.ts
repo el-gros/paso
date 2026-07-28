@@ -162,13 +162,13 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.present.isConfirmDeletionOpen = false;
     // Si NO se confirmó el borrado (pulsó "NO" o fuera de la caja), reabrimos el menú principal
     if (!this.confirmedDelete) {
-      this.present.isRecordPopoverOpen = true;
+      this.setTrackDetails();
     }
     // Reseteamos la bandera para la próxima vez
     this.confirmedDelete = false;
   }
 
-  // ==========================================================================
+// ==========================================================================
   // GESTIÓN DE PARADA
   // ==========================================================================
   async confirmStop() {
@@ -196,9 +196,15 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   onStopDismiss() {
     this.present.isConfirmStopOpen = false;
+    
+    // Si NO se confirmó la parada (pulsó "NO" o cerró tocando fuera), mostramos el toast
+    if (!this.confirmedStop) {
+      this.fs.displayToast(this.translate.instant('RECORD.CONTINUE_TRACKING'), 'success');
+    }
+    
     this.confirmedStop = false; // Reseteamos la bandera
   }
-
+  
   // ==========================================================================
   // GUARDAR RUTA Y UI DE CARGA
   // ==========================================================================
@@ -225,7 +231,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     const { data, role } = await popover.onDidDismiss();
 
     if (role === 'cancel' || role === 'backdrop' || data?.action !== 'ok') {
-      this.present.isRecordPopoverOpen = true; 
+      this.present.isConfirmDeletionOpen = true; 
       return; 
     }
 

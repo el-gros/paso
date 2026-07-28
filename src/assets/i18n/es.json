@@ -27,7 +27,8 @@
     "REMOVE_REFERENCE": "Ref.",
     "REMOVE_SEARCH": "Búsq.",
     "OFFLINE_CREDITS": "Datos de mapas sin conexión",
-    "NO_CONNECTION_ERROR": "Sin conexión / Sin mapas offline"
+    "NO_CONNECTION_ERROR": "Sin conexión / Sin mapas offline",
+    "TRACKING_STARTED": "Se ha iniciado la grabación del trayecto"
   },
   "SEARCH": {
     "BUTTON": "Buscar",
@@ -104,7 +105,11 @@
     "FOLDER_NOT_EMPTY": "La carpeta no está vacía",
     "CENTER_MAP": "Centrar mapa",
     "FOLDER_EMPTY": "Se ha vaciado la carpeta",
-    "FOLDER_DELETED": "Se ha eliminado la carpeta"
+    "FOLDER_DELETED": "Se ha eliminado la carpeta",
+    "MAP_CENTERED": "Mapa centrado en el lugar",
+    "PLACE_EDITED": "Lugar actualizado correctamente",
+    "PLACE_DELETED": "Lugar eliminado correctamente",
+    "TRACK_DELETED": "Trayecto eliminado correctamente"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Control por voz",
@@ -151,7 +156,12 @@
     "REMOVE_MAP": "Eliminar mapa",
     "ALL_MAPS_DOWNLOADED": "Todos los mapas están descargados",
     "MAP_UPDATE_ERROR": "Error al actualizar el proveedor de mapa",
-    "OFFLINE_MODE_ON": "Sin conexión: Activado modo salvavidas (Offline)"
+    "OFFLINE_MODE_ON": "Sin conexión: Activado modo salvavidas (Offline)",
+    "VOICE": "Voz",
+    "VOICE_ACTIVE": "Voz activada",
+    "VOICE_INACTIVE": "Voz desactivada",
+    "ALERT_ACTIVE": "Alerta activada",
+    "ALERT_INACTIVE": "Alerta desactivada"
   },
   "CANVAS": {
     "TRACK": "Guardar trayecto",
@@ -219,7 +229,8 @@
     "ANALYZING_ROUTE": "Analizando ruta y buscando lugares de interés...",
     "SAVING_TRACK": "Guardando ruta...",
     "APPLYING_ELEVATION": "Aplicando elevaciones DEM...",
-    "SAVE_ERROR": "Error crítico al guardar la ruta"
+    "SAVE_ERROR": "Error crítico al guardar la ruta",
+    "CONTINUE_TRACKING": "Continúa la grabación del trayecto"
   },
   "COLORS": {
     "crimson": "Carmesí",

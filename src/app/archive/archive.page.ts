@@ -10,7 +10,6 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { TrackExportService } from '../services/track-export.service';
-import { VoiceRunnerService } from '../services/voice-runner.service';
 import { PresentService } from '../services/present.service';
 
 // --- COMPONENTES E INTERFACES ---
@@ -47,7 +46,6 @@ export class ArchivePage implements OnInit {
     public location: LocationManagerService,
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
-    public voiceRunner: VoiceRunnerService,
     public present: PresentService
   ) { }
 
@@ -83,10 +81,12 @@ export class ArchivePage implements OnInit {
         this.reference.clearArchivedTrack();
         await this.location.sendReferenceToPlugin();
       }
+      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_DELETED'), 'success');
     } else {
       this.fs.removePlace(this.deleteTarget.index);
       this.geography.refreshPlacesLayer(this.fs.placesCollection);
       if (this.slidingItem) this.slidingItem.close();
+      this.fs.displayToast(this.translate.instant('ARCHIVE.PLACE_DELETED'), 'success');
     }
 
     this.isConfirmDeletionOpen = false;

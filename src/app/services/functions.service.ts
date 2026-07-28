@@ -4,9 +4,7 @@ import { ToastController, PopoverController, NavController, LoadingController } 
 import { Storage } from '@ionic/storage-angular';
 import { TranslateService } from '@ngx-translate/core';
 import DOMPurify from 'dompurify';
-
-// --- SERVICES ---
-import { TtsService } from './tts.service';
+import { TextToSpeech } from '@capacitor-community/text-to-speech'; // 👈 Importamos el plugin nativo
 
 // --- INTERNAL IMPORTS ---
 import { Track, Data, Waypoint, TrackDefinition, LocationResult } from '../../globald';
@@ -16,11 +14,10 @@ import { Track, Data, Waypoint, TrackDefinition, LocationResult } from '../../gl
 })
 export class FunctionsService {
 
+  public voiceFeedback = false;
   private injector = inject(Injector); 
-  public voiceControl: boolean = false;
   private loadingCtrl = inject(LoadingController);
   private navCtrl = inject(NavController);
-
 
   // ==========================================================================
   // 1. CONFIGURACIÓN Y ESTADO GENERAL
@@ -58,6 +55,7 @@ export class FunctionsService {
     @Inject(Router) private router: Router,
     private popoverController: PopoverController,
     private translate: TranslateService,
+    
   ) {}
 
   /** Inicializa la instancia del storage y carga los datos globales */
@@ -87,8 +85,8 @@ export class FunctionsService {
     // Cargar carpetas virtuales (incluso las vacías)
     this.virtualFolders = await this.storeGet<string[]>('virtual_folders') || [];
 
-    // NUEVO: Cargar preferencia de voz (si no existe, por defecto false)
-    this.voiceControl = await this.check<boolean>(false, 'voiceControl');
+    // Cargar preferencia de feedback de voz
+    this.voiceFeedback = await this.check<boolean>(false, 'voiceFeedback');
 
     // Forzar que todos los lugares empiecen ocultos al arrancar la app
     this.placesCollection.forEach(place => place.visible = false);
@@ -175,7 +173,6 @@ export class FunctionsService {
     await this.storeSet('collection', this.collection);
   }
 
-
   // ==========================================================================
   // 5. PERSISTENCIA GENÉRICA (Storage Helpers)
   // ==========================================================================
@@ -248,49 +245,39 @@ export class FunctionsService {
     return data;
   }
 
-  public async displayToast(message: string, css: string, duration: number = 3000): Promise<void> {
+  public async displayToast(message: string, css: string): Promise<void> {
     const finalMessage = this.translate.instant(message);
-
-    if (this.voiceControl) {
-      const tts = this.injector.get(TtsService); 
-      await tts.speak(finalMessage);
-      return; 
-    }
 
     const toast = await this.toastController.create({ 
       message: finalMessage, 
-      duration: duration, 
+      duration: 3000, // Se cerrará solo a los 3 segundos...
       position: 'bottom', 
       cssClass: `toast toast-${css}`,
-      buttons: duration === 0 ? [
-        { text: this.translate.instant('GENERIC.OK'), role: 'cancel' }
-      ] : [
-        { icon: 'close-outline', role: 'cancel' }
+      buttons: [
+        { icon: 'close-outline', role: 'cancel' } // ...a menos que el usuario pulse aquí antes.
       ]
     });
     await toast.present();
+
+    if (this.voiceFeedback) {
+      this.speakText(finalMessage); 
+    }
   }
 
   async gotoPage(url: string) {
     if (this.isNavigating) return;
     this.isNavigating = true;
 
-    // 1. Mostramos el loading de cristal
     const loading = await this.loadingCtrl.create({
       spinner: 'crescent',
       cssClass: 'glass-loading-overlay'
     });
     
-    // Esperamos a que se dibuje en pantalla
     await loading.present(); 
 
     try {
-      // 2. Usamos el Router normal de Angular. 
-      // Esto respeta tu sistema de pestañas y evita el "salto" a la página inicial.
       await this.router.navigate([url]); 
       
-      // 3. LA CLAVE: Esperamos 400ms exactos.
-      // Es el tiempo que tarda Ionic en hacer el "slide" y renderizar el DOM pesado.
       setTimeout(async () => {
         await loading.dismiss();
         this.isNavigating = false;
@@ -308,5 +295,53 @@ export class FunctionsService {
     const type = location.addresstype || location.type || '';
     if (townTags.includes(type.toLowerCase())) return 'towns';
     return 'other';
+  }
+
+/**
+   * Motor de Texto a Voz (TTS) nativo de Capacitor para los Toasts
+   */
+  private async speakText(text: string) {
+    try {
+      // Aplicamos tus parches fonéticos (como cambiar "zoom" por "zum")
+      const phoneticText = this.applyPhoneticFixes(text);
+      const targetLang = this.getLocale(this.translate.currentLang);
+
+      // Usamos el plugin nativo de Capacitor
+      await TextToSpeech.speak({
+        text: phoneticText,
+        lang: targetLang,
+        rate: 0.9,      // Velocidad de lectura
+        pitch: 1.0,     // Tono
+        category: 'ambient', // Permite que suene incluso si hay otros sonidos
+      });
+
+    } catch (error) {
+      console.error("Error intentando reproducir voz con Capacitor TTS:", error);
+    }
+  }
+
+  /**
+   * Mapeo de idiomas de la app a locales del sistema
+   */
+  private getLocale(lang: string | undefined): string {
+    const map: { [key: string]: string } = { 
+      'es': 'es-ES', 'en': 'en-US', 'ca': 'ca-ES', 
+      'fr': 'fr-FR', 'ru': 'ru-RU', 'zh': 'zh-CN' 
+    };
+    return map[lang || 'es'] || 'es-ES';
+  }
+
+  /**
+   * Reutilizamos tu lógica de corrección fonética
+   */
+  private applyPhoneticFixes(text: string): string {
+    const lang = this.translate.currentLang;
+    let fixedText = text;
+
+    if (lang === 'ca' || lang === 'es') {
+      fixedText = fixedText.replace(/zoom/gi, 'zum'); 
+    }
+
+    return fixedText;
   }
 }

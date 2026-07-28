@@ -27,7 +27,8 @@
     "REMOVE_REFERENCE": "Справ.",
     "REMOVE_SEARCH": "Поиск",
     "OFFLINE_CREDITS": "Данные офлайн-карт",
-    "NO_CONNECTION_ERROR": "Нет соединения / Нет офлайн-карт"
+    "NO_CONNECTION_ERROR": "Нет соединения / Нет офлайн-карт",
+    "TRACKING_STARTED": "Слежение началось"
   },
   "SEARCH": {
     "BUTTON": "Поиск",
@@ -104,7 +105,11 @@
     "FOLDER_NOT_EMPTY": "Папка не пуста",
     "CENTER_MAP": "Центрировать карту",
     "FOLDER_EMPTY": "Папка успешно очищена",
-    "FOLDER_DELETED": "Папка успешно удалена"
+    "FOLDER_DELETED": "Папка успешно удалена",
+    "MAP_CENTERED": "Карта центрирована на месте",
+    "PLACE_EDITED": "Место успешно обновлено",
+    "PLACE_DELETED": "Место успешно удалено",
+    "TRACK_DELETED": "Маршрут успешно удален"
   },
   "SETTINGS": {
     "VOICE_CONTROL": "Голосовое управление",
@@ -151,7 +156,10 @@
     "REMOVE_MAP": "Удалить карту",
     "ALL_MAPS_DOWNLOADED": "Все карты загружены",
     "MAP_UPDATE_ERROR": "Ошибка обновления картографического сервиса",
-    "OFFLINE_MODE_ON": "Нет сети: Активирован автономный режим (Offline)"
+    "OFFLINE_MODE_ON": "Нет сети: Активирован автономный режим (Offline)",
+    "VOICE": "Голос",
+    "VOICE_ACTIVE": "Голос активен",
+    "VOICE_INACTIVE": "Голос не активен"
   },
   "CANVAS": {
     "TRACK": "Сохранить трек",
@@ -219,7 +227,8 @@
     "ANALYZING_ROUTE": "Анализ маршрута и поиск достопримечательностей...",
     "SAVING_TRACK": "Сохранение маршрута...",
     "APPLYING_ELEVATION": "Применение высот DEM...",
-    "SAVE_ERROR": "Критическая ошибка при сохранении маршрута"
+    "SAVE_ERROR": "Критическая ошибка при сохранении маршрута",
+    "CONTINUE_TRACKING": "Продолжение записи трека"
   },
   "COLORS": {
     "crimson": "Малиновый",
