@@ -141,10 +141,11 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.fs.alert = value ? 'on' : 'off'; 
     await this.fs.storeSet('alert', this.fs.alert);
     await this.location.sendReferenceToPlugin();
+    console.log('Clave leída:', this.translate.instant('SETTINGS.ALERT_INACTIVE'));
     if (value) {
       this.fs.displayToast(this.translate.instant('SETTINGS.ALERT_ACTIVE'), 'success');
     } else {
-      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_INACTIVE'), 'warning');
+      this.fs.displayToast(this.translate.instant('SETTINGS.ALERT_INACTIVE'), 'warning');
     }
   }
 

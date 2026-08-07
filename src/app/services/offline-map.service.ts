@@ -15,6 +15,7 @@ interface OfflineMap {
   filename: string;
   url: string;
   name?: string;
+  bbox?: { minLat: number, maxLat: number, minLon: number, maxLon: number }; // <-- NUEVO
 }
 
 @Injectable({ providedIn: 'root' })

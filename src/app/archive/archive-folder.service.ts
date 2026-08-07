@@ -181,7 +181,7 @@ async createNewFolder() {
       }
 
       await this.fs.storeSet('collection', this.fs.collection);
-      this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
+      this.fs.displayToast('ARCHIVE.FOLDER_RENAMED', 'success');
     }
   }
 
@@ -240,7 +240,7 @@ async createNewFolder() {
       if (index > -1) {
         (this.fs.collection[index] as any).folderPath = data ? [data] : [];
         await this.fs.storeSet('collection', this.fs.collection);
-        this.fs.displayToast('ARCHIVE.TRACK_UPDATED', 'success');
+        this.fs.displayToast('ARCHIVE.TRACK_MOVED', 'success');
       }
     }
   }
