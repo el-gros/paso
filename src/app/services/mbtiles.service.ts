@@ -219,4 +219,56 @@ export class MbTilesService {
       return false;
     }
   }
+
+  /**
+   * Recupera el Bounding Box (bbox) desde la tabla de metadatos del archivo MBTiles.
+   */
+  async getMetadataBounds(mbtilesFile: string): Promise<[number, number, number, number] | null> {
+    let db = this.dbs.get(mbtilesFile);
+    
+    if (!db) {
+      const success = await this.open(mbtilesFile);
+      if (!success) return null;
+      db = this.dbs.get(mbtilesFile);
+    }
+    
+    if (!db) return null;
+
+    try {
+      const result = await db.query(
+        `SELECT value FROM metadata WHERE name = 'bounds';`
+      );
+
+      if (result?.values && result.values.length > 0) {
+        const boundsStr = result.values[0].value;
+        if (typeof boundsStr === 'string') {
+          const boundsArray = boundsStr.split(',').map(numStr => Number(numStr));
+          if (boundsArray.length === 4 && !boundsArray.some(isNaN)) {
+            return boundsArray as [number, number, number, number];
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`[MbTilesService] Error leyendo bounds de ${mbtilesFile}:`, err);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Devuelve un objeto con el nombre de cada fichero MBTiles y su respectivo Bounding Box.
+   */
+  async getAllMapsBounds(): Promise<{ [mapName: string]: [number, number, number, number] | null }> {
+    const availableMaps = this.getOpenedFiles();
+    const boundsMap: { [mapName: string]: [number, number, number, number] | null } = {};
+
+    for (const mbtilesFile of availableMaps) {
+      const bbox = await this.getMetadataBounds(mbtilesFile);
+      boundsMap[mbtilesFile] = bbox;
+    }
+
+    console.log('[MbTilesService] Bboxes de todos los mapas offline:', boundsMap);
+    return boundsMap;
+  }
+
 }

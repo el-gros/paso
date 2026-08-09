@@ -90,11 +90,14 @@ export class TrackingEngineService {
         if (success) {
           if (!this.firstPointReceived && this.geography.map) {
             console.log("🎯 Primer punto detectado. Centrando mapa...");
-            this.geography.map?.getView().animate({
+      /*      this.geography.map?.getView().animate({
               center: [cleanLocation.longitude, cleanLocation.latitude],
               zoom: 17,
               duration: 1000
-            });
+            }); */
+            this.geography.map?.getView().setCenter([cleanLocation.longitude, cleanLocation.latitude]);
+            this.geography.map?.getView().setZoom(17);
+
             this.firstPointReceived = true;
           }
 

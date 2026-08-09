@@ -1,5 +1,11 @@
 import { Injectable } from '@angular/core';
 import maplibregl from 'maplibre-gl';
+// @ts-ignore
+import glyphsProtocol from 'maplibre-local-glyphs';
+
+// Registramos el generador automático de fuentes al vuelo
+maplibregl.addProtocol('glyphs', glyphsProtocol);
+
 import pako from 'pako';
 import { TranslateService } from '@ngx-translate/core';
 import { MbTilesService } from './mbtiles.service';
@@ -20,7 +26,7 @@ export class MapStyleService {
     minorRoad: '#ffffff',
     buildings: '#e8e4e0',
     text: '#5d5854',
-    fonts: ["OpenSansRegular"]
+    fonts: ["opensansregular"] 
   };
 
   private lastStyleHash: string = '';
@@ -57,16 +63,14 @@ export class MapStyleService {
     });
   }
 
-  /**
-   * Genera el objeto de estilo JSON (Mapbox Style Spec) dinámicamente
-   * basado en los archivos MBTiles que el usuario tiene abiertos.
-   */
   public generateDynamicStyle(): any {
     const openedFiles = this.mbTiles.getOpenedFiles();
+    
     const style: any = {
       version: 8,
       name: "Shortbread Offline Style",
-      glyphs: "/assets/fonts/{fontstack}/{range}.pbf",
+      // 👇 Apunta a 'glyphs://' para que lo gestione 'maplibre-local-glyphs' automáticamente
+      glyphs: "glyphs://{fontstack}/{range}", 
       sources: {},
       layers: [{ id: 'background', type: 'background', paint: { 'background-color': this.THEME.background } }]
     };
@@ -91,27 +95,21 @@ export class MapStyleService {
         { id: `street_labels_${sourceId}`, type: 'symbol', source: sourceId, 'source-layer': 'street_labels', minzoom: 13, layout: { 'text-field': ['get', 'name'], 'text-font': this.THEME.fonts, 'symbol-placement': 'line', 'text-size': 12, 'text-max-angle': 30 }, paint: { 'text-color': this.THEME.text, 'text-halo-color': '#ffffff', 'text-halo-width': 2 } },
         { id: `places_${sourceId}`, type: 'symbol', source: sourceId, 'source-layer': 'place_labels', minzoom: 5, layout: { 'text-field': ['get', 'name'], 'text-font': this.THEME.fonts, 'text-size': ['match', ['get', 'kind'], 'city', 18, 'town', 14, 'village', 12, 10], 'text-variable-anchor': ['center', 'top', 'bottom'], 'text-justify': 'center' }, paint: { 'text-color': this.THEME.text, 'text-halo-color': '#ffffff', 'text-halo-width': 2 } }
       ];
-
-      // Añadimos las capas al estilo principal (DENTRO del bucle)
+    
       style.layers.push(...layerGroup);
     });
 
     return style;
   }
 
-  /**
-   * Notifica al motor MapLibre de que debe refrescar su estilo (vía diffing).
-   * Ahora recibe la capa offline como parámetro desde el MapService.
-   */
   public refreshOfflineStyle(offlineLayer?: any) {
     if (!offlineLayer) return;
 
-    // Buscamos la instancia del mapa dentro del wrapper
     const maplibreMap = offlineLayer.mapLibreMap || (offlineLayer as any).maplibreMap;
 
     if (maplibreMap?.setStyle) {
       const newStyle = this.generateDynamicStyle();
-      const currentHash = JSON.stringify(newStyle.sources); // Hash simple por fuentes
+      const currentHash = JSON.stringify(newStyle.sources);
 
       if (this.lastStyleHash !== currentHash) {
         console.log("🚀 Aplicando nuevo estilo con Diff...");
@@ -119,7 +117,6 @@ export class MapStyleService {
         this.lastStyleHash = currentHash;
       }
     } else {
-      // Reintento si el mapa de MapLibre aún no ha terminado de construirse
       setTimeout(() => this.refreshOfflineStyle(offlineLayer), 500);
     }
   }

@@ -111,3 +111,31 @@ ion-button {
   pointer-events: none; /* Bloquea cualquier clic o interacción táctil a nivel visual/navegador */
   filter: grayscale(100%); /* Opcional: lo vuelve gris para que quede clarísimo que no está activo */
 }
+
+// ==========================================================================
+// 4. CONTROLES DE FORMULARIO
+// ==========================================================================
+
+ion-select {
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  width: 100%;
+  max-width: 140px; 
+}
+
+/* 👇 NUEVO: Estilo neutro solo para los select de acción (Descargar/Borrar) */
+ion-select.action-select {
+  font-weight: 500;
+  
+  --placeholder-color: #666;  /* Gris oscuro neutral, no parece deshabilitado */
+  --placeholder-opacity: 1;   /* Opacidad al 100% para que se vea nítido */
+
+  &::part(placeholder) {
+    color: #666;
+    opacity: 1;
+  }
+
+  &::part(icon) {
+    color: #666; /* La flechita desplegable también en neutro */
+  }
+}

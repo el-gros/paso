@@ -554,3 +554,26 @@ ion-popover ion-content {
   &:last-child { margin-bottom: 0; }
 }
 
+// ==========================================================================
+// 11. POPOVERS DE ACCIÓN (Selects de Descargar y Borrar Mapas)
+// ==========================================================================
+
+.action-popover {
+  /* Quita el fondo gris de elemento enfocado (focus) y seleccionado (checked) */
+  ion-item {
+    --background-focused: transparent !important;
+    --background-checked: transparent !important;
+    --background-hover: transparent !important;
+  }
+
+  /* Evita que el texto cambie de color al ser clickeado */
+  ion-radio {
+    --color-checked: inherit !important;
+  }
+
+  /* Opcional/Recomendado: Oculta el círculo de selección (radio button) 
+     para que parezca una lista pura de acciones y no un formulario */
+  ion-radio::part(container) {
+    display: none;
+  }
+}

@@ -3,7 +3,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslateService } from '@ngx-translate/core';
 import { LoadingController } from '@ionic/angular';
 import { BehaviorSubject, Subscription, Subject } from 'rxjs';
-
+import { PluginListenerHandle } from '@capacitor/core';
 import { ServerService } from './server.service';
 import { MbTilesService } from './mbtiles.service';
 import { FunctionsService } from './functions.service';
@@ -97,7 +97,73 @@ async refreshMapsList() {
   /**
    * Inicia la descarga de un mapa MBTiles desde el servidor configurado.
    */
+  /**
+   * Inicia la descarga de un mapa MBTiles desde el servidor configurado.
+   */
   async downloadMap(displayName: string) {
+    const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
+    const match = offlineMapsDef.find(item => 
+      (item.name || item.filename.replace(/\.mbtiles$/i, '')) === displayName
+    );
+
+    if (!match) return;
+
+    this.isDownloading$.next(true);
+    const text = this.translate.instant('SETTINGS.DOWNLOADING');
+
+    this.downloadLoading = await this.loadingCtrl.create({
+      message: text,
+      spinner: 'crescent',
+      backdropDismiss: false 
+    });
+    await this.downloadLoading.present();
+
+    // Variable para guardar el listener de progreso y poder limpiarlo luego
+    let progressListener: PluginListenerHandle | null = null;
+
+    try {
+      // 1. Configuramos el listener nativo ANTES de lanzar la descarga
+      progressListener = await Filesystem.addListener('progress', (status) => {
+        if (status.contentLength > 0) {
+          const percent = Math.round((status.bytes / status.contentLength) * 100);
+          if (this.downloadLoading && percent > 0) {
+            this.downloadLoading.message = `${text} ${percent}%`;
+          }
+        }
+      });
+
+      console.log(`Iniciando descarga nativa: ${match.url}`);
+
+      // 2. Descargamos el archivo de forma nativa (Ignora CORS y no satura la RAM)
+      await Filesystem.downloadFile({
+        url: match.url,
+        // 👇 NOTA: Asegúrate de que 'path' y 'directory' coinciden exactamente
+        // con la carpeta de donde tu `mbTiles.open()` lee los archivos.
+        path: match.filename, 
+        directory: Directory.Data, // Normalmente Directory.Data o Directory.Documents
+        progress: true // 👈 Obligatorio para que dispare los eventos de progreso
+      });
+
+      console.log(`✅ Descarga completada: ${match.filename}`);
+
+      // 3. Abrimos el archivo en SQLite
+      await this.mbTiles.open(match.filename);
+      await this.postActionCleanup(true);
+      
+      if (this.geography.mapProvider === 'OSM offline') {
+        this.mapNeedsRefresh$.next();
+      }
+    } catch (err) {
+      console.error('❌ Error en la descarga del mapa:', err);
+      await this.postActionCleanup(false);
+    } finally {
+      // 4. LIMPIEZA CRÍTICA: Siempre eliminamos el listener al terminar o si hay error
+      if (progressListener) {
+        progressListener.remove();
+      }
+    }
+  }
+/*  async downloadMap(displayName: string) {
     const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
     const match = offlineMapsDef.find(item => 
       (item.name || item.filename.replace(/\.mbtiles$/i, '')) === displayName
@@ -137,7 +203,7 @@ async refreshMapsList() {
     } catch (err) {
       await this.postActionCleanup(false);
     }
-  }
+  } */
 
   /**
    * Cierra la conexión y elimina físicamente el archivo del mapa.

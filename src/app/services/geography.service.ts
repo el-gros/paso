@@ -238,7 +238,7 @@ export class GeographyService {
    * @param lon Longitud
    * @param lat Latitud
    * @param zoom Nivel de zoom (opcional)
-   */
+  
   public centerMap(lon: number, lat: number, zoom: number = 15) {
     if (this.map) {
       const view = this.map.getView();
@@ -248,5 +248,5 @@ export class GeographyService {
         duration: 1000 // Animación de 1 segundo para que sea suave
       });
     }
-  }
+  } */
 }

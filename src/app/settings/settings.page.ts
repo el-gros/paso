@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { IonicModule, ModalController, PopoverController, ViewWillEnter } from '@ionic/angular';
 import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +18,7 @@ import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { BackupService } from '../services/backup.service'; 
 import { OfflineMapService } from '../services/offline-map.service'; // <--- Nuevo Servicio
+import { MbTilesService } from '../services/mbtiles.service'; // Ajusta la ruta si es diferente
 
 // --- COMPONENTS ---
 import { ColorPopoverComponent } from '../color-popover.component';
@@ -38,6 +39,8 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   // ==========================================================================
   // 1. ESTADO Y PROPIEDADES
   // ==========================================================================
+
+  public currentCoords: [number, number] | null = null;
 
   private destroy$ = new Subject<void>(); 
 
@@ -75,6 +78,8 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     private location: LocationManagerService,
     private backupService: BackupService,
     private loadingCtrl: LoadingController,
+    private cdr: ChangeDetectorRef,
+    private mbtilesService: MbTilesService
   ) {
     this.setupMapActions();
   }
@@ -86,6 +91,18 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.selectedLanguage = this.languages.find(
       lang => lang.code === this.languageService.currentLangValue
     ) || { name: 'English', code: 'en' };
+    this.location.latestLocation$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(loc => {
+      if (loc) {
+        this.currentCoords = [loc.longitude, loc.latitude];
+      } else {
+        this.currentCoords = null;
+      }
+      this.cdr.detectChanges();
+    });
+
+    await this.mbtilesService.getAllMapsBounds();
   }
 
   ngOnDestroy() {
@@ -97,13 +114,22 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   // 3. GESTIÓN DE MAPAS (Online / Offline)
   // ==========================================================================
 
-  /** Configura las suscripciones con debounce para la descarga/borrado de mapas */
   private setupMapActions() {
     this.mapUploadSubject.pipe(debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(name => this.offlineMapService.downloadMap(name));
+      .subscribe(async name => {
+        if (name) {
+          await this.offlineMapService.downloadMap(name);
+          await this.mbtilesService.getAllMapsBounds();
+        }
+      });
 
     this.mapRemoveSubject.pipe(debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(name => this.offlineMapService.removeMap(name));
+      .subscribe(async name => {
+        if (name) {
+          await this.offlineMapService.removeMap(name);
+          await this.mbtilesService.getAllMapsBounds();
+        }
+      });
   }
 
   public onMapUploadChange(mapName: string) {

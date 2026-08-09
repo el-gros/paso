@@ -90,6 +90,7 @@ export class MapService {
     private appState: AppStateService,
     private searchService: SearchService,
     private mapStyle: MapStyleService,
+    private mbtilesService: MbTilesService
   ) {
     // 🔥 REGISTRO DEL PROTOCOLO CUSTOM PARA MAPLIBRE GL 🔥
 
@@ -142,21 +143,35 @@ export class MapService {
   // ==========================================================================
 
   async loadMap(): Promise<void> {
-    if (this.offlineMapService.availableMaps$.value.length === 0) {
-      console.log("⏳ MapService: Esperando a que OfflineMapService lea el disco...");
-      await this.offlineMapService.refreshMapsList();
+    const providerKey = this.geography.mapProvider.toLowerCase();
+    const isOffline = providerKey === 'OSM offline' || !['openstreetmap', 'opentopomap', 'german_osm', 'maptiler', 'icgc', 'ign'].some(p => providerKey.includes(p));
+
+    // 1. ESPERA CRÍTICA DE SINCRONIZACIÓN
+    if (isOffline) {
+      if (this.offlineMapService.availableMaps$.value.length === 0) {
+        console.log("⏳ MapService: Esperando a leer los mapas del disco...");
+        await this.offlineMapService.refreshMapsList();
+      }
+      
+      // 🔥 MAGIA AQUÍ: Tab1 carga más rápido que SQLite. 
+      // Esperamos activamente a que AppComponent termine de abrir la base de datos.
+      if (this.offlineMapService.availableMaps$.value.length > 0) {
+        let intentos = 0;
+        // Mientras no haya archivos abiertos, esperamos (máximo 4 segundos para no bloquear)
+        while (this.mbtilesService.getOpenedFiles().length === 0 && intentos < 20) {
+           console.log(`⏳ MapService: Esperando a SQLite (Intento ${intentos + 1})...`);
+           await new Promise(resolve => setTimeout(resolve, 200));
+           intentos++;
+        }
+      }
     }
 
     const mapConfigs: Record<string, { min: number, max: number, zoom: number }> = {
       'OSM offline': { min: 0, max: 19, zoom: 8 }, 
       'default': { min: 0, max: 19, zoom: 7.5 }
     };
-
-    const providerKey = this.geography.mapProvider.toLowerCase();
-    const isOffline = providerKey === 'OSM offline' || !['openstreetmap', 'opentopomap', 'german_osm', 'maptiler', 'icgc', 'ign'].some(p => providerKey.includes(p));
     
     const config = isOffline ? mapConfigs['OSM offline'] : mapConfigs['default'];
-
     const { min: minZoom, max: maxZoom, zoom } = config;
     const defaultCenter: [number, number] = [1.7403, 41.7282];
     
@@ -169,6 +184,7 @@ export class MapService {
     this.geography.placesLayer = await this.createLayer(this.geography.placesLayer);
     this.geography.placesLayer.setZIndex(15);
 
+    // 2. CREACIÓN DE LA CAPA BASE (Ahora SQLite ya está 100% listo)
     const result = await this.createMapLayer();
     const olLayer = result.olLayer;
     if (!olLayer) return;
@@ -212,12 +228,8 @@ export class MapService {
 
     this.mapIsReady = true;
 
-    // Disparar el estilo si es offline (LLAMANDO CORRECTAMENTE AL MAPSTYLE SERVICE)
-    if (isOffline) {
-      this.geography.map.once('rendercomplete', () => {
-        setTimeout(() => this.mapStyle.refreshOfflineStyle(this.offlineLayer), 100);
-      });
-    }
+    // ❌ BORRADO: Hemos eliminado el bloque "this.geography.map.once('postrender')"
+    // porque createMapLayer() ya le asigna el estilo dinámico correctamente al crearlo.
 
     this.mapWrapperElement = document.getElementById('map-wrapper');
 
@@ -311,22 +323,33 @@ export class MapService {
       }
 
       case 'OSM offline':
-      default: {
-        if (hasOfflineFiles) {
-          credits = this.translate.instant('MAP.OFFLINE_CREDITS');
-          const dynamicStyle = this.mapStyle.generateDynamicStyle();
-          this.offlineLayer = new MapLibreLayer({
-            mapLibreOptions: { style: dynamicStyle }
-          });
-          olLayer = this.offlineLayer;
-        } else {
-          olLayer = new TileLayer({ source: new OSM() }); 
+        default: {
+          if (hasOfflineFiles) {
+            credits = this.translate.instant('MAP.OFFLINE_CREDITS');
+            
+            // 🔥 SALVAGUARDA CRÍTICA PARA ARRANQUE EN FRÍO 🔥
+            // Si intentamos cargar offline pero no hay un mapa activo seleccionado en el servicio,
+            // forzamos el primero de la lista disponible para que generateDynamicStyle() no falle.
+            if (!this.mbtilesService.currentMbTiles && this.offlineMapService.availableMaps$.value.length > 0) {
+              this.mbtilesService.currentMbTiles = this.offlineMapService.availableMaps$.value[0];
+            }
+
+            // Ahora sí podemos generar el estilo de forma segura
+            const dynamicStyle = this.mapStyle.generateDynamicStyle();
+            
+            this.offlineLayer = new MapLibreLayer({
+              mapLibreOptions: { style: dynamicStyle }
+            });
+            
+            olLayer = this.offlineLayer;
+          } else {
+            olLayer = new TileLayer({ source: new OSM() }); 
+          }
+          break;
         }
-        break;
-      }
-    }  
-    return { olLayer, credits };
-  }
+      }  
+      return { olLayer, credits };
+    }
 
   // ==========================================================================
   // 3. MOTOR DE VECTOR TILES (Offline Engine)

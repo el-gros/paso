@@ -53,16 +53,12 @@ export class AppComponent implements OnDestroy {
     // Delegamos la carga de mapas MBTiles al servicio correspondiente
     await this.mbTilesService.initializeOfflineMaps();
 
-    // 2. Damos un pequeño margen y refrescamos el estilo del mapa
-    setTimeout(() => {
-      this.mapStyle.refreshOfflineStyle();
-    }, 500);
+    // ❌ BORRA EL setTimeout DE this.mapStyle.refreshOfflineStyle() QUE HABÍA AQUÍ
 
     this.lockToPortrait();
     this.setupFileListener();
 
-    // 🚀 NUEVO: Ocultamos la pantalla de carga suavemente
-    // Le damos un pequeño respiro a Angular (100ms) para renderizar el HTML del mapa
+    // Ocultamos la pantalla de carga suavemente
     setTimeout(async () => {
       await SplashScreen.hide();
     }, 100);

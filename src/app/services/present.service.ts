@@ -146,7 +146,7 @@ export class PresentService {
         center: [location.longitude, location.latitude],
         zoom: 16,
         duration: 1000
-      });
+      }); 
       this.hasCenteredInitial = true;
     }
   }
