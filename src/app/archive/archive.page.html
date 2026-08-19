@@ -1,7 +1,7 @@
 <ion-header class="ion-no-border">
 
   <ion-toolbar>
-    <ion-segment [(ngModel)]="activeTab" mode="md">
+    <ion-segment [(ngModel)]="activeTab" mode="md" (ionChange)="onTabChange()" mode="md">
       <ion-segment-button value="tracks">
         <ion-label>{{ 'ARCHIVE.TRACKS' | translate }}</ion-label>
       </ion-segment-button>

@@ -146,4 +146,28 @@ export class ArchivePage implements OnInit {
       this.exportConfig.kmz = false;
     }
   }
+
+  async onTabChange() {
+    // 1. Mostrar el loader bloqueando la pantalla
+    const loading = await this.loadingCtrl.create({
+      spinner: 'crescent',
+      cssClass: 'glass-loading-overlay',
+      backdropDismiss: false
+    });
+    await loading.present();
+
+    try {
+      // 2. Esperamos a que Angular procese el cambio de vista y 
+      // el navegador pinte los elementos de la nueva pestaña (doble requestAnimationFrame)
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+    } catch (error) {
+      console.error('Error al cambiar de pestaña:', error);
+    } finally {
+      // 3. Ocultar el loader en cuanto todo está dibujado en pantalla
+      await loading.dismiss();
+    }
+  }
+
 }

@@ -30,12 +30,11 @@ export class SnapToTrailService {
    * @param track Objeto Track a procesar.
    * @param trails Opcional: segmentos de senderos externos.
    */
-  async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
+async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
     const segments = trails || this.loadedTrails;
 
     if (!segments || segments.length === 0) {
-      console.warn('[SnapService] No hay senderos cargados. Saltando ajuste.');
-      return track;
+      throw new Error('[SnapService] No hay senderos cargados. Imposible aplicar Snap/DEM.');
     }
 
     const feature = track.features[0];
@@ -63,33 +62,89 @@ export class SnapToTrailService {
       }
     }
 
-    // --- FASE 2: INYECCIÓN DE ALTITUD (API) + SUAVIZADO ---
-    if (pointsToFetch.length > 0) {
-      const apiAltitudes = await this.elevationService.getBulkAltitude(pointsToFetch);
+    if (pointsToFetch.length === 0) {
+      throw new Error('[SnapService] Ningún punto coincide con los senderos. DEM abortado.');
+    }
 
-      if (apiAltitudes.length === pointsToFetch.length) {
- 
-        // Pasada 1: Rompe la estructura de "escalón" del mapa de 30m
-        // const pass1 = this.smoothElevations(apiAltitudes, 7); 
-        
-        // Pasada 2: Suaviza las aristas resultantes creando una curva natural (Gaussiana)
-        // const finalSmooth = this.smoothElevations(pass1, 7);
+    // --- FASE 1.5: MUESTREO INTELIGENTE (Anti-429) ---
+    // Si hay más de 150 puntos, seleccionamos una muestra de ~120 puntos clave 
+    // para no saturar la API externa, guardando sus posiciones originales.
+    let targetPoints = pointsToFetch;
+    let targetOriginalPositions: number[] = snappedIndices.map((_, idx) => idx);
 
-        const finalSmooth = this.smoothElevationsGaussian(apiAltitudes, 7);
- 
-        for (let j = 0; j < finalSmooth.length; j++) {
-          const originalIndex = snappedIndices[j];
-          data[originalIndex].altitude = finalSmooth[j]; 
-          data[originalIndex].isMSL = true;
+    if (pointsToFetch.length > 150) {
+      const step = Math.ceil(pointsToFetch.length / 120);
+      targetPoints = [];
+      targetOriginalPositions = [];
+
+      for (let k = 0; k < pointsToFetch.length; k++) {
+        // Aseguramos incluir siempre el primer y el último punto, además de los intermedios según el paso
+        if (k === 0 || k === pointsToFetch.length - 1 || k % step === 0) {
+          targetPoints.push(pointsToFetch[k]);
+          targetOriginalPositions.push(k);
+        }
+      }
+    }
+
+    // --- FASE 2: INYECCIÓN DE ALTITUD (API) + INTERPOLACIÓN Y SUAVIZADO ---
+    try {
+      const apiAltitudes = await this.elevationService.getBulkAltitude(targetPoints);
+
+      if (!apiAltitudes || apiAltitudes.length !== targetPoints.length) {
+        throw new Error('[SnapService] La API falló o devolvió datos incompletos.');
+      }
+
+      // Reconstruimos el array completo para todos los puntos mediante interpolación lineal en los huecos
+      const finalAltitudes: number[] = new Array(pointsToFetch.length);
+
+      if (targetPoints.length === pointsToFetch.length) {
+        // Si no hubo muestreo porque el track era corto
+        for(let i = 0; i < apiAltitudes.length; i++) {
+          finalAltitudes[i] = apiAltitudes[i];
         }
       } else {
-        console.warn('[SnapService] La API falló o devolvió datos incompletos. Se mantiene la altitud original.');
+        // Rellenamos las muestras y calculamos los tramos intermedios
+        for (let m = 0; m < targetOriginalPositions.length; m++) {
+          const origPos = targetOriginalPositions[m];
+          finalAltitudes[origPos] = apiAltitudes[m];
+
+          if (m < targetOriginalPositions.length - 1) {
+            const nextOrigPos = targetOriginalPositions[m + 1];
+            const altA = apiAltitudes[m];
+            const altB = apiAltitudes[m + 1];
+            const stepsCount = nextOrigPos - origPos;
+
+            // Interpolación lineal suave para los puntos que nos saltamos al muestrear
+            for (let s = 1; s < stepsCount; s++) {
+              const factor = s / stepsCount;
+              finalAltitudes[origPos + s] = altA + (altB - altA) * factor;
+            }
+          }
+        }
       }
+
+      // Aplicamos tu filtro gaussiano para eliminar cualquier pequeño escalón
+      const finalSmooth = this.smoothElevationsGaussian(finalAltitudes, 7);
+
+      for (let j = 0; j < finalSmooth.length; j++) {
+        const originalIndex = snappedIndices[j];
+        
+        // Actualizamos propiedades extendidas
+        data[originalIndex].altitude = finalSmooth[j]; 
+        data[originalIndex].isMSL = true;
+
+        // Actualizamos OpenLayers en la coordenada Z [2]
+        coords[originalIndex][2] = finalSmooth[j]; 
+      }
+
+    } catch (error) {
+      console.error('[SnapService] Error durante la petición DEM:', error);
+      throw error; 
     }
 
     return track;
   }
-
+    
   // ==========================================================================
   // 3. LÓGICA DE PROCESAMIENTO (Helpers)
   // ==========================================================================
@@ -168,20 +223,52 @@ export class SnapToTrailService {
    * @param userPoint Coordenadas del usuario.
    * @param trailSegments Lista de coordenadas que forman el sendero.
    */
-  private findNearestSnap(userPoint: any, trailSegments: any[]) {
+  private findNearestSnap(userPoint: any, trailData: any[]) {
     let bestSnap = { point: userPoint, distance: Infinity };
 
-    for (let i = 0; i < trailSegments.length - 1; i++) {
-      const pointA = trailSegments[i];
-      const pointB = trailSegments[i + 1];
+    if (!trailData || trailData.length === 0) {
+      return bestSnap;
+    }
 
-      const closestOnSegment = this.searchService.findNearestPointOnSegment(userPoint, pointA, pointB);
-      const dist = this.calculateHaversineDistance(userPoint, closestOnSegment);
+    // CASO 1: Es un array de puntos simples {lat, lng} (Ej: trailReference)
+    if (trailData[0].lat !== undefined && trailData[0].lng !== undefined) {
+      for (let i = 0; i < trailData.length - 1; i++) {
+        const pointA = trailData[i];
+        const pointB = trailData[i + 1];
+        const closestOnSegment = this.searchService.findNearestPointOnSegment(userPoint, pointA, pointB);
+        const dist = this.calculateHaversineDistance(userPoint, closestOnSegment);
 
-      if (dist < bestSnap.distance) {
-        bestSnap = { point: closestOnSegment, distance: dist };
+        if (dist < bestSnap.distance) {
+          bestSnap = { point: closestOnSegment, distance: dist };
+        }
+      }
+      return bestSnap;
+    }
+
+    // CASO 2: Es un array de objetos GeoJSON (Ej: loadedTrails)
+    for (const feature of trailData) {
+      // Si el objeto no tiene la estructura GeoJSON, saltamos al siguiente
+      if (!feature || !feature.geometry) continue;
+
+      const lines = feature.geometry.type === 'MultiLineString' 
+        ? feature.geometry.coordinates 
+        : [feature.geometry.coordinates];
+
+      for (const line of lines) {
+        for (let i = 0; i < line.length - 1; i++) {
+          const pointA = { lat: line[i][1], lng: line[i][0] };
+          const pointB = { lat: line[i+1][1], lng: line[i+1][0] };
+
+          const closestOnSegment = this.searchService.findNearestPointOnSegment(userPoint, pointA, pointB);
+          const dist = this.calculateHaversineDistance(userPoint, closestOnSegment);
+
+          if (dist < bestSnap.distance) {
+            bestSnap = { point: closestOnSegment, distance: dist };
+          }
+        }
       }
     }
+    
     return bestSnap;
   }
 
@@ -197,4 +284,42 @@ export class SnapToTrailService {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
+
+  /**
+   * Algoritmo de Douglas-Peucker simplificado para reducir puntos de ruta
+   */
+  private simplifyDouglasPeucker(points: {lat: number, lng: number}[], tolerance: number): {lat: number, lng: number}[] {
+    if (points.length <= 2) return points;
+
+    let maxDist = 0;
+    let index = 0;
+    const end = points.length - 1;
+
+    for (let i = 1; i < end; i++) {
+      const dist = this.perpendicularDistance(points[i], points[0], points[end]);
+      if (dist > maxDist) {
+        index = i;
+        maxDist = dist;
+      }
+    }
+
+    if (maxDist > tolerance) {
+      const recResults1 = this.simplifyDouglasPeucker(points.slice(0, index + 1), tolerance);
+      const recResults2 = this.simplifyDouglasPeucker(points.slice(index), tolerance);
+      return recResults1.slice(0, recResults1.length - 1).concat(recResults2);
+    } else {
+      return [points[0], points[end]];
+    }
+  }
+
+  private perpendicularDistance(p: any, p1: any, p2: any): number {
+    let x = p.lng, y = p.lat;
+    let x1 = p1.lng, y1 = p1.lat;
+    let x2 = p2.lng, y2 = p2.lat;
+
+    const numerator = Math.abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1);
+    const denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+    return denominator === 0 ? 0 : numerator / denominator;
+  }
+
 }

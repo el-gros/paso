@@ -241,7 +241,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   async saveFile(name: string, description: string) {
     const loadingOverlay = await this.loadingCtrl.create({
-      message: this.translate.instant('RECORD.SAVING_TRACK'),
+      message: this.translate.instant('RECORD.SAVING_TRACK'), // "Guardando..."
       spinner: 'crescent',
       backdropDismiss: false,
       translucent: true,
@@ -252,13 +252,12 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.loading = true; 
 
     try {
-      await this.trackManager.processAndSaveTrack(name, description, (msg) => {
-        loadingOverlay.message = msg;
-      });
+      // Ya no le pasamos el callback onProgressUpdate porque guarda al instante
+      await this.trackManager.processAndSaveTrack(name, description);
 
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
       
-      // Cerramos todo
+      // Cerramos todo al instante
       this.present.isRecordPopoverOpen = false;
       this.present.isConfirmStopOpen = false;
       this.present.isConfirmDeletionOpen = false;

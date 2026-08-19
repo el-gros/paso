@@ -1,6 +1,6 @@
 {
   "name": "paso",
-  "version": "2.9.3",
+  "version": "2.9.4",
   "author": "Enric Terradellas",
   "homepage": "mailto:enric.terradellas@gmail.com",
   "scripts": {
@@ -34,6 +34,7 @@
     "@capacitor/screen-orientation": "^8.0.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
+    "@capawesome/capacitor-background-task": "^8.0.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@geoblocks/ol-maplibre-layer": "^1.0.3",
     "@ionic/angular": "^8.6.3",

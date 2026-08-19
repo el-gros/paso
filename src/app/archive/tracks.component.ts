@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, PopoverController, ModalController, ItemReorderEventDetail, IonItemSliding } from '@ionic/angular';
+import { IonicModule, ModalController, ItemReorderEventDetail, IonItemSliding, PopoverController, LoadingController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
@@ -13,6 +13,7 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { LocationManagerService } from '../services/location-manager.service';
 import { MapTracksService } from '../services/map-tracks.service';
+import { TrackManagerService } from '../services/track-manager.service';
 
 // --- INTERFACES & COMPONENTES ---
 import { TrackDefinition } from '../../globald';
@@ -28,7 +29,6 @@ import { TrackOptionsPopoverComponent } from '../track-options-popover.component
 })
 export class TracksComponent {
   
-  /** Eventos que se envían al componente padre (archive.page.ts) */
   @Output() requestTrackDeletion = new EventEmitter<{ index: number, isVisible: boolean }>();
   @Output() requestTrackExport = new EventEmitter<TrackDefinition>();
 
@@ -40,48 +40,79 @@ export class TracksComponent {
     public geography: GeographyService,
     public location: LocationManagerService,
     public mapTracks: MapTracksService,
+    public trackManager: TrackManagerService,
     private translate: TranslateService,
     private popoverController: PopoverController,
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private loadingCtrl: LoadingController
   ) {}
 
   // ==========================================================================
-  // CARPETAS Y RUTAS (Delegado a ArchiveFolderService)
+  // CARPETAS Y RUTAS (Delegado a ArchiveFolderService con Indicador de Carga)
   // ==========================================================================
   get currentPath() { return this.folderService.currentPath; }
   get foldersAtCurrentLevel() { return this.folderService.foldersAtCurrentLevel; }
   get tracksAtCurrentLevel() { return this.folderService.tracksAtCurrentLevel; }
 
-  enterFolder(folderName: string) { this.folderService.enterFolder(folderName); }
-  resetPath() { this.folderService.resetPath(); }
-  navigateTo(index: number) { this.folderService.navigateTo(index); }
+  async enterFolder(folderName: string) {
+    const loader = await this.loadingCtrl.create({
+      spinner: 'crescent',
+      duration: 300
+    });
+    await loader.present();
+
+    try {
+      this.folderService.enterFolder(folderName);
+    } finally {
+      await loader.dismiss();
+    }
+  }
+
+  async resetPath() {
+    const loader = await this.loadingCtrl.create({
+      spinner: 'crescent',
+      duration: 300
+    });
+    await loader.present();
+
+    try {
+      this.folderService.resetPath();
+    } finally {
+      await loader.dismiss();
+    }
+  }
+
+  async navigateTo(index: number) {
+    const loader = await this.loadingCtrl.create({
+      spinner: 'crescent',
+      duration: 300
+    });
+    await loader.present();
+
+    try {
+      this.folderService.navigateTo(index);
+    } finally {
+      await loader.dismiss();
+    }
+  }
+
   createNewFolder() { this.folderService.createNewFolder(); }
   openFolderOptions(event: Event, folder: string) { this.folderService.openFolderOptions(event, folder); }
   handleFolderReorder(ev: CustomEvent<ItemReorderEventDetail>) { this.folderService.handleFolderReorder(ev); }
 
   async handleReorder(ev: CustomEvent<ItemReorderEventDetail>) {
-    // 1. Obtener los índices visuales (dentro de la carpeta actual)
     const fromIndex = ev.detail.from;
     const toIndex = ev.detail.to;
-
-    // 2. Identificar qué trayectos exactos estamos intercambiando
     const itemToMove = this.tracksAtCurrentLevel[fromIndex];
     const targetItem = this.tracksAtCurrentLevel[toIndex];
-
-    // 3. Buscar sus posiciones reales en la colección maestra
     const realFromIndex = this.fs.collection.indexOf(itemToMove);
     const realToIndex = this.fs.collection.indexOf(targetItem);
 
     if (realFromIndex !== -1 && realToIndex !== -1) {
-      // 4. Mover el elemento dentro de la colección original
       const movedItem = this.fs.collection.splice(realFromIndex, 1)[0];
       this.fs.collection.splice(realToIndex, 0, movedItem);
     }
-
-    // 5. Finalizar la animación visual de Ionic (sin pasarle el array)
     ev.detail.complete();
-
-    // 6. Guardar los cambios en el almacenamiento
     await this.fs.storeSet('collection', this.fs.collection);
   }
 
@@ -116,13 +147,10 @@ export class TracksComponent {
   async displaySpecificTrack(item: TrackDefinition, slidingItem?: IonItemSliding) {
     if (slidingItem) slidingItem.close();
     if (!item.date) return;
-
     const trackData = await this.fs.storeGet(new Date(item.date).toISOString());
     this.reference.archivedTrack = trackData;
-
     this.fs.gotoPage('tab1');
     await new Promise(r => setTimeout(r, 200));
-
     this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack!);
     await this.location.sendReferenceToPlugin();
@@ -161,6 +189,7 @@ export class TracksComponent {
   // ==========================================================================
   async openTrackOptionsPopover(item: TrackDefinition, event: Event | any) {
     if (event) event.stopPropagation();
+
     const popover = await this.popoverController.create({
       component: TrackOptionsPopoverComponent,
       componentProps: { trackItem: item, isCurrentlyVisible: this.isTrackVisible(item) },
@@ -180,19 +209,49 @@ export class TracksComponent {
         case 'display': await this.toggleVisibility(item); break;
         case 'edit': await this.editSpecificTrack(this.fs.collection.indexOf(item)); break;
         case 'move': await this.folderService.moveTrackToFolder(item); break;
+        case 'apply_dem': await this.applyDEMToTrack(item); break;
         case 'export': 
-          this.requestTrackExport.emit(item); // Avisa al padre para exportar
+          this.requestTrackExport.emit(item); 
           break;
         case 'delete': 
           this.requestTrackDeletion.emit({ 
             index: this.fs.collection.indexOf(item), 
             isVisible: this.isTrackVisible(item) 
-          }); // Avisa al padre para borrar
+          }); 
           break;
       }
     }
   }
+  
+  // ==========================================================================
+  // APLICAR DEM MANUALMENTE
+  // ==========================================================================
+  async applyDEMToTrack(item: any) {
+    if (!item.file) return;
 
+    const loadingOverlay = await this.loadingCtrl.create({
+      message: this.translate.instant('ARCHIVE.APPLYING_DEM'),
+      spinner: 'crescent',
+      backdropDismiss: false,
+    });
+    
+    await loadingOverlay.present();
+
+    try {
+      const success = await this.trackManager.applyDEMInBackground(item.file);
+      if (success) {
+        this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_SUCCESS'), 'success');
+      } else {
+        this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_OFFLINE'), 'warning');
+      }
+    } catch (error) {
+      console.error('Error aplicando DEM manual:', error);
+      this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_ERROR'), 'danger');
+    } finally {
+      await loadingOverlay.dismiss();
+    }
+  }
+  
   // ==========================================================================
   // FOTOS
   // ==========================================================================

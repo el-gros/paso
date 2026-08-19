@@ -21,6 +21,10 @@ import { TrackDefinition } from '../globald';
             <ion-icon name="create-outline" slot="start" color="tertiary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.EDIT' | translate }}</strong></ion-label>
           </ion-item>
+          <ion-item button class="action-item" (click)="selectAction('apply_dem')" [disabled]="trackItem.processingStatus === 'completed'">
+            <ion-icon name="earth-outline" slot="start" color="primary"></ion-icon>
+            <ion-label><strong>{{ 'ARCHIVE.APPLY_DEM' | translate }}</strong></ion-label>
+          </ion-item>
           <ion-item button class="action-item" (click)="selectAction('move')">
             <ion-icon name="folder-open-outline" slot="start" color="primary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.MOVE_TO_FOLDER' | translate }}</strong></ion-label>

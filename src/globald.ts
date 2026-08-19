@@ -80,6 +80,13 @@ export interface TrackDefinition {
   isChecked?: boolean,
   coverPhoto?: string;
   photos?: string[];
+  stats?: {
+    elevationGain: number;
+    elevationLoss: number;
+    maxElevation: number;
+    minElevation: number;
+  };
+  processingStatus?: 'pending' | 'completed' | 'unknown';
 }
 export interface StyleJSON {
   layers: Array<{

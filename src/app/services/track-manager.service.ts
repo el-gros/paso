@@ -107,12 +107,11 @@ export class TrackManagerService {
   }
 
   // ==========================================================================
-  // 4. GUARDADO FINAL (Procesamiento pesado)
+  // 4. GUARDADO FINAL (Procesamiento rápido y seguro)
   // ==========================================================================
   async processAndSaveTrack(
     name: string,
-    description: string,
-    onProgressUpdate?: (message: string) => void
+    description: string
   ) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) throw new Error('Track vacío');
@@ -120,37 +119,12 @@ export class TrackManagerService {
     let trackToProcess = JSON.parse(JSON.stringify(track));
     const rawCoords = trackToProcess.features[0].geometry.coordinates;
 
-    // 1. Limpieza de picos
+    // 1. Limpieza rápida (Matemática local)
     const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15);
     trackToProcess.features[0].geometry.coordinates = cleanedCoords;
 
-    if (onProgressUpdate) onProgressUpdate(this.translate.instant('RECORD.APPLYING_ELEVATION'));
-
-    // 2. Aplicar Elevación DEM
-    let snappedTrack;
-    try {
-      const trailReference = trackToProcess.features[0].geometry.coordinates.map((c: any) => ({
-        lng: c[0],
-        lat: c[1],
-      }));
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT_OFFLINE')), 10000)
-      );
-
-      snappedTrack = await Promise.race([
-        this.snapToTrailService.prepareTrackWithTrails(trackToProcess, trailReference),
-        timeoutPromise,
-      ]);
-    } catch (err) {
-      console.warn('⚠️ Sin conexión o DEM muy lento. Guardando con GPS puro + EGM96.', err);
-      snappedTrack = trackToProcess;
-    }
-
-    // 3. Filtrar velocidades
-    const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(snappedTrack, 0);
-    const finalTrack =
-      optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
+    const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(trackToProcess, 0);
+    const finalTrack = optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
         ? optimizedTrack
         : trackToProcess;
 
@@ -162,8 +136,31 @@ export class TrackManagerService {
     feature.properties.place = feature.geometry.coordinates[0];
     feature.properties.description = description;
     feature.properties.date = saveDate;
+    
+    // Etiqueta inicial: Pendiente de DEM
+    feature.properties.processingStatus = 'pending';
 
-    // 4. Procesar Fotos
+    // 2. Calcular estadísticas básicas basadas SOLO en GPS (Rápido)
+    let gpsGain = 0, gpsLoss = 0, maxZ = -Infinity, minZ = Infinity;
+    const coords = feature.geometry.coordinates;
+    for (let i = 0; i < coords.length; i++) {
+      const z = coords[i][2] || 0;
+      if (z > maxZ) maxZ = z;
+      if (z < minZ) minZ = z;
+      if (i > 0) {
+        const diff = z - (coords[i - 1][2] || 0);
+        if (diff > 0) gpsGain += diff;
+        else if (diff < 0) gpsLoss += Math.abs(diff);
+      }
+    }
+    feature.properties.stats = {
+      elevationGain: Math.round(gpsGain),
+      elevationLoss: Math.round(gpsLoss),
+      maxElevation: maxZ !== -Infinity ? Math.round(maxZ) : 0,
+      minElevation: minZ !== Infinity ? Math.round(minZ) : 0
+    };
+
+    // 3. Procesar Fotos
     let routePhotos: string[] = [];
     if (feature.waypoints) {
       routePhotos = feature.waypoints
@@ -171,7 +168,8 @@ export class TrackManagerService {
         .flatMap((wp: any) => wp.photos);
     }
 
-    // 5. Guardar en Base de Datos
+    // 4. 🔥 GUARDADO INMEDIATO EN BASE DE DATOS (Seguridad total) 🔥
+    feature.properties.processingStatus = 'pending';
     await this.fs.storeSet(dateKey, finalTrack);
 
     const newItem: any = {
@@ -184,6 +182,8 @@ export class TrackManagerService {
       file: dateKey,
       distance: feature.properties.distance || 0,
       duration: feature.properties.duration || 0,
+      stats: feature.properties.stats,
+      processingStatus: 'pending' // UI mostrará el icono de "procesando"
     };
 
     this.fs.collection.unshift(newItem);
@@ -192,9 +192,128 @@ export class TrackManagerService {
 
     await this.photo.confirmSessionPhotos();
 
-    // 6. Limpieza Final
+    // 5. Limpieza Final de la UI
     this.location.state = 'inactive';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
+
+    // 6. 🚀 LANZAR CORRECCIÓN DEM EN SEGUNDO PLANO 🚀
+    //this.applyDEMInBackground(dateKey).catch(err => console.error('Error DEM Background:', err));
+  }
+
+    
+// ==========================================================================
+  // 5. PROCESO SECUNDARIO SILENCIOSO (LIMPIO Y SIN BLOQUEOS NATIVOS)
+  // ==========================================================================
+  async applyDEMInBackground(dateKey: string): Promise<boolean> {
+    console.log('Iniciando corrección DEM en segundo plano para:', dateKey);
+    
+    try {
+      // 1. Recuperar el track recién guardado
+      const track = await this.fs.storeGet(dateKey);
+      if (!track) return false;
+
+      // 2. Aplicar la corrección (Snap + Altitudes Open-Meteo + Suavizado)
+      const updatedTrack = await this.applyDEMAndRecalculateStats(track);
+
+      // 3. Si hubo éxito ('completed'), actualizamos BD y UI silenciosamente
+      const status = updatedTrack.features[0].properties.processingStatus;
+      
+      if (status === 'completed') {
+        await this.fs.storeSet(dateKey, updatedTrack);
+
+        const index = this.fs.collection.findIndex((t: any) => t.file === dateKey);
+        if (index !== -1) {
+          this.fs.collection[index].stats = updatedTrack.features[0].properties.stats;
+          this.fs.collection[index].processingStatus = 'completed';
+          
+          await this.fs.storeSet('collection', this.fs.collection);
+          this.fs.collection = [...this.fs.collection]; 
+        }
+        console.log('✨ Corrección DEM aplicada y guardada con éxito.');
+        return true; 
+      }
+      return false;
+
+    } catch (error) {
+      console.error('Error crítico en el proceso DEM de fondo:', error);
+      return false; 
+    }
+  }
+
+  /**
+   * Aplica DEM (con timeout offline) y recalcula los desniveles del track
+   */
+  async applyDEMAndRecalculateStats(track: any): Promise<any> {
+    const feature = track.features[0];
+    const rawCoords = feature.geometry.coordinates;
+    const trailReference = rawCoords.map((c: any) => ({ lng: c[0], lat: c[1] }));
+
+    let snappedTrack;
+    let demStatus: 'completed' | 'pending' = 'pending';
+    
+    // 1. INTENTAR APLICAR DEM (Con Timeout de 90s)
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT_OFFLINE')), 90000)
+      );
+
+      snappedTrack = await Promise.race([
+        this.snapToTrailService.prepareTrackWithTrails(track, trailReference),
+        timeoutPromise,
+      ]) as any;
+
+      if (!snappedTrack || !snappedTrack.features?.[0]?.geometry?.coordinates?.length) {
+        throw new Error('El servicio DEM devolvió datos inválidos o vacíos.');
+      }
+
+      demStatus = 'completed'; 
+
+    } catch (err) {
+      console.warn('⚠️ DEM fallido o cancelado. Se guardará como PENDIENTE.', err);
+      snappedTrack = track; 
+      demStatus = 'pending'; 
+    }
+
+    // 2. RECALCULAR DESNIVELES OBLIGATORIOS
+    const coordinates = snappedTrack.features[0].geometry.coordinates;
+    let elevationGain = 0;
+    let elevationLoss = 0;
+    let maxElevation = -Infinity;
+    let minElevation = Infinity;
+
+    for (let i = 0; i < coordinates.length; i++) {
+      const currentZ = coordinates[i][2] || 0;
+
+      if (currentZ > maxElevation) maxElevation = currentZ;
+      if (currentZ < minElevation) minElevation = currentZ;
+
+      if (i > 0) {
+        const previousZ = coordinates[i - 1][2] || 0;
+        const diff = currentZ - previousZ;
+        if (diff > 0) {
+          elevationGain += diff;
+        } else if (diff < 0) {
+          elevationLoss += Math.abs(diff);
+        }
+      }
+    }
+
+    // 3. GUARDAR ESTADÍSTICAS EN LAS PROPIEDADES DEL TRACK
+    snappedTrack.features[0].properties.totalElevationGain = elevationGain;
+    snappedTrack.features[0].properties.totalElevationLoss = elevationLoss;
+    snappedTrack.features[0].properties.processingStatus = demStatus;
+    
+    if (!snappedTrack.features[0].properties.stats) {
+      snappedTrack.features[0].properties.stats = {};
+    }
+    
+    const stats = snappedTrack.features[0].properties.stats;
+    stats.elevationGain = Math.round(elevationGain);
+    stats.elevationLoss = Math.round(elevationLoss);
+    stats.maxElevation = maxElevation !== -Infinity ? Math.round(maxElevation) : 0;
+    stats.minElevation = minElevation !== Infinity ? Math.round(minElevation) : 0;
+
+    return snappedTrack;
   }
 }

@@ -1,4 +1,4 @@
-<div class="archive-header-actions">
+<div class="header-actions">
   <div class="action-item" (click)="displayAllTracks(!mapService.visibleAll)">
     <ion-icon
       [name]="mapService.visibleAll ? 'eye-off-outline' : 'eye-outline'"
@@ -58,6 +58,15 @@
             <strong [class.active-text]="isTrackVisible(item)">{{ item.name }}</strong>
             <div class="date-and-status">
               <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
+              
+              <!-- 👇 BADGE ACTUALIZADO SIN SPIN 👇 -->
+              @if (item.processingStatus !== 'completed') {
+                <span class="custom-badge-inline badge-gps">
+                  <ion-icon name="locate-outline"></ion-icon>
+                  GPS
+                </span>
+              }
+
               @if (isTrackVisible(item)) {
                 <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
               }
