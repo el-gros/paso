@@ -75,7 +75,7 @@ export interface TrackFeature {
 export interface TrackDefinition {
   name: string,
   date: Date | undefined,
-  file: string | undefined,
+  file?: string,
   place: string | number[],
   description: string,
   isChecked?: boolean,

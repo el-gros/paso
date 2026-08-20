@@ -163,47 +163,6 @@ async refreshMapsList() {
       }
     }
   }
-/*  async downloadMap(displayName: string) {
-    const offlineMapsDef = (global.offlineMaps || []) as OfflineMap[];
-    const match = offlineMapsDef.find(item => 
-      (item.name || item.filename.replace(/\.mbtiles$/i, '')) === displayName
-    );
-
-    if (!match) return;
-
-    this.isDownloading$.next(true);
-    const text = this.translate.instant('SETTINGS.DOWNLOADING');
-
-    this.downloadLoading = await this.loadingCtrl.create({
-      message: text,
-      spinner: 'crescent',
-      backdropDismiss: false 
-    });
-    await this.downloadLoading.present();
-
-    const updateProgress = (progress: number) => {
-      const percent = Math.round(progress);
-      if (this.downloadLoading && percent > 0) {
-        this.downloadLoading.message = `${text} ${percent}%`;
-      }
-    };
-
-    if (this.server.getDownloadProgress) {
-        this.progressSub = this.server.getDownloadProgress().subscribe(updateProgress);
-    }
-
-    try {
-      await this.server.downloadBinaryFile(match.url, match.filename, updateProgress);
-      await this.mbTiles.open(match.filename);
-      await this.postActionCleanup(true);
-      
-      if (this.geography.mapProvider === 'OSM offline') {
-        this.mapNeedsRefresh$.next();
-      }
-    } catch (err) {
-      await this.postActionCleanup(false);
-    }
-  } */
 
   /**
    * Cierra la conexión y elimina físicamente el archivo del mapa.

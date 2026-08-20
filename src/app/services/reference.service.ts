@@ -198,7 +198,6 @@ export class ReferenceService {
     // Crear ítem ligero para la colección/lista
     const newCollectionItem = {
       date: new Date(storageKey), 
-      file: storageKey,
       name: data.name,
       description: data.description,
       place: (props.place as string) || '',

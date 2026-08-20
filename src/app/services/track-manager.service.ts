@@ -189,7 +189,6 @@ export class TrackManagerService {
       description,
       isChecked: false,
       photos: routePhotos,
-      file: dateKey,
       distance: feature.properties.distance || 0,
       duration: feature.properties.duration || 0,
       stats: feature.properties.stats,
@@ -232,7 +231,7 @@ export class TrackManagerService {
       if (status === 'completed') {
         await this.fs.storeSet(dateKey, updatedTrack);
 
-        const index = this.fs.collection.findIndex((t: any) => t.file === dateKey);
+        const index = this.fs.collection.findIndex((t: any) => t.date.toISOString() === dateKey);
         if (index !== -1) {
           this.fs.collection[index].stats = updatedTrack.features[0].properties.stats;
           this.fs.collection[index].processingStatus = 'completed';

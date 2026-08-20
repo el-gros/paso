@@ -227,7 +227,6 @@ export class TracksComponent {
   // APLICAR DEM MANUALMENTE
   // ==========================================================================
   async applyDEMToTrack(item: any) {
-    if (!item.file) return;
 
     const loadingOverlay = await this.loadingCtrl.create({
       message: this.translate.instant('ARCHIVE.APPLYING_DEM'),
@@ -238,7 +237,7 @@ export class TracksComponent {
     await loadingOverlay.present();
 
     try {
-      const success = await this.trackManager.applyDEMInBackground(item.file);
+      const success = await this.trackManager.applyDEMInBackground(item.date.toISOString());
       if (success) {
         this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_SUCCESS'), 'success');
       } else {

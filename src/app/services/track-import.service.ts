@@ -206,7 +206,6 @@ export class TrackImportService {
     const trackDef: TrackDefinition = {
       name: props.name || this.translate.instant('MAP.IMPORTED_TRACK_DEFAULT'),
       date: trackDate,
-      file: dateKey,
       place: track.features[0].geometry.coordinates[0] as any,
       description: props.description || '',
       isChecked: true,
