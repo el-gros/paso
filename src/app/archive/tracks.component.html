@@ -60,13 +60,18 @@
               <span class="item-date-subtitle">{{ item.date | date: 'dd-MM-yyyy' }}</span>
               
               <!-- 👇 BADGE ACTUALIZADO SIN SPIN 👇 -->
-              @if (item.processingStatus !== 'completed') {
-                <span class="custom-badge-inline badge-gps">
+              @if (item.processingStatus === 'pending') {  
+                <span class="custom-badge-inline badge-status badge-gps">
                   <ion-icon name="locate-outline"></ion-icon>
                   GPS
                 </span>
               }
-
+              @else if (item.processingStatus === 'completed') {  
+                <span class="custom-badge-inline badge-status badge-dem">
+                  <ion-icon name="locate-outline"></ion-icon>
+                  DEM
+                </span>
+              }
               @if (isTrackVisible(item)) {
                 <span class="custom-badge-inline">{{ 'ARCHIVE.VISIBLE_LABEL' | translate }}</span>
               }

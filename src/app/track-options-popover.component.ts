@@ -21,7 +21,7 @@ import { TrackDefinition } from '../globald';
             <ion-icon name="create-outline" slot="start" color="tertiary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.EDIT' | translate }}</strong></ion-label>
           </ion-item>
-          <ion-item button class="action-item" (click)="selectAction('apply_dem')" [disabled]="trackItem.processingStatus === 'completed'">
+          <ion-item button class="action-item" (click)="selectAction('apply_dem')"  [disabled]="trackItem.processingStatus === 'completed'" >
             <ion-icon name="earth-outline" slot="start" color="primary"></ion-icon>
             <ion-label><strong>{{ 'ARCHIVE.APPLY_DEM' | translate }}</strong></ion-label>
           </ion-item>
@@ -50,3 +50,4 @@ export class TrackOptionsPopoverComponent {
   constructor(private popoverController: PopoverController) {}
   selectAction(action: string) { this.popoverController.dismiss({ action: action }); }
 }
+

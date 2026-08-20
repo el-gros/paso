@@ -75,6 +75,7 @@ export interface TrackFeature {
 export interface TrackDefinition {
   name: string,
   date: Date | undefined,
+  file: string | undefined,
   place: string | number[],
   description: string,
   isChecked?: boolean,
@@ -86,8 +87,7 @@ export interface TrackDefinition {
     maxElevation: number;
     minElevation: number;
   };
-  processingStatus?: 'pending' | 'completed' | 'unknown';
-}
+  processingStatus?: 'pending' | 'completed' | 'unknown'}
 export interface StyleJSON {
   layers: Array<{
     type: string;

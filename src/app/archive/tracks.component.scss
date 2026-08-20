@@ -114,13 +114,26 @@ ion-thumbnail.photo-thumbnail {
   z-index: 10; /* Asegura que esté por encima de otros elementos al hacer clic */
 }
 
+/* Estructura común para cualquier badge de estado */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 6px;       /* Un poco de padding para que respire */
+  border-radius: 4px;     /* Bordes redondeados tipo etiqueta */
+}
+
+/* Color para GPS (Gris neutro - Estado natural) */
 .badge-gps {
   background-color: var(--ion-color-step-150, #e0e0e0);
   color: var(--ion-color-step-800, #444);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
+}
+
+/* Color para DEM (Verde/Éxito - Estado procesado) */
+.badge-dem {
+  background-color: var(--ion-color-success, #2dd36f);
+  color: #ffffff; /* Texto blanco para que destaque */
 }
 
 .spin-icon {

@@ -15,6 +15,7 @@ import { PhotoService } from './photo.service';
 import { SnapToTrailService } from './snapToTrail.service';
 import { GeoMathService } from './geo-math.service';
 import { SmartRouteBuilderService } from './smart-route-builder.service';
+import { ReferenceService } from './reference.service';
 
 @Injectable({
   providedIn: 'root'
@@ -30,6 +31,7 @@ export class TrackManagerService {
   private snapToTrailService = inject(SnapToTrailService);
   private geoMath = inject(GeoMathService);
   private smartRouteBuilder = inject(SmartRouteBuilderService);
+  private reference = inject(ReferenceService);
 
   // ==========================================================================
   // 1. BORRAR TRACK
@@ -106,8 +108,8 @@ export class TrackManagerService {
     }
   }
 
-  // ==========================================================================
-  // 4. GUARDADO FINAL (Procesamiento rápido y seguro)
+// ==========================================================================
+  // 4. GUARDADO FINAL (Procesamiento rápido y seguro - SÓLO GPS)
   // ==========================================================================
   async processAndSaveTrack(
     name: string,
@@ -137,14 +139,22 @@ export class TrackManagerService {
     feature.properties.description = description;
     feature.properties.date = saveDate;
     
-    // Etiqueta inicial: Pendiente de DEM
     feature.properties.processingStatus = 'pending';
 
-    // 2. Calcular estadísticas básicas basadas SOLO en GPS (Rápido)
+    // 2. Calcular estadísticas básicas y SINCRONIZAR GRÁFICO
     let gpsGain = 0, gpsLoss = 0, maxZ = -Infinity, minZ = Infinity;
     const coords = feature.geometry.coordinates;
+    const data = feature.properties.data; // Referencia a los datos del gráfico
+
     for (let i = 0; i < coords.length; i++) {
       const z = coords[i][2] || 0;
+      
+      // 🔥 SINCRONIZACIÓN CLAVE: Inyectamos la Z del GPS al array del gráfico
+      if (data && data[i]) {
+        data[i].altitude = z;
+        data[i].isMSL = false; // Indicamos que es altitud nativa GPS, no de modelo DEM
+      }
+
       if (z > maxZ) maxZ = z;
       if (z < minZ) minZ = z;
       if (i > 0) {
@@ -153,6 +163,7 @@ export class TrackManagerService {
         else if (diff < 0) gpsLoss += Math.abs(diff);
       }
     }
+
     feature.properties.stats = {
       elevationGain: Math.round(gpsGain),
       elevationLoss: Math.round(gpsLoss),
@@ -168,8 +179,7 @@ export class TrackManagerService {
         .flatMap((wp: any) => wp.photos);
     }
 
-    // 4. 🔥 GUARDADO INMEDIATO EN BASE DE DATOS (Seguridad total) 🔥
-    feature.properties.processingStatus = 'pending';
+    // 4. GUARDADO INMEDIATO EN BASE DE DATOS
     await this.fs.storeSet(dateKey, finalTrack);
 
     const newItem: any = {
@@ -183,7 +193,7 @@ export class TrackManagerService {
       distance: feature.properties.distance || 0,
       duration: feature.properties.duration || 0,
       stats: feature.properties.stats,
-      processingStatus: 'pending' // UI mostrará el icono de "procesando"
+      processingStatus: 'pending' // 🔥 UI mostrará el track finalizado
     };
 
     this.fs.collection.unshift(newItem);
@@ -197,8 +207,8 @@ export class TrackManagerService {
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
 
-    // 6. 🚀 LANZAR CORRECCIÓN DEM EN SEGUNDO PLANO 🚀
-    //this.applyDEMInBackground(dateKey).catch(err => console.error('Error DEM Background:', err));
+    // 6. El proceso DEM queda anulado a petición tuya
+    // this.applyDEMInBackground(dateKey).catch(err => console.error('Error DEM Background:', err));
   }
 
     
@@ -216,7 +226,7 @@ export class TrackManagerService {
       // 2. Aplicar la corrección (Snap + Altitudes Open-Meteo + Suavizado)
       const updatedTrack = await this.applyDEMAndRecalculateStats(track);
 
-      // 3. Si hubo éxito ('completed'), actualizamos BD y UI silenciosamente
+// 3. Si hubo éxito ('completed'), actualizamos BD y UI silenciosamente
       const status = updatedTrack.features[0].properties.processingStatus;
       
       if (status === 'completed') {
@@ -230,6 +240,12 @@ export class TrackManagerService {
           await this.fs.storeSet('collection', this.fs.collection);
           this.fs.collection = [...this.fs.collection]; 
         }
+
+        // 🔥 NUEVO: Si la ruta que acabamos de procesar es la que el usuario está viendo en pantalla, la actualizamos para que el gráfico se repinte.
+        if (this.reference.archivedTrack && this.reference.archivedTrack.features[0].properties.date === updatedTrack.features[0].properties.date) {
+           this.reference.archivedTrack = updatedTrack;
+        }
+
         console.log('✨ Corrección DEM aplicada y guardada con éxito.');
         return true; 
       }
@@ -241,16 +257,20 @@ export class TrackManagerService {
     }
   }
 
-  /**
+/**
    * Aplica DEM (con timeout offline) y recalcula los desniveles del track
    */
   async applyDEMAndRecalculateStats(track: any): Promise<any> {
+    if (track.features[0].properties.processingStatus === 'completed') {
+      console.log('🛑 El track ya tiene DEM aplicado. Omitiendo recálculo innecesario.');
+      return track;
+    }
     const feature = track.features[0];
     const rawCoords = feature.geometry.coordinates;
     const trailReference = rawCoords.map((c: any) => ({ lng: c[0], lat: c[1] }));
 
     let snappedTrack;
-    let demStatus: 'completed' | 'pending' = 'pending';
+    let demStatus  = 'pending';
     
     // 1. INTENTAR APLICAR DEM (Con Timeout de 90s)
     try {
@@ -275,8 +295,12 @@ export class TrackManagerService {
       demStatus = 'pending'; 
     }
 
-    // 2. RECALCULAR DESNIVELES OBLIGATORIOS
+    // 2. RECALCULAR DESNIVELES OBLIGATORIOS Y SINCRONIZAR GRÁFICO
     const coordinates = snappedTrack.features[0].geometry.coordinates;
+    
+    // 🔥 CORRECCIÓN: Buscamos el array del gráfico en el lugar exacto de tu arquitectura
+    const data = snappedTrack.features[0].geometry?.properties?.data || snappedTrack.features[0].properties?.data;
+    
     let elevationGain = 0;
     let elevationLoss = 0;
     let maxElevation = -Infinity;
@@ -284,6 +308,13 @@ export class TrackManagerService {
 
     for (let i = 0; i < coordinates.length; i++) {
       const currentZ = coordinates[i][2] || 0;
+
+      // 🔥 Ahora sí inyectamos la altitud calculada directamente a la gráfica
+      if (data && data[i]) {
+        data[i].altitude = currentZ;
+        data[i].compAltitude = currentZ;
+        data[i].isMSL = (demStatus === 'completed'); 
+      }
 
       if (currentZ > maxElevation) maxElevation = currentZ;
       if (currentZ < minElevation) minElevation = currentZ;

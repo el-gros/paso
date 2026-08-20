@@ -30,9 +30,8 @@ export class SnapToTrailService {
    * @param track Objeto Track a procesar.
    * @param trails Opcional: segmentos de senderos externos.
    */
-async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
+  async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
     const segments = trails || this.loadedTrails;
-
     if (!segments || segments.length === 0) {
       throw new Error('[SnapService] No hay senderos cargados. Imposible aplicar Snap/DEM.');
     }
@@ -41,105 +40,68 @@ async prepareTrackWithTrails(track: any, trails?: any[]): Promise<any> {
     const data = feature.geometry.properties.data;
     const coords = feature.geometry.coordinates;
 
-    const pointsToFetch: {lat: number, lng: number}[] = [];
-    const snappedIndices: number[] = []; 
-
-    // --- FASE 1: AJUSTE GEOMÉTRICO (SNAP) ---
+    // --- FASE 1: AJUSTE GEOMÉTRICO HORIZONTAL (SNAP X, Y) ---
     for (let i = 0; i < data.length; i++) {
       const currentPoint = { lat: coords[i][1], lng: coords[i][0] };
       const snappedResult = this.findNearestSnap(currentPoint, segments);
 
+      // Si está cerca del sendero, corregimos su lat/lng
       if (snappedResult.distance <= this.CONFIDENCE_THRESHOLD_METERS) {
-        // Corrección Horizontal
         coords[i][0] = snappedResult.point.lng;
         coords[i][1] = snappedResult.point.lat;
         data[i].isSnapped = true;
-
-        pointsToFetch.push({ lat: coords[i][1], lng: coords[i][0] });
-        snappedIndices.push(i);
       } else {
         data[i].isSnapped = false;
       }
     }
 
-    if (pointsToFetch.length === 0) {
-      throw new Error('[SnapService] Ningún punto coincide con los senderos. DEM abortado.');
-    }
+    // --- FASE 2: MUESTREO DE ALTITUD PARA TODOS LOS PUNTOS (Z) ---
+    // Tomamos toda la ruta (hayan hecho snap o no) y sacamos una muestra segura para la API
+    let targetOriginalPositions: number[] = [];
+    let targetPoints: {lat: number, lng: number}[] = [];
 
-    // --- FASE 1.5: MUESTREO INTELIGENTE (Anti-429) ---
-    // Si hay más de 150 puntos, seleccionamos una muestra de ~120 puntos clave 
-    // para no saturar la API externa, guardando sus posiciones originales.
-    let targetPoints = pointsToFetch;
-    let targetOriginalPositions: number[] = snappedIndices.map((_, idx) => idx);
-
-    if (pointsToFetch.length > 150) {
-      const step = Math.ceil(pointsToFetch.length / 120);
-      targetPoints = [];
-      targetOriginalPositions = [];
-
-      for (let k = 0; k < pointsToFetch.length; k++) {
-        // Aseguramos incluir siempre el primer y el último punto, además de los intermedios según el paso
-        if (k === 0 || k === pointsToFetch.length - 1 || k % step === 0) {
-          targetPoints.push(pointsToFetch[k]);
-          targetOriginalPositions.push(k);
-        }
+    const step = data.length > 150 ? Math.ceil(data.length / 120) : 1;
+    
+    for (let k = 0; k < data.length; k++) {
+      if (k === 0 || k === data.length - 1 || k % step === 0) {
+        targetPoints.push({ lat: coords[k][1], lng: coords[k][0] });
+        targetOriginalPositions.push(k);
       }
     }
 
-    // --- FASE 2: INYECCIÓN DE ALTITUD (API) + INTERPOLACIÓN Y SUAVIZADO ---
-    try {
-      const apiAltitudes = await this.elevationService.getBulkAltitude(targetPoints);
+    // --- FASE 3: PEDIR ALTITUD A LA API ---
+    const apiAltitudes = await this.elevationService.getBulkAltitude(targetPoints);
+    if (!apiAltitudes || apiAltitudes.length !== targetPoints.length) {
+      throw new Error('[SnapService] La API falló o devolvió datos incompletos.');
+    }
 
-      if (!apiAltitudes || apiAltitudes.length !== targetPoints.length) {
-        throw new Error('[SnapService] La API falló o devolvió datos incompletos.');
-      }
+    // --- FASE 4: INTERPOLAR PARA RELLENAR TODOS LOS HUECOS ---
+    const finalAltitudes: number[] = new Array(data.length);
+    for (let m = 0; m < targetOriginalPositions.length; m++) {
+      const origPos = targetOriginalPositions[m];
+      finalAltitudes[origPos] = apiAltitudes[m];
 
-      // Reconstruimos el array completo para todos los puntos mediante interpolación lineal en los huecos
-      const finalAltitudes: number[] = new Array(pointsToFetch.length);
+      if (m < targetOriginalPositions.length - 1) {
+        const nextOrigPos = targetOriginalPositions[m + 1];
+        const altA = apiAltitudes[m];
+        const altB = apiAltitudes[m + 1];
+        const stepsCount = nextOrigPos - origPos;
 
-      if (targetPoints.length === pointsToFetch.length) {
-        // Si no hubo muestreo porque el track era corto
-        for(let i = 0; i < apiAltitudes.length; i++) {
-          finalAltitudes[i] = apiAltitudes[i];
-        }
-      } else {
-        // Rellenamos las muestras y calculamos los tramos intermedios
-        for (let m = 0; m < targetOriginalPositions.length; m++) {
-          const origPos = targetOriginalPositions[m];
-          finalAltitudes[origPos] = apiAltitudes[m];
-
-          if (m < targetOriginalPositions.length - 1) {
-            const nextOrigPos = targetOriginalPositions[m + 1];
-            const altA = apiAltitudes[m];
-            const altB = apiAltitudes[m + 1];
-            const stepsCount = nextOrigPos - origPos;
-
-            // Interpolación lineal suave para los puntos que nos saltamos al muestrear
-            for (let s = 1; s < stepsCount; s++) {
-              const factor = s / stepsCount;
-              finalAltitudes[origPos + s] = altA + (altB - altA) * factor;
-            }
-          }
+        for (let s = 1; s < stepsCount; s++) {
+          const factor = s / stepsCount;
+          finalAltitudes[origPos + s] = altA + (altB - altA) * factor;
         }
       }
+    }
 
-      // Aplicamos tu filtro gaussiano para eliminar cualquier pequeño escalón
-      const finalSmooth = this.smoothElevationsGaussian(finalAltitudes, 7);
-
-      for (let j = 0; j < finalSmooth.length; j++) {
-        const originalIndex = snappedIndices[j];
-        
-        // Actualizamos propiedades extendidas
-        data[originalIndex].altitude = finalSmooth[j]; 
-        data[originalIndex].isMSL = true;
-
-        // Actualizamos OpenLayers en la coordenada Z [2]
-        coords[originalIndex][2] = finalSmooth[j]; 
-      }
-
-    } catch (error) {
-      console.error('[SnapService] Error durante la petición DEM:', error);
-      throw error; 
+    // --- FASE 5: SUAVIZADO Y ASIGNACIÓN TOTAL ---
+    const finalSmooth = this.smoothElevationsGaussian(finalAltitudes, 7);
+    
+    // Ahora TODOS los puntos de la ruta reciben su nueva altitud, sin dejar vacíos
+    for (let i = 0; i < data.length; i++) {
+      data[i].altitude = finalSmooth[i]; 
+      data[i].isMSL = true;
+      coords[i][2] = finalSmooth[i]; 
     }
 
     return track;
