@@ -284,17 +284,14 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
       target: 'map',
       layers: [
         new ol.layer.Tile({
-            source: new ol.source.XYZ({
-                url: 'https://{a-c}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                attributions: '&copy; OpenStreetMap | &copy; CARTO'
-            })
+          source: new ol.source.OSM()
         })
       ],
       view: new ol.View({ center: [0, 0], zoom: 2 }),
       controls: []
     });
 
-    feature.setStyle(new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#ff3b30', width: 6, lineCap: 'round' }) }));
+    feature.setStyle(new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#ff3b30', width: 3, lineCap: 'round' }) }));
 
     const coords = feature.getGeometry().getCoordinates();
     const startPoint = new ol.Feature({ geometry: new ol.geom.Point(coords[0]) });
@@ -306,20 +303,41 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
     const source = new ol.source.Vector({ features: [feature, startPoint, endPoint] });
     map.addLayer(new ol.layer.Vector({ source }));
     
-    // Encuadramos con padding ajustable
     map.getView().fit(source.getExtent(), { padding: [50, 50, 100, 50] });
 
-    // GRÁFICA
+    // NUEVA LÓGICA GRÁFICA CONDICIONAL (< 1km vs >= 1km)
     const trackData = routeGeoJSON.features[0]?.geometry?.properties?.data;
     if (trackData && trackData.length > 1) {
-        const chartData = trackData.map(p => ({ x: parseFloat(p.distance || 0), y: Math.round(p.compAltitude || p.altitude || 0) }));
+        
+        // Determinar si la ruta es menor a 1 km
+        const rawMaxDist = parseFloat(trackData[trackData.length - 1].distance || 0);
+        const isShortRoute = rawMaxDist < 1000;
+        
+        const divider = isShortRoute ? 1 : 1000;
+        const unit = isShortRoute ? 'm' : 'km';
+
+        // Preparar datos dividiendo si aplica
+        const chartData = trackData.map(p => ({ 
+            x: parseFloat(p.distance || 0) / divider, 
+            y: Math.round(p.compAltitude || p.altitude || 0) 
+        }));
+        
         const maxDist = chartData[chartData.length - 1].x;
+        
+        // Calcular saltos enteros dependiendo de la unidad y distancia
         let dynamicStep = 1; 
-        if (maxDist > 100) dynamicStep = 20;
-        else if (maxDist > 50) dynamicStep = 10;
-        else if (maxDist > 20) dynamicStep = 5;
-        else if (maxDist > 10) dynamicStep = 2;
-        else if (maxDist < 2) dynamicStep = 0.5; 
+        if (isShortRoute) {
+            if (maxDist > 500) dynamicStep = 100;
+            else if (maxDist > 200) dynamicStep = 50;
+            else if (maxDist > 100) dynamicStep = 20;
+            else dynamicStep = 10;
+        } else {
+            if (maxDist > 100) dynamicStep = 20;
+            else if (maxDist > 50) dynamicStep = 10;
+            else if (maxDist > 20) dynamicStep = 5;
+            else if (maxDist > 10) dynamicStep = 2;
+            else dynamicStep = 1; 
+        }
 
         new Chart(document.getElementById('elevationChart').getContext('2d'), {
             type: 'line',
@@ -327,8 +345,40 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'nearest', intersect: false, axis: 'x' },
-                plugins: { legend: { display: false }, tooltip: { callbacks: { title: function(c) { return '${distLabel}: ' + Number(c[0].parsed.x).toFixed(2) + ' km'; }, label: function(c) { return '${altLabel}: ' + c.parsed.y + ' m'; } } } },
-                scales: { x: { type: 'linear', title: { display: false }, ticks: { stepSize: dynamicStep, callback: function(v) { return v + ' km'; } }, grid: { display: false } }, y: { title: { display: false }, beginAtZero: false } }
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { 
+                        callbacks: { 
+                            title: function(c) { 
+                                // Mostrar decimales en km, sin decimales en metros
+                                return '${distLabel}: ' + Number(c[0].parsed.x).toFixed(isShortRoute ? 0 : 2) + ' ' + unit; 
+                            }, 
+                            label: function(c) { 
+                                return '${altLabel}: ' + c.parsed.y + ' m'; 
+                            } 
+                        } 
+                    } 
+                },
+                scales: { 
+                    x: { 
+                        type: 'linear', 
+                        // Título colocado al final con la unidad correspondiente (m o km)
+                        title: { display: true, text: unit, align: 'end', color: '#999', font: { weight: '600', size: 11 } }, 
+                        ticks: { 
+                            stepSize: dynamicStep,
+                            maxTicksLimit: 8, // Limita la cantidad máxima de números para no saturar
+                            callback: function(v) { 
+                                // Fuerza a pintar sólo valores enteros
+                                return Number.isInteger(v) ? v : null; 
+                            } 
+                        }, 
+                        grid: { display: false } 
+                    }, 
+                    y: { 
+                        title: { display: false }, 
+                        beginAtZero: false 
+                    } 
+                }
             }
         });
     } else {

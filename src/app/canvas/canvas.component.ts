@@ -189,13 +189,15 @@ export class CanvasComponent implements OnInit, OnDestroy {
     return photoUri ? Capacitor.convertFileSrc(photoUri) : '';
   }
 
-  async openPhotoGallery() {
+  async openPhotoGallery(type: 'current' | 'reference') {
     let photos: string[] = [];
-    if (this.activeIndex === 0) { // Asumiendo que el slide 0 es para el trayecto actual
+    
+    if (type === 'current') {
       photos = this.currentTrackPhotos;
-    } else if (this.activeIndex === 1) { // Asumiendo que el slide 1 es para el trayecto de referencia
+    } else if (type === 'reference') {
       photos = this.referenceTrackPhotos;
     }
+    
     if (photos.length === 0) return;
 
     const modal = await this.modalCtrl.create({

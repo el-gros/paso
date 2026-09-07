@@ -110,7 +110,7 @@
             </div>
 
             @if (currentTrackPhotos.length > 0) {
-              <div class="photo-album-preview" (click)="openPhotoGallery()">
+              <div class="photo-album-preview" (click)="openPhotoGallery('current')">
                 <div class="album-cover">
                   <img [src]="getCoverPhotoUrl(currentTrackPhotos[0])" alt="Portada de la ruta" />
                   @if (currentTrackPhotos.length > 1) {
@@ -174,7 +174,7 @@
             </div>
 
             @if (referenceTrackPhotos.length > 0) {
-              <div class="photo-album-preview" (click)="openPhotoGallery()">
+              <div class="photo-album-preview" (click)="openPhotoGallery('reference')">
                 <div class="album-cover">
                   <img [src]="getCoverPhotoUrl(referenceTrackPhotos[0])" alt="Portada de la ruta" />
                   @if (referenceTrackPhotos.length > 1) {

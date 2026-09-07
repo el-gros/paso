@@ -111,20 +111,39 @@ export class TrackManagerService {
 // ==========================================================================
   // 4. GUARDADO FINAL (Procesamiento rápido y seguro - SÓLO GPS)
   // ==========================================================================
-  async processAndSaveTrack(
+async processAndSaveTrack(
     name: string,
     description: string
   ) {
     const track = this.present.currentTrack;
     if (!track?.features?.[0]) throw new Error('Track vacío');
 
+    // Clonamos el objeto para no mutar el estado original en la UI prematuramente
     let trackToProcess = JSON.parse(JSON.stringify(track));
+    
+    // Obtenemos AMBOS arrays para pasarlos al filtro
     const rawCoords = trackToProcess.features[0].geometry.coordinates;
+    // Buscamos 'data' donde esté definido (en properties o dentro de geometry.properties)
+    const rawData = trackToProcess.features[0].properties.data 
+                    || trackToProcess.features[0].geometry.properties?.data;
 
-    // 1. Limpieza rápida (Matemática local)
-    const cleanedCoords = this.geoMath.removeGpsSpikesHybrid(rawCoords, 15);
+    // --- 1. LIMPIEZA DE OUTLIERS Y REBOTES ---
+    const { cleanedCoords, cleanedData } = this.geoMath.removeGpsSpikesHybrid(rawCoords, rawData, 5);
+
+    // --- 2. RECÁLCULO GEOMÉTRICO (Distancias) ---
+    // Ajusta el odómetro total y parcial tras borrar los picos
+    this.geoMath.recalculateDistances(cleanedCoords, cleanedData);
+
+    // Reasignamos los arrays limpios al objeto GeoJSON
     trackToProcess.features[0].geometry.coordinates = cleanedCoords;
+    if (trackToProcess.features[0].properties.data) {
+      trackToProcess.features[0].properties.data = cleanedData;
+    } else if (trackToProcess.features[0].geometry.properties?.data) {
+      trackToProcess.features[0].geometry.properties.data = cleanedData;
+    }
 
+    // --- 3. FILTRO DE KALMAN Y RECÁLCULO FÍSICO ---
+    // Ahora recibe un track sin picos y con las distancias reales actualizadas
     const optimizedTrack = await this.geoMath.filterSpeedAndAltitude(trackToProcess, 0);
     const finalTrack = optimizedTrack?.features?.[0]?.geometry?.coordinates?.length > 0
         ? optimizedTrack
@@ -141,10 +160,10 @@ export class TrackManagerService {
     
     feature.properties.processingStatus = 'pending';
 
-    // 2. Calcular estadísticas básicas y SINCRONIZAR GRÁFICO
+    // --- 4. CALCULAR ESTADÍSTICAS BÁSICAS Y SINCRONIZAR GRÁFICO ---
     let gpsGain = 0, gpsLoss = 0, maxZ = -Infinity, minZ = Infinity;
     const coords = feature.geometry.coordinates;
-    const data = feature.properties.data; // Referencia a los datos del gráfico
+    const data = feature.properties.data || feature.geometry.properties?.data; // Referencia a los datos del gráfico
 
     for (let i = 0; i < coords.length; i++) {
       const z = coords[i][2] || 0;
@@ -171,7 +190,7 @@ export class TrackManagerService {
       minElevation: minZ !== Infinity ? Math.round(minZ) : 0
     };
 
-    // 3. Procesar Fotos
+    // --- 5. PROCESAR FOTOS ---
     let routePhotos: string[] = [];
     if (feature.waypoints) {
       routePhotos = feature.waypoints
@@ -179,7 +198,7 @@ export class TrackManagerService {
         .flatMap((wp: any) => wp.photos);
     }
 
-    // 4. GUARDADO INMEDIATO EN BASE DE DATOS
+    // --- 6. GUARDADO INMEDIATO EN BASE DE DATOS ---
     await this.fs.storeSet(dateKey, finalTrack);
 
     const newItem: any = {
@@ -201,12 +220,12 @@ export class TrackManagerService {
 
     await this.photo.confirmSessionPhotos();
 
-    // 5. Limpieza Final de la UI
+    // --- 7. LIMPIEZA FINAL DE LA UI ---
     this.location.state = 'inactive';
     this.present.currentTrack = undefined;
     this.geography.currentLayer?.getSource()?.clear();
 
-    // 6. El proceso DEM queda anulado a petición tuya
+    // 8. El proceso DEM queda anulado a petición tuya
     // this.applyDEMInBackground(dateKey).catch(err => console.error('Error DEM Background:', err));
   }
 

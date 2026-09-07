@@ -310,65 +310,114 @@ export class GeoMathService {
     return distances.map(d => Math.round(startTime + (d / totalDist) * (summary.duration * 1000)));
   }
 
-  /**
+/**
    * Filtro Híbrido GPS: Detecta picos midiendo la relación espacial (triangulación)
    * Y verificando que el salto ocurrió a una velocidad físicamente irreal.
    */
-  public removeGpsSpikesHybrid(coordinates: number[][], maxValidSpeedMps: number = 15): number[][] {
-    if (coordinates.length < 3) return coordinates;
+  public removeGpsSpikesHybrid(coords: number[][], data: any[], maxValidSpeedMps: number = 5): { cleanedCoords: number[][], cleanedData: any[] } {
+    // Si no hay suficientes puntos o los arrays vienen desparejados, no tocamos nada por seguridad
+    if (coords.length < 3 || coords.length !== data.length) {
+      return { cleanedCoords: coords, cleanedData: data };
+    }
 
-    const cleaned = [coordinates[0]];
+    const cleanedCoords = [coords[0]];
+    const cleanedData = [data[0]];
 
-    for (let i = 1; i < coordinates.length - 1; i++) {
-      const prev = cleaned[cleaned.length - 1]; 
-      const curr = coordinates[i];
-      const next = coordinates[i + 1];
-
-      // 1. Cálculos de Distancia (Geometría)
-      // Usamos TU función computeDistance y multiplicamos por 1000 para trabajar en metros
-      const distIn = this.computeDistance(prev[0], prev[1], curr[0], curr[1]) * 1000; 
-      const distOut = this.computeDistance(curr[0], curr[1], next[0], next[1]) * 1000; 
-      const distBase = this.computeDistance(prev[0], prev[1], next[0], next[1]) * 1000; 
-
-      // 2. Cálculos de Tiempo y Velocidad (Física)
-      // Asumimos que el timestamp en milisegundos está en el índice 3: [lng, lat, alt, time]
-      const timeInSecs = (curr[3] - prev[3]) / 1000;
-      const timeOutSecs = (next[3] - curr[3]) / 1000;
-
-      const speedIn = timeInSecs > 0 ? distIn / timeInSecs : 0;
-      const speedOut = timeOutSecs > 0 ? distOut / timeOutSecs : 0;
-
-      // DEFINICIÓN FINAL DE UN PICO (SPIKE):
+    for (let i = 1; i < coords.length - 1; i++) {
+      // Nos anclamos al último punto VÁLIDO confirmado
+      const prevC = cleanedCoords[cleanedCoords.length - 1]; 
+      const prevD = cleanedData[cleanedData.length - 1];
       
-      // Condición A: Efecto Boomerang (La base es menos de un tercio de la ida + vuelta)
+      const currC = coords[i];
+      const currD = data[i];
+      
+      const nextC = coords[i + 1];
+      const nextD = data[i + 1];
+
+      // 1. Distancias 2D (en metros)
+      const distIn = this.computeDistance(prevC[0], prevC[1], currC[0], currC[1]) * 1000; 
+      const distOut = this.computeDistance(currC[0], currC[1], nextC[0], nextC[1]) * 1000; 
+      const distBase = this.computeDistance(prevC[0], prevC[1], nextC[0], nextC[1]) * 1000; 
+
+      // 2. Tiempos (usamos el objeto data para garantizar que leemos milisegundos reales)
+      const timeInSecs = (currD.time - prevD.time) / 1000;
+      const timeOutSecs = (nextD.time - currD.time) / 1000;
+
+      // 3. Velocidades
+      const speedIn = timeInSecs > 0 ? distIn / timeInSecs : Infinity;
+      const speedOut = timeOutSecs > 0 ? distOut / timeOutSecs : Infinity;
+
+      // 4. Lógica de descarte
       const isBoomerangEffect = distBase < (distIn + distOut) / 3; 
-
-      // Condición B: Velocidad imposible (La ida O la vuelta superan el límite humano razonable)
       const isImpossibleSpeed = speedIn > maxValidSpeedMps || speedOut > maxValidSpeedMps;
+      const isSignificantDistance = distIn > 15; 
+      const isAbsurdSpeed = speedIn > (maxValidSpeedMps * 3);
 
-      // Condición C: Salto mínimo (evitamos filtrar micro-movimientos de 20 metros estando parados)
-      const isSignificantDistance = distIn > 20;
+      // Extra: Pico absurdo de altitud (ej. salto de 200m de altura en 2 segundos)
+      const zIn = Math.abs((currC[2] || 0) - (prevC[2] || 0));
+      const isAltitudeSpike = zIn > 50 && distIn < 10; 
 
-      if (isBoomerangEffect && isImpossibleSpeed && isSignificantDistance) {
-        // OUTLIER CONFIRMADO: Es un pico GPS.
-        const midLng = (prev[0] + next[0]) / 2;
-        const midLat = (prev[1] + next[1]) / 2;
-        const midAlt = (prev[2] + next[2]) / 2;
-        const midTime = prev[3] + ((next[3] - prev[3]) / 2); 
-
-        // Reemplazamos por el punto medio
-        cleaned.push([midLng, midLat, midAlt, midTime]);
-        console.log(`Pico híbrido descartado. Velocidad: ${speedIn.toFixed(2)}m/s, Distancia: ${distIn.toFixed(0)}m`);
+      if ((isBoomerangEffect && isImpossibleSpeed && isSignificantDistance) || 
+          (isAbsurdSpeed && isSignificantDistance) || 
+          isAltitudeSpike) {
+        
+        console.log(`[GeoMath] Pico GPS descartado. Vel: ${speedIn.toFixed(1)}m/s, Dist: ${distIn.toFixed(0)}m`);
+        // NO hacemos push. El punto problemático desaparece de ambos mundos.
+        
       } else {
-        // PUNTO VÁLIDO: Puede ser un zig-zag lento o una ruta recta rápida.
-        cleaned.push(curr);
+        // El punto es bueno, lo guardamos en ambos arrays
+        cleanedCoords.push(currC);
+        cleanedData.push(currD);
       }
     }
 
-    // Asegurarnos de meter el último punto
-    cleaned.push(coordinates[coordinates.length - 1]);
-    return cleaned;
+    // Comprobación final de seguridad para el último punto antes de apagar el tracking
+    const lastC = cleanedCoords[cleanedCoords.length - 1];
+    const lastD = cleanedData[cleanedData.length - 1];
+    const finalC = coords[coords.length - 1];
+    const finalD = data[data.length - 1];
+
+    const finalTime = (finalD.time - lastD.time) / 1000;
+    const finalDist = this.computeDistance(lastC[0], lastC[1], finalC[0], finalC[1]) * 1000;
+    
+    if (finalTime > 0 && (finalDist / finalTime) <= maxValidSpeedMps * 3) {
+      cleanedCoords.push(finalC);
+      cleanedData.push(finalD);
+    }
+
+    return { cleanedCoords, cleanedData };
   }
 
+  /**
+   * Recalcula la distancia total acumulada y parcial tras limpiar los picos.
+   * Esto prepara los datos exactos para que filterSpeedAndAltitude haga su magia.
+   */
+  public recalculateDistances(cleanedCoords: number[][], cleanedData: any[]): void {
+    if (cleanedCoords.length === 0 || cleanedCoords.length !== cleanedData.length) return;
 
+    let totalDistance = 0;
+    
+    // El punto de partida inicia a cero
+    cleanedData[0].distance = 0;
+    if (cleanedData[0].partialDistance !== undefined) {
+      cleanedData[0].partialDistance = 0; 
+    }
+
+    for (let i = 1; i < cleanedCoords.length; i++) {
+      const prevC = cleanedCoords[i - 1];
+      const currC = cleanedCoords[i];
+
+      // 1. Calculamos la distancia física real de este tramo (Distancia Parcial)
+      const stepDist = this.computeDistance(prevC[0], prevC[1], currC[0], currC[1]) * 1000;
+      
+      // 2. Sumamos al acumulador (Distancia Total)
+      totalDistance += stepDist;
+
+      // 3. Actualizamos el objeto de datos de la UI
+      cleanedData[i].distance = totalDistance; 
+      
+      // (Opcional) Si tu gráfico o tabla usa la distancia parcial, la guardamos también
+      cleanedData[i].partialDistance = stepDist; 
+    }
+  }
 }

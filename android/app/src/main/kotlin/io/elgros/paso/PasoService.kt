@@ -111,7 +111,7 @@ class PasoService : Service() {
 
         val cosLat = Math.cos(Math.toRadians(currentLat))
 
-        // Función matemática: Distancia mínima punto-segmento
+        // Función matemática: Distancia mínima punto-segmento (se mantiene igual)
         fun getDistSqToSegment(idx1: Int, idx2: Int): Double {
             val x1 = track[idx1 * 2] * cosLat
             val y1 = track[idx1 * 2 + 1]
@@ -136,24 +136,62 @@ class PasoService : Service() {
             return (px - closestX) * (px - closestX) + (py - closestY) * (py - closestY)
         }
 
-        // 1. Ventana local (búsqueda eficiente)
-        val window = 50 
-        val end = (currentPointIdx + window).coerceAtMost(numPoints - 2)
+        // --- 1. VENTANA LOCAL (Tolerancia a rebotes del GPS) ---
+        val lookBack = 10
+        val lookForward = 50 
+        val startIdx = (currentPointIdx - lookBack).coerceAtLeast(0)
+        val endIdx = (currentPointIdx + lookForward).coerceAtMost(numPoints - 2)
 
-        for (i in currentPointIdx..end) {
-            if (getDistSqToSegment(i, i + 1) < threshDistSq) {
-                currentPointIdx = i
-                return "green"
+        var bestLocalDistSq = Double.MAX_VALUE
+        var bestLocalIndex = currentPointIdx
+
+        // Buscamos el segmento MÁS CERCANO dentro de la ventana local
+        for (i in startIdx..endIdx) {
+            val distSq = getDistSqToSegment(i, i + 1)
+            if (distSq < threshDistSq && distSq < bestLocalDistSq) {
+                bestLocalDistSq = distSq
+                bestLocalIndex = i
             }
         }
 
-        // 2. Búsqueda global (si nos hemos desviado mucho)
-        for (i in 0 until (numPoints - 1) step 5) {
-            if (getDistSqToSegment(i, i + 1) < threshDistSq) {
-                currentPointIdx = i
-                return "green"
+        // Si encontramos un punto válido cerca de donde estábamos, nos quedamos con él
+        if (bestLocalDistSq < threshDistSq) {
+            currentPointIdx = bestLocalIndex
+            return "green"
+        }
+
+        // --- 2. BÚSQUEDA GLOBAL (Recuperación tras desvío, con Bounding Box) ---
+        // 0.005 grados equivalen a unos 500 metros a la redonda desde la posición actual
+        val margin = 0.005 
+        var bestGlobalDistSq = Double.MAX_VALUE
+        var bestGlobalIndex = -1
+
+        for (i in 0 until (numPoints - 1)) {
+            val routeLon = track[i * 2]
+            val routeLat = track[i * 2 + 1]
+
+            // Filtro Espacial Ultrarrápido: descarta puntos lejanos al instante
+            if (Math.abs(routeLon - currentLon) > margin || Math.abs(routeLat - currentLat) > margin) {
+                continue
+            }
+
+            // Si pasó el filtro, calculamos la distancia exacta
+            val distSq = getDistSqToSegment(i, i + 1)
+            
+            // Nos quedamos siempre con el tramo físicamente MÁS CERCANO de toda la ruta
+            if (distSq < threshDistSq && distSq < bestGlobalDistSq) {
+                bestGlobalDistSq = distSq
+                bestGlobalIndex = i
             }
         }
+
+        // Si la búsqueda global encontró un punto válido, "enganchamos" el seguimiento ahí
+        if (bestGlobalIndex != -1) {
+            currentPointIdx = bestGlobalIndex
+            return "green"
+        }
+
+        // Si ni la ventana local ni la global dentro de 500m encontraron nada válido
         return "red"
     }
 
