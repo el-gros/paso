@@ -10,11 +10,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, Platform } from '@ionic/angular';
+import { Platform } from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Keyboard } from '@capacitor/keyboard';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
+import { IONIC_COMPONENTS } from '../ionic-imports';
 
 // --- OPENLAYERS ---
 import Feature from 'ol/Feature';
@@ -48,7 +49,7 @@ interface SpeechListener {
   selector: 'app-search',
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss'],
-  imports: [CommonModule, IonicModule, FormsModule, TranslateModule]
+  imports: [CommonModule, FormsModule, TranslateModule, ...IONIC_COMPONENTS]
 })
 export class SearchComponent implements OnInit, OnDestroy {
   @Output() onWikiResult = new EventEmitter<WikiWeatherResult>();

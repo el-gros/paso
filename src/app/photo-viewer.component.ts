@@ -1,13 +1,15 @@
 import { Component, Input, inject } from '@angular/core';
-import { ModalController, IonicModule } from '@ionic/angular';
+import { ModalController } from '@ionic/angular/standalone';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share'; // 👈 Importamos el plugin de compartir
 import { TranslateService } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from './ionic-imports';
+
 
 @Component({
   selector: 'app-photo-viewer',
   standalone: true,
-  imports: [IonicModule],
+  imports: [...IONIC_COMPONENTS],
   template: `
     <ion-content class="immersive-dark" [fullscreen]="true">
       

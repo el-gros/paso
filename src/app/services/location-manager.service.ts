@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { filter, timeout } from 'rxjs/operators';
-import { PopoverController } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateService } from '@ngx-translate/core';
 
 // --- PLUGIN & INTERFACES ---

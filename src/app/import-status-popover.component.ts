@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
-import { IonicModule, PopoverController } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 @Component({
   standalone: true,
   selector: 'app-import-status-popover',
-  imports: [IonicModule, TranslateModule],
+  imports: [...IONIC_COMPONENTS, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island confirm-box">

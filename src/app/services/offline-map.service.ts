@@ -1,7 +1,7 @@
 import { Injectable, Injector } from '@angular/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslateService } from '@ngx-translate/core';
-import { LoadingController } from '@ionic/angular';
+import { LoadingController } from '@ionic/angular/standalone';
 import { BehaviorSubject, Subscription, Subject } from 'rxjs';
 import { PluginListenerHandle } from '@capacitor/core';
 import { ServerService } from './server.service';

@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { PopoverController, ItemReorderEventDetail } from '@ionic/angular';
+import { PopoverController, ItemReorderEventDetail } from '@ionic/angular/standalone';
 import { TranslateService } from '@ngx-translate/core';
-
 import { FunctionsService } from '../services/functions.service';
 import { TrackDefinition } from '../../globald';
 import { FolderOptionsPopoverComponent } from '../folder-options-popover.component';
 import { FolderActionPopover } from './folder-action-popover.component';
 import { FolderMovePopover } from './folder-move-popover.component';
+
 
 @Injectable({
   providedIn: 'root'

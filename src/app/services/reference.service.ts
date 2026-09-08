@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Feature } from 'ol';
 import { LineString, MultiPoint, Point } from 'ol/geom';
 import { Style } from 'ol/style';
-import { PopoverController } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateService } from '@ngx-translate/core';
 
 import { Track, Waypoint } from '../../globald';

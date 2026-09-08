@@ -1,14 +1,15 @@
-   import { Component, Input, OnInit, inject } from '@angular/core';
-import { PopoverController, IonicModule } from '@ionic/angular';
+import { Component, Input, OnInit, inject } from '@angular/core';
+import { PopoverController } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
 import { LocationResult, PLACE_CATEGORIES } from '../../globald';
+import { IONIC_COMPONENTS } from '../ionic-imports';
 
 @Component({
   selector: 'app-place-edit-popover',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, TranslateModule],
+  imports: [CommonModule, FormsModule, ...IONIC_COMPONENTS, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island">

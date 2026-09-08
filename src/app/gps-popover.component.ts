@@ -1,17 +1,18 @@
 import { Component, inject } from '@angular/core';
-import { PopoverController, IonicModule } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 @Component({
   selector: 'app-gps-popover',
   standalone: true,
-  imports: [IonicModule, TranslateModule],
+  imports: [TranslateModule, ...IONIC_COMPONENTS],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island text-center-island">
         
         <div class="icon-container">
-          <ion-icon name="satellite-outline"></ion-icon>
+          <ion-icon name="locate-outline"></ion-icon>
         </div>
         
         <h2>{{ 'LOCATION.GPS_TITLE' | translate }}</h2>

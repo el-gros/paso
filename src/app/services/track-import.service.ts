@@ -1,4 +1,4 @@
-import { LoadingController, PopoverController } from '@ionic/angular'; // Cambiado Alert por Popover
+import { LoadingController, PopoverController } from '@ionic/angular/standalone'; // Cambiado Alert por Popover
 import { ImportStatusPopover } from '../import-status-popover.component'; // Tu nuevo co
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';

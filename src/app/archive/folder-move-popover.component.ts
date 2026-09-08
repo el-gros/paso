@@ -1,8 +1,9 @@
 import { Component, Input } from '@angular/core';
-import { IonicModule, PopoverController } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { IONIC_COMPONENTS } from '../ionic-imports';
 
 @Component({
   standalone: true,
@@ -48,7 +49,7 @@ import { CommonModule } from '@angular/common';
       font-weight: 600; color: #444;
     }
   `],
-  imports: [IonicModule, TranslateModule, FormsModule, CommonModule]
+  imports: [...IONIC_COMPONENTS, TranslateModule, FormsModule, CommonModule]
 })
 export class FolderMovePopover {
   @Input() folders: any[] = [];

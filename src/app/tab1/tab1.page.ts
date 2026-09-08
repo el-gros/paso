@@ -1,12 +1,14 @@
 import { Component, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { register } from 'swiper/element/bundle';
+import { IONIC_COMPONENTS } from '../ionic-imports';
+
 
 // --- CUSTOM IMPORTS ---
 import { WikiWeatherResult } from '../../globald';
 import { FunctionsService } from '../services/functions.service';
 import { MapService } from '../services/map.service';
-import { IonicModule, Platform, ToastController } from '@ionic/angular';
+import { Platform, ToastController } from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { TrackingControlService } from '../services/trackingControl.service';
@@ -35,8 +37,8 @@ register();
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss'],
   imports: [
-    IonicModule, CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
-    SearchComponent, WikiCardComponent
+    CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
+    SearchComponent, WikiCardComponent, ...IONIC_COMPONENTS
   ],
   providers: [DecimalPipe, DatePipe],
 })

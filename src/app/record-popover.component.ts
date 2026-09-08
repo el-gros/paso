@@ -8,12 +8,12 @@ import {
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonicModule,
   PopoverController,
   LoadingController,
-} from '@ionic/angular';
+} from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 // Servicios
 import { FunctionsService } from './services/functions.service';
@@ -24,7 +24,7 @@ import { TrackManagerService } from './services/track-manager.service';
 @Component({
   standalone: true,
   selector: 'app-record-popover',
-  imports: [IonicModule, FormsModule, TranslateModule],
+  imports: [...IONIC_COMPONENTS, FormsModule, TranslateModule],
   providers: [DecimalPipe, DatePipe],
   template: `
     <ion-popover

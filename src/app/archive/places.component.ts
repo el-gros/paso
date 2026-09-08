@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, PopoverController, ItemReorderEventDetail } from '@ionic/angular';
+import { PopoverController, ItemReorderEventDetail } from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from '../ionic-imports';
 
 import { FunctionsService } from '../services/functions.service';
 import { GeographyService } from '../services/geography.service';
@@ -15,7 +16,7 @@ import { PlaceOptionsPopoverComponent } from './place-options-popover.component'
   selector: 'app-archive-places',
   templateUrl: 'places.component.html',
   styleUrls: ['places.component.scss'],
-  imports: [IonicModule, CommonModule, FormsModule, TranslateModule]
+  imports: [...IONIC_COMPONENTS, CommonModule, FormsModule, TranslateModule]
 })
 export class PlacesComponent {
 

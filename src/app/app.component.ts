@@ -1,8 +1,9 @@
 import { Component, NgZone, OnDestroy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { IonicModule, Platform } from '@ionic/angular';
+import { Platform } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 // --- CAPACITOR IMPORTS ---
 import { App, URLOpenListenerEvent } from '@capacitor/app';
@@ -27,7 +28,7 @@ useGeographic();
   standalone: true,
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  imports: [IonicModule, FormsModule, TranslateModule],
+  imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS],
 })
 export class AppComponent implements OnDestroy {
   private appUrlListener?: PluginListenerHandle;

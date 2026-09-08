@@ -1,11 +1,12 @@
 import { Component, Input, inject } from '@angular/core';
-import { PopoverController, IonicModule } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 @Component({
   selector: 'app-color-popover',
   standalone: true,
-  imports: [IonicModule, TranslateModule],
+  imports: [...IONIC_COMPONENTS, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island compact-island">

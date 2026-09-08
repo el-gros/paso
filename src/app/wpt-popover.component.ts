@@ -1,16 +1,17 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
-import { PopoverController, ModalController, IonicModule } from '@ionic/angular'; 
+import { PopoverController, ModalController } from '@ionic/angular/standalone'; 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule } from '@ngx-translate/core';
 import { Waypoint } from '../globald';
 import { Capacitor } from '@capacitor/core';
 import { PhotoViewerComponent } from './photo-viewer.component';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 @Component({
   selector: 'app-waypoint-popover',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, TranslateModule],
+  imports: [CommonModule, FormsModule, ...IONIC_COMPONENTS, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island">

@@ -1,15 +1,16 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
-import { PopoverController, IonicModule } from '@ionic/angular';
+import { PopoverController } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PresentService } from './services/present.service';
 import { LocationManagerService } from './services/location-manager.service';
+import { IONIC_COMPONENTS } from './ionic-imports';
 
 @Component({
   selector: 'app-save-track-popover',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, TranslateModule],
+  imports: [CommonModule, FormsModule, ...IONIC_COMPONENTS, TranslateModule],
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island">

@@ -5,7 +5,10 @@ import {
 } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter } from '@angular/router';
-import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+
+// 👇 CAMBIO 1: Importamos IonicRouteStrategy y provideIonicAngular desde /standalone
+import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
+
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
@@ -19,20 +22,24 @@ import {
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
-//import { SocialSharing } from '@awesome-cordova-plugins/social-sharing/ngx';
-//import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-//import { File } from '@awesome-cordova-plugins/file/ngx';
+// 👇 AQUÍ: 1. Importas la función de tus iconos
+import { registerIonicIcons } from './app/app.icons';
 
 if (environment.production) {
   enableProdMode();
 }
 
+// 👇 AQUÍ: 2. Ejecutas la función justo antes de arrancar la app
+registerIonicIcons();
+
 bootstrapApplication(AppComponent, {
   providers: [
     provideZoneChangeDetection(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    
+    // 👇 CAMBIO 2: Inyectamos el core de Ionic (Esto habilita PopoverController, ModalController, etc.)
+    provideIonicAngular({}),
 
-    importProvidersFrom(IonicModule.forRoot({})),
     importProvidersFrom(IonicStorageModule.forRoot()),
 
     // Correct HttpClient provider for standalone (required)

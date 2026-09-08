@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, LoadingController, IonItemSliding } from '@ionic/angular';
+import { LoadingController, IonItemSliding } from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { IONIC_COMPONENTS } from '../ionic-imports';
 
 // --- SERVICIOS ---
 import { FunctionsService } from '../services/functions.service';
@@ -22,7 +23,7 @@ import { TracksComponent } from './tracks.component'; // Añadido
   selector: 'app-archive',
   templateUrl: 'archive.page.html',
   styleUrls: ['archive.page.scss'],
-  imports: [IonicModule, CommonModule, FormsModule, TranslateModule, PlacesComponent, TracksComponent]
+  imports: [CommonModule, FormsModule, TranslateModule, PlacesComponent, TracksComponent, ...IONIC_COMPONENTS]
 })
 export class ArchivePage implements OnInit {
 
