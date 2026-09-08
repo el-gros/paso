@@ -9,10 +9,10 @@
   </div>
 
   @if (canRenderSwiper) {
-  <swiper-container #swiperRef init="false" (swiperslidechange)="onSlideChange($event)">
+  <div class="native-carousel" #carouselRef>
     
     @if (present.currentTrack) {
-      <swiper-slide>
+      <div class="carousel-slide">
         <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.CURTITLE' | translate }}</div>
@@ -128,12 +128,11 @@
           <app-track-chart [track]="present.currentTrack" property="compAltitude" mode="x" title="CANVAS.CANVASALTITUDE" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
           <app-track-chart [track]="present.currentTrack" property="compSpeed" mode="t" title="CANVAS.CANVASSPEED" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
         </div>
-      </swiper-slide>
+      </div>
     }
 
     @if (reference.archivedTrack) {
-      
-      <swiper-slide>
+      <div class="carousel-slide">
         <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
@@ -192,9 +191,9 @@
           <app-track-chart [track]="reference.archivedTrack" property="compAltitude" mode="x" title="CANVAS.CANVASALTITUDE" [markerPosition]="(fs.routeStatus === 'green') ? fs.kmRecorridos : null" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
           <app-track-chart [track]="reference.archivedTrack" property="compSpeed" mode="t" title="CANVAS.CANVASSPEED" [updateTrigger]="chartUpdateTrigger"></app-track-chart>
         </div>
-      </swiper-slide>
+      </div>
 
-      <swiper-slide>
+      <div class="carousel-slide">
         <div class="slide-wrapper">
           <div class='elementData card'>
             <div class="table-title">{{ 'CANVAS.ARCTITLE' | translate }}</div>
@@ -229,10 +228,9 @@
             }
           </div>
         </div>
-      </swiper-slide>
-
+      </div>
     }
-  </swiper-container>
+  </div>
   }
 </ion-content>
 

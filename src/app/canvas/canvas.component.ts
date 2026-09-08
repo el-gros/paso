@@ -1,12 +1,10 @@
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, NgZone } from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ModalController } from '@ionic/angular';
+import { ModalController, IonicModule } from '@ionic/angular';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { takeUntil, filter, throttleTime, delay } from 'rxjs/operators';
-import { register } from 'swiper/element/bundle';
-import { SwiperOptions } from 'swiper/types';
 import { Capacitor } from '@capacitor/core';
 
 // --- CUSTOM IMPORTS ---
@@ -21,17 +19,22 @@ import { AppStateService } from '../services/appState.service';
 import { PhotoViewerComponent } from '../photo-viewer.component'; 
 import { TrackChartComponent } from '../track-chart.component'; 
 
-register();
-
 @Component({
   selector: 'app-canvas',
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule, TranslateModule, TrackChartComponent],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    TranslateModule, 
+    TrackChartComponent,
+    IonicModule
+  ],
+  // ❌ NADA DE CUSTOM_ELEMENTS_SCHEMA
+  changeDetection: ChangeDetectionStrategy.OnPush // O Eager si lo prefieres
 })
-export class CanvasComponent implements OnInit, OnDestroy {
+export class CanvasComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ====================================================================
   // 1. ESTADO Y VARIABLES
@@ -43,27 +46,21 @@ export class CanvasComponent implements OnInit, OnDestroy {
   public canRenderSwiper: boolean = true;
   public chartUpdateTrigger: number = 0;
 
-  @ViewChild('swiperRef') swiperRef!: ElementRef;
-  public swiperParams: SwiperOptions = {
-    pagination: false, 
-    initialSlide: 0,
-    speed: 400,
-  };
+  // 👈 Referencia al contenedor nativo en lugar de Swiper
+  @ViewChild('carouselRef') carouselRef!: ElementRef<HTMLDivElement>;
 
   // ====================================================================
-  // 2. GETTERS (Optimizados)
+  // 2. GETTERS
   // ====================================================================
   get activeTrack() {
     return this.present.currentTrack || this.reference.archivedTrack;
   }
 
-  // Nuevo getter para las fotos del trayecto actual
   get currentTrackPhotos(): string[] {
     const waypoints = this.present.currentTrack?.features?.[0]?.waypoints;
     return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
   }
 
-  // Nuevo getter para las fotos del trayecto de referencia
   get referenceTrackPhotos(): string[] {
     const waypoints = this.reference.archivedTrack?.features?.[0]?.waypoints;
     return waypoints?.flatMap((wp: any) => wp.photos || []) || [];
@@ -104,14 +101,12 @@ export class CanvasComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     await this.forceUpdate('ngOnInit');
 
-    // 1. Al volver de segundo plano
     this.appState.onEnterForeground$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         setTimeout(() => this.forceUpdate('Vuelta de Background'), 1000);
       });
 
-    // 2. Actualizar con el latido del GPS
     this.location.latestLocation$
       .pipe(
         takeUntil(this.destroy$),
@@ -122,7 +117,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => this.forceUpdate('GPS Throttled'));
 
-    // 3. Actualizar al hacer STOP
     this.location.state$
       .pipe(
         takeUntil(this.destroy$),
@@ -135,6 +129,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
     this.canRenderSwiper = false;
     this.destroy$.next();
     this.destroy$.complete();
+
+    if (this.carouselRef) {
+      this.carouselRef.nativeElement.removeEventListener('scroll', this.onScrollNative.bind(this));
+    }
   }
 
   ionViewWillEnter() { this.canRenderSwiper = true; }
@@ -142,44 +140,49 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   async ionViewDidEnter() {
     this.canRenderSwiper = true;
-    
     await this.forceUpdate('Entrando a Pestaña (ionViewDidEnter)');
-    
-    if (this.swiperRef?.nativeElement) {
-      Object.assign(this.swiperRef.nativeElement, this.swiperParams);
-      this.swiperRef.nativeElement.initialize();
-    }
-
   }
 
   // ====================================================================
   // 5. LÓGICA PRINCIPAL Y UI
   // ====================================================================
   private async forceUpdate(reason: string) {
+    // Salimos si no hay ninguna de las dos rutas
     if (!this.activeTrack) return;
     
     this.chartUpdateTrigger++; 
-    this.partialSpeeds = this.analytics.computePartialSpeeds(this.activeTrack);
+    
+    // SOLUCIÓN: Calculamos los parciales estrictamente sobre la ruta archivada
+    if (this.reference.archivedTrack) {
+      this.partialSpeeds = this.analytics.computePartialSpeeds(this.reference.archivedTrack);
+    } else {
+      this.partialSpeeds = [];
+    }
     
     this.zone.run(() => this.cdr.detectChanges());
   }
 
-  onSegmentChange(ev: any) {
-    this.activeIndex = parseInt(ev.detail.value);
-    this.swiperRef.nativeElement.swiper.slideTo(this.activeIndex);
-  }
-
+  // 👈 Función adaptada al scroll nativo
   moveToSlide(index: number) {
     this.activeIndex = index; 
-    if (this.swiperRef?.nativeElement?.swiper) {
-      this.swiperRef.nativeElement.swiper.slideTo(index);
+    if (this.carouselRef) {
+      const container = this.carouselRef.nativeElement;
+      container.scrollTo({
+        left: index * container.clientWidth,
+        behavior: 'smooth'
+      });
     }
   }
 
-  onSlideChange(ev: any) {
-    const swiper = ev.detail[0];
-    this.activeIndex = swiper.activeIndex;
-    this.cdr.detectChanges(); 
+  // 👈 Detecta el arrastre manual con el dedo
+  onScroll(event: Event) {
+    const container = event.target as HTMLDivElement;
+    const slideIndex = Math.round(container.scrollLeft / container.clientWidth);
+    
+    if (this.activeIndex !== slideIndex) {
+      this.activeIndex = slideIndex;
+      this.cdr.detectChanges(); 
+    }
   }
 
   // ====================================================================
@@ -205,5 +208,27 @@ export class CanvasComponent implements OnInit, OnDestroy {
       componentProps: { photos: photos }
     });
     await modal.present();
+  }
+
+  ngAfterViewInit() {
+    // Suscribimos el evento fuera de Angular para no saturar la detección de cambios
+    this.zone.runOutsideAngular(() => {
+      if (this.carouselRef) {
+        this.carouselRef.nativeElement.addEventListener('scroll', this.onScrollNative.bind(this), { passive: true });
+      }
+    });
+  }
+
+  private onScrollNative(event: Event) {
+    const container = event.target as HTMLDivElement;
+    const slideIndex = Math.round(container.scrollLeft / container.clientWidth);
+    
+    if (this.activeIndex !== slideIndex) {
+      // Solo volvemos a entrar a Angular si el índice realmente ha cambiado
+      this.zone.run(() => {
+        this.activeIndex = slideIndex;
+        this.cdr.detectChanges(); 
+      });
+    }
   }
 }
