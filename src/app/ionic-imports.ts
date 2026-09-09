@@ -32,6 +32,14 @@ import {
     IonSegment,
     IonCheckbox
  } from '@ionic/angular/standalone';
+import { 
+  DecimalPipe, 
+  DatePipe, 
+  AsyncPipe, 
+  NgClass, 
+  NgStyle,
+  UpperCasePipe
+} from '@angular/common';
 
 export const IONIC_COMPONENTS = [
   IonHeader,
@@ -66,4 +74,12 @@ export const IONIC_COMPONENTS = [
   IonInput,
   IonSegment,
   IonCheckbox
- ] as const;
+] as const;
+ export const ANGULAR_COMMON = [
+  DecimalPipe, 
+  DatePipe, 
+  UpperCasePipe, 
+  AsyncPipe, 
+  NgClass, 
+  NgStyle
+] as const;

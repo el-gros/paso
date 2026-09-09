@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { CapacitorHttp } from '@capacitor/core';
 import { TranslateService } from '@ngx-translate/core';
@@ -39,7 +38,6 @@ export class SearchService {
   };
 
   constructor(
-    private http: HttpClient,
     private geoMath: GeoMathService,
     private translate: TranslateService
   ) {}
@@ -178,12 +176,10 @@ export class SearchService {
     serviceIds.forEach(id => {
       const tags = this.serviceTagMap[id] || [];
       tags.forEach(tag => {
-        // 🚀 CAMBIO 1: Sustituimos 'node' por 'nwr' (Node, Way, Relation)
         filters += `nwr[${tag}](${south},${west},${north},${east});`;
       });
     });
 
-    // 🚀 CAMBIO 2: Cambiamos 'out body;' por 'out center;' para que nos dé el centro de los edificios
     const query = `[out:json][timeout:15];(${filters});out center;`;
     
     // 3. Lista de servidores (Endpoints) para redundancia
@@ -226,7 +222,6 @@ export class SearchService {
               })
             );
 
-            // 🚀 CAMBIO 3: Overpass guarda las coordenadas de los 'ways' en e.center, y las de los 'nodes' en e.
             const lat = e.center ? e.center.lat : e.lat;
             const lon = e.center ? e.center.lon : e.lon;
 
@@ -250,13 +245,14 @@ export class SearchService {
     console.error('🛑 [SearchService] Todos los servidores de Overpass han fallado.');
     return [];
   }
+
   // ==========================================================================
   // 4. GEOCODIFICACIÓN INVERSA (Reverse Geocoding)
   // ==========================================================================
 
   /**
    * Obtiene información detallada de un lugar dadas sus coordenadas.
-   * Utiliza el API de Geocoding de MapTiler.
+   * Utiliza el API de Geocoding de MapTiler, a través de CapacitorHttp nativo.
    */
   reverseGeocode(lat: number, lon: number): Observable<LocationResult | null> {
     if (
@@ -269,9 +265,13 @@ export class SearchService {
     }
     const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${global.mapTilerKey}`;
     
-    return this.http.get<any>(url).pipe(
+    // Convertimos la promesa nativa a un Observable de RxJS para mantener la firma del método
+    return from(CapacitorHttp.get({ url })).pipe(
       map((response: any) => {
-        const f = response?.features?.[0];
+        if (response.status !== 200) return null;
+        
+        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        const f = data?.features?.[0];
         if (!f) return null;
         
         const [featureLon, featureLat] = f.geometry.coordinates;
@@ -306,10 +306,6 @@ export class SearchService {
    */
   private async executeSearch(provider: string, query: string, limit: number): Promise<LocationResult[]> {
     switch (provider) {
-      
-      // --------------------------------------------------
-      // C. NOMINATIM (OpenStreetMap)
-      // --------------------------------------------------
       case 'nominatim':
       default: {
         const url = `${this.NOMINATIM_BASE_URL}?q=${encodeURIComponent(query)}&format=json&polygon_geojson=1&addressdetails=1&limit=${limit}`;
@@ -346,7 +342,6 @@ export class SearchService {
     const typeMap: { [key: string]: string } = { 'N': 'N', 'W': 'W', 'R': 'R' };
     const osmTypeLetter = typeMap[osmType] || 'N'; 
     
-    // 👇 Añadimos &addressdetails=1 a la URL
     const url = `${this.NOMINATIM_LOOKUP_URL}?osm_ids=${osmTypeLetter}${osmId}&format=json&polygon_geojson=1&addressdetails=1`;
 
     try {
@@ -359,8 +354,6 @@ export class SearchService {
 
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       
-      // Al usar lookup con addressdetails=1, Nominatim devuelve un array.
-      // El primer elemento contendrá la propiedad 'address' y 'addresstype'.
       if (Array.isArray(data) && data.length > 0) return data[0];
       
       return null;

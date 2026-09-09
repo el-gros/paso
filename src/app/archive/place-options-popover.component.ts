@@ -1,6 +1,5 @@
 import { Component, inject } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
-import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { IONIC_COMPONENTS } from '../ionic-imports';
 import { FormsModule } from '@angular/forms';
@@ -32,7 +31,7 @@ import { FormsModule } from '@angular/forms';
       </div>
     </ion-content>
   `,
-  imports: [CommonModule, TranslateModule, FormsModule, ...IONIC_COMPONENTS]
+  imports: [TranslateModule, FormsModule, ...IONIC_COMPONENTS]
 })
 export class PlaceOptionsPopoverComponent {
   private popoverController = inject(PopoverController);

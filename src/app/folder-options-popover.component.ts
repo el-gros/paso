@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
-import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { IONIC_COMPONENTS } from './ionic-imports';
 
@@ -39,7 +38,7 @@ import { IONIC_COMPONENTS } from './ionic-imports';
     </ion-content>
   `,
   styles: [``], /* ¡Cero CSS local! Todo lo gestiona el global */
-  imports: [...IONIC_COMPONENTS, CommonModule, TranslateModule]
+  imports: [...IONIC_COMPONENTS, TranslateModule]
 })
 export class FolderOptionsPopoverComponent {
   @Input() hasTracks: boolean = false;

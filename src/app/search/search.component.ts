@@ -8,7 +8,6 @@ import {
   Output, 
   EventEmitter 
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Platform } from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -49,7 +48,7 @@ interface SpeechListener {
   selector: 'app-search',
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, ...IONIC_COMPONENTS]
+  imports: [ FormsModule, TranslateModule, ...IONIC_COMPONENTS]
 })
 export class SearchComponent implements OnInit, OnDestroy {
   @Output() onWikiResult = new EventEmitter<WikiWeatherResult>();

@@ -1,10 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ModalController, ItemReorderEventDetail, IonItemSliding, PopoverController, LoadingController } from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
-import { IONIC_COMPONENTS } from '../ionic-imports';
+import { IONIC_COMPONENTS, ANGULAR_COMMON } from '../ionic-imports';
 
 // --- SERVICIOS ---
 import { FunctionsService } from '../services/functions.service';
@@ -26,7 +25,7 @@ import { TrackOptionsPopoverComponent } from '../track-options-popover.component
   selector: 'app-archive-tracks',
   templateUrl: 'tracks.component.html',
   styleUrls: ['tracks.component.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, ...IONIC_COMPONENTS]
+  imports: [ FormsModule, TranslateModule, ...IONIC_COMPONENTS, ANGULAR_COMMON ]
 })
 export class TracksComponent {
   

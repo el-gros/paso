@@ -1,7 +1,6 @@
 import { Component, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
-import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { register } from 'swiper/element/bundle';
-import { IONIC_COMPONENTS } from '../ionic-imports';
+import { IONIC_COMPONENTS, ANGULAR_COMMON } from '../ionic-imports';
 
 
 // --- CUSTOM IMPORTS ---
@@ -37,10 +36,9 @@ register();
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss'],
   imports: [
-    CommonModule, FormsModule, TranslateModule, RecordPopoverComponent,
-    SearchComponent, WikiCardComponent, ...IONIC_COMPONENTS
+    FormsModule, TranslateModule, RecordPopoverComponent,
+    SearchComponent, WikiCardComponent, ...IONIC_COMPONENTS, ANGULAR_COMMON
   ],
-  providers: [DecimalPipe, DatePipe],
 })
 export class Tab1Page implements OnInit, OnDestroy {
 

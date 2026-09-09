@@ -5,7 +5,6 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   PopoverController,
@@ -13,7 +12,7 @@ import {
 } from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
-import { IONIC_COMPONENTS } from './ionic-imports';
+import { IONIC_COMPONENTS, ANGULAR_COMMON } from './ionic-imports';
 
 // Servicios
 import { FunctionsService } from './services/functions.service';
@@ -24,8 +23,7 @@ import { TrackManagerService } from './services/track-manager.service';
 @Component({
   standalone: true,
   selector: 'app-record-popover',
-  imports: [...IONIC_COMPONENTS, FormsModule, TranslateModule],
-  providers: [DecimalPipe, DatePipe],
+  imports: [...IONIC_COMPONENTS, FormsModule, TranslateModule, ANGULAR_COMMON],
   template: `
     <ion-popover
       [isOpen]="present.isRecordPopoverOpen"

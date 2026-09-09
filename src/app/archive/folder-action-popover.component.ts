@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { IONIC_COMPONENTS } from '../ionic-imports';
 
 @Component({
@@ -36,7 +35,7 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
     </ion-content>
   `,
   styles: [``], /* ¡Cero CSS local! */
-  imports: [TranslateModule, FormsModule, CommonModule, ...IONIC_COMPONENTS]
+  imports: [TranslateModule, FormsModule, ...IONIC_COMPONENTS]
 })
 export class FolderActionPopover {
   @Input() title: string = '';

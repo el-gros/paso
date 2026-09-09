@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { IONIC_COMPONENTS } from '../ionic-imports';
 
 @Component({
@@ -17,19 +16,27 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
         </div>
         <div class="form-container folder-list-container">
           <ion-radio-group [(ngModel)]="selectedFolder">
-            <ion-item lines="none" *ngFor="let f of folders" class="custom-radio-item">
+            @for (f of folders; track f) {
+            <ion-item lines="none" class="custom-radio-item">
               <ion-label>{{ f.label }}</ion-label>
               <ion-radio slot="start" [value]="f.value"></ion-radio>
             </ion-item>
+            }
           </ion-radio-group>
         </div>
         <div class="popover-button-grid">
-          <button class="popover-btn btn-green ion-activatable" (click)="dismiss(true)">
+          <button
+            class="popover-btn btn-green ion-activatable"
+            (click)="dismiss(true)"
+          >
             <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="popover-btn btn-red ion-activatable" (click)="dismiss(false)">
+          <button
+            class="popover-btn btn-red ion-activatable"
+            (click)="dismiss(false)"
+          >
             <ion-icon name="close-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
@@ -38,22 +45,30 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
       </div>
     </ion-content>
   `,
-  styles: [`
-    /* Solo CSS único de este componente */
-    .folder-list-container {
-      max-height: 250px; background: rgba(0, 0, 0, 0.02);
-      border-radius: 14px; padding: 8px 0;
-    }
-    .custom-radio-item {
-      --background: transparent; --min-height: 40px;
-      font-weight: 600; color: #444;
-    }
-  `],
-  imports: [...IONIC_COMPONENTS, TranslateModule, FormsModule, CommonModule]
+  styles: [
+    `
+      /* Solo CSS único de este componente */
+      .folder-list-container {
+        max-height: 250px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 14px;
+        padding: 8px 0;
+      }
+      .custom-radio-item {
+        --background: transparent;
+        --min-height: 40px;
+        font-weight: 600;
+        color: #444;
+      }
+    `,
+  ],
+  imports: [...IONIC_COMPONENTS, TranslateModule, FormsModule],
 })
 export class FolderMovePopover {
   @Input() folders: any[] = [];
   @Input() selectedFolder: string = '';
   constructor(private popoverCtrl: PopoverController) {}
-  dismiss(confirm: boolean) { this.popoverCtrl.dismiss(confirm ? this.selectedFolder : null); }
+  dismiss(confirm: boolean) {
+    this.popoverCtrl.dismiss(confirm ? this.selectedFolder : null);
+  }
 }

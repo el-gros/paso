@@ -1,12 +1,11 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { LoadingController, PopoverController, ViewWillEnter } from '@ionic/angular/standalone';
-import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-import { IONIC_COMPONENTS } from '../ionic-imports';
+import { IONIC_COMPONENTS, ANGULAR_COMMON } from '../ionic-imports';
 
 // --- SERVICES ---
 import { FunctionsService } from '../services/functions.service';
@@ -31,8 +30,7 @@ import { LanguageOption } from '../../globald';
   selector: 'app-settings',
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, ...IONIC_COMPONENTS],
-  providers: [DecimalPipe, DatePipe],
+  imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS, ANGULAR_COMMON],
 })
 export class SettingsPage implements OnDestroy, ViewWillEnter {
   

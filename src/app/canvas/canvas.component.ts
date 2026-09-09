@@ -1,12 +1,11 @@
 import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, NgZone, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalController } from '@ionic/angular/standalone';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { takeUntil, filter, throttleTime, delay } from 'rxjs/operators';
 import { Capacitor } from '@capacitor/core';
-import { IONIC_COMPONENTS } from '../ionic-imports';
+import { IONIC_COMPONENTS, ANGULAR_COMMON } from '../ionic-imports';
 
 // --- CUSTOM IMPORTS ---
 import { PartialSpeed } from '../../globald';
@@ -26,11 +25,11 @@ import { TrackChartComponent } from '../track-chart.component';
   styleUrls: ['./canvas.component.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
     FormsModule, 
     TranslateModule, 
     TrackChartComponent,
-    ...IONIC_COMPONENTS
+    ...IONIC_COMPONENTS,
+    ...ANGULAR_COMMON
   ],
   // ❌ NADA DE CUSTOM_ELEMENTS_SCHEMA
   changeDetection: ChangeDetectionStrategy.OnPush // O Eager si lo prefieres
