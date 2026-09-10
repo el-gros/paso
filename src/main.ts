@@ -7,7 +7,10 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter } from '@angular/router';
 
 // 👇 CAMBIO 1: Importamos IonicRouteStrategy y provideIonicAngular desde /standalone
-import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
+import {
+  IonicRouteStrategy,
+  provideIonicAngular,
+} from '@ionic/angular/standalone';
 
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { routes } from './app/app.routes';
@@ -16,6 +19,7 @@ import { environment } from './environments/environment';
 import {
   provideHttpClient,
   withInterceptorsFromDi,
+  withXhr,
 } from '@angular/common/http';
 
 // 1. Import the new standalone translation providers
@@ -36,21 +40,21 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideZoneChangeDetection(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    
+
     // 👇 CAMBIO 2: Inyectamos el core de Ionic (Esto habilita PopoverController, ModalController, etc.)
     provideIonicAngular({}),
 
     importProvidersFrom(IonicStorageModule.forRoot()),
 
     // Correct HttpClient provider for standalone (required)
-    provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(withXhr(), withInterceptorsFromDi()),
 
     // 2. Use the new v17 provider functions instead of the factory
     provideTranslateService({
       loader: provideTranslateHttpLoader({
         prefix: './assets/i18n/',
-        suffix: '.json'
-      })
+        suffix: '.json',
+      }),
     }),
 
     provideRouter(routes),

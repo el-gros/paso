@@ -4,6 +4,7 @@ import {
   inject,
   OnInit,
   OnDestroy,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -18,7 +19,7 @@ import { IONIC_COMPONENTS, ANGULAR_COMMON } from './ionic-imports';
 import { FunctionsService } from './services/functions.service';
 import { PresentService } from './services/present.service';
 import { SaveTrackPopover } from './save-track-popover.component';
-import { TrackManagerService } from './services/track-manager.service'; 
+import { TrackManagerService } from './services/track-manager.service';
 
 @Component({
   standalone: true,
@@ -34,7 +35,10 @@ import { TrackManagerService } from './services/track-manager.service';
       <ng-template>
         <div class="local-glass-island">
           <div class="popover-button-grid">
-            <button class="popover-btn btn-blue enabled" (click)="handleSaveClick()">
+            <button
+              class="popover-btn btn-blue enabled"
+              (click)="handleSaveClick()"
+            >
               <ion-icon name="save-outline"></ion-icon>
               <span>{{ 'RECORD.SAVE_TRACK' | translate }}</span>
             </button>
@@ -76,7 +80,9 @@ import { TrackManagerService } from './services/track-manager.service';
     >
       <ng-template>
         <div class="local-glass-island confirm-box">
-          <p class="confirm-title">{{ 'RECORD.CONFIRM_DELETION' | translate }}</p>
+          <p class="confirm-title">
+            {{ 'RECORD.CONFIRM_DELETION' | translate }}
+          </p>
           <div class="popover-button-grid">
             <button class="popover-btn btn-green" (click)="confirmDelete()">
               <ion-icon name="checkmark-outline"></ion-icon>
@@ -91,17 +97,45 @@ import { TrackManagerService } from './services/track-manager.service';
       </ng-template>
     </ion-popover>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
-      .confirm-box { padding: 24px 16px; text-align: center; }
-      .confirm-title { margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #111; text-transform: uppercase; }
-      
-      .btn-blue { color: var(--ion-color-primary); }
-      .btn-red { color: var(--ion-color-danger); }
-      .btn-green { color: var(--ion-color-success); }
-      
-      .enabled ion-icon { animation: pulse 2s infinite; }
-      @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+      .confirm-box {
+        padding: 24px 16px;
+        text-align: center;
+      }
+      .confirm-title {
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 800;
+        color: #111;
+        text-transform: uppercase;
+      }
+
+      .btn-blue {
+        color: var(--ion-color-primary);
+      }
+      .btn-red {
+        color: var(--ion-color-danger);
+      }
+      .btn-green {
+        color: var(--ion-color-success);
+      }
+
+      .enabled ion-icon {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
     `,
   ],
 })
@@ -122,7 +156,9 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
   private confirmedStop = false;
 
   ngOnInit() {}
-  ngOnDestroy() { this.subscription?.unsubscribe(); }
+  ngOnDestroy() {
+    this.subscription?.unsubscribe();
+  }
 
   // ==========================================================================
   // NAVEGACIÓN DESDE EL POPOVER PRINCIPAL
@@ -146,7 +182,10 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
     try {
       await this.trackManager.deleteTrackProcess();
-      this.fs.displayToast(this.translate.instant('MAP.CURRENT_TRACK_DELETED'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('MAP.CURRENT_TRACK_DELETED'),
+        'success'
+      );
     } catch (error) {
       console.error('Error al borrar track:', error);
     }
@@ -166,7 +205,7 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     this.confirmedDelete = false;
   }
 
-// ==========================================================================
+  // ==========================================================================
   // GESTIÓN DE PARADA
   // ==========================================================================
   async confirmStop() {
@@ -176,12 +215,18 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     try {
       this.subscription?.unsubscribe();
       const isSuccess = await this.trackManager.stopTrackingProcess();
-      
+
       if (isSuccess) {
-        this.fs.displayToast(this.translate.instant('MAP.TRACK_FINISHED'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('MAP.TRACK_FINISHED'),
+          'success'
+        );
         await this.setTrackDetails();
       } else {
-        this.fs.displayToast(this.translate.instant('MAP.TRACK_EMPTY'), 'warning');
+        this.fs.displayToast(
+          this.translate.instant('MAP.TRACK_EMPTY'),
+          'warning'
+        );
       }
     } catch (error) {
       console.error('Error al detener track:', error);
@@ -194,15 +239,18 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
 
   onStopDismiss() {
     this.present.isConfirmStopOpen = false;
-    
+
     // Si NO se confirmó la parada (pulsó "NO" o cerró tocando fuera), mostramos el toast
     if (!this.confirmedStop) {
-      this.fs.displayToast(this.translate.instant('RECORD.CONTINUE_TRACKING'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('RECORD.CONTINUE_TRACKING'),
+        'success'
+      );
     }
-    
+
     this.confirmedStop = false; // Reseteamos la bandera
   }
-  
+
   // ==========================================================================
   // GUARDAR RUTA Y UI DE CARGA
   // ==========================================================================
@@ -229,11 +277,12 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
     const { data, role } = await popover.onDidDismiss();
 
     if (role === 'cancel' || role === 'backdrop' || data?.action !== 'ok') {
-      this.present.isConfirmDeletionOpen = true; 
-      return; 
+      this.present.isConfirmDeletionOpen = true;
+      return;
     }
 
-    const finalName = data.name || this.translate.instant('RECORD.DEFAULT_NAME');
+    const finalName =
+      data.name || this.translate.instant('RECORD.DEFAULT_NAME');
     await this.saveFile(finalName, data.description);
   }
 
@@ -243,26 +292,28 @@ export class RecordPopoverComponent implements OnInit, OnDestroy {
       spinner: 'crescent',
       backdropDismiss: false,
       translucent: true,
-      cssClass: 'custom-loading-save'
+      cssClass: 'custom-loading-save',
     });
 
     await loadingOverlay.present();
-    this.loading = true; 
+    this.loading = true;
 
     try {
       // Ya no le pasamos el callback onProgressUpdate porque guarda al instante
       await this.trackManager.processAndSaveTrack(name, description);
 
       this.fs.displayToast(this.translate.instant('MAP.SAVED'), 'success');
-      
+
       // Cerramos todo al instante
       this.present.isRecordPopoverOpen = false;
       this.present.isConfirmStopOpen = false;
       this.present.isConfirmDeletionOpen = false;
-      
     } catch (e) {
       console.error('❌ Error crítico al guardar el Track:', e);
-      this.fs.displayToast(this.translate.instant('RECORD.SAVE_ERROR'), 'danger');
+      this.fs.displayToast(
+        this.translate.instant('RECORD.SAVE_ERROR'),
+        'danger'
+      );
     } finally {
       await loadingOverlay.dismiss();
       this.loading = false;

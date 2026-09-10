@@ -1,12 +1,13 @@
-import { 
-  Component, 
-  inject, 
-  OnInit, 
-  OnDestroy, 
-  ChangeDetectorRef, 
-  NgZone, 
-  Output, 
-  EventEmitter 
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  NgZone,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Platform } from '@ionic/angular/standalone';
@@ -48,7 +49,8 @@ interface SpeechListener {
   selector: 'app-search',
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss'],
-  imports: [ FormsModule, TranslateModule, ...IONIC_COMPONENTS]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS],
 })
 export class SearchComponent implements OnInit, OnDestroy {
   @Output() onWikiResult = new EventEmitter<WikiWeatherResult>();
@@ -76,25 +78,25 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // Estado UI
   public mode: SearchMode = 'place';
-  public step: number = 1; 
+  public step: number = 1;
   public loading: boolean = false;
   public isSearching = false; // Control para evitar ráfagas de servicios
-  
+
   // Datos
   public query: string = '';
   public results: LocationResult[] = [];
   public selectedServices: string[] = [];
-  
+
   public routeData = {
     origin: { label: '', coords: null as [number, number] | null },
     destination: { label: '', coords: null as [number, number] | null },
-    transport: 'foot-walking'
+    transport: 'foot-walking',
   };
 
   private searchSubject = new Subject<string>();
   private searchSub?: Subscription;
 
-// Variables de Voz
+  // Variables de Voz
   public isListening: boolean = false;
   private speechPluginListener: SpeechListener | null = null;
 
@@ -108,134 +110,197 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public serviceItems = [
     // --- Grupo Rojo (Salud/Emergencias) ---
-    { id: 'pharmacy', icon: 'medkit-outline', label: 'SERVICES.PHARMACY', color: '#eb445a' }, 
-    { id: 'hospital', icon: 'hospital-outline', label: 'SERVICES.HOSPITAL', color: '#eb445a' }, 
-    
+    {
+      id: 'pharmacy',
+      icon: 'medkit-outline',
+      label: 'SERVICES.PHARMACY',
+      color: '#eb445a',
+    },
+    {
+      id: 'hospital',
+      icon: 'hospital-outline',
+      label: 'SERVICES.HOSPITAL',
+      color: '#eb445a',
+    },
+
     // --- Grupo Azul (Transporte/Servicios) ---
-    { id: 'police', icon: 'shield-outline', label: 'SERVICES.POLICE', color: '#3880ff' }, 
-    { id: 'ev_charging', icon: 'flash-outline', label: 'SERVICES.EV_CHARGING', color: '#3880ff' }, 
-    { id: 'fuel', icon: 'gas_station-outline', label: 'SERVICES.FUEL', color: '#3880ff' }, 
-    { id: 'parking', icon: 'parking-outline', label: 'SERVICES.PARKING', color: '#3880ff' }, 
-    { id: 'transport', icon: 'bus-outline', label: 'SERVICES.TRANSPORT', color: '#3880ff' }, 
-    
+    {
+      id: 'police',
+      icon: 'shield-outline',
+      label: 'SERVICES.POLICE',
+      color: '#3880ff',
+    },
+    {
+      id: 'ev_charging',
+      icon: 'flash-outline',
+      label: 'SERVICES.EV_CHARGING',
+      color: '#3880ff',
+    },
+    {
+      id: 'fuel',
+      icon: 'gas_station-outline',
+      label: 'SERVICES.FUEL',
+      color: '#3880ff',
+    },
+    {
+      id: 'parking',
+      icon: 'parking-outline',
+      label: 'SERVICES.PARKING',
+      color: '#3880ff',
+    },
+    {
+      id: 'transport',
+      icon: 'bus-outline',
+      label: 'SERVICES.TRANSPORT',
+      color: '#3880ff',
+    },
+
     // --- Grupo Verde (Comercio/Ocio) ---
-    { id: 'atm', icon: 'card-outline', label: 'SERVICES.ATM', color: '#2dd36f' }, 
-    { id: 'accommodation', icon: 'bed-outline', label: 'SERVICES.ACCOMMODATION', color: '#2dd36f' }, 
-    { id: 'supermarket', icon: 'cart-outline', label: 'SERVICES.SUPERMARKET', color: '#2dd36f' }, 
-    { id: 'food', icon: 'restaurant-outline', label: 'SERVICES.FOOD', color: '#2dd36f' }
+    {
+      id: 'atm',
+      icon: 'card-outline',
+      label: 'SERVICES.ATM',
+      color: '#2dd36f',
+    },
+    {
+      id: 'accommodation',
+      icon: 'bed-outline',
+      label: 'SERVICES.ACCOMMODATION',
+      color: '#2dd36f',
+    },
+    {
+      id: 'supermarket',
+      icon: 'cart-outline',
+      label: 'SERVICES.SUPERMARKET',
+      color: '#2dd36f',
+    },
+    {
+      id: 'food',
+      icon: 'restaurant-outline',
+      label: 'SERVICES.FOOD',
+      color: '#2dd36f',
+    },
   ];
 
   ngOnInit() {
     // 1. Configuración de la búsqueda por texto
-    this.searchSub = this.searchSubject.pipe(
-      debounceTime(700),
-      distinctUntilChanged()
-    ).subscribe(term => this.performSearch(term));
+    this.searchSub = this.searchSubject
+      .pipe(debounceTime(700), distinctUntilChanged())
+      .subscribe((term) => this.performSearch(term));
 
     // 2. Escuchador del mapa con Geocodificación Inversa y Rótulo Custom
-    this.mapPickerSub = this.mapInteraction.onMapPointSelected.subscribe(async (coords) => {
-      
-      const lon = coords[0];
-      const lat = coords[1];
+    this.mapPickerSub = this.mapInteraction.onMapPointSelected.subscribe(
+      async (coords) => {
+        const lon = coords[0];
+        const lat = coords[1];
 
-      // --- A. INICIALIZAR Y MOSTRAR EL RÓTULO (Estilos en línea a prueba de Angular) ---
-      if (!this.mapLabelOverlay) {
-        this.mapLabelElement = document.createElement('div');
-        
-        // Estilos inyectados directamente al HTML para que no se borren al cerrar el panel
-        Object.assign(this.mapLabelElement.style, {
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontSize: '16px', // Tamaño aumentado a 16px
-          fontWeight: '800',
-          color: '#333',
-          whiteSpace: 'normal',
-          maxWidth: '80vw',
-          textAlign: 'center',
-          lineHeight: '1.4',
-          opacity: '0',
-          pointerEvents: 'none',
-          transition: 'opacity 0.3s ease-in-out',
-          position: 'relative'
-        });
-        
-        this.mapLabelOverlay = new Overlay({
-          element: this.mapLabelElement,
-          positioning: 'bottom-center',
-          stopEvent: false,
-          offset: [0, -25] // Elevación exacta de tu custom-control
-        });
-        this.geography.map?.addOverlay(this.mapLabelOverlay);
-      }
+        // --- A. INICIALIZAR Y MOSTRAR EL RÓTULO (Estilos en línea a prueba de Angular) ---
+        if (!this.mapLabelOverlay) {
+          this.mapLabelElement = document.createElement('div');
 
-      // Reiniciamos el timeout si el usuario hace clics rápidos
-      if (this.labelTimeout) clearTimeout(this.labelTimeout);
+          // Estilos inyectados directamente al HTML para que no se borren al cerrar el panel
+          Object.assign(this.mapLabelElement.style, {
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: '16px', // Tamaño aumentado a 16px
+            fontWeight: '800',
+            color: '#333',
+            whiteSpace: 'normal',
+            maxWidth: '80vw',
+            textAlign: 'center',
+            lineHeight: '1.4',
+            opacity: '0',
+            pointerEvents: 'none',
+            transition: 'opacity 0.3s ease-in-out',
+            position: 'relative',
+          });
 
-      // Posicionamos en el mapa y mostramos "Buscando..."
-      if (this.mapLabelElement && this.mapLabelOverlay) {
-        this.mapLabelOverlay.setPosition([lon, lat]);
-        this.mapLabelElement.textContent = this.translate.instant('RECORD.SEARCHING_PLACE');
-        this.mapLabelElement.style.opacity = '1';
-      }
+          this.mapLabelOverlay = new Overlay({
+            element: this.mapLabelElement,
+            positioning: 'bottom-center',
+            stopEvent: false,
+            offset: [0, -25], // Elevación exacta de tu custom-control
+          });
+          this.geography.map?.addOverlay(this.mapLabelOverlay);
+        }
 
-      // --- B. BÚSQUEDA DEL NOMBRE (Geocoding) ---
-      let placeName = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      let shortName = placeName;
+        // Reiniciamos el timeout si el usuario hace clics rápidos
+        if (this.labelTimeout) clearTimeout(this.labelTimeout);
 
-      try {
-        const result: any = await firstValueFrom(this.searchService.reverseGeocode(lat, lon));
-        if (result) {
-          shortName = result.short_name || result.name || placeName;
-          placeName = result.display_name || result.name || placeName;
-          if (shortName === this.translate.instant('SEARCH.NO_NAME')) shortName = placeName;
-          
-          // Actualizamos el rótulo con el nombre real
+        // Posicionamos en el mapa y mostramos "Buscando..."
+        if (this.mapLabelElement && this.mapLabelOverlay) {
+          this.mapLabelOverlay.setPosition([lon, lat]);
+          this.mapLabelElement.textContent = this.translate.instant(
+            'RECORD.SEARCHING_PLACE'
+          );
+          this.mapLabelElement.style.opacity = '1';
+        }
+
+        // --- B. BÚSQUEDA DEL NOMBRE (Geocoding) ---
+        let placeName = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+        let shortName = placeName;
+
+        try {
+          const result: any = await firstValueFrom(
+            this.searchService.reverseGeocode(lat, lon)
+          );
+          if (result) {
+            shortName = result.short_name || result.name || placeName;
+            placeName = result.display_name || result.name || placeName;
+            if (shortName === this.translate.instant('SEARCH.NO_NAME'))
+              shortName = placeName;
+
+            // Actualizamos el rótulo con el nombre real
+            if (this.mapLabelElement) {
+              this.mapLabelElement.textContent = `📍 ${shortName}`;
+            }
+          }
+        } catch (error) {
           if (this.mapLabelElement) {
-            this.mapLabelElement.textContent = `📍 ${shortName}`;
+            this.mapLabelElement.textContent = this.translate.instant(
+              'RECORD.UNKNOWN_PLACE'
+            );
           }
         }
-      } catch (error) {
-        if (this.mapLabelElement) {
-          this.mapLabelElement.textContent = this.translate.instant('RECORD.UNKNOWN_PLACE');
-        }
+
+        // --- C. LIMPIEZA AUTOMÁTICA DEL RÓTULO ---
+        this.labelTimeout = setTimeout(() => {
+          if (this.mapLabelElement) this.mapLabelElement.style.opacity = '0';
+
+          // Esperamos a que termine la transición de opacidad y lo eliminamos del mapa
+          setTimeout(() => {
+            if (this.mapLabelOverlay) {
+              this.geography.map?.removeOverlay(this.mapLabelOverlay);
+              this.mapLabelOverlay = undefined;
+            }
+          }, 300);
+        }, 4000);
+
+        // --- D. CREAR RESULTADO Y CERRAR CICLO ---
+        this.zone.run(() => {
+          const resMock: any = {
+            name: placeName,
+            short_name: shortName,
+            display_name:
+              placeName || this.translate.instant('SEARCH.MAP_POINT_SELECTED'),
+            lon: lon,
+            lat: lat,
+            // Añadimos estas propiedades vacías para evitar errores en showLocationOnMap
+            boundingbox: [String(lat), String(lat), String(lon), String(lon)],
+            geojson: { type: 'Point', coordinates: [lon, lat] },
+          };
+
+          // Lo enviamos a la función principal
+          this.handleSelection(resMock);
+
+          // Aseguramos que el panel vuelva a abrirse tras el clic
+          this.reference.isSearchGuidePopoverOpen = true;
+          this.cdr.detectChanges();
+        });
       }
-
-      // --- C. LIMPIEZA AUTOMÁTICA DEL RÓTULO ---
-      this.labelTimeout = setTimeout(() => {
-        if (this.mapLabelElement) this.mapLabelElement.style.opacity = '0';
-        
-        // Esperamos a que termine la transición de opacidad y lo eliminamos del mapa
-        setTimeout(() => {
-          if (this.mapLabelOverlay) {
-            this.geography.map?.removeOverlay(this.mapLabelOverlay);
-            this.mapLabelOverlay = undefined;
-          }
-        }, 300);
-      }, 4000);
-
-      // --- D. CREAR RESULTADO Y CERRAR CICLO ---
-      this.zone.run(() => {
-        const resMock: any = {
-          name: placeName,
-          short_name: shortName,
-          display_name: placeName || this.translate.instant('SEARCH.MAP_POINT_SELECTED'),
-          lon: lon,
-          lat: lat,
-          // Añadimos estas propiedades vacías para evitar errores en showLocationOnMap
-          boundingbox: [String(lat), String(lat), String(lon), String(lon)],
-          geojson: { type: 'Point', coordinates: [lon, lat] }
-        };
-        
-        // Lo enviamos a la función principal
-        this.handleSelection(resMock);
-        
-        // Aseguramos que el panel vuelva a abrirse tras el clic
-        this.reference.isSearchGuidePopoverOpen = true;
-        this.cdr.detectChanges();
-      });
-    });
+    );
   }
 
   ngOnDestroy() {
@@ -263,12 +328,12 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.routeData = {
       origin: { label: '', coords: null },
       destination: { label: '', coords: null },
-      transport: 'foot-walking'
+      transport: 'foot-walking',
     };
     this.step = 1;
     this.query = '';
     this.results = [];
-    
+
     this.reference.clearArchivedTrack();
     this.reference.foundRoute = false;
     await this.location.sendReferenceToPlugin();
@@ -307,7 +372,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     try {
       this.results = await this.searchService.searchPlaces(term);
     } catch (error) {
-      console.error("Error buscando lugares:", error);
+      console.error('Error buscando lugares:', error);
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -318,25 +383,78 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (this.platform.is('capacitor')) await Keyboard.hide();
 
     if (this.mode === 'place') {
-      
       // 1. ASIGNACIÓN AUTOMÁTICA DE CATEGORÍAS
       // Si el lugar no tiene categorías previas, intentamos adivinarla por su 'type'
       if (!res.categories || res.categories.length === 0) {
         const type = res.type?.toLowerCase() || '';
-        
-        if (['city', 'town', 'village', 'municipality', 'locality', 'hamlet', 'suburb', 'place', 'administrative'].includes(type)) {
+
+        if (
+          [
+            'city',
+            'town',
+            'village',
+            'municipality',
+            'locality',
+            'hamlet',
+            'suburb',
+            'place',
+            'administrative',
+          ].includes(type)
+        ) {
           res.categories = ['towns'];
-        } else if (['peak', 'mountain', 'forest', 'wood', 'nature_reserve', 'park', 'hill'].includes(type)) {
+        } else if (
+          [
+            'peak',
+            'mountain',
+            'forest',
+            'wood',
+            'nature_reserve',
+            'park',
+            'hill',
+          ].includes(type)
+        ) {
           res.categories = ['mountain'];
-        } else if (['water', 'lake', 'river', 'beach', 'bay', 'coastline'].includes(type)) {
+        } else if (
+          ['water', 'lake', 'river', 'beach', 'bay', 'coastline'].includes(type)
+        ) {
           res.categories = ['water'];
-        } else if (['hotel', 'hostel', 'guest_house', 'camp_site', 'alpine_hut'].includes(type)) {
+        } else if (
+          [
+            'hotel',
+            'hostel',
+            'guest_house',
+            'camp_site',
+            'alpine_hut',
+          ].includes(type)
+        ) {
           res.categories = ['accommodation'];
-        } else if (['restaurant', 'cafe', 'fast_food', 'bar', 'pub'].includes(type)) {
+        } else if (
+          ['restaurant', 'cafe', 'fast_food', 'bar', 'pub'].includes(type)
+        ) {
           res.categories = ['food'];
-        } else if (['pharmacy', 'hospital', 'police', 'fuel', 'parking', 'bus_station', 'station', 'taxi'].includes(type)) {
+        } else if (
+          [
+            'pharmacy',
+            'hospital',
+            'police',
+            'fuel',
+            'parking',
+            'bus_station',
+            'station',
+            'taxi',
+          ].includes(type)
+        ) {
           res.categories = ['logistics'];
-        } else if (['museum', 'monument', 'ruins', 'viewpoint', 'attraction', 'artwork'].includes(type)) {
+        } else if (
+          [
+            'museum',
+            'monument',
+            'ruins',
+            'viewpoint',
+            'attraction',
+            'artwork',
+          ].includes(type)
+        ) {
           res.categories = ['poi'];
         } else {
           // Si no encaja en nada obvio, lo mandamos a 'other' por defecto
@@ -352,16 +470,15 @@ export class SearchComponent implements OnInit, OnDestroy {
       if (res.lon && res.lat) {
         this.geography.showLocationOnMap(res);
       }
-      
-      this.reference.foundPlace = true; 
-      
+
+      this.reference.foundPlace = true;
+
       // 4. Buscamos Wikipedia y Clima
       await this.searchWiki(res);
 
       // 5. Cerramos el panel
-      this.closePanel(); 
-    } 
-    else if (this.mode === 'route') {
+      this.closePanel();
+    } else if (this.mode === 'route') {
       const label = res.short_name || res.name;
       const coords: [number, number] = [res.lon, res.lat];
 
@@ -375,7 +492,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.step = 3;
       }
     }
-    
+
     // Forzamos que la UI se entere de que ya no estamos seleccionando en el mapa
     this.cdr.detectChanges();
   }
@@ -388,7 +505,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     try {
       const [wikiData, weatherData] = await Promise.all([
         this.wikiService.getWikiData(location).catch(() => null),
-        this.weatherService.getWeather(location.lat, location.lon, currentLang).catch(() => null),
+        this.weatherService
+          .getWeather(location.lat, location.lon, currentLang)
+          .catch(() => null),
       ]);
 
       this.zone.run(() => {
@@ -413,11 +532,11 @@ export class SearchComponent implements OnInit, OnDestroy {
     try {
       const pos = await this.location.getCurrentPosition();
       if (pos) {
-        const resMock: any = { 
-          name: this.translate.instant('SEARCH.MY_LOCATION'), 
-          lon: pos[0], 
+        const resMock: any = {
+          name: this.translate.instant('SEARCH.MY_LOCATION'),
+          lon: pos[0],
           lat: pos[1],
-          short_name: this.translate.instant('SEARCH.MY_LOCATION')
+          short_name: this.translate.instant('SEARCH.MY_LOCATION'),
         };
         this.handleSelection(resMock);
       }
@@ -437,19 +556,26 @@ export class SearchComponent implements OnInit, OnDestroy {
     // 2. Si ya estaba activo, lo apagamos (Interruptor)
     if (this.mapInteraction.isMapPickerActive) {
       this.mapInteraction.isMapPickerActive = false;
-      if (this.geography.map) this.geography.map.getTargetElement().style.cursor = '';
-      this.fs.displayToast(this.translate.instant('SEARCH.MAP_SELECTION_CANCELED'), 'warning');
+      if (this.geography.map)
+        this.geography.map.getTargetElement().style.cursor = '';
+      this.fs.displayToast(
+        this.translate.instant('SEARCH.MAP_SELECTION_CANCELED'),
+        'warning'
+      );
       return;
     }
 
     // 3. Lo activamos
     this.mapInteraction.isMapPickerActive = true;
-    
+
     if (this.geography.map) {
       this.geography.map.getTargetElement().style.cursor = 'crosshair';
     }
-    
-    this.fs.displayToast(this.translate.instant('SEARCH.TOUCH_MAP_TO_SELECT'), 'info');
+
+    this.fs.displayToast(
+      this.translate.instant('SEARCH.TOUCH_MAP_TO_SELECT'),
+      'info'
+    );
   }
 
   // --- SERVICIOS ---
@@ -482,15 +608,20 @@ export class SearchComponent implements OnInit, OnDestroy {
       const lonDiff = Math.abs(extent[2] - extent[0]);
 
       if ((latDiff > 0.4 || lonDiff > 0.4) && center && center.length >= 2) {
-        const delta = 0.015; 
+        const delta = 0.015;
         extent = [
-          center[0] - delta, center[1] - delta, 
-          center[0] + delta, center[1] + delta  
+          center[0] - delta,
+          center[1] - delta,
+          center[0] + delta,
+          center[1] + delta,
         ];
       }
 
       const bbox = [extent[1], extent[0], extent[3], extent[2]];
-      const serviceResults = await this.searchService.searchServices(this.selectedServices, bbox);
+      const serviceResults = await this.searchService.searchServices(
+        this.selectedServices,
+        bbox
+      );
 
       if (serviceResults && serviceResults.length > 0) {
         const features = serviceResults.map((result: any) => {
@@ -498,29 +629,43 @@ export class SearchComponent implements OnInit, OnDestroy {
             geometry: new Point([result.lon, result.lat]),
             name: result.name,
             type: result.type,
-            serviceId: result.serviceId
+            serviceId: result.serviceId,
           });
-          
-          const serviceConfig = this.serviceItems.find(s => s.id === result.serviceId);
+
+          const serviceConfig = this.serviceItems.find(
+            (s) => s.id === result.serviceId
+          );
           const pinColor = serviceConfig ? serviceConfig.color : '#ff0000';
           const icon = serviceConfig ? serviceConfig.icon : 'alert';
 
-          feature.setStyle(this.stylerService.createStandaloneIconStyle(pinColor, icon));
+          feature.setStyle(
+            this.stylerService.createStandaloneIconStyle(pinColor, icon)
+          );
           return feature;
         });
 
         this.geography.searchLayer?.getSource()?.addFeatures(features);
-        
+
         // 2. Solo cerramos el panel y avisamos cuando todo ha ido bien
         this.closePanel();
-        this.fs.displayToast(this.translate.instant('SEARCH.SERVICES_FOUND', { count: features.length }), 'success');
+        this.fs.displayToast(
+          this.translate.instant('SEARCH.SERVICES_FOUND', {
+            count: features.length,
+          }),
+          'success'
+        );
       } else {
-        this.fs.displayToast(this.translate.instant('SEARCH.NO_SERVICES_FOUND'), 'warning');
+        this.fs.displayToast(
+          this.translate.instant('SEARCH.NO_SERVICES_FOUND'),
+          'warning'
+        );
       }
-
     } catch (error) {
       console.error('❌ Error:', error);
-      this.fs.displayToast(this.translate.instant('SEARCH.SERVICES_ERROR'), 'error');
+      this.fs.displayToast(
+        this.translate.instant('SEARCH.SERVICES_ERROR'),
+        'error'
+      );
     } finally {
       // 3. Liberamos el estado de carga
       this.isSearching = false;
@@ -531,33 +676,37 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // --- RUTA FINAL ---
   async getRoute() {
-    if (!this.routeData.origin.coords || !this.routeData.destination.coords) return;
+    if (!this.routeData.origin.coords || !this.routeData.destination.coords)
+      return;
     this.loading = true;
     try {
       const data = await this.searchService.getRoute(
-        this.routeData.origin.coords, 
-        this.routeData.destination.coords, 
+        this.routeData.origin.coords,
+        this.routeData.destination.coords,
         this.routeData.transport
       );
-      
+
       if (data) {
         const newTrack = this.searchService.processRouteResponse(
-          data, 
-          this.routeData.origin.label, 
-          this.routeData.destination.label, 
+          data,
+          this.routeData.origin.label,
+          this.routeData.destination.label,
           this.routeData.transport
         );
-        
+
         this.reference.archivedTrack = newTrack;
         this.reference.foundRoute = true;
         await this.location.sendReferenceToPlugin();
         await this.reference.displayArchivedTrack();
         await this.geography.setMapView(newTrack);
-        
+
         this.closePanel();
       }
     } catch (error) {
-      this.fs.displayToast(this.translate.instant('SEARCH.ROUTING_ERROR'), 'danger');
+      this.fs.displayToast(
+        this.translate.instant('SEARCH.ROUTING_ERROR'),
+        'danger'
+      );
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -572,15 +721,18 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   clearServicesMap() {
     this.geography.clearSearchLayer();
-    this.fs.displayToast(this.translate.instant('SEARCH.PINS_REMOVED'), 'success');
+    this.fs.displayToast(
+      this.translate.instant('SEARCH.PINS_REMOVED'),
+      'success'
+    );
     this.closePanel();
   }
 
   // --- LÓGICA DE VOZ (DICTADO) ---
-  
+
   async startDictation() {
     if (this.isListening) await this.stopListening();
-    
+
     try {
       const available = await SpeechRecognition.available();
       if (!available.available) {
@@ -599,7 +751,7 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.zone.run(() => {
               this.query = data.matches[0];
               // Lanzar búsqueda reactiva
-              this.onInput({ detail: { value: this.query } }); 
+              this.onInput({ detail: { value: this.query } });
               this.cdr.detectChanges();
             });
           }
@@ -617,7 +769,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         if (this.isListening) this.stopListening();
       }, 6000);
-
     } catch (e) {
       this.stopListening();
     }
@@ -625,16 +776,16 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   async stopListening() {
     this.isListening = false;
-    
+
     if (this.speechPluginListener) {
       await this.speechPluginListener.remove();
       this.speechPluginListener = null;
     }
-    
+
     try {
       await SpeechRecognition.stop();
     } catch (e) {}
-    
+
     this.cdr.detectChanges();
 
     // Esperar un momento y asegurar la búsqueda si hay texto

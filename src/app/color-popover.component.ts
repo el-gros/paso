@@ -1,4 +1,9 @@
-import { Component, Input, inject } from '@angular/core';
+import {
+  Component,
+  Input,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { IONIC_COMPONENTS } from './ionic-imports';
@@ -11,43 +16,42 @@ import { IONIC_COMPONENTS } from './ionic-imports';
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island compact-island">
         <ion-list lines="none" class="popover-list">
-          
           @for (color of colors; track $index) {
-            <ion-item
-              button
-              class="action-item"
-              [class.selected-item]="color === currentColor"
-              (click)="selectColor(color)"
-              detail="false"
-            >
-              <ion-label class="color-name">
-                <strong>{{ 'COLORS.' + color | translate }}</strong>
-              </ion-label>
+          <ion-item
+            button
+            class="action-item"
+            [class.selected-item]="color === currentColor"
+            (click)="selectColor(color)"
+            detail="false"
+          >
+            <ion-label class="color-name">
+              <strong>{{ 'COLORS.' + color | translate }}</strong>
+            </ion-label>
 
-              <div
-                class="color-track-preview"
-                [style.background-color]="color"
-              ></div>
+            <div
+              class="color-track-preview"
+              [style.background-color]="color"
+            ></div>
 
-              @if (color === currentColor) {
-                <ion-icon
-                  name="checkmark-circle"
-                  slot="end"
-                  class="check-icon"
-                  [style.color]="color"
-                ></ion-icon>
-              }
-            </ion-item>
+            @if (color === currentColor) {
+            <ion-icon
+              name="checkmark-circle"
+              slot="end"
+              class="check-icon"
+              [style.color]="color"
+            ></ion-icon>
+            }
+          </ion-item>
           }
-
         </ion-list>
       </div>
     </ion-content>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       /* 🚀 Solo estilos exclusivos de este componente */
-      
+
       .selected-item {
         --background: rgba(0, 0, 0, 0.08); /* Sombreado más oscuro */
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Efecto de "hundido" */

@@ -8,6 +8,7 @@ import {
   OnChanges,
   SimpleChanges,
   HostListener,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 
 import { TranslateModule } from '@ngx-translate/core';
@@ -73,6 +74,7 @@ import { IONIC_COMPONENTS } from './ionic-imports';
     </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       /* 🚀 Todo anidado bajo la clase principal para evitar sangrado de estilos */

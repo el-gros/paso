@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
@@ -62,6 +62,7 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
       }
     `,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [...IONIC_COMPONENTS, TranslateModule, FormsModule],
 })
 export class FolderMovePopover {

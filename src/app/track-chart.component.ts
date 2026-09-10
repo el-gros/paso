@@ -6,6 +6,7 @@ import {
   ViewChild,
   AfterViewInit,
   OnDestroy,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 
 import { TranslateModule } from '@ngx-translate/core';
@@ -36,6 +37,7 @@ import { TrackAnalyticsService } from './services/track-analytics.service';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .canvas-container {

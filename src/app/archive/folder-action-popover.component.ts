@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
@@ -16,16 +16,26 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
         </div>
         <div class="form-container">
           <div class="input-group">
-            <ion-input [(ngModel)]="inputValue" [placeholder]="placeholder | translate" class="custom-input"></ion-input>
+            <ion-input
+              [(ngModel)]="inputValue"
+              [placeholder]="placeholder | translate"
+              class="custom-input"
+            ></ion-input>
           </div>
         </div>
         <div class="popover-button-grid">
-          <button class="popover-btn btn-green ion-activatable" (click)="dismiss(true)">
+          <button
+            class="popover-btn btn-green ion-activatable"
+            (click)="dismiss(true)"
+          >
             <ion-icon name="checkmark-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_YES' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
           </button>
-          <button class="popover-btn btn-red ion-activatable" (click)="dismiss(false)">
+          <button
+            class="popover-btn btn-red ion-activatable"
+            (click)="dismiss(false)"
+          >
             <ion-icon name="close-outline"></ion-icon>
             <span>{{ 'RECORD.DELETE_NO' | translate }}</span>
             <ion-ripple-effect></ion-ripple-effect>
@@ -34,13 +44,16 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
       </div>
     </ion-content>
   `,
-  styles: [``], /* ¡Cero CSS local! */
-  imports: [TranslateModule, FormsModule, ...IONIC_COMPONENTS]
+  styles: [``] /* ¡Cero CSS local! */,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [TranslateModule, FormsModule, ...IONIC_COMPONENTS],
 })
 export class FolderActionPopover {
   @Input() title: string = '';
   @Input() placeholder: string = '';
   @Input() inputValue: string = '';
   constructor(private popoverCtrl: PopoverController) {}
-  dismiss(confirm: boolean) { this.popoverCtrl.dismiss(confirm ? this.inputValue : null); }
+  dismiss(confirm: boolean) {
+    this.popoverCtrl.dismiss(confirm ? this.inputValue : null);
+  }
 }

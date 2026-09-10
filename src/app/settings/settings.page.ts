@@ -1,5 +1,14 @@
-import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { LoadingController, PopoverController, ViewWillEnter } from '@ionic/angular/standalone';
+import {
+  Component,
+  OnDestroy,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import {
+  LoadingController,
+  PopoverController,
+  ViewWillEnter,
+} from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -15,7 +24,7 @@ import { ReferenceService } from '../services/reference.service';
 import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { LocationManagerService } from '../services/location-manager.service';
-import { BackupService } from '../services/backup.service'; 
+import { BackupService } from '../services/backup.service';
 import { OfflineMapService } from '../services/offline-map.service'; // <--- Nuevo Servicio
 import { MbTilesService } from '../services/mbtiles.service'; // Ajusta la ruta si es diferente
 
@@ -30,34 +39,58 @@ import { LanguageOption } from '../../globald';
   selector: 'app-settings',
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS, ANGULAR_COMMON],
 })
 export class SettingsPage implements OnDestroy, ViewWillEnter {
-  
   // ==========================================================================
   // 1. ESTADO Y PROPIEDADES
   // ==========================================================================
 
   public currentCoords: [number, number] | null = null;
 
-  private destroy$ = new Subject<void>(); 
+  private destroy$ = new Subject<void>();
 
   /** Lista de proveedores de mapas online disponibles */
-  public onlineMaps: string[] = ['OpenStreetMap', 'OpenTopoMap', 'German_OSM', 'MapTiler_streets', 'MapTiler_outdoor', 'MapTiler_hybrid', 'MapTiler_v_outdoor', 'IGN'];
-  
+  public onlineMaps: string[] = [
+    'OpenStreetMap',
+    'OpenTopoMap',
+    'German_OSM',
+    'MapTiler_streets',
+    'MapTiler_outdoor',
+    'MapTiler_hybrid',
+    'MapTiler_v_outdoor',
+    'IGN',
+  ];
+
   private mapUploadSubject = new Subject<string>();
   private mapRemoveSubject = new Subject<string>();
 
   /** Opciones de idioma soportadas */
   public languages: LanguageOption[] = [
-    { name: 'Català', code: 'ca' }, { name: 'Español', code: 'es' },
-    { name: 'English', code: 'en' }, { name: 'Français', code: 'fr' },
-    { name: 'Русский', code: 'ru' }, { name: '中文', code: 'zh' },
+    { name: 'Català', code: 'ca' },
+    { name: 'Español', code: 'es' },
+    { name: 'English', code: 'en' },
+    { name: 'Français', code: 'fr' },
+    { name: 'Русский', code: 'ru' },
+    { name: '中文', code: 'zh' },
   ];
   public selectedLanguage: LanguageOption = { name: 'English', code: 'en' };
-  
+
   /** Paleta de colores para la personalización de tracks */
-  public colors: string[] = ['crimson', 'red', 'orange', 'gold', 'yellow', 'magenta', 'purple', 'lime', 'green', 'cyan', 'blue'];
+  public colors: string[] = [
+    'crimson',
+    'red',
+    'orange',
+    'gold',
+    'yellow',
+    'magenta',
+    'purple',
+    'lime',
+    'green',
+    'cyan',
+    'blue',
+  ];
 
   // ==========================================================================
   // 2. CICLO DE VIDA (Lifecycle)
@@ -85,20 +118,20 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   async ionViewWillEnter() {
     // Sincronizamos mapas y el lenguaje guardado al entrar en la vista
     await this.offlineMapService.refreshMapsList();
-    
+
     this.selectedLanguage = this.languages.find(
-      lang => lang.code === this.languageService.currentLangValue
+      (lang) => lang.code === this.languageService.currentLangValue
     ) || { name: 'English', code: 'en' };
-    this.location.latestLocation$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(loc => {
-      if (loc) {
-        this.currentCoords = [loc.longitude, loc.latitude];
-      } else {
-        this.currentCoords = null;
-      }
-      this.cdr.detectChanges();
-    });
+    this.location.latestLocation$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((loc) => {
+        if (loc) {
+          this.currentCoords = [loc.longitude, loc.latitude];
+        } else {
+          this.currentCoords = null;
+        }
+        this.cdr.detectChanges();
+      });
 
     await this.mbtilesService.getAllMapsBounds();
   }
@@ -113,16 +146,18 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   // ==========================================================================
 
   private setupMapActions() {
-    this.mapUploadSubject.pipe(debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(async name => {
+    this.mapUploadSubject
+      .pipe(debounceTime(500), takeUntil(this.destroy$))
+      .subscribe(async (name) => {
         if (name) {
           await this.offlineMapService.downloadMap(name);
           await this.mbtilesService.getAllMapsBounds();
         }
       });
 
-    this.mapRemoveSubject.pipe(debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(async name => {
+    this.mapRemoveSubject
+      .pipe(debounceTime(500), takeUntil(this.destroy$))
+      .subscribe(async (name) => {
         if (name) {
           await this.offlineMapService.removeMap(name);
           await this.mbtilesService.getAllMapsBounds();
@@ -144,9 +179,15 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     await this.fs.storeSet('mapProvider', map);
     try {
       await this.mapService.loadMap();
-      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATED'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.MAP_UPDATED'),
+        'success'
+      );
     } catch (e) {
-      this.fs.displayToast(this.translate.instant('SETTINGS.MAP_UPDATE_ERROR'), 'error');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.MAP_UPDATE_ERROR'),
+        'error'
+      );
     }
   }
 
@@ -162,14 +203,23 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
 
   /** Activa o desactiva las alertas sonoras/visuales de desvío de ruta */
   public async onAlertChange(value: boolean) {
-    this.fs.alert = value ? 'on' : 'off'; 
+    this.fs.alert = value ? 'on' : 'off';
     await this.fs.storeSet('alert', this.fs.alert);
     await this.location.sendReferenceToPlugin();
-    console.log('Clave leída:', this.translate.instant('SETTINGS.ALERT_INACTIVE'));
+    console.log(
+      'Clave leída:',
+      this.translate.instant('SETTINGS.ALERT_INACTIVE')
+    );
     if (value) {
-      this.fs.displayToast(this.translate.instant('SETTINGS.ALERT_ACTIVE'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.ALERT_ACTIVE'),
+        'success'
+      );
     } else {
-      this.fs.displayToast(this.translate.instant('SETTINGS.ALERT_INACTIVE'), 'warning');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.ALERT_INACTIVE'),
+        'warning'
+      );
     }
   }
 
@@ -179,10 +229,13 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
       component: ColorPopoverComponent,
       componentProps: {
         colors: this.colors,
-        currentColor: type === 'current' ? this.present.currentColor : this.reference.archivedColor,
+        currentColor:
+          type === 'current'
+            ? this.present.currentColor
+            : this.reference.archivedColor,
       },
-      cssClass: 'centered-glass-popover', 
-      translucent: true
+      cssClass: 'centered-glass-popover',
+      translucent: true,
     });
     await popover.present();
     const { data } = await popover.onDidDismiss();
@@ -204,9 +257,15 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
     this.fs.voiceFeedback = value;
     await this.fs.storeSet('voiceFeedback', value);
     if (value) {
-      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_ACTIVE'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.VOICE_ACTIVE'),
+        'success'
+      );
     } else {
-      this.fs.displayToast(this.translate.instant('SETTINGS.VOICE_INACTIVE'), 'warning');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.VOICE_INACTIVE'),
+        'warning'
+      );
     }
   }
 
@@ -216,25 +275,35 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
 
   /** Inicia el proceso de empaquetado y exportación de datos (.paso) */
   public async doExport() {
-    const loading = await this.loadingCtrl.create({ 
+    const loading = await this.loadingCtrl.create({
       message: this.translate.instant('SETTINGS.BACKUP_PACKING'),
-      spinner: 'crescent'
+      spinner: 'crescent',
     });
     await loading.present();
 
     try {
       // Pasamos un callback para actualizar el mensaje con el progreso
-      const success = await this.backupService.runFullExport((progress: number) => {
-        loading.message = `${this.translate.instant('SETTINGS.BACKUP_PACKING')} (${progress}%)`;
-      });
+      const success = await this.backupService.runFullExport(
+        (progress: number) => {
+          loading.message = `${this.translate.instant(
+            'SETTINGS.BACKUP_PACKING'
+          )} (${progress}%)`;
+        }
+      );
       await loading.dismiss();
 
       if (success) {
-        this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('SETTINGS.BACKUP_SUCCESS_DESC'),
+          'success'
+        );
       }
     } catch (e) {
       await loading.dismiss();
-      this.fs.displayToast(this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'), 'danger');
+      this.fs.displayToast(
+        this.translate.instant('SETTINGS.BACKUP_ERROR_DESC'),
+        'danger'
+      );
     }
   }
 
@@ -242,34 +311,47 @@ export class SettingsPage implements OnDestroy, ViewWillEnter {
   public async doImport() {
     try {
       const result = await FilePicker.pickFiles({
-        types: ['application/zip', 'application/octet-stream', '.paso', '.zip'] 
+        types: ['application/zip', 'application/octet-stream', '.paso', '.zip'],
       });
       const file = result.files[0];
       if (!file?.path) return;
 
-      const loading = await this.loadingCtrl.create({ 
+      const loading = await this.loadingCtrl.create({
         message: this.translate.instant('SETTINGS.BACKUP_RESTORING'),
-        spinner: 'crescent'
+        spinner: 'crescent',
       });
       await loading.present();
 
       // Pasamos un callback para actualizar el mensaje durante la restauración
-      const success = await this.backupService.runFullImport(file.path, (progress: number) => {
-        loading.message = `${this.translate.instant('SETTINGS.BACKUP_RESTORING')} (${progress}%)`;
-      });
+      const success = await this.backupService.runFullImport(
+        file.path,
+        (progress: number) => {
+          loading.message = `${this.translate.instant(
+            'SETTINGS.BACKUP_RESTORING'
+          )} (${progress}%)`;
+        }
+      );
       await loading.dismiss();
 
       if (success) {
-        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('SETTINGS.RESTORE_SUCCESS_TITLE'),
+          'success'
+        );
         setTimeout(() => window.location.replace('/'), 1500);
       } else {
-        this.fs.displayToast(this.translate.instant('SETTINGS.INVALID_FILE_DESC'), 'danger');
+        this.fs.displayToast(
+          this.translate.instant('SETTINGS.INVALID_FILE_DESC'),
+          'danger'
+        );
       }
     } catch (e: any) {
       if (e.message !== 'Pick files canceled.') {
-        this.fs.displayToast(this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'), 'danger');
+        this.fs.displayToast(
+          this.translate.instant('SETTINGS.RESTORE_ERROR_DESC'),
+          'danger'
+        );
       }
     }
   }
-
 }

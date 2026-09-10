@@ -1,7 +1,12 @@
-import { Component, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  ChangeDetectorRef,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { register } from 'swiper/element/bundle';
 import { IONIC_COMPONENTS, ANGULAR_COMMON } from '../ionic-imports';
-
 
 // --- CUSTOM IMPORTS ---
 import { WikiWeatherResult } from '../../globald';
@@ -17,14 +22,21 @@ import { GeographyService } from '../services/geography.service';
 import { PresentService } from '../services/present.service';
 import { RecordPopoverComponent } from '../record-popover.component';
 import { SearchComponent } from '../search/search.component';
-import { BehaviorSubject, filter, Subject, switchMap, take, takeUntil } from 'rxjs'; 
+import {
+  BehaviorSubject,
+  filter,
+  Subject,
+  switchMap,
+  take,
+  takeUntil,
+} from 'rxjs';
 import { WikiCardComponent } from '../wiki-card.component';
-import { AppStateService } from '../services/appState.service'; 
+import { AppStateService } from '../services/appState.service';
 import { GeoMathService } from '../services/geo-math.service';
-import { MapInteractionService } from '../services/map-interaction.service'; 
-import { TrackExportService } from '../services/track-export.service'; 
+import { MapInteractionService } from '../services/map-interaction.service';
+import { TrackExportService } from '../services/track-export.service';
 import { MapTracksService } from '../services/map-tracks.service';
-import { DeviceSetupService } from '../services/device-setup.service'; 
+import { DeviceSetupService } from '../services/device-setup.service';
 import { TrackingEngineService } from '../services/tracking-engine.service'; // <-- NUEVO
 import { PhotoWaypointService } from '../services/photo-waypoint.service'; // <-- NUEVO
 
@@ -35,13 +47,18 @@ register();
   selector: 'app-tab1',
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    FormsModule, TranslateModule, RecordPopoverComponent,
-    SearchComponent, WikiCardComponent, ...IONIC_COMPONENTS, ANGULAR_COMMON
+    FormsModule,
+    TranslateModule,
+    RecordPopoverComponent,
+    SearchComponent,
+    WikiCardComponent,
+    ...IONIC_COMPONENTS,
+    ANGULAR_COMMON,
   ],
 })
 export class Tab1Page implements OnInit, OnDestroy {
-
   // ==========================================================================
   // 1. ESTADO Y PROPIEDADES
   // ==========================================================================
@@ -49,7 +66,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private initStatus$ = new BehaviorSubject<boolean>(false);
   private eventsInitialized = false;
-  
+
   public wikiData: WikiWeatherResult | null = null;
   public weatherData: any | null = null;
 
@@ -77,21 +94,21 @@ export class Tab1Page implements OnInit, OnDestroy {
     public location: LocationManagerService,
     public reference: ReferenceService,
     public geography: GeographyService,
-    public present: PresentService, 
+    public present: PresentService,
     private platform: Platform,
     private toastCtrl: ToastController,
-    private appState: AppStateService, 
+    private appState: AppStateService,
     private geoMath: GeoMathService,
     public mapInteraction: MapInteractionService,
     public trackExport: TrackExportService,
     public deviceSetup: DeviceSetupService,
     public mapTracksService: MapTracksService,
     public trackingEngine: TrackingEngineService, // <-- INYECTADO
-    public photoWaypoint: PhotoWaypointService,
+    public photoWaypoint: PhotoWaypointService
   ) {}
 
   async ngOnInit() {
-    console.log("📍 [Tab1] Inicializando componente...");
+    console.log('📍 [Tab1] Inicializando componente...');
     await this.platform.ready();
 
     // 🔔 1. Escuchar repintados (Clicks y GPS)
@@ -105,20 +122,19 @@ export class Tab1Page implements OnInit, OnDestroy {
 
     // 2. Pedir permisos nativos
     await this.deviceSetup.checkAndRequestNotifications();
-    const hasPermission = await this.deviceSetup.checkGpsPermissions(); 
-    
+    const hasPermission = await this.deviceSetup.checkGpsPermissions();
+
     if (hasPermission) {
       try {
         await this.initializeVariables();
         await this.mapService.loadMap();
         this.mapService.mapIsReady = true;
 
-        await this.initializeEvents(); 
+        await this.initializeEvents();
         await this.trackingEngine.startEngine(); // 🚀 Arranca el motor
         await this.deviceSetup.checkBatteryOptimizations();
-
       } catch (error) {
-        console.error("❌ Error en secuencia de inicio:", error);
+        console.error('❌ Error en secuencia de inicio:', error);
       }
     }
 
@@ -138,47 +154,51 @@ export class Tab1Page implements OnInit, OnDestroy {
    * Gestiona tracks pendientes de importación y repintados forzados.
    */
   async ionViewDidEnter() {
-    this.initStatus$.pipe(
-      filter(ready => ready === true),
-      take(1),
-      switchMap(async () => {
-        this.geography.map?.updateSize();
-        await this.initializeEvents();
-        return this.mapService.pendingTrack$; 
-      }),
-      switchMap(obs => obs), 
-      takeUntil(this.destroy$),
-      filter(track => track !== null)
-    ).subscribe(async (track) => {
-      this.reference.archivedTrack = track;
-      await this.reference.displayArchivedTrack();
-      await this.geography.setMapView(track);
-      this.mapService.pendingTrack$.next(null);
-    });
+    this.initStatus$
+      .pipe(
+        filter((ready) => ready === true),
+        take(1),
+        switchMap(async () => {
+          this.geography.map?.updateSize();
+          await this.initializeEvents();
+          return this.mapService.pendingTrack$;
+        }),
+        switchMap((obs) => obs),
+        takeUntil(this.destroy$),
+        filter((track) => track !== null)
+      )
+      .subscribe(async (track) => {
+        this.reference.archivedTrack = track;
+        await this.reference.displayArchivedTrack();
+        await this.geography.setMapView(track);
+        this.mapService.pendingTrack$.next(null);
+      });
 
-    this.initStatus$.pipe(
-        filter(ready => ready === true),
+    this.initStatus$
+      .pipe(
+        filter((ready) => ready === true),
         take(1)
-    ).subscribe(async () => {
+      )
+      .subscribe(async () => {
         if (this.fs.reDraw) {
-            this.mapTracksService.updateColors();
-            this.fs.reDraw = false;
+          this.mapTracksService.updateColors();
+          this.fs.reDraw = false;
         }
         /*if (this.fs.buildTrackImage) {
             await this.buildTrackImage();
         }*/
         if (this.mapService.visibleAll) {
-            const source = this.geography.archivedLayer?.getSource();
-            if (source && source.getFeatures().length === 0) {
-              this.mapTracksService.displayAllTracks();
-            }
+          const source = this.geography.archivedLayer?.getSource();
+          if (source && source.getFeatures().length === 0) {
+            this.mapTracksService.displayAllTracks();
+          }
         }
-    });
+      });
     if (this.geography.pendingLocation) {
       // Retraso para asegurar que el DOM del mapa esté completamente renderizado
       setTimeout(() => {
         this.geography.showLocationOnMap(this.geography.pendingLocation!);
-        
+
         // Muy importante: Limpiar después de usarlo
         this.geography.pendingLocation = null;
       }, 300);
@@ -199,11 +219,20 @@ export class Tab1Page implements OnInit, OnDestroy {
    * Carga las preferencias del usuario y sincroniza variables locales con el Storage.
    */
   private async initializeVariables() {
-    this.geography.mapProvider = await this.fs.check(this.geography.mapProvider, 'mapProvider');
+    this.geography.mapProvider = await this.fs.check(
+      this.geography.mapProvider,
+      'mapProvider'
+    );
     //this.fs.collection = await this.fs.storeGet('collection') || [];
-    this.reference.archivedColor = await this.fs.check(this.reference.archivedColor, 'archivedColor');
-    this.present.currentColor = await this.fs.check(this.present.currentColor, 'currentColor');
-    this.fs.alert = await this.fs.check(this.fs.alert,'alert');
+    this.reference.archivedColor = await this.fs.check(
+      this.reference.archivedColor,
+      'archivedColor'
+    );
+    this.present.currentColor = await this.fs.check(
+      this.present.currentColor,
+      'currentColor'
+    );
+    this.fs.alert = await this.fs.check(this.fs.alert, 'alert');
     this.fs.geocoding = await this.fs.check(this.fs.geocoding, 'geocoding');
   }
 
@@ -211,7 +240,7 @@ export class Tab1Page implements OnInit, OnDestroy {
    * Configura los listeners globales necesarios para la interacción con el mapa y el sistema.
    */
   private async initializeEvents() {
-    if (this.eventsInitialized) return; 
+    if (this.eventsInitialized) return;
 
     this.appState.onEnterForeground$
       .pipe(takeUntil(this.destroy$))
@@ -221,8 +250,12 @@ export class Tab1Page implements OnInit, OnDestroy {
         }
       });
 
-    this.mapService.locationActivated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.trackingControlService.start());
-    this.mapService.locationDeactivated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.trackingControlService.stop());
+    this.mapService.locationActivated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.trackingControlService.start());
+    this.mapService.locationDeactivated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.trackingControlService.stop());
 
     this.mapInteraction.initClickHandling();
     this.trackingControlService.start();
@@ -230,7 +263,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   handleWikiResult(event: WikiWeatherResult) {
-    this.wikiData = event;       
+    this.wikiData = event;
     this.cd.detectChanges();
   }
 
@@ -243,8 +276,8 @@ export class Tab1Page implements OnInit, OnDestroy {
       message: this.translate.instant(msgKey),
       duration: 3000,
       position: 'top',
-      cssClass: `custom-toast ${this.fs.routeStatus}-toast`, 
-      buttons: [{ text: 'OK', role: 'cancel' }]
+      cssClass: `custom-toast ${this.fs.routeStatus}-toast`,
+      buttons: [{ text: 'OK', role: 'cancel' }],
     });
     await toast.present();
   }
@@ -260,10 +293,14 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.present.filtered = 0;
     this.location.averagedSpeed = 0;
     this.present.computedDistances = 0;
-    if (this.geography.currentLayer) this.geography.currentLayer.getSource()?.clear();
+    if (this.geography.currentLayer)
+      this.geography.currentLayer.getSource()?.clear();
     this.location.state = 'tracking';
     await this.location.sendReferenceToPlugin();
-    this.fs.displayToast(this.translate.instant('MAP.TRACKING_STARTED'), 'success');
+    this.fs.displayToast(
+      this.translate.instant('MAP.TRACKING_STARTED'),
+      'success'
+    );
   }
 
   async refreshMapOnForeground() {
@@ -271,13 +308,19 @@ export class Tab1Page implements OnInit, OnDestroy {
     try {
       let track = this.present.currentTrack;
       const num = track.features[0].geometry.coordinates.length;
-      
+
       await this.present.displayCurrentTrack(track);
-      track = await this.geoMath.accumulatedDistances(track, this.present.filtered);
-      track = await this.geoMath.filterSpeedAndAltitude(track, this.present.filtered + 1);
-      
+      track = await this.geoMath.accumulatedDistances(
+        track,
+        this.present.filtered
+      );
+      track = await this.geoMath.filterSpeedAndAltitude(
+        track,
+        this.present.filtered + 1
+      );
+
       this.present.filtered = Math.max(0, num - 1);
-      this.geography.map?.updateSize(); 
+      this.geography.map?.updateSize();
       this.geography.map?.render();
       this.cd.detectChanges();
       await this.geography.setMapView(track);
@@ -286,16 +329,16 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
- async clearReferenceLayer() {
-    this.reference.archivedTrack = undefined; 
+  async clearReferenceLayer() {
+    this.reference.archivedTrack = undefined;
     this.reference.foundRoute = false;
-    this.mapService.visibleAll = false; 
+    this.mapService.visibleAll = false;
 
     // Limpiamos el mapa
     this.geography.archivedLayer?.getSource()?.clear();
-    
+
     // Le decimos a Angular: "Revisa el HTML ahora"
-    this.cd.detectChanges(); 
+    this.cd.detectChanges();
 
     try {
       await this.location.sendReferenceToPlugin();

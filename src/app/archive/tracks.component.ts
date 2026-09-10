@@ -1,5 +1,16 @@
-import { Component, EventEmitter, Output } from '@angular/core';
-import { ModalController, ItemReorderEventDetail, IonItemSliding, PopoverController, LoadingController } from '@ionic/angular/standalone';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import {
+  ModalController,
+  ItemReorderEventDetail,
+  IonItemSliding,
+  PopoverController,
+  LoadingController,
+} from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Capacitor } from '@capacitor/core';
@@ -25,11 +36,14 @@ import { TrackOptionsPopoverComponent } from '../track-options-popover.component
   selector: 'app-archive-tracks',
   templateUrl: 'tracks.component.html',
   styleUrls: ['tracks.component.scss'],
-  imports: [ FormsModule, TranslateModule, ...IONIC_COMPONENTS, ANGULAR_COMMON ]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS, ANGULAR_COMMON],
 })
 export class TracksComponent {
-  
-  @Output() requestTrackDeletion = new EventEmitter<{ index: number, isVisible: boolean }>();
+  @Output() requestTrackDeletion = new EventEmitter<{
+    index: number;
+    isVisible: boolean;
+  }>();
   @Output() requestTrackExport = new EventEmitter<TrackDefinition>();
 
   constructor(
@@ -50,14 +64,20 @@ export class TracksComponent {
   // ==========================================================================
   // CARPETAS Y RUTAS (Delegado a ArchiveFolderService con Indicador de Carga)
   // ==========================================================================
-  get currentPath() { return this.folderService.currentPath; }
-  get foldersAtCurrentLevel() { return this.folderService.foldersAtCurrentLevel; }
-  get tracksAtCurrentLevel() { return this.folderService.tracksAtCurrentLevel; }
+  get currentPath() {
+    return this.folderService.currentPath;
+  }
+  get foldersAtCurrentLevel() {
+    return this.folderService.foldersAtCurrentLevel;
+  }
+  get tracksAtCurrentLevel() {
+    return this.folderService.tracksAtCurrentLevel;
+  }
 
   async enterFolder(folderName: string) {
     const loader = await this.loadingCtrl.create({
       spinner: 'crescent',
-      duration: 300
+      duration: 300,
     });
     await loader.present();
 
@@ -71,7 +91,7 @@ export class TracksComponent {
   async resetPath() {
     const loader = await this.loadingCtrl.create({
       spinner: 'crescent',
-      duration: 300
+      duration: 300,
     });
     await loader.present();
 
@@ -85,7 +105,7 @@ export class TracksComponent {
   async navigateTo(index: number) {
     const loader = await this.loadingCtrl.create({
       spinner: 'crescent',
-      duration: 300
+      duration: 300,
     });
     await loader.present();
 
@@ -96,9 +116,15 @@ export class TracksComponent {
     }
   }
 
-  createNewFolder() { this.folderService.createNewFolder(); }
-  openFolderOptions(event: Event, folder: string) { this.folderService.openFolderOptions(event, folder); }
-  handleFolderReorder(ev: CustomEvent<ItemReorderEventDetail>) { this.folderService.handleFolderReorder(ev); }
+  createNewFolder() {
+    this.folderService.createNewFolder();
+  }
+  openFolderOptions(event: Event, folder: string) {
+    this.folderService.openFolderOptions(event, folder);
+  }
+  handleFolderReorder(ev: CustomEvent<ItemReorderEventDetail>) {
+    this.folderService.handleFolderReorder(ev);
+  }
 
   async handleReorder(ev: CustomEvent<ItemReorderEventDetail>) {
     const fromIndex = ev.detail.from;
@@ -130,13 +156,19 @@ export class TracksComponent {
         this.fs.gotoPage('tab1');
         setTimeout(async () => {
           await this.mapTracks.displayAllTracks();
-          this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_DISPLAYED'), 'success');
+          this.fs.displayToast(
+            this.translate.instant('ARCHIVE.ALL_DISPLAYED'),
+            'success'
+          );
           this.reference.foundRoute = false;
         }, 200);
       } else {
         this.mapService.visibleAll = false;
         this.geography.archivedLayer?.getSource()?.clear();
-        this.fs.displayToast(this.translate.instant('ARCHIVE.ALL_HIDDEN'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('ARCHIVE.ALL_HIDDEN'),
+          'success'
+        );
         await this.fs.gotoPage('tab1');
       }
     } catch (error) {
@@ -144,13 +176,16 @@ export class TracksComponent {
     }
   }
 
-  async displaySpecificTrack(item: TrackDefinition, slidingItem?: IonItemSliding) {
+  async displaySpecificTrack(
+    item: TrackDefinition,
+    slidingItem?: IonItemSliding
+  ) {
     if (slidingItem) slidingItem.close();
     if (!item.date) return;
     const trackData = await this.fs.storeGet(new Date(item.date).toISOString());
     this.reference.archivedTrack = trackData;
     this.fs.gotoPage('tab1');
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 200));
     this.reference.displayArchivedTrack();
     await this.geography.setMapView(this.reference.archivedTrack!);
     await this.location.sendReferenceToPlugin();
@@ -174,7 +209,8 @@ export class TracksComponent {
 
   isTrackVisible(item: TrackDefinition): boolean {
     if (!this.reference.archivedTrack) return false;
-    const activeDate = this.reference.archivedTrack.features?.[0]?.properties?.date;
+    const activeDate =
+      this.reference.archivedTrack.features?.[0]?.properties?.date;
     const itemDate = item.date;
     if (!activeDate || !itemDate) return false;
     return new Date(activeDate).getTime() === new Date(itemDate).getTime();
@@ -192,11 +228,14 @@ export class TracksComponent {
 
     const popover = await this.popoverController.create({
       component: TrackOptionsPopoverComponent,
-      componentProps: { trackItem: item, isCurrentlyVisible: this.isTrackVisible(item) },
+      componentProps: {
+        trackItem: item,
+        isCurrentlyVisible: this.isTrackVisible(item),
+      },
       cssClass: 'glass-island-wrapper',
       translucent: true,
       backdropDismiss: true,
-      event: event
+      event: event,
     });
 
     await popover.present();
@@ -206,51 +245,69 @@ export class TracksComponent {
 
     if (data && data.action) {
       switch (data.action) {
-        case 'display': await this.toggleVisibility(item); break;
-        case 'edit': await this.editSpecificTrack(this.fs.collection.indexOf(item)); break;
-        case 'move': await this.folderService.moveTrackToFolder(item); break;
-        case 'apply_dem': await this.applyDEMToTrack(item); break;
-        case 'export': 
-          this.requestTrackExport.emit(item); 
+        case 'display':
+          await this.toggleVisibility(item);
           break;
-        case 'delete': 
-          this.requestTrackDeletion.emit({ 
-            index: this.fs.collection.indexOf(item), 
-            isVisible: this.isTrackVisible(item) 
-          }); 
+        case 'edit':
+          await this.editSpecificTrack(this.fs.collection.indexOf(item));
+          break;
+        case 'move':
+          await this.folderService.moveTrackToFolder(item);
+          break;
+        case 'apply_dem':
+          await this.applyDEMToTrack(item);
+          break;
+        case 'export':
+          this.requestTrackExport.emit(item);
+          break;
+        case 'delete':
+          this.requestTrackDeletion.emit({
+            index: this.fs.collection.indexOf(item),
+            isVisible: this.isTrackVisible(item),
+          });
           break;
       }
     }
   }
-  
+
   // ==========================================================================
   // APLICAR DEM MANUALMENTE
   // ==========================================================================
   async applyDEMToTrack(item: any) {
-
     const loadingOverlay = await this.loadingCtrl.create({
       message: this.translate.instant('ARCHIVE.APPLYING_DEM'),
       spinner: 'crescent',
       backdropDismiss: false,
     });
-    
+
     await loadingOverlay.present();
 
     try {
-      const success = await this.trackManager.applyDEMInBackground(item.date.toISOString());
+      const success = await this.trackManager.applyDEMInBackground(
+        item.date.toISOString()
+      );
       if (success) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_SUCCESS'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('ARCHIVE.DEM_SUCCESS'),
+          'success'
+        );
       } else {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_OFFLINE'), 'warning');
+        this.fs.displayToast(
+          this.translate.instant('ARCHIVE.DEM_OFFLINE'),
+          'warning'
+        );
       }
     } catch (error) {
       console.error('Error aplicando DEM manual:', error);
-      this.fs.displayToast(this.translate.instant('ARCHIVE.DEM_ERROR'), 'danger');
+      this.fs.displayToast(
+        this.translate.instant('ARCHIVE.DEM_ERROR'),
+        'danger'
+      );
     } finally {
       await loadingOverlay.dismiss();
     }
   }
-  
+
   // ==========================================================================
   // FOTOS
   // ==========================================================================
@@ -263,7 +320,7 @@ export class TracksComponent {
     if (!photos || photos.length === 0) return;
     const modal = await this.modalCtrl.create({
       component: PhotoViewerComponent,
-      componentProps: { photos: photos }
+      componentProps: { photos: photos },
     });
     await modal.present();
   }

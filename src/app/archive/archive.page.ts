@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { LoadingController, IonItemSliding } from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -22,21 +22,38 @@ import { TracksComponent } from './tracks.component'; // Añadido
   selector: 'app-archive',
   templateUrl: 'archive.page.html',
   styleUrls: ['archive.page.scss'],
-  imports: [ FormsModule, TranslateModule, PlacesComponent, TracksComponent, ...IONIC_COMPONENTS]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    FormsModule,
+    TranslateModule,
+    PlacesComponent,
+    TracksComponent,
+    ...IONIC_COMPONENTS,
+  ],
 })
 export class ArchivePage implements OnInit {
-
   public activeTab: string = 'tracks';
 
   // Variables de Borrado
   public isConfirmDeletionOpen: boolean = false;
-  private deleteTarget: { type: 'track' | 'place', index: number, data?: any, isVisible?: boolean } | null = null;
+  private deleteTarget: {
+    type: 'track' | 'place';
+    index: number;
+    data?: any;
+    isVisible?: boolean;
+  } | null = null;
   public slidingItem: IonItemSliding | undefined = undefined;
 
   // Variables de Exportación
   public isExportMenuOpen = false;
   public selectedTrackForExport: any = null;
-  public exportConfig = { html: true, gpx: false, kmz: false, photos: false, kmzPhotos: false };
+  public exportConfig = {
+    html: true,
+    gpx: false,
+    kmz: false,
+    photos: false,
+    kmzPhotos: false,
+  };
 
   constructor(
     public fs: FunctionsService,
@@ -47,10 +64,10 @@ export class ArchivePage implements OnInit {
     private loadingCtrl: LoadingController,
     private exportService: TrackExportService,
     public present: PresentService
-  ) { }
+  ) {}
 
   ngOnInit() {
-//    if (this.geography.searchLayer) this.geography.clearSearchLayer();
+    //    if (this.geography.searchLayer) this.geography.clearSearchLayer();
     this.geography.refreshPlacesLayer(this.fs.placesCollection);
   }
 
@@ -59,15 +76,21 @@ export class ArchivePage implements OnInit {
   // ==========================================================================
 
   /** Recibido desde app-archive-tracks */
-  onTrackDeletionRequest(event: { index: number, isVisible: boolean }) {
-    this.deleteTarget = { type: 'track', index: event.index, isVisible: event.isVisible };
+  onTrackDeletionRequest(event: { index: number; isVisible: boolean }) {
+    this.deleteTarget = {
+      type: 'track',
+      index: event.index,
+      isVisible: event.isVisible,
+    };
     this.isConfirmDeletionOpen = true;
     this.slidingItem = undefined; // Se maneja sin sliding en el popover actual
   }
 
   /** Recibido desde app-archive-places */
   onPlaceDeletionRequest(event: { place: LocationResult }) {
-    const realIndex = this.fs.placesCollection.findIndex(p => p.lat === event.place.lat && p.lon === event.place.lon);
+    const realIndex = this.fs.placesCollection.findIndex(
+      (p) => p.lat === event.place.lat && p.lon === event.place.lon
+    );
     this.deleteTarget = { type: 'place', index: realIndex, data: event.place };
     this.isConfirmDeletionOpen = true;
   }
@@ -81,12 +104,18 @@ export class ArchivePage implements OnInit {
         this.reference.clearArchivedTrack();
         await this.location.sendReferenceToPlugin();
       }
-      this.fs.displayToast(this.translate.instant('ARCHIVE.TRACK_DELETED'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('ARCHIVE.TRACK_DELETED'),
+        'success'
+      );
     } else {
       this.fs.removePlace(this.deleteTarget.index);
       this.geography.refreshPlacesLayer(this.fs.placesCollection);
       if (this.slidingItem) this.slidingItem.close();
-      this.fs.displayToast(this.translate.instant('ARCHIVE.PLACE_DELETED'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('ARCHIVE.PLACE_DELETED'),
+        'success'
+      );
     }
 
     this.isConfirmDeletionOpen = false;
@@ -101,7 +130,13 @@ export class ArchivePage implements OnInit {
   /** Recibido desde app-archive-tracks */
   openExportMenu(item: TrackDefinition) {
     this.selectedTrackForExport = item;
-    this.exportConfig = { html: true, gpx: false, kmz: false, photos: false, kmzPhotos: false };
+    this.exportConfig = {
+      html: true,
+      gpx: false,
+      kmz: false,
+      photos: false,
+      kmzPhotos: false,
+    };
     this.isExportMenuOpen = true;
   }
 
@@ -114,17 +149,26 @@ export class ArchivePage implements OnInit {
       message: this.translate.instant('ARCHIVE.GENERATING_FILES'),
       backdropDismiss: false,
       spinner: 'crescent',
-      cssClass: 'glass-loading-overlay'
+      cssClass: 'glass-loading-overlay',
     });
     await loading.present();
 
     try {
       await this.exportService.exportAndShareTrack(item, this.exportConfig);
-      this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_SUCCESS'), 'success');
+      this.fs.displayToast(
+        this.translate.instant('ARCHIVE.EXPORT_SUCCESS'),
+        'success'
+      );
     } catch (error) {
       console.error('Error al exportar:', error);
-      if (String(error).indexOf('Canceled') === -1 && String(error).indexOf('canceled') === -1) {
-        this.fs.displayToast(this.translate.instant('ARCHIVE.EXPORT_ERROR'), 'error');
+      if (
+        String(error).indexOf('Canceled') === -1 &&
+        String(error).indexOf('canceled') === -1
+      ) {
+        this.fs.displayToast(
+          this.translate.instant('ARCHIVE.EXPORT_ERROR'),
+          'error'
+        );
       }
     } finally {
       await loading.dismiss();
@@ -132,11 +176,14 @@ export class ArchivePage implements OnInit {
   }
 
   get trackHasPhotos(): boolean {
-    return !!(this.selectedTrackForExport?.photos && this.selectedTrackForExport.photos.length > 0);
+    return !!(
+      this.selectedTrackForExport?.photos &&
+      this.selectedTrackForExport.photos.length > 0
+    );
   }
 
   isAnyExportOptionSelected(): boolean {
-    return Object.values(this.exportConfig).some(value => value === true);
+    return Object.values(this.exportConfig).some((value) => value === true);
   }
 
   onKmzToggle(type: 'kmz' | 'kmzPhotos') {
@@ -152,16 +199,15 @@ export class ArchivePage implements OnInit {
     const loading = await this.loadingCtrl.create({
       spinner: 'crescent',
       cssClass: 'glass-loading-overlay',
-      backdropDismiss: false
+      backdropDismiss: false,
     });
     await loading.present();
 
     try {
-      // 2. Esperamos a que Angular procese el cambio de vista y 
+      // 2. Esperamos a que Angular procese el cambio de vista y
       // el navegador pinte los elementos de la nueva pestaña (doble requestAnimationFrame)
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      await new Promise(resolve => requestAnimationFrame(resolve));
-
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     } catch (error) {
       console.error('Error al cambiar de pestaña:', error);
     } finally {
@@ -169,6 +215,4 @@ export class ArchivePage implements OnInit {
       await loading.dismiss();
     }
   }
-
 }
-

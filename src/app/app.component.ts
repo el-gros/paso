@@ -1,4 +1,9 @@
-import { Component, NgZone, OnDestroy } from '@angular/core';
+import {
+  Component,
+  NgZone,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Platform } from '@ionic/angular/standalone';
@@ -28,6 +33,7 @@ useGeographic();
   standalone: true,
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, TranslateModule, ...IONIC_COMPONENTS],
 })
 export class AppComponent implements OnDestroy {
@@ -41,7 +47,8 @@ export class AppComponent implements OnDestroy {
     private language: LanguageService,
     private mbTilesService: MbTilesService,
     private trackImportService: TrackImportService,
-    private mapStyle: MapStyleService  ) {
+    private mapStyle: MapStyleService
+  ) {
     this.initializeApp();
   }
 

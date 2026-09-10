@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
 import { IONIC_COMPONENTS } from './ionic-imports';
@@ -10,7 +10,6 @@ import { IONIC_COMPONENTS } from './ionic-imports';
   template: `
     <ion-content scrollY="false" class="ion-no-padding">
       <div class="local-glass-island confirm-box">
-        
         <div class="icon-container">
           <ion-icon [name]="icon" [color]="color"></ion-icon>
         </div>
@@ -24,20 +23,42 @@ import { IONIC_COMPONENTS } from './ionic-imports';
             <span>OK</span>
           </button>
         </div>
-        
       </div>
     </ion-content>
   `,
-  styles: [`
-    .confirm-box { padding: 24px; text-align: center; }
-    .confirm-title { margin: 0 0 10px 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #111; }
-    .status-message { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.4; }
-    
-    .icon-container { margin-bottom: 15px; }
-    .icon-container ion-icon { font-size: 48px; }
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styles: [
+    `
+      .confirm-box {
+        padding: 24px;
+        text-align: center;
+      }
+      .confirm-title {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #111;
+      }
+      .status-message {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 20px;
+        line-height: 1.4;
+      }
 
-    .btn-blue { color: var(--ion-color-primary); }
-  `]
+      .icon-container {
+        margin-bottom: 15px;
+      }
+      .icon-container ion-icon {
+        font-size: 48px;
+      }
+
+      .btn-blue {
+        color: var(--ion-color-primary);
+      }
+    `,
+  ],
 })
 export class ImportStatusPopover {
   @Input() title: string = '';
@@ -46,5 +67,7 @@ export class ImportStatusPopover {
   @Input() color: string = 'danger';
 
   constructor(private popoverCtrl: PopoverController) {}
-  dismiss() { this.popoverCtrl.dismiss(); }
+  dismiss() {
+    this.popoverCtrl.dismiss();
+  }
 }

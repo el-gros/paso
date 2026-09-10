@@ -1,5 +1,13 @@
-import { Component, EventEmitter, Output } from '@angular/core';
-import { PopoverController, ItemReorderEventDetail } from '@ionic/angular/standalone';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import {
+  PopoverController,
+  ItemReorderEventDetail,
+} from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { IONIC_COMPONENTS } from '../ionic-imports';
@@ -15,28 +23,31 @@ import { PlaceOptionsPopoverComponent } from './place-options-popover.component'
   selector: 'app-archive-places',
   templateUrl: 'places.component.html',
   styleUrls: ['places.component.scss'],
-  imports: [...IONIC_COMPONENTS, FormsModule, TranslateModule]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [...IONIC_COMPONENTS, FormsModule, TranslateModule],
 })
 export class PlacesComponent {
-
-  @Output() requestPlaceDeletion = new EventEmitter<{ place: LocationResult }>();
+  @Output() requestPlaceDeletion = new EventEmitter<{
+    place: LocationResult;
+  }>();
 
   constructor(
     public fs: FunctionsService,
     public geography: GeographyService,
     private translate: TranslateService,
     private popoverController: PopoverController
-  ) { }
+  ) {}
 
   // ==========================================================================
   // GETTERS
   // ==========================================================================
 
   get groupedPlaces() {
-    const groups: { category: any, places: LocationResult[] }[] = [];
+    const groups: { category: any; places: LocationResult[] }[] = [];
     for (const cat of PLACE_CATEGORIES) {
-      const placesInCat = this.fs.placesCollection.filter(p =>
-        p.categories && p.categories.length > 0 && p.categories[0] === cat.id
+      const placesInCat = this.fs.placesCollection.filter(
+        (p) =>
+          p.categories && p.categories.length > 0 && p.categories[0] === cat.id
       );
       if (placesInCat.length > 0) {
         groups.push({ category: cat, places: placesInCat });
@@ -47,12 +58,12 @@ export class PlacesComponent {
 
   get isAllPlacesVisible(): boolean {
     if (this.fs.placesCollection.length === 0) return true;
-    return this.fs.placesCollection.every(p => p.visible);
+    return this.fs.placesCollection.every((p) => p.visible);
   }
 
   get isAllPlacesHidden(): boolean {
     if (this.fs.placesCollection.length === 0) return true;
-    return this.fs.placesCollection.every(p => !p.visible);
+    return this.fs.placesCollection.every((p) => !p.visible);
   }
 
   // ==========================================================================
@@ -60,34 +71,40 @@ export class PlacesComponent {
   // ==========================================================================
 
   displayAllPlaces(show: boolean) {
-    this.fs.placesCollection.forEach(p => p.visible = show);
+    this.fs.placesCollection.forEach((p) => (p.visible = show));
     this.fs.savePlacesToStorage();
     this.geography.refreshPlacesLayer(this.fs.placesCollection);
-    const msg = show ? 'ARCHIVE.ALL_PLACES_DISPLAYED' : 'ARCHIVE.ALL_PLACES_HIDDEN';
+    const msg = show
+      ? 'ARCHIVE.ALL_PLACES_DISPLAYED'
+      : 'ARCHIVE.ALL_PLACES_HIDDEN';
     this.fs.displayToast(this.translate.instant(msg), 'success');
   }
 
   isCategoryVisible(categoryId: string): boolean {
     return this.fs.placesCollection
-      .filter(p => p.categories && p.categories[0] === categoryId)
-      .some(p => p.visible === true);
+      .filter((p) => p.categories && p.categories[0] === categoryId)
+      .some((p) => p.visible === true);
   }
 
   isAllCategoryVisible(categoryId: string): boolean {
-    const places = this.fs.placesCollection.filter(p => p.categories && p.categories[0] === categoryId);
+    const places = this.fs.placesCollection.filter(
+      (p) => p.categories && p.categories[0] === categoryId
+    );
     if (places.length === 0) return true;
-    return places.every(p => p.visible);
+    return places.every((p) => p.visible);
   }
 
   isAllCategoryHidden(categoryId: string): boolean {
-    const places = this.fs.placesCollection.filter(p => p.categories && p.categories[0] === categoryId);
+    const places = this.fs.placesCollection.filter(
+      (p) => p.categories && p.categories[0] === categoryId
+    );
     if (places.length === 0) return true;
-    return places.every(p => !p.visible);
+    return places.every((p) => !p.visible);
   }
 
   setCategoryVisibility(categoryId: string, show: boolean, event: Event) {
     event.stopPropagation();
-    this.fs.placesCollection.forEach(p => {
+    this.fs.placesCollection.forEach((p) => {
       if (p.categories && p.categories[0] === categoryId) p.visible = show;
     });
     this.fs.savePlacesToStorage();
@@ -100,7 +117,9 @@ export class PlacesComponent {
 
   togglePlaceVisibility(place: LocationResult, event: Event) {
     event.stopPropagation();
-    const realIndex = this.fs.placesCollection.findIndex(p => p.lat === place.lat && p.lon === place.lon);
+    const realIndex = this.fs.placesCollection.findIndex(
+      (p) => p.lat === place.lat && p.lon === place.lon
+    );
     if (realIndex > -1) {
       this.fs.updatePlace(realIndex, place);
       this.geography.refreshPlacesLayer(this.fs.placesCollection);
@@ -117,7 +136,6 @@ export class PlacesComponent {
   // ==========================================================================
 
   centerPlace(place: LocationResult) {
-
     // 1. Centramos con tu función de confianza
     if (place.lat && place.lon) {
       // this.geography.centerMap(place.lon, place.lat, 14);
@@ -126,7 +144,6 @@ export class PlacesComponent {
 
     // 2. Navegamos
     this.fs.gotoPage('tab1');
-
   }
 
   // ==========================================================================
@@ -134,7 +151,9 @@ export class PlacesComponent {
   // ==========================================================================
 
   async editPlace(place: LocationResult) {
-    const realIndex = this.fs.placesCollection.findIndex(p => p.lat === place.lat && p.lon === place.lon);
+    const realIndex = this.fs.placesCollection.findIndex(
+      (p) => p.lat === place.lat && p.lon === place.lon
+    );
 
     if (realIndex > -1) {
       const popover = await this.popoverController.create({
@@ -151,23 +170,34 @@ export class PlacesComponent {
       if (data?.action === 'ok' && data.place) {
         this.fs.updatePlace(realIndex, data.place);
         this.geography.refreshPlacesLayer(this.fs.placesCollection);
-        
+
         // 🔔 Toast de edición (Solo se muestra si realmente se guardaron los cambios)
-        this.fs.displayToast(this.translate.instant('ARCHIVE.PLACE_EDITED'), 'success');
+        this.fs.displayToast(
+          this.translate.instant('ARCHIVE.PLACE_EDITED'),
+          'success'
+        );
       }
     }
   }
 
-  handlePlaceReorder(ev: CustomEvent<ItemReorderEventDetail>, categoryId: string) {
-    const placesInCat = this.fs.placesCollection.filter(p =>
-      p.categories && p.categories.length > 0 && p.categories[0] === categoryId
+  handlePlaceReorder(
+    ev: CustomEvent<ItemReorderEventDetail>,
+    categoryId: string
+  ) {
+    const placesInCat = this.fs.placesCollection.filter(
+      (p) =>
+        p.categories &&
+        p.categories.length > 0 &&
+        p.categories[0] === categoryId
     );
 
     const reorderedSubset = ev.detail.complete(placesInCat);
 
     const originalGlobalIndices = this.fs.placesCollection
-      .map((p, index) => (p.categories && p.categories[0] === categoryId) ? index : -1)
-      .filter(index => index !== -1);
+      .map((p, index) =>
+        p.categories && p.categories[0] === categoryId ? index : -1
+      )
+      .filter((index) => index !== -1);
 
     originalGlobalIndices.forEach((globalIndex, i) => {
       this.fs.placesCollection[globalIndex] = reorderedSubset[i];
@@ -197,18 +227,21 @@ export class PlacesComponent {
 
     if (data && data.action) {
       switch (data.action) {
-        case 'center': 
-          this.centerPlace(place); 
+        case 'center':
+          this.centerPlace(place);
           // 🔔 Toast de centrar mapa
-          this.fs.displayToast(this.translate.instant('ARCHIVE.MAP_CENTERED'), 'success');
+          this.fs.displayToast(
+            this.translate.instant('ARCHIVE.MAP_CENTERED'),
+            'success'
+          );
           break;
-          
-        case 'edit': 
-          await this.editPlace(place); 
+
+        case 'edit':
+          await this.editPlace(place);
           break;
-          
-        case 'delete': 
-          this.requestPlaceDeletion.emit({ place }); 
+
+        case 'delete':
+          this.requestPlaceDeletion.emit({ place });
           break;
       }
     }
