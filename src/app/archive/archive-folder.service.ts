@@ -235,8 +235,9 @@ async createNewFolder() {
     await popover.present();
     const { data } = await popover.onDidDismiss();
 
-    if (data !== null) { // El usuario pulsó OK
-      const index = this.fs.collection.indexOf(item);
+    if (data !== null && data !== undefined) { 
+      // Buscamos por la fecha del track en lugar de indexOf por referencia
+      const index = this.fs.collection.findIndex(t => t.date === item.date);
       if (index > -1) {
         (this.fs.collection[index] as any).folderPath = data ? [data] : [];
         await this.fs.storeSet('collection', this.fs.collection);
@@ -244,5 +245,5 @@ async createNewFolder() {
       }
     }
   }
- 
+
 }

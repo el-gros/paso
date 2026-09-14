@@ -51,7 +51,13 @@ import {
   megaphoneOutline,
   walkOutline,
   bicycleOutline,
-  carOutline
+  carOutline,
+  arrowRedoOutline,
+  businessOutline,
+  starOutline,
+  imageOutline,
+  bedOutline,
+  restaurantOutline
 } from 'ionicons/icons';
 
 // Exportamos una función que registrará todos los iconos
@@ -108,6 +114,12 @@ export function registerIonicIcons() {
     megaphoneOutline,
     walkOutline,
     bicycleOutline,
-    carOutline
+    carOutline,
+    arrowRedoOutline,
+    businessOutline,
+    starOutline,
+    imageOutline,
+    bedOutline,
+    restaurantOutline
   });
 }

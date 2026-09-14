@@ -182,7 +182,7 @@ export interface LocationResult {
 
 export const PLACE_CATEGORIES = [
   { id: 'towns', icon: 'business-outline', color: 'primary' },
-  { id: 'mountain', icon: 'terrain-outline', color: 'success' },
+  { id: 'mountain', icon: 'image-outline', color: 'success' },
   { id: 'water', icon: 'water-outline', color: 'tertiary' },
   { id: 'accommodation', icon: 'bed-outline', color: 'warning' },
   { id: 'poi', icon: 'camera-outline', color: 'secondary' },

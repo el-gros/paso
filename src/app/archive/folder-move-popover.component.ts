@@ -1,8 +1,11 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
 import { TranslateModule } from '@ngx-translate/core';
-import { FormsModule } from '@angular/forms';
 import { IONIC_COMPONENTS } from '../ionic-imports';
+
+// 1. Importamos la utilidad de iconos de Ionicons
+import { addIcons } from 'ionicons';
+import { arrowRedoOutline, checkmarkOutline, closeOutline } from 'ionicons/icons';
 
 @Component({
   standalone: true,
@@ -14,8 +17,13 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
           <ion-icon name="arrow-redo-outline" class="header-icon"></ion-icon>
           <h2>{{ 'ARCHIVE.MOVE_TO_FOLDER' | translate }}</h2>
         </div>
+        
         <div class="form-container folder-list-container">
-          <ion-radio-group [(ngModel)]="selectedFolder">
+          <!-- 2. Reemplazamos ngModel por value e ionChange -->
+          <ion-radio-group 
+            [value]="selectedFolder" 
+            (ionChange)="selectedFolder = $event.detail.value"
+          >
             @for (f of folders; track f) {
             <ion-item lines="none" class="custom-radio-item">
               <ion-label>{{ f.label }}</ion-label>
@@ -24,6 +32,7 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
             }
           </ion-radio-group>
         </div>
+
         <div class="popover-button-grid">
           <button
             class="popover-btn btn-green ion-activatable"
@@ -47,7 +56,6 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
   `,
   styles: [
     `
-      /* Solo CSS único de este componente */
       .folder-list-container {
         max-height: 250px;
         background: rgba(0, 0, 0, 0.02);
@@ -63,12 +71,18 @@ import { IONIC_COMPONENTS } from '../ionic-imports';
     `,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [...IONIC_COMPONENTS, TranslateModule, FormsModule],
+  // 3. Ya no necesitamos FormsModule aquí
+  imports: [...IONIC_COMPONENTS, TranslateModule],
 })
 export class FolderMovePopover {
   @Input() folders: any[] = [];
   @Input() selectedFolder: string = '';
-  constructor(private popoverCtrl: PopoverController) {}
+
+  constructor(private popoverCtrl: PopoverController) {
+    // 4. Registramos los iconos que usa este popover para que Ionic los encuentre
+    addIcons({ arrowRedoOutline, checkmarkOutline, closeOutline });
+  }
+
   dismiss(confirm: boolean) {
     this.popoverCtrl.dismiss(confirm ? this.selectedFolder : null);
   }

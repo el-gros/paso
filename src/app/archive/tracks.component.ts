@@ -244,26 +244,32 @@ export class TracksComponent {
     if (role === 'backdrop' || role === 'cancel') return;
 
     if (data && data.action) {
+      // Localizamos siempre el índice real y el objeto exacto en la colección global
+      const realIndex = this.fs.collection.findIndex(t => t.date === item.date);
+      const realItem = realIndex !== -1 ? this.fs.collection[realIndex] : item;
+
       switch (data.action) {
         case 'display':
-          await this.toggleVisibility(item);
+          await this.toggleVisibility(realItem);
           break;
         case 'edit':
-          await this.editSpecificTrack(this.fs.collection.indexOf(item));
+          if (realIndex !== -1) {
+            await this.editSpecificTrack(realIndex);
+          }
           break;
         case 'move':
-          await this.folderService.moveTrackToFolder(item);
+          await this.folderService.moveTrackToFolder(realItem);
           break;
         case 'apply_dem':
-          await this.applyDEMToTrack(item);
+          await this.applyDEMToTrack(realItem);
           break;
         case 'export':
-          this.requestTrackExport.emit(item);
+          this.requestTrackExport.emit(realItem);
           break;
         case 'delete':
           this.requestTrackDeletion.emit({
-            index: this.fs.collection.indexOf(item),
-            isVisible: this.isTrackVisible(item),
+            index: realIndex !== -1 ? realIndex : this.fs.collection.indexOf(item),
+            isVisible: this.isTrackVisible(realItem),
           });
           break;
       }

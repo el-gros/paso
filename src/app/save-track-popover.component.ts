@@ -6,7 +6,9 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { PopoverController } from '@ionic/angular/standalone';
-import { FormsModule } from '@angular/forms';
+// 1. Importamos los iconos
+import { addIcons } from 'ionicons';
+import { locationOutline, checkmarkOutline, closeOutline } from 'ionicons/icons';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PresentService } from './services/present.service';
 import { LocationManagerService } from './services/location-manager.service';
@@ -15,8 +17,8 @@ import { IONIC_COMPONENTS, ANGULAR_COMMON } from './ionic-imports';
 @Component({
   selector: 'app-save-track-popover',
   standalone: true,
+  // 2. Ya no hace falta FormsModule
   imports: [
-    FormsModule,
     ...IONIC_COMPONENTS,
     TranslateModule,
     ...ANGULAR_COMMON,
@@ -34,8 +36,10 @@ import { IONIC_COMPONENTS, ANGULAR_COMMON } from './ionic-imports';
             <ion-label class="custom-label">{{
               'EDIT.NAME' | translate
             }}</ion-label>
+            <!-- 3. Sustituimos ngModel por value e ionInput -->
             <ion-textarea
-              [(ngModel)]="modalEdit.name"
+              [value]="modalEdit.name"
+              (ionInput)="modalEdit.name = $event.detail.value"
               rows="1"
               autoGrow="true"
               class="custom-textarea"
@@ -47,8 +51,10 @@ import { IONIC_COMPONENTS, ANGULAR_COMMON } from './ionic-imports';
             <ion-label class="custom-label">{{
               'EDIT.DESCRIPTION' | translate
             }}</ion-label>
+            <!-- 4. Sustituimos ngModel por value e ionInput -->
             <ion-textarea
-              [(ngModel)]="modalEdit.description"
+              [value]="modalEdit.description"
+              (ionInput)="modalEdit.description = $event.detail.value"
               rows="4"
               class="custom-textarea scrollable-textarea"
             >
@@ -137,6 +143,11 @@ export class SaveTrackPopover implements OnInit {
   // ==========================================================================
   // 2. CICLO DE VIDA
   // ==========================================================================
+  
+  constructor() {
+    // 5. Registramos los iconos que usa este popover
+    addIcons({ locationOutline, checkmarkOutline, closeOutline });
+  }
 
   ngOnInit() {
     this.modalEdit = { name: '', description: '', ...this.modalEdit };

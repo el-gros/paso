@@ -16,6 +16,7 @@ import {
     IonAccordion,
     IonAccordionGroup,
     IonRadio,
+    IonRadioGroup,
     IonFab,
     IonFabButton,
     IonRow,
@@ -30,7 +31,8 @@ import {
     IonThumbnail,
     IonInput,
     IonSegment,
-    IonCheckbox
+    IonCheckbox,
+    IonTextarea
  } from '@ionic/angular/standalone';
 import { 
   DecimalPipe, 
@@ -59,6 +61,7 @@ export const IONIC_COMPONENTS = [
   IonAccordion,
   IonAccordionGroup,
   IonRadio,
+  IonRadioGroup,
   IonFab,
   IonFabButton,
   IonRow,
@@ -73,7 +76,8 @@ export const IONIC_COMPONENTS = [
   IonThumbnail,
   IonInput,
   IonSegment,
-  IonCheckbox
+  IonCheckbox,
+  IonTextarea
 ] as const;
  export const ANGULAR_COMMON = [
   DecimalPipe, 
