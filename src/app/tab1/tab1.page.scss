@@ -66,6 +66,7 @@ ion-fab {
 .clear-reference-fab,
 .clear-search-fab {
   top: env(safe-area-inset-top, 10px);
+  left: 12px;
   margin-top: -10px; 
   z-index: 9999 !important;
   pointer-events: auto !important;
@@ -96,20 +97,14 @@ ion-fab {
   }
 }
 
-// Posicionamiento específico a la izquierda
-.clear-reference-fab {
-  left: 10px;
-}
-
-// Posicionamiento específico a la derecha
 .clear-search-fab {
-  right: 10px;
+  top: calc(env(safe-area-inset-top, 10px) + 50px) !important;
 }
 
 // B. Botón de Cámara (Abajo Izquierda del semáforo)
 .camera-fab {
-  top: 90px !important;
-  left: 15px !important;
+  top: 65px !important;
+  right: 10px !important;
   margin: 0 !important;
   
   ion-fab-button {
@@ -123,7 +118,7 @@ ion-fab {
 // C. Indicador de Estado de Ruta (Semáforo - Arriba Derecha)
 .route-indicator-fab {
   position: fixed !important;
-  top: 95px !important;
+  bottom: 80px !important;
   right: 15px !important;
   z-index: 9999 !important;      
   pointer-events: auto !important; 

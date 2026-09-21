@@ -16,7 +16,7 @@
 
   <!-- Botón para limpiar capa de referencia (solo si hay contenido) -->
   @if (hasSearchContent) {
-    <ion-fab slot="fixed" vertical="top" horizontal="end" class="clear-search-fab" (click)="geography.clearSearchLayer()">
+    <ion-fab slot="fixed" vertical="top" horizontal="start" class="clear-search-fab" (click)="geography.clearSearchLayer()">
       <div class="map-control-btn">
         <ion-icon name="eye-off-outline" class="danger-icon"></ion-icon>
         <span>{{ 'MAP.REMOVE_SEARCH' | translate }}</span>
@@ -26,7 +26,7 @@
 
   <!-- Botón de Cámara (solo durante la grabación activa) -->
   @if (location.state === 'tracking' && trackingEngine.firstPointReceived) {
-    <ion-fab slot="fixed" vertical="top" horizontal="start" class="camera-fab">
+    <ion-fab slot="fixed" vertical="top" horizontal="end" class="camera-fab">
       <ion-fab-button (click)="addPhotoWaypoint()" color="tertiary">
         <ion-icon name="camera-outline"></ion-icon>
       </ion-fab-button>
@@ -79,7 +79,7 @@
        ====================================================================== -->
 
   <!-- Indicador LED de estado de ruta (Dentro/Fuera de ruta) -->
-  @if (present.currentTrack && reference.archivedTrack) { 
+  @if (present.currentTrack && reference.archivedTrack && fs.alert === 'on' ) { 
     <ion-fab slot="fixed" class="route-indicator-fab" (click)="showStatusToast()">
       <div class="status-indicator-container">
         <div class="led-button" [ngClass]="fs.routeStatus"> 

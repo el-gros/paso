@@ -1,10 +1,12 @@
-import { Inject, Injectable, Injector, inject } from '@angular/core';
+import { Inject, Injectable, Injector, inject, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastController, PopoverController, NavController, LoadingController } from '@ionic/angular/standalone';
 import { Storage } from '@ionic/storage-angular';
 import { TranslateService } from '@ngx-translate/core';
 import DOMPurify from 'dompurify';
 import { TextToSpeech } from '@capacitor-community/text-to-speech'; // 👈 Importamos el plugin nativo
+import { PluginListenerHandle } from '@capacitor/core';
+import MyService from '../../plugins/MyServicePlugin';
 
 // --- INTERNAL IMPORTS ---
 import { Track, Data, Waypoint, TrackDefinition, LocationResult } from '../../globald';
@@ -18,6 +20,8 @@ export class FunctionsService {
   private injector = inject(Injector); 
   private loadingCtrl = inject(LoadingController);
   private navCtrl = inject(NavController);
+  private zone = inject(NgZone);
+  private statusListener?: PluginListenerHandle;
 
   // ==========================================================================
   // 1. CONFIGURACIÓN Y ESTADO GENERAL
@@ -62,6 +66,7 @@ export class FunctionsService {
   public async init(): Promise<void> {
     this._storage = await this.storage.create();
     await this.loadGlobalCollections(); 
+    await this.initRouteListener();
   }
 
   // ==========================================================================
@@ -344,4 +349,20 @@ export class FunctionsService {
 
     return fixedText;
   }
+
+  public async initRouteListener() {
+    // Si ya existe, lo quitamos para no duplicar
+    if (this.statusListener) {
+      await this.statusListener.remove();
+    }
+
+    // Escuchamos a Android y forzamos a Angular a repintar con zone.run()
+    this.statusListener = await MyService.addListener('routeStatusUpdate', (data: any) => {
+      this.zone.run(() => {
+        this.routeStatus = data.status; // Actualizará instantáneamente a 'green', 'red' o 'black'
+        this.matchIndex = data.matchIndex;
+      });
+    });
+  }
+
 }

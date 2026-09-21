@@ -118,7 +118,7 @@ export function registerIonicIcons() {
     arrowRedoOutline,
     businessOutline,
     starOutline,
-    imageOutline,
+    imageOutline,                    
     bedOutline,
     restaurantOutline
   });
